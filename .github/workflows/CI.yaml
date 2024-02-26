@@ -1,0 +1,40 @@
+# This file defines a workflow with separate jobs for build, test, publish, and deploy
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  release:
+    types: [published]
+
+env:
+  DOTNET_VERSION: 8.0.x
+  PROJECT_NAME: WebAPIProjectTemplate.sln
+  TESTS_LOCATION: ./tests/xUnitTests
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    - name: Build
+      run: dotnet build ${{ env.PROJECT_NAME }}
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    - name: Run tests
+      run: |
+        dotnet test --configuration ${DOTNET_CONFIGURATION=Release} ${{ env.TESTS_LOCATION }} /p:CollectCoverage=true /p:CoverletOutputFormat=\"opencover\"

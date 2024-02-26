@@ -1,0 +1,63 @@
+version: '3.4'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: Data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+     - "5437:5432"
+    volumes:
+     - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    depends_on: 
+      - db
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: postgres@postgres.com
+      PGADMIN_DEFAULT_PASSWORD: postgres
+
+  liquibase:
+    image: liquibase/liquibase    
+    depends_on: 
+      - db
+    volumes:
+      - ./migrations:/liquibase/migrations
+    command:
+      - --changeLogFile=/migrations/dbChangeLog.yaml     
+      - --url=jdbc:postgresql://db:5432/Data
+      - --username=postgres
+      - --password=postgres
+      - update
+    ports:
+      - "8085:8080"
+
+  webapi:
+    image: ${DOCKER_REGISTRY-}webapi    
+    depends_on: 
+      - db
+    environment:
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=mypassword123456789mypassword
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_HTTP_PORTS=8070
+      - ASPNETCORE_HTTPS_PORTS=8071
+    volumes:
+      - ${USERPROFILE}/.aspnet/https:/https/
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+    build:
+      context: .
+      dockerfile: src/WebAPI/DockerfileLocal
+    ports:
+     - "8090:8070"
+     - "8091:8071"
+volumes:
+  postgres_data:
