@@ -1,4 +1,4 @@
-﻿using Contracts.Requests;
+﻿using Contracts.Requests.InvoiceItem;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.Item;
@@ -6,15 +6,15 @@ namespace WebAPI.SwaggerExamples.Item;
 /// <summary>
 /// example
 /// </summary>
-public class ItemAddRequestExample : IExamplesProvider<ItemAddRequest>
+public class ItemAddRequestExample : IExamplesProvider<InvoiceItemAddRequest>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public ItemAddRequest GetExamples()
+    public InvoiceItemAddRequest GetExamples()
     {
-        return new ItemAddRequest()
+        return new InvoiceItemAddRequest()
         {
             Name = "Toy car",
             Price = 5.11m,

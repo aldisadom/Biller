@@ -31,7 +31,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "migrations", "migrations", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{F4A54032-C55A-4DC0-A5F2-4EBEE93DF1F5}"
 	ProjectSection(SolutionItems) = preProject
-		migrations\sql\001-Create-tabel.sql = migrations\sql\001-Create-tabel.sql
+		migrations\sql\002-Create-invoice_clients.sql = migrations\sql\002-Create-invoice_clients.sql
+		migrations\sql\001-Create-users.sql = migrations\sql\001-Create-users.sql
+		migrations\sql\003-Create-invoice_items.sql = migrations\sql\003-Create-invoice_items.sql
 	EndProjectSection
 EndProject
 Global

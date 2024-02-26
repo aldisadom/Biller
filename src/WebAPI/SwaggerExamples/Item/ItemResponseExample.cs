@@ -1,4 +1,4 @@
-﻿using Contracts.Responses;
+﻿using Contracts.Responses.InvoiceItem;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.Item;
@@ -6,20 +6,19 @@ namespace WebAPI.SwaggerExamples.Item;
 /// <summary>
 /// example
 /// </summary>
-public class ItemResponseExample : IExamplesProvider<ItemResponse>
+public class ItemResponseExample : IExamplesProvider<InvoiceItemResponse>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public ItemResponse GetExamples()
+    public InvoiceItemResponse GetExamples()
     {
-        return new ItemResponse()
+        return new InvoiceItemResponse()
         {
             Id = Guid.Parse("51427c65-fb49-42be-a651-a0a1dee84931"),
             Name = "Toy car",
-            Price = 5.11m,
-            ShopId = Guid.Parse("6a1e7354-e67f-4795-a174-4aacd51bacc3")
+            Price = 5.11m
         };
     }
 }

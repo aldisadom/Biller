@@ -1,4 +1,5 @@
 ﻿using Domain.Interfaces;
+using Domain.Repositories;
 using Infrastructure.Repository;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -13,7 +14,9 @@ public static class DependencyInjection
         services.AddScoped<IDbConnection>(sp => new NpgsqlConnection(dbConnectionString));
 
         //inject Repository
-        services.AddScoped<IItemRepository, ItemRepository>();
+        services.AddScoped<IInvoiceItemRepository, InvoiceItemRepository>();
+        services.AddScoped<IInvoiceClientRepository, InvoiceClientRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
 
         Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
     }

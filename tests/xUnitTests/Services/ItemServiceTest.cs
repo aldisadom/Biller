@@ -13,13 +13,13 @@ namespace ShopV2.UnitTest.Services;
 
 public class ItemServiceTest
 {
-    private readonly Mock<IItemRepository> _itemRepositoryMock;
-    private readonly ItemService _itemService;
+    private readonly Mock<IInvoiceItemRepository> _itemRepositoryMock;
+    private readonly InvoiceItemService _itemService;
 
     public ItemServiceTest()
     {
-        _itemRepositoryMock = new Mock<IItemRepository>();
-        _itemService = new ItemService(_itemRepositoryMock.Object);
+        _itemRepositoryMock = new Mock<IInvoiceItemRepository>();
+        _itemService = new InvoiceItemService(_itemRepositoryMock.Object);
     }
 
     [Theory]
@@ -28,10 +28,10 @@ public class ItemServiceTest
     {
         //Arrange
         _itemRepositoryMock.Setup(m => m.Get(id))
-                        .ReturnsAsync(new ItemEntity { Id = id });
+                        .ReturnsAsync(new InvoiceItemEntity { Id = id });
 
         //Act
-        ItemModel result = await _itemService.Get(id);
+        InvoiceItemModel result = await _itemService.Get(id);
 
         //Assert
         result.Id.Should().Be(id);
@@ -45,7 +45,7 @@ public class ItemServiceTest
     {
         // Arrange
         _itemRepositoryMock.Setup(m => m.Get(id))
-                        .ReturnsAsync((ItemEntity)null!);
+                        .ReturnsAsync((InvoiceItemEntity)null!);
 
         // Act Assert
         await Assert.ThrowsAsync<NotFoundException>(async () => await _itemService.Get(id));
@@ -59,7 +59,7 @@ public class ItemServiceTest
         int quantity = 5;
 
         Fixture _fixture = new();
-        List<ItemEntity> itemList = [];
+        List<InvoiceItemEntity> itemList = [];
         _fixture.AddManyTo(itemList, quantity);
 
         //Arrange
@@ -80,7 +80,7 @@ public class ItemServiceTest
     {
         // Arrange
         _itemRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(new List<ItemEntity>());
+                        .ReturnsAsync(new List<InvoiceItemEntity>());
 
         // Act Assert
         var result = await _itemService.Get();
@@ -92,15 +92,15 @@ public class ItemServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Add_GivenValidId_ReturnsGuid(ItemEntity item)
+    public async Task Add_GivenValidId_ReturnsGuid(InvoiceItemEntity item)
     {
         //Arrange
-        _itemRepositoryMock.Setup(m => m.Add(It.Is<ItemEntity>
+        _itemRepositoryMock.Setup(m => m.Add(It.Is<InvoiceItemEntity>
                                 (x => x.Name == item.Name && x.Price == item.Price)))
                                  .ReturnsAsync(item.Id);
 
         //Act
-        ItemModel itemAdd = new()
+        InvoiceItemModel itemAdd = new()
         {
             Name = item.Name,
             Price = item.Price
@@ -111,26 +111,24 @@ public class ItemServiceTest
         //Assert
         result.Should().Be(item.Id);
 
-        _itemRepositoryMock.Verify(m => m.Add(It.IsAny<ItemEntity>()), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceItemEntity>()), Times.Once());
     }
 
     [Theory]
     [AutoData]
-    public async Task Update_ReturnsSuccess(ItemEntity item)
+    public async Task Update_ReturnsSuccess(InvoiceItemEntity item)
     {
         //Arrange
-        _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>
-                                (x => x.Id == item.Id && x.Name == item.Name && x.Price == item.Price)))
-                                .ReturnsAsync(1);
+        _itemRepositoryMock.Setup(m => m.Update(It.Is<InvoiceItemEntity>
+                                (x => x.Id == item.Id && x.Name == item.Name && x.Price == item.Price)));
 
         _itemRepositoryMock.Setup(m => m.Get(item.Id))
                                 .ReturnsAsync(item);
 
         //Act
-        ItemModel itemAdd = new()
+        InvoiceItemModel itemAdd = new()
         {
             Id = item.Id,
-            ShopId = item.ShopId,
             Name = item.Name,
             Price = item.Price
         };
@@ -140,26 +138,24 @@ public class ItemServiceTest
                                         .Should().NotThrowAsync<Exception>();
 
         _itemRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _itemRepositoryMock.Verify(m => m.Update(It.IsAny<ItemEntity>()), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceItemEntity>()), Times.Once());
     }
 
     [Theory]
     [AutoData]
-    public async Task Update_InvalidId_NotFoundException(ItemEntity item)
+    public async Task Update_InvalidId_NotFoundException(InvoiceItemEntity item)
     {
         //Arrange
-        _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>
-                                (x => x.Id == item.Id && x.Name == item.Name && x.Price == item.Price)))
-                                .ReturnsAsync(1);
+        _itemRepositoryMock.Setup(m => m.Update(It.Is<InvoiceItemEntity>
+                                (x => x.Id == item.Id && x.Name == item.Name && x.Price == item.Price)));
 
         _itemRepositoryMock.Setup(m => m.Get(item.Id))
-                        .ReturnsAsync((ItemEntity)null!);
+                        .ReturnsAsync((InvoiceItemEntity)null!);
 
         //Act
-        ItemModel itemAdd = new()
+        InvoiceItemModel itemAdd = new()
         {
             Id = item.Id,
-            ShopId = item.ShopId,
             Name = item.Name,
             Price = item.Price
         };
@@ -173,13 +169,13 @@ public class ItemServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Delete_ValidId(ItemEntity item)
+    public async Task Delete_ValidId(InvoiceItemEntity item)
     {
         //Arrange
         _itemRepositoryMock.Setup(m => m.Delete(item.Id));
 
         _itemRepositoryMock.Setup(m => m.Get(item.Id))
-                        .ReturnsAsync(new ItemEntity { Id = item.Id }!);
+                        .ReturnsAsync(new InvoiceItemEntity { Id = item.Id }!);
 
         //Act
         //Assert
@@ -192,13 +188,13 @@ public class ItemServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Delete_InvalidId_ThrowNotFoundException(ItemEntity item)
+    public async Task Delete_InvalidId_ThrowNotFoundException(InvoiceItemEntity item)
     {
         //Arrange
         _itemRepositoryMock.Setup(m => m.Delete(item.Id));
 
         _itemRepositoryMock.Setup(m => m.Get(item.Id))
-                        .ReturnsAsync((ItemEntity)null!);
+                        .ReturnsAsync((InvoiceItemEntity)null!);
 
         //Act
         //Assert

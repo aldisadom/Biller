@@ -1,14 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Contracts.Requests;
+namespace Contracts.Requests.User;
 
-public class ItemUpdateRequest
+public class UserUpdateRequest
 {
     [Required]
     public Guid Id { get; set; }
     [Required]
     public string Name { get; set; } = string.Empty;
     [Required]
-    public decimal Price { get; set; }
-    public Guid? ShopId { get; set; }
+    public string LastName { get; set; } = string.Empty;
 }

@@ -3,6 +3,7 @@ version: '3.4'
 services:
   db:
     image: postgres
+    container_name: "billio-db"
     restart: always
     environment:
       POSTGRES_DB: Data
@@ -15,7 +16,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: pgadmin4_container
+    container_name: "billio-pgadmin4"
     restart: always
     depends_on: 
       - db
@@ -24,9 +25,13 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: postgres@postgres.com
       PGADMIN_DEFAULT_PASSWORD: postgres
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - ./migrations/servers.json:/pgadmin4/servers.json
 
   liquibase:
-    image: liquibase/liquibase    
+    image: liquibase/liquibase
+    container_name: "billio-liquibase"    
     depends_on: 
       - db
     volumes:
@@ -42,11 +47,13 @@ services:
 
   webapi:
     image: ${DOCKER_REGISTRY-}webapi    
+    container_name: "billio-webapi"  
     depends_on: 
       - db
     environment:
       - ASPNETCORE_Kestrel__Certificates__Default__Password=mypassword123456789mypassword
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_ENVIRONMENT=LocalDocker
       - ASPNETCORE_HTTP_PORTS=8070
       - ASPNETCORE_HTTPS_PORTS=8071
     volumes:
