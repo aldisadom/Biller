@@ -4,10 +4,9 @@ using AutoMapper;
 using Contracts.Requests.InvoiceItem;
 using Contracts.Responses;
 using Contracts.Responses.InvoiceItem;
-using Contracts.Responses.User;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
-using WebAPI.SwaggerExamples.Item;
+using WebAPI.SwaggerExamples.InvoiceItem;
 
 namespace WebAPI.Controllers;
 
@@ -20,7 +19,7 @@ namespace WebAPI.Controllers;
 public class InvoiceItemController : ControllerBase
 {
     private readonly IInvoiceItemService _invoiceItemService;
-    private readonly ILogger<InvoiceItemController> _logger; 
+    private readonly ILogger<InvoiceItemController> _logger;
     private readonly IMapper _mapper;
 
     /// <summary>
@@ -28,6 +27,7 @@ public class InvoiceItemController : ControllerBase
     /// </summary>
     /// <param name="invoiceItemService"></param>
     /// <param name="logger"></param>
+    /// <param name="mapper"></param>
     public InvoiceItemController(IInvoiceItemService invoiceItemService, ILogger<InvoiceItemController> logger, IMapper mapper)
     {
         _invoiceItemService = invoiceItemService;
@@ -42,7 +42,7 @@ public class InvoiceItemController : ControllerBase
     /// <returns>invoiceItem data</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(InvoiceItemResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemResponseExample))]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceItemResponseExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id)
     {
@@ -56,17 +56,19 @@ public class InvoiceItemController : ControllerBase
     /// <summary>
     /// Gets all invoiceItems
     /// </summary>
+    /// <param name="query">filtering parameters</param>
     /// <returns>list of invoiceItems</returns>
     [HttpGet]
     [ProducesResponseType(typeof(InvoiceItemListResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemListResponseExample))]
-    public async Task<IActionResult> Get()
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceItemListResponseExample))]
+    public async Task<IActionResult> Get([FromQuery]InvoiceItemGetRequest query)
     {
-        IEnumerable<InvoiceItemModel> invoiceItems = await _invoiceItemService.Get();
+        IEnumerable<InvoiceItemModel> invoiceItems = await _invoiceItemService.Get(query);
 
-        InvoiceItemListResponse result = new();
-
-        result.InvoiceItems = invoiceItems.Select(i => _mapper.Map<InvoiceItemResponse>(i)).ToList();
+        InvoiceItemListResponse result = new()
+        {
+            InvoiceItems = invoiceItems.Select(i => _mapper.Map<InvoiceItemResponse>(i)).ToList()
+        };
 
         return Ok(result);
     }
@@ -77,14 +79,13 @@ public class InvoiceItemController : ControllerBase
     /// <param name="invoiceItem">invoiceItem data to add</param>
     /// <returns></returns>
     [HttpPost]
-    [ProducesResponseType(typeof(InvoiceItemAddResponse), StatusCodes.Status201Created)]
-    [SwaggerRequestExample(typeof(ItemAddResponseExample), typeof(ItemAddRequestExample))]
-    [SwaggerResponseExample(StatusCodes.Status201Created, typeof(ItemAddResponseExample))]
+    [ProducesResponseType(typeof(AddResponse), StatusCodes.Status201Created)]
+    [SwaggerRequestExample(typeof(AddResponse), typeof(InvoiceItemAddRequestExample))]
     public async Task<IActionResult> Add(InvoiceItemAddRequest invoiceItem)
     {
         InvoiceItemModel invoiceItemModel = _mapper.Map<InvoiceItemModel>(invoiceItem);
-        
-        InvoiceItemAddResponse result = new()
+
+        AddResponse result = new()
         {
             Id = await _invoiceItemService.Add(invoiceItemModel),
         };

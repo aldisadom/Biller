@@ -2,7 +2,6 @@
 using AutoMapper;
 using Contracts.Requests.InvoiceItem;
 using Contracts.Responses.InvoiceItem;
-using Contracts.Responses.User;
 using Domain.Entities;
 
 namespace WebAPI.MappingProfiles;
@@ -18,14 +17,13 @@ public class InvoiceItemMappingProfile : Profile
     public InvoiceItemMappingProfile()
     {
         //source, destination
-        CreateMap<InvoiceItemEntity, InvoiceItemModel>();
-        CreateMap<InvoiceItemModel, InvoiceItemEntity>();
+        CreateMap<InvoiceItemModel, InvoiceItemEntity>(MemberList.Source);
+        CreateMap<InvoiceItemEntity, InvoiceItemModel>(MemberList.Destination);
 
-        CreateMap<InvoiceItemAddRequest, InvoiceItemModel>();
-        CreateMap<InvoiceItemModel, InvoiceItemAddResponse>();
+        CreateMap<InvoiceItemAddRequest, InvoiceItemModel>(MemberList.Source);
 
-        CreateMap<InvoiceItemUpdateRequest, InvoiceItemModel>();
+        CreateMap<InvoiceItemUpdateRequest, InvoiceItemModel>(MemberList.Source);
 
-        CreateMap<InvoiceItemModel, InvoiceItemResponse>();
+        CreateMap<InvoiceItemModel, InvoiceItemResponse>(MemberList.Destination);
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
+using Contracts.Requests.InvoiceClient;
+using Contracts.Requests.InvoiceItem;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -28,16 +30,16 @@ public class InvoiceClientService : IInvoiceClientService
         return _mapper.Map<InvoiceClientModel>(invoiceClientEntity);
     }
 
-    public async Task<IEnumerable<InvoiceClientModel>> GetByUser(Guid userId)
+    public async Task<IEnumerable<InvoiceClientModel>> Get(InvoiceClientGetRequest query)
     {
-        IEnumerable<InvoiceClientEntity> invoiceClientEntities = await _invoiceClientRepository.GetByUser(userId);
+        IEnumerable<InvoiceClientEntity> invoiceClientEntities;
 
-        return _mapper.Map<IEnumerable<InvoiceClientModel>>(invoiceClientEntities);
-    }
-
-    public async Task<IEnumerable<InvoiceClientModel>> Get()
-    {
-        IEnumerable<InvoiceClientEntity> invoiceClientEntities = await _invoiceClientRepository.Get();
+        if (query is null)
+            invoiceClientEntities = await _invoiceClientRepository.Get();
+        else if (query.UserId is not null)
+            invoiceClientEntities = await _invoiceClientRepository.GetByUser((Guid)query.UserId);
+        else
+            invoiceClientEntities = await _invoiceClientRepository.Get();
 
         return _mapper.Map<IEnumerable<InvoiceClientModel>>(invoiceClientEntities);
     }

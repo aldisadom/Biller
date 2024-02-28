@@ -1,4 +1,6 @@
 ﻿using Application.Models;
+using Contracts.Requests.InvoiceClient;
+using Contracts.Requests.InvoiceItem;
 
 namespace Application.Interfaces;
 
@@ -6,8 +8,7 @@ public interface IInvoiceClientService
 {
     Task<Guid> Add(InvoiceClientModel invoiceClient);
     Task Delete(Guid id);
-    Task<IEnumerable<InvoiceClientModel>> Get();
+    Task<IEnumerable<InvoiceClientModel>> Get(InvoiceClientGetRequest query);
     Task<InvoiceClientModel> Get(Guid id);
-    Task<IEnumerable<InvoiceClientModel>> GetByUser(Guid userId);
     Task Update(InvoiceClientModel invoiceClient);
 }

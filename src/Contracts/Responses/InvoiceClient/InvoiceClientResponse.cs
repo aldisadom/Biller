@@ -1,6 +1,6 @@
-﻿namespace Application.Models;
+﻿namespace Contracts.Responses.InvoiceClient;
 
-public class InvoiceClientModel
+public record InvoiceClientResponse
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }

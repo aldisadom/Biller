@@ -1,5 +1,4 @@
-﻿using Domain.Interfaces;
-using Domain.Repositories;
+﻿using Domain.Repositories;
 using Infrastructure.Repository;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;

@@ -25,7 +25,7 @@ public class InvoiceClientRepository : IInvoiceClientRepository
     public async Task<IEnumerable<InvoiceClientEntity>> GetByUser(Guid userId)
     {
         string sql = @"SELECT * FROM invoice_clients
-                        WHERE id=@userId";
+                        WHERE user_id=@UserId";
 
         return await _dbConnection.QueryAsync<InvoiceClientEntity>(sql, new { userId });
     }

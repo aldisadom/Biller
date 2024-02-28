@@ -1,5 +1,5 @@
 ﻿using Domain.Exceptions;
-using Infrastructure.Models;
+using Domain.Models;
 using Newtonsoft.Json;
 using System.Text;
 

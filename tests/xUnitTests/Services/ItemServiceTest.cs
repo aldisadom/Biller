@@ -5,11 +5,11 @@ using AutoFixture.Xunit2;
 using Domain.Entities;
 
 using Domain.Exceptions;
-using Domain.Interfaces;
+using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 
-namespace ShopV2.UnitTest.Services;
+namespace xUnitTests.Services;
 
 public class ItemServiceTest
 {

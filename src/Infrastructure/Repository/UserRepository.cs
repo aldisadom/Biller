@@ -32,8 +32,8 @@ public class UserRepository : IUserRepository
     public async Task<Guid> Add(UserEntity item)
     {
         string sql = @"INSERT INTO users
-                        (name, last_name, email, password, user_type)
-                        VALUES (@Name, @LastName, @Email, @Password, @UserType)
+                        (name, last_name, email, password)
+                        VALUES (@Name, @LastName, @Email, @Password)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);
@@ -42,7 +42,7 @@ public class UserRepository : IUserRepository
     public async Task Update(UserEntity item)
     {
         string sql = @"UPDATE users
-                        SET name=@Name, last_name=@LastName, password=@Password, user_type=@UserType
+                        SET name=@Name, last_name=@LastName
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, item);

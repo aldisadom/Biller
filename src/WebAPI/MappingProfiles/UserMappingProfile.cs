@@ -17,14 +17,13 @@ public class UserMappingProfile : Profile
     public UserMappingProfile()
     {
         //source, destination
-        CreateMap<UserEntity, UserModel>();
-        CreateMap<UserModel, UserEntity>();
+        CreateMap<UserModel, UserEntity>(MemberList.Source);
+        CreateMap<UserEntity, UserModel>(MemberList.Destination);
 
-        CreateMap<UserAddRequest, UserModel>();
-        CreateMap<UserModel, UserAddResponse>();
+        CreateMap<UserAddRequest, UserModel>(MemberList.Source);
 
-        CreateMap<UserUpdateRequest, UserModel>();
+        CreateMap<UserUpdateRequest, UserModel>(MemberList.Source);
 
-        CreateMap<UserModel, UserResponse>();
+        CreateMap<UserModel, UserResponse>(MemberList.Destination);
     }
 }

@@ -1,8 +1,4 @@
-﻿using Application.Models;
-using AutoMapper;
-using Contracts.Requests.User;
-using Contracts.Responses.User;
-using Domain.Entities;
+﻿using AutoMapper;
 using WebAPI.MappingProfiles;
 
 namespace WebAPI.Capabilities;
@@ -22,9 +18,13 @@ public static class StartupMapper
         {
             mc.AddProfile(new UserMappingProfile());
             mc.AddProfile(new InvoiceItemMappingProfile());
+            mc.AddProfile(new InvoiceClientMappingProfile());
         });
 
+        mapperConfig.AssertConfigurationIsValid();
+
         IMapper mapper = mapperConfig.CreateMapper();
+
         services.AddSingleton(mapper);
 
         return services;

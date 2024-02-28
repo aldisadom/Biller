@@ -1,6 +1,6 @@
 ﻿using Dapper;
 using Domain.Entities;
-using Domain.Interfaces;
+using Domain.Repositories;
 using System.Data;
 
 namespace Infrastructure.Repository;
@@ -25,7 +25,7 @@ public class InvoiceItemRepository : IInvoiceItemRepository
     public async Task<IEnumerable<InvoiceItemEntity>> GetByUser(Guid userId)
     {
         string sql = @"SELECT * FROM invoice_items
-                        WHERE id=@userId";
+                        WHERE user_id=@UserId";
 
         return await _dbConnection.QueryAsync<InvoiceItemEntity>(sql, new { userId });
     }

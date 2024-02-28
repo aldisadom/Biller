@@ -1,5 +1,5 @@
 ﻿using Domain.Exceptions;
-using Infrastructure.Models;
+using Domain.Models;
 using System.Data.Common;
 using System.Security;
 

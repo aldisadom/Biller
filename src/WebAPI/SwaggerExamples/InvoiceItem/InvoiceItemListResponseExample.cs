@@ -1,12 +1,12 @@
 ﻿using Contracts.Responses.InvoiceItem;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace WebAPI.SwaggerExamples.Item;
+namespace WebAPI.SwaggerExamples.InvoiceItem;
 
 /// <summary>
 /// example
 /// </summary>
-public class ItemListResponseExample : IExamplesProvider<InvoiceItemListResponse>
+public class InvoiceItemListResponseExample : IExamplesProvider<InvoiceItemListResponse>
 {
     /// <summary>
     /// example
@@ -18,14 +18,21 @@ public class ItemListResponseExample : IExamplesProvider<InvoiceItemListResponse
 
         ItemListResponse.InvoiceItems.Add(new InvoiceItemResponse()
         {
-            Id = Guid.Parse("51427c65-fb49-42be-a651-a0a1dee84931"),
-            Name = "Toy car",
-            Price = 5.11m
+            Id = Guid.NewGuid(),
+            Name = "Iron throne",
+            Price = 999999999999999m
         });
 
         ItemListResponse.InvoiceItems.Add(new InvoiceItemResponse()
         {
-            Id = Guid.Parse("d4ec61ea-b5d3-4967-aa76-23f3990de955"),
+            Id = Guid.NewGuid(),
+            Name = "Lanister backstab",
+            Price = 0.01m
+        });
+
+        ItemListResponse.InvoiceItems.Add(new InvoiceItemResponse()
+        {
+            Id = Guid.NewGuid(),
             Name = "Hourly rate",
             Price = 10.00m
         });

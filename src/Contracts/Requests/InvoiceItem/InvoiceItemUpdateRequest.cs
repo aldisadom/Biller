@@ -2,7 +2,7 @@
 
 namespace Contracts.Requests.InvoiceItem;
 
-public class InvoiceItemUpdateRequest
+public record InvoiceItemUpdateRequest
 {
     [Required]
     public Guid Id { get; set; }

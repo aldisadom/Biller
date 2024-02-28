@@ -14,4 +14,5 @@ CREATE TABLE invoice_items (
         REFERENCES users(id)
 );
 
+CREATE INDEX idx_invoice_items_user_id ON invoice_items (user_id)
 -- rollback DROP TABLE invoice_items;

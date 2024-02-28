@@ -1,6 +1,4 @@
-﻿using Domain.Enums;
-
-namespace Application.Models;
+﻿namespace Application.Models;
 
 public class UserModel
 {
@@ -9,5 +7,4 @@ public class UserModel
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public UserTypes UserType { get; set; }
 }

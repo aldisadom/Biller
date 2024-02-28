@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Models;
+﻿namespace Domain.Models;
 
 public class ErrorModel
 {

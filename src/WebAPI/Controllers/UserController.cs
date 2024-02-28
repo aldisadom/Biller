@@ -1,15 +1,12 @@
-﻿using Application;
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
 using Contracts.Requests.User;
 using Contracts.Responses;
 using Contracts.Responses.User;
-using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
-using System.Linq;
-using WebAPI.SwaggerExamples.Item;
+using WebAPI.SwaggerExamples.User;
 
 namespace WebAPI.Controllers;
 
@@ -30,6 +27,7 @@ public class UserController : ControllerBase
     /// </summary>
     /// <param name="userService"></param>
     /// <param name="logger"></param>
+    /// <param name="mapper"></param>
     public UserController(IUserService userService, ILogger<UserController> logger, IMapper mapper)
     {
         _userService = userService;
@@ -40,18 +38,18 @@ public class UserController : ControllerBase
     /// <summary>
     /// Get one user
     /// </summary>
-    /// <param name="id">Items unique ID</param>
+    /// <param name="id">Users unique ID</param>
     /// <returns>user data</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemResponseExample))]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(UserResponseExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id)
     {
         UserModel user = await _userService.Get(id);
 
         UserResponse result = _mapper.Map<UserResponse>(user);
-        
+
         return Ok(result);
     }
 
@@ -61,15 +59,16 @@ public class UserController : ControllerBase
     /// <returns>list of users</returns>
     [HttpGet]
     [ProducesResponseType(typeof(UserListResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemListResponseExample))]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(UserListResponseExample))]
     public async Task<IActionResult> Get()
     {
         IEnumerable<UserModel> users = await _userService.Get();
 
-        UserListResponse result = new();
+        UserListResponse result = new()
+        {
+            Users = users.Select(i => _mapper.Map<UserResponse>(i)).ToList()
+        };
 
-        result.Users = users.Select(i => _mapper.Map<UserResponse>(i)).ToList();
-        
         return Ok(result);
     }
 
@@ -79,14 +78,13 @@ public class UserController : ControllerBase
     /// <param name="user">user data to add</param>
     /// <returns></returns>
     [HttpPost]
-    [ProducesResponseType(typeof(UserAddResponse), StatusCodes.Status201Created)]
-//    [SwaggerRequestExample(typeof(ItemAddResponseExample), typeof(ItemAddRequestExample))]
- //   [SwaggerResponseExample(StatusCodes.Status201Created, typeof(ItemAddResponseExample))]
+    [ProducesResponseType(typeof(AddResponse), StatusCodes.Status201Created)]
+    [SwaggerRequestExample(typeof(AddResponse), typeof(UserAddRequestExample))]
     public async Task<IActionResult> Add(UserAddRequest user)
     {
         UserModel userModel = _mapper.Map<UserModel>(user);
 
-        UserAddResponse result = new()
+        AddResponse result = new()
         {
             Id = await _userService.Add(userModel),
         };

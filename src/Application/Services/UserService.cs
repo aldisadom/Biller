@@ -2,7 +2,6 @@
 using Application.Models;
 using AutoMapper;
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Repositories;
 

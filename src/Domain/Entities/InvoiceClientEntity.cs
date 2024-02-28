@@ -3,6 +3,7 @@
 public record InvoiceClientEntity
 {
     public Guid Id { get; set; }
+    public Guid UserId { get; set; }
     public string CompanyName { get; set; } = string.Empty;
     public string Street { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;

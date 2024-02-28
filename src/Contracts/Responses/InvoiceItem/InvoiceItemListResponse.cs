@@ -1,6 +1,6 @@
 ﻿namespace Contracts.Responses.InvoiceItem;
 
-public class InvoiceItemListResponse
+public record InvoiceItemListResponse
 {
     public List<InvoiceItemResponse> InvoiceItems { get; set; } = [];
 }
