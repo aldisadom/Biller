@@ -15,7 +15,7 @@ public class UserUpdateRequestExample : IExamplesProvider<UserUpdateRequest>
     public UserUpdateRequest GetExamples()
     {
         return new UserUpdateRequest()
-        {
+        {   
             Id = Guid.NewGuid(),
             Name = "Jon",
             LastName = "Snow"

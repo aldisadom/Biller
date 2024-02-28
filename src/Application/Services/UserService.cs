@@ -3,8 +3,10 @@ using Application.Models;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Exceptions;
+using Domain.IOptions;
 using Domain.Repositories;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Application.Services;
 
@@ -12,14 +14,13 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
     private readonly IMapper _mapper;
-    private readonly string _passwordSalt;
+    private readonly IPasswordEncryptionService _passwordEncryptionService;
 
-    public UserService(IUserRepository userRepository, IConfiguration configuration, IMapper mapper)
+    public UserService(IUserRepository userRepository,IPasswordEncryptionService passwordEncryptionService, IMapper mapper)
     {
         _userRepository = userRepository;
         _mapper = mapper;
-        _passwordSalt = configuration.GetValue<string>("EncryptionSalt")
-            ?? throw new ArgumentNullException($"Password salt is missing");
+        _passwordEncryptionService = passwordEncryptionService;
     }
 
     public async Task<string> Login(UserModel user)
@@ -27,7 +28,7 @@ public class UserService : IUserService
         UserEntity userEntity = await _userRepository.Get(user.Email)
             ?? throw new UnauthorizedAccessException($"Invalid login data");
 
-        user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password, _passwordSalt);
+        user.Password = _passwordEncryptionService.Encrypt(user.Password);
 
         if (user.Password != userEntity.Password)
             throw new UnauthorizedAccessException($"Invalid login data");
@@ -52,10 +53,10 @@ public class UserService : IUserService
 
     public async Task<Guid> Add(UserModel user)
     {
-        user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password, _passwordSalt);
+        user.Password = _passwordEncryptionService.Encrypt(user.Password);
 
         UserEntity userEntity = _mapper.Map<UserEntity>(user);
-
+        
         return await _userRepository.Add(userEntity);
     }
 

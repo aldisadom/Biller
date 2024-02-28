@@ -1,11 +1,15 @@
 ﻿using Application.Interfaces;
 using Application.Models;
+using Application.Services;
 using AutoMapper;
+using Contracts.Requests.InvoiceClient;
+using Contracts.Requests.InvoiceItem;
 using Contracts.Requests.InvoiceClient;
 using Contracts.Responses;
 using Contracts.Responses.InvoiceClient;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
+using WebAPI.SwaggerExamples.InvoiceClient;
 using WebAPI.SwaggerExamples.InvoiceClient;
 
 namespace WebAPI.Controllers;

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Contracts.Responses.User;
+namespace Domain.IOptions;
 
-public class UserLoginResponse
+public class PasswordEncryption
 {
-    public string Token { get; set; } = string.Empty;
+    public string Salt { get; set; } = string.Empty;
 }

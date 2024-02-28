@@ -7,6 +7,7 @@ using Contracts.Responses.User;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using WebAPI.SwaggerExamples.User;
+using BCrypt.Net;
 
 namespace WebAPI.Controllers;
 
@@ -44,7 +45,7 @@ public class UserController : ControllerBase
     [ProducesResponseType(typeof(UserLoginResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(UserLoginResponseExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login([FromQuery] UserLoginRequest user)
+    public async Task<IActionResult> Login([FromQuery]UserLoginRequest user)
     {
         UserModel userModel = _mapper.Map<UserModel>(user);
 

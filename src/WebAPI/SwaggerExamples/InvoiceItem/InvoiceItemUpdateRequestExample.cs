@@ -1,4 +1,5 @@
 ﻿using Contracts.Requests.InvoiceItem;
+using Contracts.Responses.InvoiceItem;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.InvoiceItem;

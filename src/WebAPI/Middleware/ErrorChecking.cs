@@ -1,4 +1,5 @@
-﻿using Domain.Exceptions;
+﻿using Contracts.Responses;
+using Domain.Exceptions;
 using Domain.Models;
 using System.Data.Common;
 using System.Security;
@@ -88,6 +89,12 @@ public class ErrorChecking
         context.Response.StatusCode = errorMessage.StatusCode;
 
         _logger.LogError("{Message}", errorMessage.Message);
+
+        ErrorResponse response = new()
+        {
+            ErrorMessage = errorMessage.Message,
+        };
+
         await context.Response.WriteAsJsonAsync(errorMessage);
     }
 }

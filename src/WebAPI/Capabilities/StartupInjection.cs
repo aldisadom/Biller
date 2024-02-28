@@ -1,6 +1,8 @@
 ﻿using Application;
 using Clients;
+using Domain.IOptions;
 using Infrastructure;
+using Microsoft.Extensions.Configuration;
 
 namespace WebAPI.Capabilities;
 
@@ -19,6 +21,8 @@ public static class StartupInjection
     public static IServiceCollection ConfigureInjection(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpClient();
+
+        services.Configure<PasswordEncryption>(configuration.GetSection("PasswordEncryption"));
 
         services.AddApplication();
         services.AddClients();
