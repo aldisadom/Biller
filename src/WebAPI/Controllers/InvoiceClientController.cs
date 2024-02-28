@@ -2,7 +2,6 @@
 using Application.Models;
 using AutoMapper;
 using Contracts.Requests.InvoiceClient;
-using Contracts.Requests.InvoiceItem;
 using Contracts.Responses;
 using Contracts.Responses.InvoiceClient;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +14,7 @@ namespace WebAPI.Controllers;
 /// This is a invoiceClient controller
 /// </summary>
 [ApiController]
-[Route("v1/[controller]")]
+[Route("[controller]")]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class InvoiceClientController : ControllerBase
 {
@@ -81,7 +80,7 @@ public class InvoiceClientController : ControllerBase
     /// <returns></returns>
     [HttpPost]
     [ProducesResponseType(typeof(AddResponse), StatusCodes.Status201Created)]
-    [SwaggerRequestExample(typeof(AddResponse), typeof(InvoiceClientAddRequestExample))]
+    [SwaggerRequestExample(typeof(InvoiceClientAddRequest), typeof(InvoiceClientAddRequestExample))]
     public async Task<IActionResult> Add(InvoiceClientAddRequest invoiceClient)
     {
         InvoiceClientModel invoiceClientModel = _mapper.Map<InvoiceClientModel>(invoiceClient);
@@ -91,5 +90,36 @@ public class InvoiceClientController : ControllerBase
             Id = await _invoiceClientService.Add(invoiceClientModel),
         };
         return CreatedAtAction(nameof(Add), result);
+    }
+
+    /// <summary>
+    /// Update invoiceClient
+    /// </summary>
+    /// <param name="invoiceClient">invoiceClient data to update</param>
+    /// <returns></returns>
+    [HttpPut]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [SwaggerRequestExample(typeof(InvoiceClientUpdateRequest), typeof(InvoiceClientUpdateRequestExample))]
+    public async Task<IActionResult> Update(InvoiceClientUpdateRequest invoiceClient)
+    {
+        InvoiceClientModel invoiceClientModel = _mapper.Map<InvoiceClientModel>(invoiceClient);
+
+        await _invoiceClientService.Update(invoiceClientModel);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Delete invoiceClient
+    /// </summary>
+    /// <param name="id">invoiceClient id to delete</param>
+    /// <returns></returns>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        await _invoiceClientService.Delete(id);
+
+        return NoContent();
     }
 }

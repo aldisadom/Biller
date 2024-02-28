@@ -14,7 +14,7 @@ namespace WebAPI.Controllers;
 /// This is a user controller
 /// </summary>
 [ApiController]
-[Route("v1/[controller]")]
+[Route("[controller]")]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class UserController : ControllerBase
 {
@@ -33,6 +33,27 @@ public class UserController : ControllerBase
         _userService = userService;
         _logger = logger;
         _mapper = mapper;
+    }
+
+    /// <summary>
+    /// Login
+    /// </summary>
+    /// <param name="user">Users unique ID</param>
+    /// <returns>taken</returns>
+    [HttpGet("Login")]
+    [ProducesResponseType(typeof(UserLoginResponse), StatusCodes.Status200OK)]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(UserLoginResponseExample))]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromQuery] UserLoginRequest user)
+    {
+        UserModel userModel = _mapper.Map<UserModel>(user);
+
+        UserLoginResponse result = new()
+        {
+            Token = await _userService.Login(userModel)
+        };
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -79,7 +100,7 @@ public class UserController : ControllerBase
     /// <returns></returns>
     [HttpPost]
     [ProducesResponseType(typeof(AddResponse), StatusCodes.Status201Created)]
-    [SwaggerRequestExample(typeof(AddResponse), typeof(UserAddRequestExample))]
+    [SwaggerRequestExample(typeof(UserAddRequest), typeof(UserAddRequestExample))]
     public async Task<IActionResult> Add(UserAddRequest user)
     {
         UserModel userModel = _mapper.Map<UserModel>(user);
@@ -89,5 +110,36 @@ public class UserController : ControllerBase
             Id = await _userService.Add(userModel),
         };
         return CreatedAtAction(nameof(Add), result);
+    }
+
+    /// <summary>
+    /// Update user
+    /// </summary>
+    /// <param name="user">user data to update</param>
+    /// <returns></returns>
+    [HttpPut]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [SwaggerRequestExample(typeof(UserUpdateRequest), typeof(UserUpdateRequestExample))]
+    public async Task<IActionResult> Update(UserUpdateRequest user)
+    {
+        UserModel userModel = _mapper.Map<UserModel>(user);
+
+        await _userService.Update(userModel);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Delete user
+    /// </summary>
+    /// <param name="id">user id to delete</param>
+    /// <returns></returns>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        await _userService.Delete(id);
+
+        return NoContent();
     }
 }

@@ -14,7 +14,7 @@ namespace WebAPI.Controllers;
 /// This is a invoiceItem controller
 /// </summary>
 [ApiController]
-[Route("v1/[controller]")]
+[Route("[controller]")]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class InvoiceItemController : ControllerBase
 {
@@ -61,7 +61,7 @@ public class InvoiceItemController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(InvoiceItemListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceItemListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery]InvoiceItemGetRequest query)
+    public async Task<IActionResult> Get([FromQuery] InvoiceItemGetRequest query)
     {
         IEnumerable<InvoiceItemModel> invoiceItems = await _invoiceItemService.Get(query);
 
@@ -80,7 +80,7 @@ public class InvoiceItemController : ControllerBase
     /// <returns></returns>
     [HttpPost]
     [ProducesResponseType(typeof(AddResponse), StatusCodes.Status201Created)]
-    [SwaggerRequestExample(typeof(AddResponse), typeof(InvoiceItemAddRequestExample))]
+    [SwaggerRequestExample(typeof(InvoiceItemAddRequest), typeof(InvoiceItemAddRequestExample))]
     public async Task<IActionResult> Add(InvoiceItemAddRequest invoiceItem)
     {
         InvoiceItemModel invoiceItemModel = _mapper.Map<InvoiceItemModel>(invoiceItem);
@@ -90,5 +90,36 @@ public class InvoiceItemController : ControllerBase
             Id = await _invoiceItemService.Add(invoiceItemModel),
         };
         return CreatedAtAction(nameof(Add), result);
+    }
+
+    /// <summary>
+    /// Update invoiceItem
+    /// </summary>
+    /// <param name="invoiceItem">invoiceItem data to update</param>
+    /// <returns></returns>
+    [HttpPut]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [SwaggerRequestExample(typeof(InvoiceItemUpdateRequest), typeof(InvoiceItemUpdateRequestExample))]
+    public async Task<IActionResult> Update(InvoiceItemUpdateRequest invoiceItem)
+    {
+        InvoiceItemModel invoiceItemModel = _mapper.Map<InvoiceItemModel>(invoiceItem);
+
+        await _invoiceItemService.Update(invoiceItemModel);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Delete invoiceItem
+    /// </summary>
+    /// <param name="id">invoiceItem id to delete</param>
+    /// <returns></returns>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        await _invoiceItemService.Delete(id);
+
+        return NoContent();
     }
 }

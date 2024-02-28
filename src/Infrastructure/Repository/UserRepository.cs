@@ -22,6 +22,14 @@ public class UserRepository : IUserRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { id });
     }
 
+    public async Task<UserEntity?> Get(string email)
+    {
+        string sql = @"SELECT * FROM users
+                        WHERE email=@email";
+
+        return await _dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { email });
+    }
+
     public async Task<IEnumerable<UserEntity>> Get()
     {
         string sql = @"SELECT * FROM users";

@@ -6,17 +6,17 @@ namespace WebAPI.SwaggerExamples.InvoiceItem;
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceItemAddRequestExample : IExamplesProvider<InvoiceItemAddRequest>
+public class InvoiceItemUpdateRequestExample : IExamplesProvider<InvoiceItemUpdateRequest>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public InvoiceItemAddRequest GetExamples()
+    public InvoiceItemUpdateRequest GetExamples()
     {
-        return new InvoiceItemAddRequest()
+        return new InvoiceItemUpdateRequest()
         {
-            ClientId = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             Name = "Iron throne",
             Price = 999999999999999m
         };

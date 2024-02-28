@@ -18,6 +18,7 @@ public class InvoiceItemListResponseExample : IExamplesProvider<InvoiceItemListR
 
         ItemListResponse.InvoiceItems.Add(new InvoiceItemResponse()
         {
+            ClientId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Iron throne",
             Price = 999999999999999m
@@ -25,6 +26,7 @@ public class InvoiceItemListResponseExample : IExamplesProvider<InvoiceItemListR
 
         ItemListResponse.InvoiceItems.Add(new InvoiceItemResponse()
         {
+            ClientId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Lanister backstab",
             Price = 0.01m
@@ -32,6 +34,7 @@ public class InvoiceItemListResponseExample : IExamplesProvider<InvoiceItemListR
 
         ItemListResponse.InvoiceItems.Add(new InvoiceItemResponse()
         {
+            ClientId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Hourly rate",
             Price = 10.00m

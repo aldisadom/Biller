@@ -40,8 +40,8 @@ public class InvoiceClientRepository : IInvoiceClientRepository
     public async Task<Guid> Add(InvoiceClientEntity item)
     {
         string sql = @"INSERT INTO invoice_clients
-                        (user_id, company_name, street, city, email, phone)
-                        VALUES (@UserId, @CompanyName, @Street, @City, @Email, @Phone)
+                        (user_id, company_name, street, city, email, phone, state)
+                        VALUES (@UserId, @CompanyName, @Street, @City, @Email, @Phone, @State)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);
@@ -50,7 +50,7 @@ public class InvoiceClientRepository : IInvoiceClientRepository
     public async Task Update(InvoiceClientEntity item)
     {
         string sql = @"UPDATE invoice_clients
-                        SET company_name=@CompanyName, street=@Street, city=@City, email=@Email, phone=@Phone
+                        SET company_name=@CompanyName, street=@Street, city=@City, email=@Email, phone=@Phone, state=@State
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, item);

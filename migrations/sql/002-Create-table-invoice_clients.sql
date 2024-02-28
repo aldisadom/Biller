@@ -8,6 +8,7 @@ CREATE TABLE invoice_clients (
     company_name character varying(100)  NOT NULL,
     street character varying(255)  NOT NULL,
     city character varying(50)  NOT NULL,
+    state character varying(50)  NOT NULL,
     email character varying(100)  NOT NULL,
     phone character varying(50)  NOT NULL,
 

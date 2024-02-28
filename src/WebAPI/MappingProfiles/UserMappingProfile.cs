@@ -16,7 +16,7 @@ public class UserMappingProfile : Profile
     /// </summary>
     public UserMappingProfile()
     {
-        //source, destination
+        //source, destination (which parameters must be mapped) 
         CreateMap<UserModel, UserEntity>(MemberList.Source);
         CreateMap<UserEntity, UserModel>(MemberList.Destination);
 
@@ -25,5 +25,7 @@ public class UserMappingProfile : Profile
         CreateMap<UserUpdateRequest, UserModel>(MemberList.Source);
 
         CreateMap<UserModel, UserResponse>(MemberList.Destination);
+
+        CreateMap<UserLoginRequest, UserModel>(MemberList.Source);
     }
 }

@@ -16,6 +16,7 @@ public class InvoiceItemResponseExample : IExamplesProvider<InvoiceItemResponse>
     {
         return new InvoiceItemResponse()
         {
+            ClientId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Iron throne",
             Price = 999999999999999m

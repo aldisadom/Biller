@@ -9,5 +9,5 @@ public record InvoiceItemAddRequest
     [Required]
     public decimal Price { get; set; }
     [Required]
-    public Guid UserId { get; set; }
+    public Guid ClientId { get; set; }
 }
