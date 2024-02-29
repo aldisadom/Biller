@@ -11,7 +11,7 @@ on:
 
 env:
   DOTNET_VERSION: 8.0.x
-  PROJECT_NAME: WebAPIProjectTemplate.sln
+  PROJECT_NAME: Billio.sln
   TESTS_LOCATION: ./tests/xUnitTests
 
 jobs:
