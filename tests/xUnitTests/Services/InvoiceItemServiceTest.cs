@@ -1,6 +1,5 @@
 ﻿using Application.Models;
 using Application.Services;
-using AutoFixture;
 using AutoFixture.Xunit2;
 using AutoMapper;
 using Contracts.Requests.InvoiceItem;
@@ -95,14 +94,14 @@ public class InvoiceItemServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Get_GivenClientIdQuery_ReturnsDTO(InvoiceItemGetRequest request, List<InvoiceItemEntity> invoiceItemList)
+    public async Task Get_GivenAddressIdQuery_ReturnsDTO(InvoiceItemGetRequest request, List<InvoiceItemEntity> invoiceItemList)
     {
         //Arrange
 
         _invoiceItemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync((List<InvoiceItemEntity>)null!);
 
-        _invoiceItemRepositoryMock.Setup(m => m.GetByUser((Guid)request.ClientId!))
+        _invoiceItemRepositoryMock.Setup(m => m.GetByUser((Guid)request.AddressId!))
                         .ReturnsAsync(invoiceItemList);
 
         List<InvoiceItemModel> expectedResult = _mapper.Map<List<InvoiceItemModel>>(invoiceItemList);

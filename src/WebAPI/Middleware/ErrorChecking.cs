@@ -43,6 +43,11 @@ public class ErrorChecking
 
             switch (e)
             {
+                case UnauthorizedAccessException:
+                    message = "Unauthorized";
+                    statusCode = StatusCodes.Status401Unauthorized;
+                    break;
+
                 case NotImplementedException:
                     message = "Not implemented";
                     statusCode = StatusCodes.Status501NotImplemented;
@@ -95,6 +100,6 @@ public class ErrorChecking
             ErrorMessage = errorMessage.Message,
         };
 
-        await context.Response.WriteAsJsonAsync(errorMessage);
+        await context.Response.WriteAsJsonAsync(response);
     }
 }

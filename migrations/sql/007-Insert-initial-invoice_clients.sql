@@ -1,8 +1,8 @@
 --liquibase formatted sql
 
 -- changeset Aldis:7
--- comment: Create initial invoice_clients
-INSERT INTO invoice_clients
+-- comment: Create initial invoice_addresses
+INSERT INTO invoice_addresses
 	(id, user_id, company_name, street, city,state, email, phone)
 	VALUES 
     ('c85f22c7-1323-423a-a402-9b711a44c119','2271c7b3-69ed-4e0c-a820-ecafbd57ac80','Dragons Delight','Main road 5','Winterfell','The North','dragon_delight@winter.com','+123450679'),
@@ -26,4 +26,4 @@ INSERT INTO invoice_clients
     ('c41c2c6f-42ae-4420-bb26-304fd38b10c4','f34ab121-82b5-4e06-a92e-8757a3b72f87','Whispering Associates','Spiders Street','Kings Landing','The Crownlands','whispering_associates@gmail.com','+123456789'),
     ('1542880c-b882-4dcf-943b-a206426c1304','42cbf0b0-e3e1-48d4-aa65-72ab2e8b4f3f','Greenseer Grocers','Old Gods Avenue','Winterfell','The North','greenseer_grocers@winterfell.com','+123456789');
 
--- rollback DELETE FROM invoice_clients;
+-- rollback DELETE FROM invoice_addresses;

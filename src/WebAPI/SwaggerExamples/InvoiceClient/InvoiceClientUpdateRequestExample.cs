@@ -1,5 +1,4 @@
-﻿using Contracts.Requests.InvoiceClient;
-using Contracts.Responses.InvoiceClient;
+﻿using Contracts.Requests.InvoiceAddress;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.InvoiceClient;
@@ -7,15 +6,15 @@ namespace WebAPI.SwaggerExamples.InvoiceClient;
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceClientUpdateRequestExample : IExamplesProvider<InvoiceClientUpdateRequest>
+public class InvoiceAddressUpdateRequestExample : IExamplesProvider<InvoiceAddressUpdateRequest>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public InvoiceClientUpdateRequest GetExamples()
+    public InvoiceAddressUpdateRequest GetExamples()
     {
-        return new InvoiceClientUpdateRequest()
+        return new InvoiceAddressUpdateRequest()
         {
             Id = Guid.NewGuid(),
             CompanyName = "Throne Takers",

@@ -25,7 +25,7 @@ public class InvoiceItemRepository : IInvoiceItemRepository
     public async Task<IEnumerable<InvoiceItemEntity>> GetByUser(Guid clientId)
     {
         string sql = @"SELECT * FROM invoice_items
-                        WHERE client_id=@ClientId";
+                        WHERE address_id=@AddressId";
 
         return await _dbConnection.QueryAsync<InvoiceItemEntity>(sql, new { clientId });
     }
@@ -40,8 +40,8 @@ public class InvoiceItemRepository : IInvoiceItemRepository
     public async Task<Guid> Add(InvoiceItemEntity item)
     {
         string sql = @"INSERT INTO invoice_items
-                        (name, price, client_id)
-                        VALUES (@Name, @Price, @ClientId)
+                        (name, price, address_id)
+                        VALUES (@Name, @Price, @AddressId)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);

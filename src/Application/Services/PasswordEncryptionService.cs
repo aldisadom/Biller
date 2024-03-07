@@ -1,13 +1,6 @@
 ﻿using Application.Interfaces;
-using AutoMapper;
 using Domain.IOptions;
-using Domain.Repositories;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Services;
 

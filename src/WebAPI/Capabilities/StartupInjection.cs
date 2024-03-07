@@ -2,7 +2,6 @@
 using Clients;
 using Domain.IOptions;
 using Infrastructure;
-using Microsoft.Extensions.Configuration;
 
 namespace WebAPI.Capabilities;
 

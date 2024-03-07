@@ -1,5 +1,5 @@
-﻿using Domain.Exceptions;
-using Domain.Models;
+﻿using Contracts.Responses;
+using Domain.Exceptions;
 using Newtonsoft.Json;
 using System.Text;
 
@@ -45,12 +45,12 @@ public class BaseHttpClient
 
         try
         {
-            ErrorModel? error = JsonConvert.DeserializeObject<ErrorModel>(body);
+            ErrorResponse? error = JsonConvert.DeserializeObject<ErrorResponse>(body);
 
             if (error is null)
                 errorMessage += $", with body: {body}";
             else
-                errorMessage += $", with message: {error.Message}";
+                errorMessage += $", with message: {error.ErrorMessage}";
 
         }
         catch (Exception)

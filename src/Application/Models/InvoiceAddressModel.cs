@@ -1,21 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿namespace Application.Models;
 
-namespace Contracts.Requests.InvoiceClient;
-
-public record InvoiceClientAddRequest
+public class InvoiceAddressModel
 {
-    [Required]
-    public string CompanyName { get; set; } = string.Empty;
-    [Required]
-    public string Street { get; set; } = string.Empty;
-    [Required]
-    public string City { get; set; } = string.Empty;
-    [Required]
-    public string State { get; set; } = string.Empty;
-    [Required]
-    public string Email { get; set; } = string.Empty;
-    [Required]
-    public string Phone { get; set; } = string.Empty;
-    [Required]
+    public Guid Id { get; set; }
     public Guid UserId { get; set; }
+    public string CompanyName { get; set; } = string.Empty;
+    public string Street { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
 }

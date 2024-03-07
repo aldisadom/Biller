@@ -5,41 +5,41 @@ using System.Data;
 
 namespace Infrastructure.Repository;
 
-public class InvoiceClientRepository : IInvoiceClientRepository
+public class InvoiceAddressRepository : IInvoiceAddressRepository
 {
     private readonly IDbConnection _dbConnection;
 
-    public InvoiceClientRepository(IDbConnection dbConnection)
+    public InvoiceAddressRepository(IDbConnection dbConnection)
     {
         _dbConnection = dbConnection;
     }
 
-    public async Task<InvoiceClientEntity?> Get(Guid id)
+    public async Task<InvoiceAddressEntity?> Get(Guid id)
     {
-        string sql = @"SELECT * FROM invoice_clients
+        string sql = @"SELECT * FROM invoice_addresses
                         WHERE id=@Id";
 
-        return await _dbConnection.QuerySingleOrDefaultAsync<InvoiceClientEntity>(sql, new { id });
+        return await _dbConnection.QuerySingleOrDefaultAsync<InvoiceAddressEntity>(sql, new { id });
     }
 
-    public async Task<IEnumerable<InvoiceClientEntity>> GetByUser(Guid userId)
+    public async Task<IEnumerable<InvoiceAddressEntity>> GetByUser(Guid userId)
     {
-        string sql = @"SELECT * FROM invoice_clients
+        string sql = @"SELECT * FROM invoice_addresses
                         WHERE user_id=@UserId";
 
-        return await _dbConnection.QueryAsync<InvoiceClientEntity>(sql, new { userId });
+        return await _dbConnection.QueryAsync<InvoiceAddressEntity>(sql, new { userId });
     }
 
-    public async Task<IEnumerable<InvoiceClientEntity>> Get()
+    public async Task<IEnumerable<InvoiceAddressEntity>> Get()
     {
-        string sql = @"SELECT * FROM invoice_clients";
+        string sql = @"SELECT * FROM invoice_addresses";
 
-        return await _dbConnection.QueryAsync<InvoiceClientEntity>(sql);
+        return await _dbConnection.QueryAsync<InvoiceAddressEntity>(sql);
     }
 
-    public async Task<Guid> Add(InvoiceClientEntity item)
+    public async Task<Guid> Add(InvoiceAddressEntity item)
     {
-        string sql = @"INSERT INTO invoice_clients
+        string sql = @"INSERT INTO invoice_addresses
                         (user_id, company_name, street, city, email, phone, state)
                         VALUES (@UserId, @CompanyName, @Street, @City, @Email, @Phone, @State)
                         RETURNING id";
@@ -47,9 +47,9 @@ public class InvoiceClientRepository : IInvoiceClientRepository
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);
     }
 
-    public async Task Update(InvoiceClientEntity item)
+    public async Task Update(InvoiceAddressEntity item)
     {
-        string sql = @"UPDATE invoice_clients
+        string sql = @"UPDATE invoice_addresses
                         SET company_name=@CompanyName, street=@Street, city=@City, email=@Email, phone=@Phone, state=@State
                         WHERE id=@Id";
 
@@ -58,7 +58,7 @@ public class InvoiceClientRepository : IInvoiceClientRepository
 
     public async Task Delete(Guid id)
     {
-        string sql = @"DELETE FROM invoice_clients
+        string sql = @"DELETE FROM invoice_addresses
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, new { id });

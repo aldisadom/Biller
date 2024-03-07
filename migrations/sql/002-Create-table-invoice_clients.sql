@@ -1,8 +1,8 @@
 --liquibase formatted sql
 
 -- changeset Aldis:2
--- comment: Create invoice_clients table
-CREATE TABLE invoice_clients (
+-- comment: Create invoice_addresses table
+CREATE TABLE invoice_addresses (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL,
     company_name character varying(100)  NOT NULL,
@@ -18,4 +18,4 @@ CREATE TABLE invoice_clients (
         REFERENCES users(id)
 );
 
--- rollback DROP TABLE invoice_clients;
+-- rollback DROP TABLE invoice_addresses;

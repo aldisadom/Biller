@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Contracts.Requests.InvoiceClient;
+namespace Contracts.Requests.InvoiceAddress;
 
-public record InvoiceClientUpdateRequest
+public record InvoiceAddressUpdateRequest
 {
     [Required]
     public Guid Id { get; set; }

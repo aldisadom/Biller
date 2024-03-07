@@ -33,8 +33,8 @@ public class InvoiceItemService : IInvoiceItemService
 
         if (query is null)
             invoiceItemEntities = await _invoiceItemEntityRepository.Get();
-        else if (query.ClientId is not null)
-            invoiceItemEntities = await _invoiceItemEntityRepository.GetByUser((Guid)query.ClientId);
+        else if (query.AddressId is not null)
+            invoiceItemEntities = await _invoiceItemEntityRepository.GetByUser((Guid)query.AddressId);
         else
             invoiceItemEntities = await _invoiceItemEntityRepository.Get();
 

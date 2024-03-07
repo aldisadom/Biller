@@ -1,18 +1,13 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using Application.Services;
-using AutoFixture;
 using AutoFixture.Xunit2;
 using AutoMapper;
-using Contracts.Requests.User;
 using Domain.Entities;
 
 using Domain.Exceptions;
-using Domain.IOptions;
 using Domain.Repositories;
 using FluentAssertions;
-using Infrastructure.Repository;
-using Microsoft.Extensions.Options;
 using Moq;
 using WebAPI.MappingProfiles;
 

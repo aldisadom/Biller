@@ -3,10 +3,7 @@ using Application.Models;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Exceptions;
-using Domain.IOptions;
 using Domain.Repositories;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace Application.Services;
 
@@ -16,7 +13,7 @@ public class UserService : IUserService
     private readonly IMapper _mapper;
     private readonly IPasswordEncryptionService _passwordEncryptionService;
 
-    public UserService(IUserRepository userRepository,IPasswordEncryptionService passwordEncryptionService, IMapper mapper)
+    public UserService(IUserRepository userRepository, IPasswordEncryptionService passwordEncryptionService, IMapper mapper)
     {
         _userRepository = userRepository;
         _mapper = mapper;
@@ -56,7 +53,7 @@ public class UserService : IUserService
         user.Password = _passwordEncryptionService.Encrypt(user.Password);
 
         UserEntity userEntity = _mapper.Map<UserEntity>(user);
-        
+
         return await _userRepository.Add(userEntity);
     }
 

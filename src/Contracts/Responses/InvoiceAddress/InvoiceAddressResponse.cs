@@ -1,6 +1,6 @@
-﻿namespace Contracts.Responses.InvoiceClient;
+﻿namespace Contracts.Responses.InvoiceAddress;
 
-public record InvoiceClientResponse
+public record InvoiceAddressResponse
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }

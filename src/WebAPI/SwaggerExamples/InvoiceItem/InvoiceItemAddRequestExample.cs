@@ -16,7 +16,7 @@ public class InvoiceItemAddRequestExample : IExamplesProvider<InvoiceItemAddRequ
     {
         return new InvoiceItemAddRequest()
         {
-            ClientId = Guid.NewGuid(),
+            AddressId = Guid.NewGuid(),
             Name = "Iron throne",
             Price = 999999999999999m
         };

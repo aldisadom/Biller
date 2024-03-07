@@ -1,14 +1,11 @@
 using Application.Interfaces;
 using Application.Models;
-using Application.Services;
 using AutoMapper;
-using Contracts.Requests.InvoiceItem;
 using Contracts.Requests.InvoiceItem;
 using Contracts.Responses;
 using Contracts.Responses.InvoiceItem;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
-using WebAPI.SwaggerExamples.InvoiceItem;
 using WebAPI.SwaggerExamples.InvoiceItem;
 
 namespace WebAPI.Controllers;
@@ -64,7 +61,7 @@ public class InvoiceItemController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(InvoiceItemListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceItemListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery]InvoiceItemGetRequest query)
+    public async Task<IActionResult> Get([FromQuery] InvoiceItemGetRequest query)
     {
         IEnumerable<InvoiceItemModel> invoiceItems = await _invoiceItemService.Get(query);
 
