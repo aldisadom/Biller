@@ -22,12 +22,20 @@ public class InvoiceItemRepository : IInvoiceItemRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<InvoiceItemEntity>(sql, new { id });
     }
 
-    public async Task<IEnumerable<InvoiceItemEntity>> GetByUser(Guid clientId)
+    public async Task<IEnumerable<InvoiceItemEntity>> Get(List<Guid> ids)
+    {
+        string sql = @"SELECT * FROM invoice_items
+                        WHERE id=ANY(@Ids)";
+
+        return await _dbConnection.QueryAsync<InvoiceItemEntity>(sql, new { ids });
+    }
+
+    public async Task<IEnumerable<InvoiceItemEntity>> GetByAddressId(Guid addressId)
     {
         string sql = @"SELECT * FROM invoice_items
                         WHERE address_id=@AddressId";
 
-        return await _dbConnection.QueryAsync<InvoiceItemEntity>(sql, new { clientId });
+        return await _dbConnection.QueryAsync<InvoiceItemEntity>(sql, new { addressId });
     }
 
     public async Task<IEnumerable<InvoiceItemEntity>> Get()
@@ -40,8 +48,8 @@ public class InvoiceItemRepository : IInvoiceItemRepository
     public async Task<Guid> Add(InvoiceItemEntity item)
     {
         string sql = @"INSERT INTO invoice_items
-                        (name, price, address_id)
-                        VALUES (@Name, @Price, @AddressId)
+                        (name, price, address_id, quantity)
+                        VALUES (@Name, @Price, @AddressId, @Quantity)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);
@@ -50,7 +58,7 @@ public class InvoiceItemRepository : IInvoiceItemRepository
     public async Task Update(InvoiceItemEntity item)
     {
         string sql = @"UPDATE invoice_items
-                        SET name=@Name, price=@Price
+                        SET name=@Name, price=@Price, quantity=@Quantity
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, item);

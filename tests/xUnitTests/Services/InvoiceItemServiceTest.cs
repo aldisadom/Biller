@@ -1,4 +1,5 @@
-﻿using Application.Models;
+﻿using Application.Interfaces;
+using Application.Models;
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
@@ -68,6 +69,29 @@ public class InvoiceItemServiceTest
 
     [Theory]
     [AutoData]
+    public async Task GetIds_GivenValidids_ReturnsDTOs(List<InvoiceItemEntity> invoiceItemList)
+    {
+        //Arrange
+        List<Guid> ids = invoiceItemList.Select(x => x.Id).ToList();
+
+        _invoiceItemRepositoryMock.Setup(m => m.Get(ids))
+                        .ReturnsAsync(invoiceItemList);
+
+        List<InvoiceItemModel> expectedResult = _mapper.Map<List<InvoiceItemModel>>(invoiceItemList);
+
+        //Act
+        var result = await _invoiceItemService.Get(ids);
+
+        //Assert
+        result.Count().Should().Be(invoiceItemList.Count);
+        result.Should().BeEquivalentTo(expectedResult);
+
+        _invoiceItemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
+        _invoiceItemRepositoryMock.Verify(m => m.GetByAddressId(It.IsAny<Guid>()), Times.Never());
+    }
+
+    [Theory]
+    [AutoData]
     public async Task Get_GivenEmptyQuery_ReturnsDTO(List<InvoiceItemEntity> invoiceItemList)
     {
         //Arrange
@@ -76,7 +100,7 @@ public class InvoiceItemServiceTest
         _invoiceItemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(invoiceItemList);
 
-        _invoiceItemRepositoryMock.Setup(m => m.GetByUser(It.IsAny<Guid>()))
+        _invoiceItemRepositoryMock.Setup(m => m.GetByAddressId(It.IsAny<Guid>()))
                         .ReturnsAsync((List<InvoiceItemEntity>)null!);
 
         List<InvoiceItemModel> expectedResult = _mapper.Map<List<InvoiceItemModel>>(invoiceItemList);
@@ -89,7 +113,7 @@ public class InvoiceItemServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _invoiceItemRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _invoiceItemRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
+        _invoiceItemRepositoryMock.Verify(m => m.GetByAddressId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -101,7 +125,7 @@ public class InvoiceItemServiceTest
         _invoiceItemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync((List<InvoiceItemEntity>)null!);
 
-        _invoiceItemRepositoryMock.Setup(m => m.GetByUser((Guid)request.AddressId!))
+        _invoiceItemRepositoryMock.Setup(m => m.GetByAddressId((Guid)request.AddressId!))
                         .ReturnsAsync(invoiceItemList);
 
         List<InvoiceItemModel> expectedResult = _mapper.Map<List<InvoiceItemModel>>(invoiceItemList);
@@ -113,7 +137,7 @@ public class InvoiceItemServiceTest
         result.Count().Should().Be(invoiceItemList.Count);
 
         _invoiceItemRepositoryMock.Verify(m => m.Get(), Times.Never());
-        _invoiceItemRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Once());
+        _invoiceItemRepositoryMock.Verify(m => m.GetByAddressId(It.IsAny<Guid>()), Times.Once());
     }
 
     [Fact]
@@ -124,7 +148,7 @@ public class InvoiceItemServiceTest
         List<InvoiceItemEntity> invoiceItemList = [];
 
         //Arrange
-        _invoiceItemRepositoryMock.Setup(m => m.GetByUser(It.IsAny<Guid>()))
+        _invoiceItemRepositoryMock.Setup(m => m.GetByAddressId(It.IsAny<Guid>()))
                         .ReturnsAsync(invoiceItemList);
 
         _invoiceItemRepositoryMock.Setup(m => m.Get())
@@ -137,7 +161,7 @@ public class InvoiceItemServiceTest
         result.Should().BeEquivalentTo(new List<InvoiceItemModel>());
 
         _invoiceItemRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _invoiceItemRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
+        _invoiceItemRepositoryMock.Verify(m => m.GetByAddressId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]

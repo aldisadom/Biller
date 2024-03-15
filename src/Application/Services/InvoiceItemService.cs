@@ -27,6 +27,15 @@ public class InvoiceItemService : IInvoiceItemService
         return _mapper.Map<InvoiceItemModel>(invoiceItemEntity);
     }
 
+    public async Task<IEnumerable<InvoiceItemModel>> Get(List<Guid> ids)
+    {
+        IEnumerable<InvoiceItemEntity> invoiceItemEntities;
+
+        invoiceItemEntities = await _invoiceItemEntityRepository.Get(ids);
+
+        return _mapper.Map<IEnumerable<InvoiceItemModel>>(invoiceItemEntities);
+    }
+
     public async Task<IEnumerable<InvoiceItemModel>> Get(InvoiceItemGetRequest query)
     {
         IEnumerable<InvoiceItemEntity> invoiceItemEntities;
@@ -34,7 +43,7 @@ public class InvoiceItemService : IInvoiceItemService
         if (query is null)
             invoiceItemEntities = await _invoiceItemEntityRepository.Get();
         else if (query.AddressId is not null)
-            invoiceItemEntities = await _invoiceItemEntityRepository.GetByUser((Guid)query.AddressId);
+            invoiceItemEntities = await _invoiceItemEntityRepository.GetByAddressId((Guid)query.AddressId);
         else
             invoiceItemEntities = await _invoiceItemEntityRepository.Get();
 
