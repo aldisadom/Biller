@@ -2,8 +2,9 @@
 
 public class InvoiceModel
 {
-    public int FilePath { get; set; }
-    public int InvoiceName { get; set; }
+    public string FilePath { get; set; } = string.Empty;
+    public string FolderPath { get; set; } = string.Empty;
+    public string InvoiceName { get; set; } = string.Empty;
     public int InvoiceNumber { get; set; }
     public DateTime IssueDate { get; set; }
     public DateTime DueDate { get; set; }

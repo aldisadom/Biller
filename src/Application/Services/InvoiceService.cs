@@ -14,7 +14,6 @@ public class InvoiceService : IInvoiceService
     private readonly IInvoiceAddressService _invoiceAddressService;
     private readonly IInvoiceItemService _invoiceItemService;
     private readonly IUserService _userService;
-    private string _fileName = "Invoice.pdf";
 
     private DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     private DocumentSettings GetSettings() => DocumentSettings.Default;
@@ -27,36 +26,39 @@ public class InvoiceService : IInvoiceService
         _invoiceAddressService = invoiceAddressService;
     }
 
-    private async Task<int> GenerateInvoiceNumber(string invoicePath)
+    private async Task GenerateInvoiceNumber(InvoiceModel invoice)
     {
-        return 50;
+        invoice.InvoiceNumber = 50;
     }
 
-    private string GenerateInvoicePath(UserModel user, InvoiceModel invoice)
+    private void GenerateInvoiceFolderPath(UserModel user, InvoiceModel invoice)
     {
-        string filePath = $"Data/Invoices/{user.Email}";
-        if (!Directory.Exists(filePath))
-            Directory.CreateDirectory(filePath);
-
-        return filePath;
+        invoice.FolderPath = $"Data/Invoices/{user.Email}";
+        if (!Directory.Exists(invoice.FolderPath))
+            Directory.CreateDirectory(invoice.FolderPath);
     }
 
-    private void GenerateInvoiceName(string invoicePath, int invoiceNumber, UserModel user)
+    private void GenerateInvoiceName(InvoiceModel invoice)
     {
-        _fileName = $"{invoicePath}/{invoiceNumber}.pdf";
+        invoice.InvoiceName = $"{invoice.InvoiceNumber}.pdf";
+        invoice.FilePath = $"{invoice.FolderPath}/{invoice.InvoiceName}";
     }
 
     private async Task<InvoiceModel> GetInvoiceDetails(InvoiceDataModel invoiceModel)
     {
         InvoiceModel invoice = new ();
         UserModel user = await _userService.Get(invoiceModel.UserId);
-        string invoicePath = GenerateInvoicePath(user);
+        
+        GenerateInvoiceFolderPath(user, invoice);
+        await GenerateInvoiceNumber(invoice);
 
-        invoice.InvoiceNumber = await GenerateInvoiceNumber(invoicePath);
         invoice.IssueDate = DateTime.Now;
+
+        /* fix in nex release */
         invoice.DueDate = DateTime.Now;
         invoice.Comments = string.Empty;
-        await GenerateInvoiceName(invoicePath, user);
+
+        GenerateInvoiceName(invoice);
 
         invoice.SellerAddress = await _invoiceAddressService.Get(invoiceModel.SellerAddressId);
         invoice.CustomerAddress = await _invoiceAddressService.Get(invoiceModel.CustomerAddressId);
@@ -67,7 +69,8 @@ public class InvoiceService : IInvoiceService
 
     public async Task GeneratePDF(InvoiceDataModel invoiceModel)
     {
-        InvoiceDocument document = new (await GetInvoiceDetails(invoiceModel));
-        document.GeneratePdf(_fileName);
+        InvoiceModel invoice = await GetInvoiceDetails(invoiceModel);
+        InvoiceDocument document = new (invoice);
+        document.GeneratePdf(invoice.FilePath);
     }    
 }
