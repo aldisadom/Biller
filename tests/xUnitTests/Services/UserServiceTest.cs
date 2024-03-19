@@ -34,17 +34,6 @@ public class UserServiceTest
         _passwordEncryptionServiceMock = new Mock<IPasswordEncryptionService>();
         _userService = new UserService(_userRepositoryMock.Object, _passwordEncryptionServiceMock.Object, _mapper);
     }
-    /*
-    UserEntity userEntity = await _userRepository.Get(user.Email)
-            ?? throw new UnauthorizedAccessException($"Invalid login data");
-
-    user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password, _passwordSalt);
-
-        if (user.Password != userEntity.Password)
-            throw new UnauthorizedAccessException($"Invalid login data");
-
-        return "fakeToken";
-    */
 
     [Theory]
     [AutoData]

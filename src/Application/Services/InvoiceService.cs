@@ -2,28 +2,26 @@
 using Application.Models;
 using AutoMapper;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System.Reflection;
 
 namespace Application.Services;
 
 public class InvoiceService : IInvoiceService
 {
     private readonly IMapper _mapper;
-    private readonly IInvoiceAddressService _invoiceAddressService;
-    private readonly IInvoiceItemService _invoiceItemService;
+    private readonly ICustomerService _customerService;
+    private readonly IItemService _itemService;
     private readonly IUserService _userService;
 
     private DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     private DocumentSettings GetSettings() => DocumentSettings.Default;
 
-    public InvoiceService(IMapper mapper, IUserService userService, IInvoiceAddressService invoiceAddressService, IInvoiceItemService invoiceItemService)
+    public InvoiceService(IMapper mapper, IUserService userService, ICustomerService CustomerService, IItemService itemService)
     {
         _mapper = mapper;
         _userService = userService;
-        _invoiceItemService = invoiceItemService;
-        _invoiceAddressService = invoiceAddressService;
+        _itemService = itemService;
+        _customerService = CustomerService;
     }
 
     private async Task GenerateInvoiceNumber(InvoiceModel invoice)
@@ -46,9 +44,9 @@ public class InvoiceService : IInvoiceService
 
     private async Task<InvoiceModel> GetInvoiceDetails(InvoiceDataModel invoiceModel)
     {
-        InvoiceModel invoice = new ();
+        InvoiceModel invoice = new();
         UserModel user = await _userService.Get(invoiceModel.UserId);
-        
+
         GenerateInvoiceFolderPath(user, invoice);
         await GenerateInvoiceNumber(invoice);
 
@@ -60,17 +58,17 @@ public class InvoiceService : IInvoiceService
 
         GenerateInvoiceName(invoice);
 
-        invoice.SellerAddress = await _invoiceAddressService.Get(invoiceModel.SellerAddressId);
-        invoice.CustomerAddress = await _invoiceAddressService.Get(invoiceModel.CustomerAddressId);
-        invoice.Items = (await _invoiceItemService.Get(invoiceModel.ItemsId)).ToList();
-        
+        invoice.SellerAddress = await _customerService.Get(invoiceModel.SellerAddressId);
+        invoice.CustomerAddress = await _customerService.Get(invoiceModel.CustomerAddressId);
+        invoice.Items = (await _itemService.Get(invoiceModel.ItemsId)).ToList();
+
         return invoice;
     }
 
     public async Task GeneratePDF(InvoiceDataModel invoiceModel)
     {
         InvoiceModel invoice = await GetInvoiceDetails(invoiceModel);
-        InvoiceDocument document = new (invoice);
+        InvoiceDocument document = new(invoice);
         document.GeneratePdf(invoice.FilePath);
-    }    
+    }
 }

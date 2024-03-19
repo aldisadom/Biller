@@ -1,23 +1,22 @@
-﻿using Contracts.Responses.Customer;
+﻿using Contracts.Requests.Customer;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace WebAPI.SwaggerExamples.InvoiceData;
+namespace WebAPI.SwaggerExamples.Customer;
 
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataGenerateResponseExample : IExamplesProvider<CustomerResponse>
+public class CustomerUpdateRequestExample : IExamplesProvider<CustomerUpdateRequest>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public CustomerResponse GetExamples()
+    public CustomerUpdateRequest GetExamples()
     {
-        return new CustomerResponse()
+        return new CustomerUpdateRequest()
         {
             Id = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
             CompanyName = "Throne Takers",
             Street = "Ocean road 1",
             City = "Casterly Rock",

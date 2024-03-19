@@ -9,8 +9,8 @@ public static class DependencyInjection
 {
     public static void AddApplication(this IServiceCollection services)
     {
-        services.AddScoped<IInvoiceItemService, InvoiceItemService>();
-        services.AddScoped<IInvoiceAddressService, InvoiceAddressService>();
+        services.AddScoped<IItemService, ItemService>();
+        services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IPasswordEncryptionService, PasswordEncryptionService>();
         services.AddScoped<IInvoiceService, InvoiceService>();

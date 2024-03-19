@@ -26,8 +26,6 @@ services:
       PGADMIN_DEFAULT_EMAIL: postgres@postgres.com
       PGADMIN_DEFAULT_PASSWORD: postgres
       PGADMIN_CONFIG_SERVER_MODE: 'False'
-    volumes:
-      - ./migrations/servers.json:/pgadmin4/servers.json
 
   liquibase:
     image: liquibase/liquibase

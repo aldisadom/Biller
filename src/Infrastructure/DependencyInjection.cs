@@ -13,8 +13,8 @@ public static class DependencyInjection
         services.AddScoped<IDbConnection>(sp => new NpgsqlConnection(dbConnectionString));
 
         //inject Repository
-        services.AddScoped<IInvoiceItemRepository, InvoiceItemRepository>();
-        services.AddScoped<IInvoiceAddressRepository, InvoiceAddressRepository>();
+        services.AddScoped<IItemRepository, ItemRepository>();
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
 
         Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;

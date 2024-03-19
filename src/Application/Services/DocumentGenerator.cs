@@ -2,21 +2,15 @@
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Services;
 
 public class AddressComponent : IComponent
 {
     private string Title { get; }
-    private InvoiceAddressModel Address { get; }
+    private CustomerModel Address { get; }
 
-    public AddressComponent(string title, InvoiceAddressModel address)
+    public AddressComponent(string title, CustomerModel address)
     {
         Title = title;
         Address = address;
@@ -134,7 +128,7 @@ public class InvoiceDocument : IDocument
             });
 
             // step 3
-            foreach (InvoiceItemModel item in Model.Items)
+            foreach (ItemModel item in Model.Items)
             {
                 table.Cell().Element(CellStyle).Text((Model.Items.IndexOf(item) + 1).ToString());
                 table.Cell().Element(CellStyle).Text(item.Name);

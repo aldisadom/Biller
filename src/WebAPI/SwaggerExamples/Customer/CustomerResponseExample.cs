@@ -1,12 +1,12 @@
 ﻿using Contracts.Responses.Customer;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace WebAPI.SwaggerExamples.InvoiceData;
+namespace WebAPI.SwaggerExamples.Customer;
 
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataGenerateResponseExample : IExamplesProvider<CustomerResponse>
+public class CustomerResponseExample : IExamplesProvider<CustomerResponse>
 {
     /// <summary>
     /// example
@@ -27,4 +27,3 @@ public class InvoiceDataGenerateResponseExample : IExamplesProvider<CustomerResp
         };
     }
 }
-
