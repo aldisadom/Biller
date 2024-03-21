@@ -101,7 +101,7 @@ public class CustomerServiceTest
         _customerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync((List<CustomerEntity>)null!);
 
-        _customerRepositoryMock.Setup(m => m.GetBySeller((Guid)request.UserId!))
+        _customerRepositoryMock.Setup(m => m.GetBySeller((Guid)request.SellerId!))
                         .ReturnsAsync(CustomerList);
 
         List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(CustomerList);

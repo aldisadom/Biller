@@ -16,7 +16,7 @@ public class CustomerAddRequestExample : IExamplesProvider<CustomerAddRequest>
     {
         return new CustomerAddRequest()
         {
-            UserId = Guid.NewGuid(),
+            SellerId = Guid.NewGuid(),
             CompanyName = "Glass Garden",
             Street = "Main road 5",
             City = "Winterfell",

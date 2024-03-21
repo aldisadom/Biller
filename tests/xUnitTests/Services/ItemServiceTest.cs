@@ -86,7 +86,7 @@ public class ItemServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
-        _itemRepositoryMock.Verify(m => m.GetByAddressId(It.IsAny<Guid>()), Times.Never());
+        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -99,7 +99,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(itemList);
 
-        _itemRepositoryMock.Setup(m => m.GetByAddressId(It.IsAny<Guid>()))
+        _itemRepositoryMock.Setup(m => m.GetByCustomerId(It.IsAny<Guid>()))
                         .ReturnsAsync((List<ItemEntity>)null!);
 
         List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);
@@ -112,7 +112,7 @@ public class ItemServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _itemRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _itemRepositoryMock.Verify(m => m.GetByAddressId(It.IsAny<Guid>()), Times.Never());
+        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -124,7 +124,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync((List<ItemEntity>)null!);
 
-        _itemRepositoryMock.Setup(m => m.GetByAddressId((Guid)request.AddressId!))
+        _itemRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.AddressId!))
                         .ReturnsAsync(itemList);
 
         List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);
@@ -136,7 +136,7 @@ public class ItemServiceTest
         result.Count().Should().Be(itemList.Count);
 
         _itemRepositoryMock.Verify(m => m.Get(), Times.Never());
-        _itemRepositoryMock.Verify(m => m.GetByAddressId(It.IsAny<Guid>()), Times.Once());
+        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Once());
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public class ItemServiceTest
         List<ItemEntity> itemList = [];
 
         //Arrange
-        _itemRepositoryMock.Setup(m => m.GetByAddressId(It.IsAny<Guid>()))
+        _itemRepositoryMock.Setup(m => m.GetByCustomerId(It.IsAny<Guid>()))
                         .ReturnsAsync(itemList);
 
         _itemRepositoryMock.Setup(m => m.Get())
@@ -160,7 +160,7 @@ public class ItemServiceTest
         result.Should().BeEquivalentTo(new List<ItemModel>());
 
         _itemRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _itemRepositoryMock.Verify(m => m.GetByAddressId(It.IsAny<Guid>()), Times.Never());
+        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]

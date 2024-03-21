@@ -17,7 +17,7 @@ public class InvoiceDataGenerateResponseExample : IExamplesProvider<CustomerResp
         return new CustomerResponse()
         {
             Id = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
+            SellerId = Guid.NewGuid(),
             CompanyName = "Throne Takers",
             Street = "Ocean road 1",
             City = "Casterly Rock",

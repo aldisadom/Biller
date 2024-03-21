@@ -15,7 +15,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordEncryptionService, PasswordEncryptionService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
 
-        QuestPDF.Settings.License = LicenseType.Community;
+//        QuestPDF.Settings.License = LicenseType.Community;
     }
 }
 

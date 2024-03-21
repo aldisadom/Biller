@@ -43,7 +43,7 @@ public class ItemService : IItemService
         if (query is null)
             itemEntities = await _itemRepository.Get();
         else if (query.AddressId is not null)
-            itemEntities = await _itemRepository.GetByAddressId((Guid)query.AddressId);
+            itemEntities = await _itemRepository.GetByCustomerId((Guid)query.AddressId);
         else
             itemEntities = await _itemRepository.Get();
 

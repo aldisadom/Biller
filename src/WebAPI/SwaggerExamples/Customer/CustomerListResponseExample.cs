@@ -19,7 +19,7 @@ public class CustomerListResponseExample : IExamplesProvider<CustomerListRespons
         clientList.Customers.Add(new CustomerResponse()
         {
             Id = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
+            SellerId = Guid.NewGuid(),
             CompanyName = "Glass Garden",
             Street = "Main road 5",
             City = "Winterfell",
@@ -31,7 +31,7 @@ public class CustomerListResponseExample : IExamplesProvider<CustomerListRespons
         clientList.Customers.Add(new CustomerResponse()
         {
             Id = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
+            SellerId = Guid.NewGuid(),
             CompanyName = "Throne Takers",
             Street = "Ocean road 1",
             City = "Casterly Rock",

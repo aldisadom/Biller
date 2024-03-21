@@ -1,9 +1,9 @@
 --liquibase formatted sql
 
--- changeset Aldis:12
+-- changeset Aldis:13
 -- comment: Create initial items
 INSERT INTO items
-    (id, address_id, name, price, quantity)
+    (id, customers_id, name, price, quantity)
 VALUES 
     ('113e0369-96aa-4e99-8e1d-0757c7a10a32', 'c85f22c7-1323-423a-a402-9b711a44c119', 'Dragon Eggs', 10000, 10),
     ('b9b7c3db-9ba2-4035-b291-c67f6d33571a', 'c85f22c7-1323-423a-a402-9b711a44c119', 'Dragon Scale Armor', 50000, 10),

@@ -18,4 +18,6 @@ CREATE TABLE sellers (
         REFERENCES users(id)
 );
 
+CREATE INDEX idx_sellers_user_id ON sellers (user_id);
+
 -- rollback DROP TABLE sellers;

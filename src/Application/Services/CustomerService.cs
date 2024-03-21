@@ -33,8 +33,8 @@ public class CustomerService : ICustomerService
 
         if (query is null)
             customerEntities = await _customerRepository.Get();
-        else if (query.UserId is not null)
-            customerEntities = await _customerRepository.GetBySeller((Guid)query.UserId);
+        else if (query.SellerId is not null)
+            customerEntities = await _customerRepository.GetBySeller((Guid)query.SellerId);
         else
             customerEntities = await _customerRepository.Get();
 

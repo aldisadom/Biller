@@ -5,6 +5,8 @@ namespace Contracts.Requests.Customer;
 public record CustomerAddRequest
 {
     [Required]
+    public Guid SellerId { get; set; }
+    [Required]
     public string InvoiceName { get; set; } = string.Empty;
     [Required]
     public string CompanyName { get; set; } = string.Empty;
@@ -18,6 +20,4 @@ public record CustomerAddRequest
     public string Email { get; set; } = string.Empty;
     [Required]
     public string Phone { get; set; } = string.Empty;
-    [Required]
-    public Guid UserId { get; set; }
 }

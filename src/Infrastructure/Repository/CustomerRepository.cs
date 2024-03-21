@@ -40,8 +40,8 @@ public class CustomerRepository : ICustomerRepository
     public async Task<Guid> Add(CustomerEntity item)
     {
         string sql = @"INSERT INTO customers
-                        (user_id, company_name, street, city, email, phone, state, invoice_name)
-                        VALUES (@UserId, @CompanyName, @Street, @City, @Email, @Phone, @State, @InvoiceName)
+                        (seller_id, company_name, street, city, email, phone, state, invoice_name)
+                        VALUES (@SellerId, @CompanyName, @Street, @City, @Email, @Phone, @State, @InvoiceName)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);

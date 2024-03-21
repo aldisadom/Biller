@@ -2,5 +2,5 @@
 
 public record CustomerGetRequest
 {
-    public Guid? UserId { get; set; }
+    public Guid? SellerId { get; set; }
 }

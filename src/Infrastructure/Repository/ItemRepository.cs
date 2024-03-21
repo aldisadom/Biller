@@ -30,12 +30,12 @@ public class ItemRepository : IItemRepository
         return await _dbConnection.QueryAsync<ItemEntity>(sql, new { ids });
     }
 
-    public async Task<IEnumerable<ItemEntity>> GetByAddressId(Guid addressId)
+    public async Task<IEnumerable<ItemEntity>> GetByCustomerId(Guid customerId)
     {
         string sql = @"SELECT * FROM items
-                        WHERE address_id=@AddressId";
+                        WHERE customer_id=@CustomerId";
 
-        return await _dbConnection.QueryAsync<ItemEntity>(sql, new { addressId });
+        return await _dbConnection.QueryAsync<ItemEntity>(sql, new { customerId });
     }
 
     public async Task<IEnumerable<ItemEntity>> Get()

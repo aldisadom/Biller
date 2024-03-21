@@ -3,7 +3,7 @@
 public record CustomerEntity
 {
     public Guid Id { get; set; }
-    public Guid UserId { get; set; }
+    public Guid SellerId { get; set; }
     public string InvoiceName { get; set; } = string.Empty;
     public string CompanyName { get; set; } = string.Empty;
     public string Street { get; set; } = string.Empty;
