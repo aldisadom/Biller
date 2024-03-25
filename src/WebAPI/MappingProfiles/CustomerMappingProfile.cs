@@ -3,6 +3,7 @@ using AutoMapper;
 using Contracts.Requests.Customer;
 using Contracts.Responses.Customer;
 using Domain.Entities;
+using WebAPI.SwaggerExamples.Customer;
 
 namespace WebAPI.MappingProfiles;
 

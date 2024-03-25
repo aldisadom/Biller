@@ -22,7 +22,7 @@ public class CustomerService : ICustomerService
     public async Task<CustomerModel> Get(Guid id)
     {
         CustomerEntity customerEntity = await _customerRepository.Get(id)
-            ?? throw new NotFoundException($"Invoice client:{id} not found");
+            ?? throw new NotFoundException($"Invoice customer:{id} not found");
 
         return _mapper.Map<CustomerModel>(customerEntity);
     }

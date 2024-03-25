@@ -1,0 +1,66 @@
+﻿using Application.Interfaces;
+using Application.Models;
+using AutoMapper;
+using Contracts.Requests.Seller;
+using Domain.Entities;
+using Domain.Exceptions;
+using Domain.Repositories;
+
+namespace Application.Services;
+
+public class SellerService : ISellerService
+{
+    private readonly ISellerRepository _sellerRepository;
+    private readonly IMapper _mapper;
+
+    public SellerService(ISellerRepository sellerRepository, IMapper mapper)
+    {
+        _sellerRepository = sellerRepository;
+        _mapper = mapper;
+    }
+
+    public async Task<SellerModel> Get(Guid id)
+    {
+        SellerEntity sellerEntity = await _sellerRepository.Get(id)
+            ?? throw new NotFoundException($"Invoice seller:{id} not found");
+
+        return _mapper.Map<SellerModel>(sellerEntity);
+    }
+
+    public async Task<IEnumerable<SellerModel>> Get(SellerGetRequest query)
+    {
+        IEnumerable<SellerEntity> sellerEntities;
+
+        if (query is null)
+            sellerEntities = await _sellerRepository.Get();
+        else if (query.UserId is not null)
+            sellerEntities = await _sellerRepository.GetByUser((Guid)query.UserId);
+        else
+            sellerEntities = await _sellerRepository.Get();
+
+        return _mapper.Map<IEnumerable<SellerModel>>(sellerEntities);
+    }
+
+    public async Task<Guid> Add(SellerModel seller)
+    {
+        SellerEntity sellerEntity = _mapper.Map<SellerEntity>(seller);
+
+        return await _sellerRepository.Add(sellerEntity);
+    }
+
+    public async Task Update(SellerModel seller)
+    {
+        await Get(seller.Id);
+
+        SellerEntity sellerEntity = _mapper.Map<SellerEntity>(seller);
+
+        await _sellerRepository.Update(sellerEntity);
+    }
+
+    public async Task Delete(Guid id)
+    {
+        await Get(id);
+
+        await _sellerRepository.Delete(id);
+    }
+}

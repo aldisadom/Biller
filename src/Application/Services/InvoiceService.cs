@@ -10,18 +10,20 @@ public class InvoiceService : IInvoiceService
 {
     private readonly IMapper _mapper;
     private readonly ICustomerService _customerService;
+    private readonly ISellerService _sellerService;
     private readonly IItemService _itemService;
     private readonly IUserService _userService;
 
     private DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     private DocumentSettings GetSettings() => DocumentSettings.Default;
 
-    public InvoiceService(IMapper mapper, IUserService userService, ICustomerService CustomerService, IItemService itemService)
+    public InvoiceService(IMapper mapper, IUserService userService, ICustomerService CustomerService, IItemService itemService, ISellerService sellerService)
     {
         _mapper = mapper;
         _userService = userService;
         _itemService = itemService;
         _customerService = CustomerService;
+        _sellerService = sellerService;
     }
 
     private async Task GenerateInvoiceNumber(InvoiceModel invoice)
@@ -58,8 +60,8 @@ public class InvoiceService : IInvoiceService
 
         GenerateInvoiceName(invoice);
 
-        invoice.SellerAddress = await _customerService.Get(invoiceModel.SellerAddressId);
-        invoice.CustomerAddress = await _customerService.Get(invoiceModel.CustomerAddressId);
+        invoice.Seller = await _sellerService.Get(invoiceModel.SellerAddressId);
+        invoice.Customer = await _customerService.Get(invoiceModel.CustomerAddressId);
         invoice.Items = (await _itemService.Get(invoiceModel.ItemsId)).ToList();
 
         return invoice;

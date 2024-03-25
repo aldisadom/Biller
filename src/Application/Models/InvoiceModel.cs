@@ -8,8 +8,8 @@ public class InvoiceModel
     public int InvoiceNumber { get; set; }
     public DateTime IssueDate { get; set; }
     public DateTime DueDate { get; set; }
-    public CustomerModel SellerAddress { get; set; }
-    public CustomerModel CustomerAddress { get; set; }
+    public SellerModel Seller { get; set; }
+    public CustomerModel Customer { get; set; }
     public List<ItemModel> Items { get; set; }
     public string Comments { get; set; } = string.Empty;
 }

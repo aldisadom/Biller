@@ -3,6 +3,10 @@ using Application.Models;
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
+using Contracts.Requests.Customer;
+using Contracts.Requests.User;
+using Contracts.Responses.Customer;
+using Contracts.Responses.User;
 using Domain.Entities;
 
 using Domain.Exceptions;
@@ -10,6 +14,8 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using WebAPI.MappingProfiles;
+using WebAPI.SwaggerExamples.Customer;
+using WebAPI.SwaggerExamples.User;
 
 namespace xUnitTests.Services;
 
@@ -277,5 +283,65 @@ public class UserServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _userRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public void UserAddRequest_ExampleTest(UserAddRequest user)
+    {
+        //Arrange
+        UserAddRequestExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+
+        //Assert
+        exampleValues.Should().BeOfType<UserAddRequest>();
+        user.Should().BeOfType<UserAddRequest>();
+    }
+
+    [Theory]
+    [AutoData]
+    public void UserUpdateRequest_ExampleTest(UserUpdateRequest user)
+    {
+        //Arrange
+        UserUpdateRequestExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+
+        //Assert
+        exampleValues.Should().BeOfType<UserUpdateRequest>();
+        user.Should().BeOfType<UserUpdateRequest>();
+    }
+
+    [Theory]
+    [AutoData]
+    public void UserListResponse_ExampleTest(UserListResponse user)
+    {
+        //Arrange
+        UserListResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+
+        //Assert
+        exampleValues.Should().BeOfType<UserListResponse>();
+        user.Should().BeOfType<UserListResponse>();
+    }
+
+    [Theory]
+    [AutoData]
+    public void UserResponse_ExampleTest(UserResponse user)
+    {
+        //Arrange
+        UserResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+
+        //Assert
+        exampleValues.Should().BeOfType<UserResponse>();
+        user.Should().BeOfType<UserResponse>();
     }
 }

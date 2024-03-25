@@ -15,6 +15,8 @@ public static class DependencyInjection
         //inject Repository
         services.AddScoped<IItemRepository, ItemRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<ISellerRepository, SellerRepository>();
+
         services.AddScoped<IUserRepository, UserRepository>();
 
         Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;

@@ -11,11 +11,14 @@ public static class DependencyInjection
     {
         services.AddScoped<IItemService, ItemService>();
         services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<ISellerService, SellerService>();
+
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IPasswordEncryptionService, PasswordEncryptionService>();
+
         services.AddScoped<IInvoiceService, InvoiceService>();
 
-//        QuestPDF.Settings.License = LicenseType.Community;
+        QuestPDF.Settings.License = LicenseType.Community;
     }
 }
 

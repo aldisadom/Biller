@@ -3,6 +3,7 @@ using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
 using Contracts.Requests.Customer;
+using Contracts.Responses.Customer;
 using Domain.Entities;
 
 using Domain.Exceptions;
@@ -10,6 +11,7 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using WebAPI.MappingProfiles;
+using WebAPI.SwaggerExamples.Customer;
 
 namespace xUnitTests.Services;
 
@@ -238,5 +240,65 @@ public class CustomerServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public void CustomerAddRequest_ExampleTest(CustomerAddRequest customer)
+    {
+        //Arrange
+        CustomerAddRequestExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+
+        //Assert
+        exampleValues.Should().BeOfType<CustomerAddRequest>();
+        customer.Should().BeOfType<CustomerAddRequest>();
+    }
+
+    [Theory]
+    [AutoData]
+    public void CustomerUpdateRequest_ExampleTest(CustomerUpdateRequest customer)
+    {
+        //Arrange
+        CustomerUpdateRequestExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+
+        //Assert
+        exampleValues.Should().BeOfType<CustomerUpdateRequest>();
+        customer.Should().BeOfType<CustomerUpdateRequest>();
+    }
+
+    [Theory]
+    [AutoData]
+    public void CustomerListResponse_ExampleTest(CustomerListResponse customer)
+    {
+        //Arrange
+        CustomerListResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+
+        //Assert
+        exampleValues.Should().BeOfType<CustomerListResponse>();
+        customer.Should().BeOfType<CustomerListResponse>();
+    }
+
+    [Theory]
+    [AutoData]
+    public void CustomerResponse_ExampleTest(CustomerResponse customer)
+    {
+        //Arrange
+        CustomerResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+
+        //Assert
+        exampleValues.Should().BeOfType<CustomerResponse>();
+        customer.Should().BeOfType<CustomerResponse>();
     }
 }

@@ -5,15 +5,36 @@ using QuestPDF.Infrastructure;
 
 namespace Application.Services;
 
-public class AddressComponent : IComponent
+public class AdressComponent : IComponent
 {
     private string Title { get; }
-    private CustomerModel Address { get; }
+    public string CompanyName { get; set; } = string.Empty;
+    public string Street { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
 
-    public AddressComponent(string title, CustomerModel address)
+    public AdressComponent(string title, CustomerModel customer)
     {
         Title = title;
-        Address = address;
+        CompanyName = customer.CompanyName;
+        Street = customer.Street;
+        City = customer.City;
+        State = customer.State;
+        Email = customer.Email;
+        Phone = customer.Phone;
+    }
+
+    public AdressComponent(string title, SellerModel seller)
+    {
+        Title = title;
+        CompanyName = seller.CompanyName;
+        Street = seller.Street;
+        City = seller.City;
+        State = seller.State;
+        Email = seller.Email;
+        Phone = seller.Phone;
     }
 
     public void Compose(IContainer container)
@@ -24,14 +45,15 @@ public class AddressComponent : IComponent
 
             column.Item().BorderBottom(1).PaddingBottom(5).Text(Title).SemiBold();
 
-            column.Item().Text(Address.CompanyName);
-            column.Item().Text(Address.Street);
-            column.Item().Text($"{Address.City}, {Address.State}");
-            column.Item().Text(Address.Email);
-            column.Item().Text(Address.Phone);
+            column.Item().Text(CompanyName);
+            column.Item().Text(Street);
+            column.Item().Text($"{City}, {State}");
+            column.Item().Text(Email);
+            column.Item().Text(Phone);
         });
     }
 }
+
 
 public class InvoiceDocument : IDocument
 {
@@ -164,9 +186,9 @@ public class InvoiceDocument : IDocument
 
             column.Item().Row(row =>
             {
-                row.RelativeItem().Component(new AddressComponent(_fromText, Model.SellerAddress));
+                row.RelativeItem().Component(new AdressComponent(_fromText, Model.Seller));
                 row.ConstantItem(50);
-                row.RelativeItem().Component(new AddressComponent(_forText, Model.CustomerAddress));
+                row.RelativeItem().Component(new AdressComponent(_forText, Model.Customer));
             });
 
             column.Item().Element(ComposeTable);
