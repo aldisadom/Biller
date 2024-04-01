@@ -40,8 +40,8 @@ public class SellerRepository : ISellerRepository
     public async Task<Guid> Add(SellerEntity item)
     {
         string sql = @"INSERT INTO sellers
-                        (user_id, company_name, street, city, email, phone, state)
-                        VALUES (@UserId, @CompanyName, @Street, @City, @Email, @Phone, @State)
+                        (user_id, company_name, street, city, email, phone, state, company_number, bank_name, bank_number)
+                        VALUES (@UserId, @CompanyName, @Street, @City, @Email, @Phone, @State, @CompanyNumber, @BankName, @BankNumber)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);
@@ -51,7 +51,7 @@ public class SellerRepository : ISellerRepository
     {
         string sql = @"UPDATE sellers
                         SET company_name=@CompanyName, street=@Street, city=@City, email=@Email,
-                            phone=@Phone, state=@State
+                            phone=@Phone, state=@State, company_number=@CompanyNumber, bank_name=@BankName, bank_number=@BankNumber
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, item);

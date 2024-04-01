@@ -10,4 +10,5 @@ public interface ICustomerService
     Task<IEnumerable<CustomerModel>> Get(CustomerGetRequest query);
     Task<CustomerModel> Get(Guid id);
     Task Update(CustomerModel Customer);
+    Task UpdateInvoiceNumber(Guid id);
 }

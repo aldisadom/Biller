@@ -26,22 +26,30 @@ public class InvoiceService : IInvoiceService
         _sellerService = sellerService;
     }
 
-    private async Task GenerateInvoiceNumber(InvoiceModel invoice)
-    {
-        invoice.InvoiceNumber = 50;
-    }
-
     private void GenerateInvoiceFolderPath(UserModel user, InvoiceModel invoice)
     {
-        invoice.FolderPath = $"Data/Invoices/{user.Email}";
+        invoice.FolderPath = $"Data/Invoices/{user.Id}/{invoice.Seller.Id}/{invoice.Customer.Id}";
         if (!Directory.Exists(invoice.FolderPath))
             Directory.CreateDirectory(invoice.FolderPath);
     }
 
     private void GenerateInvoiceName(InvoiceModel invoice)
     {
-        invoice.InvoiceName = $"{invoice.InvoiceNumber}.pdf";
-        invoice.FilePath = $"{invoice.FolderPath}/{invoice.InvoiceName}";
+        invoice.Name = invoice.Customer.InvoiceName+"-";
+
+        if (invoice.Customer.InvoiceNumber < 10)
+            invoice.Name += "00000";
+        else if (invoice.Customer.InvoiceNumber < 100)
+            invoice.Name += "0000";
+        else if (invoice.Customer.InvoiceNumber < 1000)
+            invoice.Name += "000";
+        else if (invoice.Customer.InvoiceNumber < 10000)
+            invoice.Name += "00";
+        else if (invoice.Customer.InvoiceNumber < 100000)
+            invoice.Name += "0";
+
+        invoice.Name += $"{invoice.Customer.InvoiceNumber}.pdf";
+        invoice.FilePath = $"{invoice.FolderPath}/{invoice.Name}";
     }
 
     private async Task<InvoiceModel> GetInvoiceDetails(InvoiceDataModel invoiceModel)
@@ -49,20 +57,19 @@ public class InvoiceService : IInvoiceService
         InvoiceModel invoice = new();
         UserModel user = await _userService.Get(invoiceModel.UserId);
 
-        GenerateInvoiceFolderPath(user, invoice);
-        await GenerateInvoiceNumber(invoice);
-
-        invoice.IssueDate = DateTime.Now;
-
-        /* fix in nex release */
-        invoice.DueDate = DateTime.Now;
-        invoice.Comments = string.Empty;
-
-        GenerateInvoiceName(invoice);
+        await _customerService.UpdateInvoiceNumber(invoiceModel.CustomerAddressId);
 
         invoice.Seller = await _sellerService.Get(invoiceModel.SellerAddressId);
         invoice.Customer = await _customerService.Get(invoiceModel.CustomerAddressId);
         invoice.Items = (await _itemService.Get(invoiceModel.ItemsId)).ToList();
+
+        invoice.IssueDate = DateTime.Now;
+        /* fix in nex release */
+        invoice.DueDate = DateTime.Now;
+        invoice.Comments = string.Empty;
+
+        GenerateInvoiceFolderPath(user, invoice);
+        GenerateInvoiceName(invoice);
 
         return invoice;
     }

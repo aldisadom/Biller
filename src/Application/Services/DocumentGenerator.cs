@@ -101,7 +101,7 @@ public class InvoiceDocument : IDocument
         {
             row.RelativeItem().Column(column =>
             {
-                column.Item().Text($"{_invoiceText} #{Model.InvoiceNumber}").Style(titleStyle);
+                column.Item().Text($"{_invoiceText} #{Model.Name}").Style(titleStyle);
 
                 column.Item().Text(text =>
                 {

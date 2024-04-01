@@ -18,11 +18,14 @@ public class SellerUpdateRequestExample : IExamplesProvider<SellerUpdateRequest>
         {
             Id = Guid.NewGuid(),
             CompanyName = "Throne Takers",
+            CompanyNumber = "KK9865223",
             Street = "Ocean road 1",
             City = "Casterly Rock",
             State = "Westerlands",
             Email = "IronThrone@backstab.com",
-            Phone = "+9623330679"
+            Phone = "+9623330679",
+            BankName = "AB SEB Bankas",
+            BankNumber = "LT08704444444444444",
         };
     }
 }

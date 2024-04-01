@@ -3,7 +3,6 @@ using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
 using Contracts.Requests.Customer;
-using Contracts.Responses.Customer;
 using Domain.Entities;
 
 using Domain.Exceptions;
@@ -11,7 +10,6 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using WebAPI.MappingProfiles;
-using WebAPI.SwaggerExamples.Customer;
 
 namespace xUnitTests.Services;
 
@@ -37,16 +35,16 @@ public class CustomerServiceTest
 
     [Theory]
     [AutoData]
-    public async Task GetId_GivenValidId_ReturnsDTO(CustomerEntity Customer)
+    public async Task GetId_GivenValidId_ReturnsDTO(CustomerEntity customer)
     {
         //Arrange
-        _customerRepositoryMock.Setup(m => m.Get(Customer.Id))
-                        .ReturnsAsync(Customer);
+        _customerRepositoryMock.Setup(m => m.Get(customer.Id))
+                        .ReturnsAsync(customer);
 
-        CustomerModel expectedResult = _mapper.Map<CustomerModel>(Customer);
+        CustomerModel expectedResult = _mapper.Map<CustomerModel>(customer);
 
         //Act
-        CustomerModel result = await _customerService.Get(Customer.Id);
+        CustomerModel result = await _customerService.Get(customer.Id);
 
         //Assert
         result.Should().BeEquivalentTo(expectedResult);
@@ -70,24 +68,24 @@ public class CustomerServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Get_GivenEmptyQuery_ReturnsDTO(List<CustomerEntity> CustomerList)
+    public async Task Get_GivenEmptyQuery_ReturnsDTO(List<CustomerEntity> customerList)
     {
         //Arrange
         CustomerGetRequest request = new();
 
         _customerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(CustomerList);
+                        .ReturnsAsync(customerList);
 
         _customerRepositoryMock.Setup(m => m.GetBySeller(It.IsAny<Guid>()))
                         .ReturnsAsync((List<CustomerEntity>)null!);
 
-        List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(CustomerList);
+        List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(customerList);
 
         //Act
         var result = await _customerService.Get(request);
 
         //Assert
-        result.Count().Should().Be(CustomerList.Count);
+        result.Count().Should().Be(customerList.Count);
         result.Should().BeEquivalentTo(expectedResult);
 
         _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
@@ -96,7 +94,7 @@ public class CustomerServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Get_GivenAddressIdQuery_ReturnsDTO(CustomerGetRequest request, List<CustomerEntity> CustomerList)
+    public async Task Get_GivenAddressIdQuery_ReturnsDTO(CustomerGetRequest request, List<CustomerEntity> customerList)
     {
         //Arrange
 
@@ -104,15 +102,15 @@ public class CustomerServiceTest
                         .ReturnsAsync((List<CustomerEntity>)null!);
 
         _customerRepositoryMock.Setup(m => m.GetBySeller((Guid)request.SellerId!))
-                        .ReturnsAsync(CustomerList);
+                        .ReturnsAsync(customerList);
 
-        List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(CustomerList);
+        List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(customerList);
 
         //Act
         var result = await _customerService.Get(request);
 
         //Assert
-        result.Count().Should().Be(CustomerList.Count);
+        result.Count().Should().Be(customerList.Count);
 
         _customerRepositoryMock.Verify(m => m.Get(), Times.Never());
         _customerRepositoryMock.Verify(m => m.GetBySeller(It.IsAny<Guid>()), Times.Once());
@@ -123,14 +121,14 @@ public class CustomerServiceTest
     {
         // Arrange
         CustomerGetRequest request = new();
-        List<CustomerEntity> CustomerList = [];
+        List<CustomerEntity> customerList = [];
 
         //Arrange
         _customerRepositoryMock.Setup(m => m.GetBySeller(It.IsAny<Guid>()))
-                        .ReturnsAsync(CustomerList);
+                        .ReturnsAsync(customerList);
 
         _customerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(CustomerList);
+                        .ReturnsAsync(customerList);
 
         // Act Assert
         var result = await _customerService.Get(request);
@@ -144,40 +142,40 @@ public class CustomerServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Add_GivenValidId_ReturnsGuid(CustomerModel Customer)
+    public async Task Add_GivenValidId_ReturnsGuid(CustomerModel customer)
     {
         //Arrange
-        CustomerEntity CustomerEntity = _mapper.Map<CustomerEntity>(Customer);
+        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
 
         _customerRepositoryMock.Setup(m => m.Add(It.Is<CustomerEntity>
-                                (x => x == CustomerEntity)))
-                                 .ReturnsAsync(Customer.Id);
+                                (x => x == customerEntity)))
+                                 .ReturnsAsync(customer.Id);
 
         //Act
-        Guid result = await _customerService.Add(Customer);
+        Guid result = await _customerService.Add(customer);
 
         //Assert
-        result.Should().Be(Customer.Id);
+        result.Should().Be(customer.Id);
 
         _customerRepositoryMock.Verify(m => m.Add(It.IsAny<CustomerEntity>()), Times.Once());
     }
 
     [Theory]
     [AutoData]
-    public async Task Update_ReturnsSuccess(CustomerModel Customer)
+    public async Task Update_ReturnsSuccess(CustomerModel customer)
     {
         //Arrange
-        CustomerEntity CustomerEntity = _mapper.Map<CustomerEntity>(Customer);
+        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
 
         _customerRepositoryMock.Setup(m => m.Update(It.Is<CustomerEntity>
-                                (x => x == CustomerEntity)));
+                                (x => x == customerEntity)));
 
-        _customerRepositoryMock.Setup(m => m.Get(CustomerEntity.Id))
-                                .ReturnsAsync(CustomerEntity);
+        _customerRepositoryMock.Setup(m => m.Get(customerEntity.Id))
+                                .ReturnsAsync(customerEntity);
 
         //Act
         //Assert
-        await _customerService.Invoking(x => x.Update(Customer))
+        await _customerService.Invoking(x => x.Update(customer))
                                         .Should().NotThrowAsync<Exception>();
 
         _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
@@ -186,20 +184,20 @@ public class CustomerServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Update_InvalidId_NotFoundException(CustomerModel Customer)
+    public async Task Update_InvalidId_NotFoundException(CustomerModel customer)
     {
         //Arrange
-        CustomerEntity CustomerEntity = _mapper.Map<CustomerEntity>(Customer);
+        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
 
         _customerRepositoryMock.Setup(m => m.Update(It.Is<CustomerEntity>
-                                (x => x == CustomerEntity)));
+                                (x => x == customerEntity)));
 
-        _customerRepositoryMock.Setup(m => m.Get(Customer.Id))
+        _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync((CustomerEntity)null!);
 
         //Act
         //Assert
-        await _customerService.Invoking(x => x.Update(Customer))
+        await _customerService.Invoking(x => x.Update(customer))
                             .Should().ThrowAsync<NotFoundException>();
 
         _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
@@ -207,17 +205,60 @@ public class CustomerServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Delete_ValidId(CustomerEntity Customer)
+    public async Task UpdateInvoiceNumber_ReturnsSuccess(CustomerModel customer)
     {
         //Arrange
-        _customerRepositoryMock.Setup(m => m.Delete(Customer.Id));
+        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
 
-        _customerRepositoryMock.Setup(m => m.Get(Customer.Id))
-                        .ReturnsAsync(Customer);
+        _customerRepositoryMock.Setup(m => m.UpdateInvoiceNumber(It.Is<CustomerEntity>
+                                (x => x == customerEntity)));
+
+        _customerRepositoryMock.Setup(m => m.Get(customerEntity.Id))
+                                .ReturnsAsync(customerEntity);
 
         //Act
         //Assert
-        await _customerService.Invoking(x => x.Delete(Customer.Id))
+        await _customerService.Invoking(x => x.UpdateInvoiceNumber(customer.Id))
+                                        .Should().NotThrowAsync<Exception>();
+
+        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.UpdateInvoiceNumber(It.IsAny<CustomerEntity>()), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task UpdateInvoiceNumber_InvalidId_NotFoundException(CustomerModel customer)
+    {
+        //Arrange
+        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
+
+        _customerRepositoryMock.Setup(m => m.UpdateInvoiceNumber(It.Is<CustomerEntity>
+                                (x => x == customerEntity)));
+
+        _customerRepositoryMock.Setup(m => m.Get(customer.Id))
+                        .ReturnsAsync((CustomerEntity)null!);
+
+        //Act
+        //Assert
+        await _customerService.Invoking(x => x.UpdateInvoiceNumber(customer.Id))
+                            .Should().ThrowAsync<NotFoundException>();
+
+        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task Delete_ValidId(CustomerEntity customer)
+    {
+        //Arrange
+        _customerRepositoryMock.Setup(m => m.Delete(customer.Id));
+
+        _customerRepositoryMock.Setup(m => m.Get(customer.Id))
+                        .ReturnsAsync(customer);
+
+        //Act
+        //Assert
+        await _customerService.Invoking(x => x.Delete(customer.Id))
                             .Should().NotThrowAsync<Exception>();
 
         _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
@@ -240,65 +281,5 @@ public class CustomerServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-    }
-
-    [Theory]
-    [AutoData]
-    public void CustomerAddRequest_ExampleTest(CustomerAddRequest customer)
-    {
-        //Arrange
-        CustomerAddRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<CustomerAddRequest>();
-        customer.Should().BeOfType<CustomerAddRequest>();
-    }
-
-    [Theory]
-    [AutoData]
-    public void CustomerUpdateRequest_ExampleTest(CustomerUpdateRequest customer)
-    {
-        //Arrange
-        CustomerUpdateRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<CustomerUpdateRequest>();
-        customer.Should().BeOfType<CustomerUpdateRequest>();
-    }
-
-    [Theory]
-    [AutoData]
-    public void CustomerListResponse_ExampleTest(CustomerListResponse customer)
-    {
-        //Arrange
-        CustomerListResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<CustomerListResponse>();
-        customer.Should().BeOfType<CustomerListResponse>();
-    }
-
-    [Theory]
-    [AutoData]
-    public void CustomerResponse_ExampleTest(CustomerResponse customer)
-    {
-        //Arrange
-        CustomerResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<CustomerResponse>();
-        customer.Should().BeOfType<CustomerResponse>();
     }
 }

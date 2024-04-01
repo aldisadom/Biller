@@ -42,6 +42,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{F4A54032-C55
 		migrations\sql\011-Insert-initial-sellers.sql = migrations\sql\011-Insert-initial-sellers.sql
 		migrations\sql\012-Insert-initial-customers.sql = migrations\sql\012-Insert-initial-customers.sql
 		migrations\sql\013-Insert-initial-items.sql = migrations\sql\013-Insert-initial-items.sql
+		migrations\sql\020-Alter-table-customers_add_invoice_number_column.sql = migrations\sql\020-Alter-table-customers_add_invoice_number_column.sql
+		migrations\sql\021-Alter-table-customers_add_number_column.sql = migrations\sql\021-Alter-table-customers_add_number_column.sql
+		migrations\sql\022-Alter-table-seller_add_number_and_bank_column.sql = migrations\sql\022-Alter-table-seller_add_number_and_bank_column.sql
+		migrations\sql\023-Alter-table-customers_add_number_column.sql = migrations\sql\023-Alter-table-customers_add_number_column.sql
+		migrations\sql\024-Alter-table-seller_add_number_and_bank_column.sql = migrations\sql\024-Alter-table-seller_add_number_and_bank_column.sql
 	EndProjectSection
 EndProject
 Global

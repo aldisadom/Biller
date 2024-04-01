@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Domain.Entities;
 using Domain.Repositories;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 
 namespace Infrastructure.Repository;
@@ -37,24 +38,33 @@ public class CustomerRepository : ICustomerRepository
         return await _dbConnection.QueryAsync<CustomerEntity>(sql);
     }
 
-    public async Task<Guid> Add(CustomerEntity item)
+    public async Task<Guid> Add(CustomerEntity customer)
     {
         string sql = @"INSERT INTO customers
-                        (seller_id, company_name, street, city, email, phone, state, invoice_name)
-                        VALUES (@SellerId, @CompanyName, @Street, @City, @Email, @Phone, @State, @InvoiceName)
+                        (seller_id, company_name, street, city, email, phone, state, invoice_name, company_number)
+                        VALUES (@SellerId, @CompanyName, @Street, @City, @Email, @Phone, @State, @InvoiceName, @CompanyNumber)
                         RETURNING id";
 
-        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);
+        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, customer);
     }
 
-    public async Task Update(CustomerEntity item)
+    public async Task Update(CustomerEntity customer)
     {
         string sql = @"UPDATE customers
                         SET company_name=@CompanyName, street=@Street, city=@City, email=@Email,
-                            phone=@Phone, state=@State, invoice_name=@InvoiceName
+                            phone=@Phone, state=@State, invoice_name=@InvoiceName, company_number=@CompanyNumber
                         WHERE id=@Id";
 
-        await _dbConnection.ExecuteAsync(sql, item);
+        await _dbConnection.ExecuteAsync(sql, customer);
+    }
+
+    public async Task UpdateInvoiceNumber(CustomerEntity customer)
+    {
+        string sql = @"UPDATE customers
+                        SET invoice_number=@InvoiceNumber
+                        WHERE id=@Id";
+
+        await _dbConnection.ExecuteAsync(sql, customer);
     }
 
     public async Task Delete(Guid id)

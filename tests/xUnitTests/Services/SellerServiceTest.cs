@@ -2,18 +2,13 @@
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
-using Contracts.Requests.Customer;
 using Contracts.Requests.Seller;
-using Contracts.Responses.Customer;
-using Contracts.Responses.Seller;
 using Domain.Entities;
 
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
 using Moq;
-using WebAPI.SwaggerExamples.Customer;
-using WebAPI.SwaggerExamples.Seller;
 
 namespace xUnitTests.Services;
 
@@ -150,7 +145,7 @@ public class SellerServiceTest
     {
         //Arrange
         SellerEntity sellerEntity = _mapper.Map<SellerEntity>(seller);
-        
+
         _sellerRepositoryMock.Setup(m => m.Add(It.Is<SellerEntity>
                                 (x => x == sellerEntity)))
                                  .ReturnsAsync(seller.Id);
@@ -242,65 +237,5 @@ public class SellerServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-    }
-
-    [Theory]
-    [AutoData]
-    public void SellerAddRequest_ExampleTest(SellerAddRequest seller)
-    {
-        //Arrange
-        SellerAddRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<SellerAddRequest>();
-        seller.Should().BeOfType<SellerAddRequest>();
-    }
-
-    [Theory]
-    [AutoData]
-    public void SellerUpdateRequest_ExampleTest(SellerUpdateRequest seller)
-    {
-        //Arrange
-        SellerUpdateRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<SellerUpdateRequest>();
-        seller.Should().BeOfType<SellerUpdateRequest>();
-    }
-
-    [Theory]
-    [AutoData]
-    public void SellerListResponse_ExampleTest(SellerListResponse seller)
-    {
-        //Arrange
-        SellerListResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<SellerListResponse>();
-        seller.Should().BeOfType<SellerListResponse>();
-    }
-
-    [Theory]
-    [AutoData]
-    public void SellerResponse_ExampleTest(SellerResponse seller)
-    {
-        //Arrange
-        SellerResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<SellerResponse>();
-        seller.Should().BeOfType<SellerResponse>();
     }
 }

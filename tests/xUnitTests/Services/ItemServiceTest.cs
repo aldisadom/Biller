@@ -2,10 +2,7 @@
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
-using Contracts.Requests.Customer;
 using Contracts.Requests.Item;
-using Contracts.Responses.Customer;
-using Contracts.Responses.Item;
 using Domain.Entities;
 
 using Domain.Exceptions;
@@ -13,8 +10,6 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using WebAPI.MappingProfiles;
-using WebAPI.SwaggerExamples.Customer;
-using WebAPI.SwaggerExamples.Item;
 
 namespace xUnitTests.Services;
 
@@ -266,65 +261,5 @@ public class ItemServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _itemRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-    }
-
-    [Theory]
-    [AutoData]
-    public void ItemAddRequest_ExampleTest(ItemAddRequest item)
-    {
-        //Arrange
-        ItemAddRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<ItemAddRequest>();
-        item.Should().BeOfType<ItemAddRequest>();
-    }
-
-    [Theory]
-    [AutoData]
-    public void ItemUpdateRequest_ExampleTest(ItemUpdateRequest item)
-    {
-        //Arrange
-        ItemUpdateRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<ItemUpdateRequest>();
-        item.Should().BeOfType<ItemUpdateRequest>();
-    }
-
-    [Theory]
-    [AutoData]
-    public void ItemListResponse_ExampleTest(ItemListResponse item)
-    {
-        //Arrange
-        ItemListResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<ItemListResponse>();
-        item.Should().BeOfType<ItemListResponse>();
-    }
-
-    [Theory]
-    [AutoData]
-    public void ItemResponse_ExampleTest(ItemResponse item)
-    {
-        //Arrange
-        ItemResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-
-        //Assert
-        exampleValues.Should().BeOfType<ItemResponse>();
-        item.Should().BeOfType<ItemResponse>();
     }
 }

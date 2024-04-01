@@ -18,7 +18,9 @@ public class CustomerResponseExample : IExamplesProvider<CustomerResponse>
         {
             Id = Guid.NewGuid(),
             SellerId = Guid.NewGuid(),
+            InvoiceName = "TT",
             CompanyName = "Throne Takers",
+            CompanyNumber = "TT6663325",
             Street = "Ocean road 1",
             City = "Casterly Rock",
             State = "Westerlands",

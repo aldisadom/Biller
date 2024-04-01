@@ -18,11 +18,14 @@ public class SellerAddRequestExample : IExamplesProvider<SellerAddRequest>
         {
             UserId = Guid.NewGuid(),
             CompanyName = "Glass Garden",
+            CompanyNumber = "LL48662",
             Street = "Main road 5",
             City = "Winterfell",
             State = "Wolfswood",
             Email = "MainKeep@winter.com",
-            Phone = "+123450679"
+            Phone = "+123450679",
+            BankName = "AB SEB Bankas",
+            BankNumber = "LT08704444444444444",
         };
     }
 }

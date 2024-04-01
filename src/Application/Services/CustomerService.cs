@@ -57,6 +57,16 @@ public class CustomerService : ICustomerService
         await _customerRepository.Update(customerEntity);
     }
 
+    public async Task UpdateInvoiceNumber(Guid id)
+    {
+        CustomerModel customer = await Get(id);
+
+        customer.InvoiceNumber++;
+
+        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
+        await _customerRepository.UpdateInvoiceNumber(customerEntity);
+    }
+
     public async Task Delete(Guid id)
     {
         await Get(id);

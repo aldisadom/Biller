@@ -11,6 +11,8 @@ public record CustomerUpdateRequest
     [Required]
     public string CompanyName { get; set; } = string.Empty;
     [Required]
+    public string CompanyNumber { get; set; } = string.Empty;
+    [Required]
     public string Street { get; set; } = string.Empty;
     [Required]
     public string City { get; set; } = string.Empty;
