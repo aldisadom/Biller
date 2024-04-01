@@ -15,4 +15,7 @@ CREATE TABLE users_permissions (
         REFERENCES permissions(id)
 );
 
+CREATE INDEX idx_users_permissions_user_id ON users (id);
+CREATE INDEX idx_users_permissions_permission_id ON permissions (id);
+
 -- rollback DROP TABLE users_permissions;

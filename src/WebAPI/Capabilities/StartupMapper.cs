@@ -18,8 +18,9 @@ public static class StartupMapper
         var mapperConfig = new MapperConfiguration(mc =>
         {
             mc.AddProfile(new UserMappingProfile());
-            mc.AddProfile(new InvoiceItemMappingProfile());
-            mc.AddProfile(new InvoiceAddressMappingProfile());
+            mc.AddProfile(new ItemMappingProfile());
+            mc.AddProfile(new CustomerMappingProfile());
+            mc.AddProfile(new SellerMappingProfile());
             mc.AddProfile(new InvoiceDataMappingProfile());
         });
 

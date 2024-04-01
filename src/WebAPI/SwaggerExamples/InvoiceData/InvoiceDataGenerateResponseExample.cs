@@ -1,4 +1,5 @@
-﻿using Contracts.Responses.InvoiceAddress;
+﻿using Contracts.Responses.Customer;
+using Contracts.Responses.InvoiceData;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.InvoiceData;
@@ -6,24 +7,17 @@ namespace WebAPI.SwaggerExamples.InvoiceData;
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataGenerateResponseExample : IExamplesProvider<InvoiceAddressResponse>
+public class InvoiceDataGenerateResponseExample : IExamplesProvider<InvoiceDataGenerateResponse>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public InvoiceAddressResponse GetExamples()
+    public InvoiceDataGenerateResponse GetExamples()
     {
-        return new InvoiceAddressResponse()
+        return new InvoiceDataGenerateResponse()
         {
-            Id = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
-            CompanyName = "Throne Takers",
-            Street = "Ocean road 1",
-            City = "Casterly Rock",
-            State = "Westerlands",
-            Email = "IronThrone@backstab.com",
-            Phone = "+9623330679"
+            FileName = "50_invoice.pdf"
         };
     }
 }

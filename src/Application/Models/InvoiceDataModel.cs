@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Application.Models;
+﻿namespace Application.Models;
 
 public class InvoiceDataModel
 {
@@ -12,4 +6,6 @@ public class InvoiceDataModel
     public Guid CustomerAddressId { get; set; }
     public Guid UserId { get; set; }
     public List<Guid> ItemsId { get; set; } = new();
+    public string Comments { get; set; } = string.Empty;
+    public DateTime DueDate { get; set; }
 }
