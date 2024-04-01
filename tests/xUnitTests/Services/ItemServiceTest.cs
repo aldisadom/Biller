@@ -124,7 +124,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync((List<ItemEntity>)null!);
 
-        _itemRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.AddressId!))
+        _itemRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.CustomerId!))
                         .ReturnsAsync(itemList);
 
         List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);

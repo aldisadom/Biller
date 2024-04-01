@@ -48,8 +48,8 @@ public class ItemRepository : IItemRepository
     public async Task<Guid> Add(ItemEntity item)
     {
         string sql = @"INSERT INTO items
-                        (name, price, address_id, quantity)
-                        VALUES (@Name, @Price, @AddressId, @Quantity)
+                        (name, price, customer_id, quantity)
+                        VALUES (@Name, @Price, @CustomerId, @Quantity)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);

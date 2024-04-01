@@ -9,7 +9,7 @@ public record ItemAddRequest
     [Required]
     public decimal Price { get; set; }
     [Required]
-    public Guid AddressId { get; set; }
+    public Guid CustomerId { get; set; }
     [Required]
     public int Quantity { get; set; }
 }

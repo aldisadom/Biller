@@ -16,7 +16,7 @@ public class ItemAddRequestExample : IExamplesProvider<ItemAddRequest>
     {
         return new ItemAddRequest()
         {
-            AddressId = Guid.NewGuid(),
+            CustomerId = Guid.NewGuid(),
             Name = "Iron throne",
             Price = 999999999999999m
         };

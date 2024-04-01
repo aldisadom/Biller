@@ -16,7 +16,7 @@ public class ItemResponseExample : IExamplesProvider<ItemResponse>
     {
         return new ItemResponse()
         {
-            AddressId = Guid.NewGuid(),
+            CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Iron throne",
             Price = 999999999999999m
