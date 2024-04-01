@@ -18,7 +18,7 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
 
         ItemListResponse.Items.Add(new ItemResponse()
         {
-            AddressId = Guid.NewGuid(),
+            CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Iron throne",
             Price = 999999999999999m
@@ -26,7 +26,7 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
 
         ItemListResponse.Items.Add(new ItemResponse()
         {
-            AddressId = Guid.NewGuid(),
+            CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Lanister backstab",
             Price = 0.01m
@@ -34,7 +34,7 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
 
         ItemListResponse.Items.Add(new ItemResponse()
         {
-            AddressId = Guid.NewGuid(),
+            CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Hourly rate",
             Price = 10.00m

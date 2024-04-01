@@ -67,3 +67,7 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  frontend:
+    name: billio_network  
