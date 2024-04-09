@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Contracts.Responses.Seller;
+﻿namespace Contracts.Responses.Seller;
 
 public record SellerResponse
 {

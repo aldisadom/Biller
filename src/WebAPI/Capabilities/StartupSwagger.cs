@@ -9,9 +9,6 @@ namespace WebAPI.Capabilities;
 /// </summary>
 public static class StartupSwagger
 {
-    private static readonly string _apiName = "Billio";
-    private static readonly string _apiVersion = "v1";
-
     /// <summary>
     /// Configure swagger services 
     /// </summary>
@@ -24,10 +21,9 @@ public static class StartupSwagger
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         services.AddEndpointsApiExplorer();
-
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc(_apiVersion, new OpenApiInfo { Title = _apiName, Version = _apiVersion });
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 
             c.ExampleFilters();
             // Set the comments path for the Swagger JSON and UI.
@@ -57,7 +53,7 @@ public static class StartupSwagger
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc(_apiVersion, new OpenApiInfo { Title = _apiName, Version = _apiVersion });
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 
             c.ExampleFilters();
             // Set the comments path for the Swagger JSON and UI.
@@ -97,7 +93,7 @@ public static class StartupSwagger
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{_apiName} {_apiVersion}");
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API v1");
         });
 
         return app;

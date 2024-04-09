@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Contracts.Responses.Customer;
+﻿namespace Contracts.Responses.Customer;
 
 public record CustomerResponse
 {

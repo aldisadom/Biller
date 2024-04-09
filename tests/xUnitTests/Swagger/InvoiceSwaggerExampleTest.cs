@@ -11,7 +11,7 @@ public class InvoiceSwaggerExampleTest
     public void InvoiceDataGenerateRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataGenerateRequestExample example = new();
+        InvoiceDataAddRequestExample example = new();
         //Act
         var exampleValues = example.GetExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
@@ -24,7 +24,7 @@ public class InvoiceSwaggerExampleTest
     public void InvoiceDataGenerateResponseExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataGenerateResponseExample example = new();
+        InvoiceDataAddResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();

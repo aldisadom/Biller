@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Application.Models;
+﻿namespace Application.Models;
 
 public class SellerModel
 {

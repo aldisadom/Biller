@@ -4,5 +4,5 @@ namespace Application.Interfaces;
 
 public interface IInvoiceService
 {
-    Task GeneratePDF(InvoiceDataModel invoiceModel);
+    Task<Guid> Add(InvoiceDataModel invoiceModel);
 }

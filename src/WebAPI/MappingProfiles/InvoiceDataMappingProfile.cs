@@ -15,6 +15,6 @@ public class InvoiceDataMappingProfile : Profile
     public InvoiceDataMappingProfile()
     {
         //source, destination
-        CreateMap<InvoiceDataGenerateRequest, InvoiceDataModel>(MemberList.Source);
+        CreateMap<InvoiceItemRequest, InvoiceItemModel>(MemberList.Source);
     }
 }

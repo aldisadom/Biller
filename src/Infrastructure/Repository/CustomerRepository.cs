@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Domain.Entities;
 using Domain.Repositories;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
 
 namespace Infrastructure.Repository;

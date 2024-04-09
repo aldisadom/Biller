@@ -6,7 +6,7 @@ public record SellerAddRequest
 {
     [Required]
     public Guid UserId { get; set; }
-    [Required] 
+    [Required]
     public string CompanyNumber { get; set; } = string.Empty;
     [Required]
     public string CompanyName { get; set; } = string.Empty;

@@ -3,11 +3,10 @@ using Application.Models;
 using AutoMapper;
 using Contracts.Requests.InvoiceData;
 using Contracts.Responses;
-using Contracts.Responses.Item;
+using Contracts.Responses.InvoiceData;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using WebAPI.SwaggerExamples.InvoiceData;
-using WebAPI.SwaggerExamples.Item;
 
 namespace WebAPI.Controllers;
 
@@ -41,16 +40,30 @@ public class InvoiceController : ControllerBase
     /// </summary>
     /// <returns>Invoice file name</returns>
     [HttpPut]
-    [ProducesResponseType(typeof(ItemResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemResponseExample))]
-    [SwaggerRequestExample(typeof(InvoiceDataGenerateRequest), typeof(InvoiceDataGenerateRequestExample))]
+    [ProducesResponseType(typeof(InvoiceDataAddResponse), StatusCodes.Status200OK)]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataAddResponseExample))]
+    [SwaggerRequestExample(typeof(InvoiceDataAddRequest), typeof(InvoiceDataAddRequestExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Generate(InvoiceDataGenerateRequest invoiceData)
+    public async Task<IActionResult> Add(InvoiceDataAddRequest invoiceData)
     {
-        InvoiceDataModel invoiceDataModel = _mapper.Map<InvoiceDataModel>(invoiceData);
+        InvoiceDataModel invoiceDataModel = new()
+        {
+            SellerId = invoiceData.SellerId,
+            CustomerId = invoiceData.CustomerId,
+            UserId = invoiceData.UserId,
+            DueDate = invoiceData.DueDate,
+            Items = invoiceData.Items.Select(i => _mapper.Map<InvoiceItemModel>(i)).ToList(),
 
-        await _invoiceService.GeneratePDF(invoiceDataModel);
+            Comments = invoiceData.Comments,
+            CreatedDate = invoiceData.CreatedDate,
+        };
 
-        return Ok();
+        //if (invoiceData.CreatedDate is null)
+
+        InvoiceDataAddResponse result = new()
+        {
+            Id = await _invoiceService.Add(invoiceDataModel),
+        };
+        return CreatedAtAction(nameof(Add), result);
     }
 }
