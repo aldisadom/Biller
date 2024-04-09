@@ -38,6 +38,7 @@ public class InvoiceDataAddRequestExample : IExamplesProvider<InvoiceDataAddRequ
                     Comments = "With defects"
                 }
             },
+            Comments = "Not necessary",
             DueDate = DateTime.Now.AddDays(10)
         };
     }
