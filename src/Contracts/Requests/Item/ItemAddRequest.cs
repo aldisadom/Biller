@@ -11,5 +11,5 @@ public record ItemAddRequest
     [Required]
     public Guid CustomerId { get; set; }
     [Required]
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }

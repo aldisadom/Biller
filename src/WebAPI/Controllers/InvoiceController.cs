@@ -1,10 +1,12 @@
 ﻿using Application.Interfaces;
 using Application.Models;
+using Application.Services;
 using AutoMapper;
 using Contracts.Requests.InvoiceData;
 using Contracts.Responses;
 using Contracts.Responses.InvoiceData;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Swashbuckle.AspNetCore.Filters;
 using WebAPI.SwaggerExamples.InvoiceData;
 
@@ -14,7 +16,7 @@ namespace WebAPI.Controllers;
 /// This is a invoice controller
 /// </summary>
 [ApiController]
-[Route("[controller]")]
+[Route("invoices")]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class InvoiceController : ControllerBase
 {
@@ -36,34 +38,123 @@ public class InvoiceController : ControllerBase
     }
 
     /// <summary>
+    /// Get one invoice
+    /// </summary>
+    /// <param name="id">Invoices unique ID</param>
+    /// <returns>invoice data</returns>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(InvoiceDataResponse), StatusCodes.Status200OK)]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataResponseExample))]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Get(Guid id)
+    {
+        InvoiceDataModel invoice = await _invoiceService.Get(id);
+
+        InvoiceDataResponse result = _mapper.Map<InvoiceDataResponse>(invoice);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Gets all invoices
+    /// </summary>
+    /// <param name="query">filtering parameters</param>
+    /// <returns>list of invoices</returns>
+    [HttpGet]
+    [ProducesResponseType(typeof(InvoiceDataListResponse), StatusCodes.Status200OK)]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataListResponseExample))]
+    public async Task<IActionResult> Get([FromQuery] InvoiceDataGetRequest query)
+    {
+        IEnumerable<InvoiceDataModel> invoicesData = await _invoiceService.Get(query);
+
+        InvoiceDataListResponse result = new()
+        {
+            Invoices = invoicesData.Select(i => _mapper.Map<InvoiceDataResponse>(i)).ToList()
+        };
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Create invoice
     /// </summary>
     /// <returns>Invoice file name</returns>
-    [HttpPut]
-    [ProducesResponseType(typeof(InvoiceDataAddResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataAddResponseExample))]
+    [HttpPost]
     [SwaggerRequestExample(typeof(InvoiceDataAddRequest), typeof(InvoiceDataAddRequestExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Add(InvoiceDataAddRequest invoiceData)
+    public async Task<IActionResult> Add(InvoiceDataAddRequest invoiceDataRequest)
     {
-        InvoiceDataModel invoiceDataModel = new()
+        InvoiceDataModel invoiceData = new()
         {
-            SellerId = invoiceData.SellerId,
-            CustomerId = invoiceData.CustomerId,
-            UserId = invoiceData.UserId,
-            DueDate = invoiceData.DueDate,
-            Items = invoiceData.Items.Select(i => _mapper.Map<InvoiceItemModel>(i)).ToList(),
+            Seller = new SellerModel{
+                Id = invoiceDataRequest.SellerId 
+            },
+            Customer = new CustomerModel
+            {
+                Id = invoiceDataRequest.CustomerId
+            },
+            User = new UserModel
+            {
+                Id = invoiceDataRequest.UserId
+            },
+            DueDate = invoiceDataRequest.DueDate,
+            Items = invoiceDataRequest.Items.Select(i => _mapper.Map<InvoiceItemModel>(i)).ToList(),
 
-            Comments = invoiceData.Comments,
-            CreatedDate = invoiceData.CreatedDate,
+            Comments = invoiceDataRequest.Comments,
+            CreatedDate = invoiceDataRequest.CreatedDate,
         };
 
-        //if (invoiceData.CreatedDate is null)
-
-        InvoiceDataAddResponse result = new()
+        AddResponse result = new()
         {
-            Id = await _invoiceService.Add(invoiceDataModel),
+            Id = await _invoiceService.Add(invoiceData),
         };
         return CreatedAtAction(nameof(Add), result);
+    }
+
+    /// <summary>
+    /// Get invoice pdf
+    /// </summary>
+    /// <param name="id">Invoices unique ID</param>
+    /// <returns>invoice pdf</returns>
+    [HttpPost("generate")]
+    [ProducesResponseType(typeof(InvoiceDataResponse), StatusCodes.Status200OK)]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataResponseExample))]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GeneratePDF(Guid id)
+    {
+        await _invoiceService.GeneratePDF(id);
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Update invoice
+    /// </summary>
+    /// <param name="invoice">invoice data to update</param>
+    /// <returns></returns>
+    [HttpPut]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [SwaggerRequestExample(typeof(InvoiceDataUpdateRequest), typeof(InvoiceDataUpdateRequestExample))]
+    public async Task<IActionResult> Update(InvoiceDataUpdateRequest invoice)
+    {
+        InvoiceDataModel invoiceData = _mapper.Map<InvoiceDataModel>(invoice);
+
+        await _invoiceService.Update(invoiceData);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Delete invoice
+    /// </summary>
+    /// <param name="id">invoice id to delete</param>
+    /// <returns></returns>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        await _invoiceService.Delete(id);
+
+        return NoContent();
     }
 }

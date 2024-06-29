@@ -7,6 +7,6 @@ public class InvoiceItemRequest
     [Required]
     public Guid Id { get; set; }
     [Required]
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
     public string Comments { get; set; } = string.Empty;
 }

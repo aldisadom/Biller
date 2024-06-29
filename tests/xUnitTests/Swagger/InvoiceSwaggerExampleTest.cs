@@ -8,7 +8,7 @@ public class InvoiceSwaggerExampleTest
 {
 
     [Fact]
-    public void InvoiceDataGenerateRequestExample_ReturnEmptyList()
+    public void InvoiceDataAddRequestExample_ReturnEmptyList()
     {
         //Arrange
         InvoiceDataAddRequestExample example = new();
@@ -21,10 +21,38 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceDataGenerateResponseExample_ReturnEmptyList()
+    public void InvoiceDataUpdateRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataAddResponseExample example = new();
+        InvoiceDataUpdateRequestExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
+
+        //Assert
+        nullProperties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void InvoiceDataListResponseExample_ReturnEmptyList()
+    {
+        //Arrange
+        InvoiceDataListResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
+
+        //Assert
+        nullProperties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void InvoiceDataResponseExample_ReturnEmptyList()
+    {
+        //Arrange
+        InvoiceDataResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();

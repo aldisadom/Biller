@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using WebAPI.SwaggerExamples.InvoiceData;
 using WebAPI.SwaggerExamples.Item;
 using xUnitTests.Helpers;
 
@@ -37,7 +38,7 @@ public class ItemSwaggerExampleTest
     public void ItemListResponseExample_ReturnEmptyList()
     {
         //Arrange
-        ItemListResponseExample example = new();
+        InvoiceDataListResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();

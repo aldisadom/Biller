@@ -12,7 +12,7 @@ public class InvoiceDataAddRequest
     public Guid UserId { get; set; }
     [Required]
     [MinLength(1)]
-    public List<InvoiceItemRequest> Items { get; set; } = new();
+    public List<InvoiceItemRequest> Items { get; set; } = [];
     public string Comments { get; set; } = string.Empty;
     [Required]
     public DateTime DueDate { get; set; }

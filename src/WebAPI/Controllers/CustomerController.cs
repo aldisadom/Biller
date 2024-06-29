@@ -14,7 +14,7 @@ namespace WebAPI.Controllers;
 /// This is a Customer controller
 /// </summary>
 [ApiController]
-[Route("[controller]")]
+[Route("customers")]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class CustomerController : ControllerBase
 {

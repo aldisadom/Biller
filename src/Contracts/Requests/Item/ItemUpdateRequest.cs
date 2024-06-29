@@ -11,5 +11,5 @@ public record ItemUpdateRequest
     [Required]
     public decimal Price { get; set; }
     [Required]
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
 }

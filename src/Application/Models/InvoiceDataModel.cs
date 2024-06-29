@@ -2,13 +2,8 @@
 
 public class InvoiceDataModel
 {
-    public Guid CustomerId { get; set; }
-    public Guid SellerId { get; set; }
-    public Guid UserId { get; set; }
-    public string FilePath { get; set; } = string.Empty;
-    public string FolderPath { get; set; } = string.Empty;
+    public Guid Id { get; set; }
     public string Number { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
     public UserModel? User { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime DueDate { get; set; }
@@ -16,5 +11,23 @@ public class InvoiceDataModel
     public CustomerModel? Customer { get; set; }
     public List<InvoiceItemModel>? Items { get; set; }
     public string? Comments { get; set; }
-    public decimal TotalPrice { get; set; }
+
+    public decimal CalculateTotal()
+    {
+        decimal total = 0;
+        foreach (InvoiceItemModel item in Items!)
+            total += item.Price * item.Quantity;
+        
+        return total;
+    }
+
+    public string GenerateFolderLocation()
+    {
+        return $"Data/Invoices/{User!.Id}/{Seller!.Id}/{Customer!.Id}";
+    }
+
+    public string GenerateFileLocation()
+    {
+        return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{Number}.pdf";
+    }
 }

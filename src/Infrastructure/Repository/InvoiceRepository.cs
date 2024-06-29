@@ -22,12 +22,20 @@ public class InvoiceRepository : IInvoiceRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<InvoiceDataEntity>(sql, new { id });
     }
 
-    public async Task<IEnumerable<InvoiceDataEntity>> Get(List<Guid> ids)
+    public async Task<IEnumerable<InvoiceDataEntity>> GetByUserId(Guid userId)
     {
         string sql = @"SELECT * FROM invoices
-                        WHERE id=ANY(@Ids)";
+                        WHERE user_id=@UserId";
 
-        return await _dbConnection.QueryAsync<InvoiceDataEntity>(sql, new { ids });
+        return await _dbConnection.QueryAsync<InvoiceDataEntity>(sql, new { userId });
+    }
+
+    public async Task<IEnumerable<InvoiceDataEntity>> GetBySellerId(Guid sellerId)
+    {
+        string sql = @"SELECT * FROM invoices
+                        WHERE seller_id=@SellerId";
+
+        return await _dbConnection.QueryAsync<InvoiceDataEntity>(sql, new { sellerId });
     }
 
     public async Task<IEnumerable<InvoiceDataEntity>> GetByCustomerId(Guid customerId)

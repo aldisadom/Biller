@@ -4,7 +4,7 @@
 -- comment: Alter invoices table, add all needed columns
 -- comment: Create invoices table
 
-DROP TABLE invoices;
+DROP TABLE IF EXISTS invoices;
 
 CREATE TABLE invoices (
     id uuid NOT NULL DEFAULT gen_random_uuid(),

@@ -1,4 +1,5 @@
-﻿using Contracts.Responses.Item;
+﻿using Contracts.Responses.InvoiceData;
+using Contracts.Responses.Item;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.Item;
@@ -14,9 +15,9 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
     /// <returns></returns>
     public ItemListResponse GetExamples()
     {
-        ItemListResponse ItemListResponse = new();
+        ItemListResponse itemListResponse = new();
 
-        ItemListResponse.Items.Add(new ItemResponse()
+        itemListResponse.Items.Add(new ItemResponse()
         {
             CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
@@ -24,7 +25,7 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
             Price = 999999999999999m
         });
 
-        ItemListResponse.Items.Add(new ItemResponse()
+        itemListResponse.Items.Add(new ItemResponse()
         {
             CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
@@ -32,7 +33,7 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
             Price = 0.01m
         });
 
-        ItemListResponse.Items.Add(new ItemResponse()
+        itemListResponse.Items.Add(new ItemResponse()
         {
             CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
@@ -40,6 +41,6 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
             Price = 10.00m
         });
 
-        return ItemListResponse;
+        return itemListResponse;
     }
 }

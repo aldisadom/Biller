@@ -19,8 +19,8 @@ public class InvoiceDataAddRequestExample : IExamplesProvider<InvoiceDataAddRequ
             UserId = Guid.Parse("2271c7b3-69ed-4e0c-a820-ecafbd57ac80"),
             SellerId = Guid.Parse("c85f22c7-1323-423a-a402-9b711a44c119"),
             CustomerId = Guid.Parse("b1f796e8-d23d-4b8b-b464-5e121e4385c7"),
-            Items = new()
-            {
+            Items =
+            [
                 new()
                 {
                     Id = Guid.Parse("f8ff867d-8e7f-4c4d-b7f3-0f7ac1ecfd43"),
@@ -37,7 +37,7 @@ public class InvoiceDataAddRequestExample : IExamplesProvider<InvoiceDataAddRequ
                     Quantity = 5,
                     Comments = "With defects"
                 }
-            },
+            ],
             Comments = "Not necessary",
             DueDate = DateTime.Now.AddDays(10)
         };

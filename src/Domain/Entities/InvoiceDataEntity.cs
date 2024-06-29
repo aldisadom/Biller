@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities;
 
-public class InvoiceDataEntity
+public record InvoiceDataEntity
 {
     public Guid Id { get; set; }
     public Guid CustomerId { get; set; }

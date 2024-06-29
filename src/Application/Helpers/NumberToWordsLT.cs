@@ -102,7 +102,7 @@ public static class NumberToWordsLT
         tmpPrice = (int)(price % 1000);
         tmpText = string.Empty;
 
-        if (tmpPrice % 100 > 10 && tmpPrice % 100 < 20 || tmpPrice > 0 && tmpPrice % 10 == 0)
+        if ((tmpPrice % 100 > 10 && tmpPrice % 100 < 20) || (tmpPrice > 0 && tmpPrice % 10 == 0))
             tmpText = HundredsSplit(tmpPrice) + " tūkstančių ";
         else if (tmpPrice % 10 == 1)
             tmpText = HundredsSplit(tmpPrice) + " tūkstantis ";
@@ -114,7 +114,7 @@ public static class NumberToWordsLT
         tmpPrice = (int)(price % 1000);
         tmpText = string.Empty;
 
-        if (tmpPrice % 100 > 10 && tmpPrice % 100 < 20 || tmpPrice > 0 && tmpPrice % 10 == 0)
+        if ((tmpPrice % 100 > 10 && tmpPrice % 100 < 20) || (tmpPrice > 0 && tmpPrice % 10 == 0))
             tmpText = HundredsSplit(tmpPrice) + " milijonų ";
         else if (tmpPrice % 10 == 1)
             tmpText = HundredsSplit(tmpPrice) + " milijonas ";

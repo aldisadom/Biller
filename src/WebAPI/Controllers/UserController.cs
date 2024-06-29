@@ -14,7 +14,7 @@ namespace WebAPI.Controllers;
 /// This is a user controller
 /// </summary>
 [ApiController]
-[Route("[controller]")]
+[Route("users")]
 [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
 public class UserController : ControllerBase
 {

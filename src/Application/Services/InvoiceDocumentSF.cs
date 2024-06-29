@@ -127,7 +127,7 @@ public class InvoiceDocument : IDocument
             row.RelativeItem().Column(column =>
             {
                 column.Item().AlignCenter().Text($"SĄSKAITA FAKTŪRA").Style(titleStyle);
-                column.Item().AlignCenter().Text($"Serija {Model.Name} Nr. {Model.Number}");
+                column.Item().AlignCenter().Text($"Serija {Model.Customer!.InvoiceName} Nr. {Model.Number}");
             });
             //place for image
             //            row.ConstantItem(100).Height(50).Placeholder();
@@ -217,7 +217,7 @@ public class InvoiceDocument : IDocument
 
                 table.Cell().Element(CellStyle).AlignRight().Text($"{item.Price}");
                 table.Cell().Element(CellStyle).AlignRight().Text($"{item.Quantity}");
-                table.Cell().Element(CellStyle).AlignRight().Text($"{item.TotalPrice}");
+                table.Cell().Element(CellStyle).AlignRight().Text($"{item.CalculateTotal()}");
 
                 static IContainer CellStyle(IContainer container)
                 {
@@ -234,9 +234,9 @@ public class InvoiceDocument : IDocument
     {
         container.ShowEntire().PaddingTop(5).Column(column =>
         {
-            column.Item().AlignRight().Text($"Bendra suma: {Model.TotalPrice}€").FontSize(14);
+            column.Item().AlignRight().Text($"Bendra suma: {Model.CalculateTotal()}€").FontSize(14);
             column.Spacing(5);
-            column.Item().Text($"Suma žodžiais: {NumberToWordsLT.Decode(Model.TotalPrice)}");
+            column.Item().Text($"Suma žodžiais: {NumberToWordsLT.Decode(Model.CalculateTotal())}");
         });
     }
 
