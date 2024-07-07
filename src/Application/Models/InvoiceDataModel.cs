@@ -17,7 +17,7 @@ public class InvoiceDataModel
         decimal total = 0;
         foreach (InvoiceItemModel item in Items!)
             total += item.Price * item.Quantity;
-        
+
         return total;
     }
 
@@ -29,5 +29,10 @@ public class InvoiceDataModel
     public string GenerateFileLocation()
     {
         return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{Number}.pdf";
+    }
+
+    public string GenerateFileLocation(string modifier)
+    {
+        return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{Number}-{modifier}.pdf";
     }
 }

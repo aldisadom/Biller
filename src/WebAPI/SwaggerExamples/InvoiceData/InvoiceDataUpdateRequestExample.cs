@@ -1,10 +1,7 @@
-﻿using Contracts.Requests.InvoiceData;
-using Contracts.Requests.Item;
-using Contracts.Responses.Customer;
-using Contracts.Responses.InvoiceData;
-using Contracts.Responses.Seller;
+﻿using Contracts.Requests.Customer;
+using Contracts.Requests.InvoiceData;
+using Contracts.Requests.Seller;
 using Swashbuckle.AspNetCore.Filters;
-using System.ComponentModel.DataAnnotations;
 
 namespace WebAPI.SwaggerExamples.InvoiceData;
 
@@ -21,20 +18,26 @@ public class InvoiceDataUpdateRequestExample : IExamplesProvider<InvoiceDataUpda
     {
         return new InvoiceDataUpdateRequest()
         {
-            Id = Guid.NewGuid(),            
+            Id = Guid.NewGuid(),
             CreatedDate = DateTime.Now,
             DueDate = DateTime.Now.AddDays(10),
-            SellerId = Guid.NewGuid(),
-            CustomerId = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
+            Seller = new SellerUpdateRequest()
+            {
+                Id = Guid.NewGuid()
+            },
+            Customer = new CustomerUpdateRequest()
+            {
+                Id = Guid.NewGuid()
+            },
             Items =
             [
-                new InvoiceItemResponse()
+                new InvoiceItemUpdateRequest()
                 {
                     Id = Guid.NewGuid(),
                 }
             ],
-            Comments = "Invoice comment",
-            TotalPrice = 1500m,
+            Comments = "Invoice comment"
         };
     }
 }

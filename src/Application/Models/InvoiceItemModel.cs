@@ -9,7 +9,7 @@ public class InvoiceItemModel
     public string? Comments { get; set; } = string.Empty;
 
     public decimal CalculateTotal()
-    {        
+    {
         return Price * Quantity;
     }
 }

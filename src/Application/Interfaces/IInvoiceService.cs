@@ -1,7 +1,5 @@
 ﻿using Application.Models;
 using Contracts.Requests.InvoiceData;
-using Contracts.Requests.Item;
-using Domain.Entities;
 
 namespace Application.Interfaces;
 

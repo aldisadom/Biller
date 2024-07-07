@@ -1,6 +1,5 @@
-﻿using Contracts.Responses.Customer;
-using Contracts.Responses.InvoiceData;
-using Contracts.Responses.Seller;
+﻿using Contracts.Requests.Customer;
+using Contracts.Requests.Seller;
 using System.ComponentModel.DataAnnotations;
 
 namespace Contracts.Requests.InvoiceData;
@@ -8,15 +7,17 @@ namespace Contracts.Requests.InvoiceData;
 public class InvoiceDataUpdateRequest
 {
     public Guid Id { get; set; }
-    public DateTime CreatedDate { get; set; }
+    [Required]
+    public required SellerUpdateRequest Seller { get; set; }
+    [Required]
+    public required CustomerUpdateRequest Customer { get; set; }
+    [Required]
+    public Guid UserId { get; set; }
+    [Required]
+    [MinLength(1)]
+    public List<InvoiceItemUpdateRequest> Items { get; set; } = [];
+    public string Comments { get; set; } = string.Empty;
     [Required]
     public DateTime DueDate { get; set; }
-    [Required]
-    public Guid SellerId { get; set; }
-    [Required]
-    public Guid CustomerId { get; set; }
-    [Required]
-    public List<InvoiceItemResponse>? Items { get; set; }
-    public string? Comments { get; set; }
-    public decimal TotalPrice { get; set; }
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
 }

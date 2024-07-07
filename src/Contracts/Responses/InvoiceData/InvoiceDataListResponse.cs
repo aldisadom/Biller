@@ -1,6 +1,4 @@
-﻿using Contracts.Responses.Item;
-
-namespace Contracts.Responses.InvoiceData;
+﻿namespace Contracts.Responses.InvoiceData;
 
 public record InvoiceDataListResponse
 {

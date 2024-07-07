@@ -1,12 +1,10 @@
 ﻿using Application.Interfaces;
 using Application.Models;
-using Application.Services;
 using AutoMapper;
 using Contracts.Requests.InvoiceData;
 using Contracts.Responses;
 using Contracts.Responses.InvoiceData;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Swashbuckle.AspNetCore.Filters;
 using WebAPI.SwaggerExamples.InvoiceData;
 
@@ -86,8 +84,9 @@ public class InvoiceController : ControllerBase
     {
         InvoiceDataModel invoiceData = new()
         {
-            Seller = new SellerModel{
-                Id = invoiceDataRequest.SellerId 
+            Seller = new SellerModel
+            {
+                Id = invoiceDataRequest.SellerId
             },
             Customer = new CustomerModel
             {
@@ -117,8 +116,7 @@ public class InvoiceController : ControllerBase
     /// <param name="id">Invoices unique ID</param>
     /// <returns>invoice pdf</returns>
     [HttpPost("generate")]
-    [ProducesResponseType(typeof(InvoiceDataResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataResponseExample))]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GeneratePDF(Guid id)
     {

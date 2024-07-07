@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
-using Contracts.Requests.InvoiceData;
 using Contracts.Requests.Item;
 using Domain.Entities;
 using Domain.Exceptions;

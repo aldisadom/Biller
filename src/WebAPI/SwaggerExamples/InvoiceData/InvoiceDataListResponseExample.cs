@@ -2,7 +2,6 @@
 using Contracts.Responses.InvoiceData;
 using Contracts.Responses.Seller;
 using Swashbuckle.AspNetCore.Filters;
-using System.Xml.Linq;
 
 namespace WebAPI.SwaggerExamples.InvoiceData;
 
@@ -51,9 +50,9 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceDataListR
             Items =
             [
                 new InvoiceItemResponse()
-                {  
+                {
                     Id = Guid.NewGuid(),
-                } 
+                }
             ],
             Comments = "",
             TotalPrice = 1500m,

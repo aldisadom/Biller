@@ -9,10 +9,8 @@ using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
-using HarfBuzzSharp;
 using Moq;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Services;
@@ -109,7 +107,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
                         .ReturnsAsync(invoiceData);
 
-        InvoiceDataModel expectedResult = _invoiceService.MapInvoiceData(invoiceData);
+        InvoiceDataModel expectedResult = _mapper.Map<InvoiceDataModel>(invoiceData);
 
         //Act
         InvoiceDataModel result = await _invoiceService.Get(invoiceData.Id);
@@ -140,14 +138,14 @@ public class InvoiceServiceTest
     {
         //Arrange
         InvoiceDataGetRequest request = new();
-        
+
         _invoiceDataRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(invoiceDataList);
 
         _invoiceDataRepositoryMock.Setup(m => m.GetByCustomerId(It.IsAny<Guid>()))
                         .ReturnsAsync((List<InvoiceDataEntity>)null!);
 
-        List<InvoiceDataModel> expectedResult = invoiceDataList.Select(i => _invoiceService.MapInvoiceData(i)).ToList();
+        List<InvoiceDataModel> expectedResult = invoiceDataList.Select(i => _mapper.Map<InvoiceDataModel>(i)).ToList();
 
         //Act
         var result = await _invoiceService.Get(request);
@@ -163,7 +161,7 @@ public class InvoiceServiceTest
     [Theory]
     [AutoDataConfigured]
     public async Task Get_GivenAddressIdQuery_ReturnsDTO(InvoiceDataGetRequest request, List<InvoiceDataEntity> invoiceDataList)
-    {       
+    {
         //Arrange
         _invoiceDataRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync((List<InvoiceDataEntity>)null!);
@@ -171,7 +169,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.CustomerId!))
                         .ReturnsAsync(invoiceDataList);
 
-        List<InvoiceDataModel> expectedResult = invoiceDataList.Select(i=> _invoiceService.MapInvoiceData(i)).ToList();
+        List<InvoiceDataModel> expectedResult = invoiceDataList.Select(i => _mapper.Map<InvoiceDataModel>(i)).ToList();
 
         //Act
         var result = await _invoiceService.Get(request);
@@ -224,11 +222,11 @@ public class InvoiceServiceTest
         else if (invoiceData.Customer.InvoiceNumber < 100000)
             invoiceData.Number = "0";
 
-        invoiceData.Number += invoiceData.Customer.InvoiceNumber.ToString();        
+        invoiceData.Number += invoiceData.Customer.InvoiceNumber.ToString();
 
-        InvoiceDataEntity invoiceDataEntity = _invoiceService.MapInvoiceData(invoiceData);
-        List<ItemModel> itemModels = invoiceData.Items!.Select(i=>new ItemModel() {Id = i.Id}).ToList();
-        
+        InvoiceDataEntity invoiceDataEntity = _mapper.Map<InvoiceDataEntity>(invoiceData);
+        List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
+
         invoiceData.Customer.InvoiceNumber--;
 
         _invoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
@@ -266,7 +264,7 @@ public class InvoiceServiceTest
     public async Task Update_ReturnsSuccess(InvoiceDataModel invoiceData)
     {
         //Arrange
-        InvoiceDataEntity invoiceDataEntity = _invoiceService.MapInvoiceData(invoiceData);
+        InvoiceDataEntity invoiceDataEntity = _mapper.Map<InvoiceDataEntity>(invoiceData);
 
         _invoiceDataRepositoryMock.Setup(m => m.Update(It.Is<InvoiceDataEntity>
                                 (x => x == invoiceDataEntity)));
@@ -288,7 +286,7 @@ public class InvoiceServiceTest
     public async Task Update_InvalidId_NotFoundException(InvoiceDataModel invoiceData)
     {
         //Arrange
-        InvoiceDataEntity invoiceDataEntity = _invoiceService.MapInvoiceData(invoiceData);
+        InvoiceDataEntity invoiceDataEntity = _mapper.Map<InvoiceDataEntity>(invoiceData);
 
         _invoiceDataRepositoryMock.Setup(m => m.Update(It.Is<InvoiceDataEntity>
                                 (x => x == invoiceDataEntity)));
