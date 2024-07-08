@@ -3,13 +3,13 @@
 public class InvoiceDataModel
 {
     public Guid Id { get; set; }
-    public string Number { get; set; } = string.Empty;
     public UserModel? User { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime DueDate { get; set; }
     public SellerModel? Seller { get; set; }
     public CustomerModel? Customer { get; set; }
     public List<InvoiceItemModel>? Items { get; set; }
+    public int InvoiceNumber { get; set; }
     public string? Comments { get; set; }
 
     public decimal CalculateTotal()
@@ -28,11 +28,29 @@ public class InvoiceDataModel
 
     public string GenerateFileLocation()
     {
-        return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{Number}.pdf";
+        return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{GenerateInvoiceName()}.pdf";
     }
 
     public string GenerateFileLocation(string modifier)
     {
-        return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{Number}-{modifier}.pdf";
+        return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{GenerateInvoiceName()}-{modifier}.pdf";
+    }
+    
+    public string GenerateInvoiceName()
+    {
+        string name = string.Empty;
+        if (Customer!.InvoiceNumber < 10)
+            name = "00000";
+        else if (Customer.InvoiceNumber < 100)
+            name = "0000";
+        else if (Customer.InvoiceNumber < 1000)
+            name = "000";
+        else if (Customer.InvoiceNumber < 10000)
+            name = "00";
+        else if (Customer.InvoiceNumber < 100000)
+            name = "0";
+
+        name += Customer.InvoiceNumber.ToString();
+        return name;
     }
 }

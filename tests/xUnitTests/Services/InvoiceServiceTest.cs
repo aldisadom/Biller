@@ -15,12 +15,6 @@ using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Services;
 
-public class MailAddress()
-{
-    public string Address { get => Local + "@gmail.com"; }
-    public string Local { get; set; } = string.Empty;
-}
-
 public class AutoDataConfigured : AutoDataAttribute
 {
     public AutoDataConfigured() : base(CreateFixture) { }
@@ -31,31 +25,50 @@ public class AutoDataConfigured : AutoDataAttribute
 
         fixture = new Fixture();
         fixture.Customize<SellerEntity>(c => c
-            .With(x => x.Email,
-            fixture.Create<MailAddress>().Address));
+            .With(x => x.Email, "Email" + fixture.Create<string>() + "@gmail.com"));
 
         fixture.Customize<UserEntity>(c => c
-            .With(x => x.Email,
-            fixture.Create<MailAddress>().Address));
+            .With(x => x.Email, "Email" + fixture.Create<string>() + "@gmail.com"));
 
         fixture.Customize<CustomerEntity>(c => c
-            .With(x => x.Email,
-            fixture.Create<MailAddress>().Address));
+            .With(x => x.Email, "Email" + fixture.Create<string>() + "@gmail.com"));
 
+        fixture.Customize<InvoiceDataModel>(c => c
+            .With(x=>x.Items,fixture.CreateMany<InvoiceItemModel>(3).ToList())
+            .Without(x => x.Customer)
+            .Without(x => x.InvoiceNumber)
+            .Without(x => x.Items)
+            .Do(x =>
+            {
+                var customer = fixture.Create<CustomerModel>();
+                x.Customer = customer;
+                x.InvoiceNumber = customer.InvoiceNumber;
+            }));
+        
         fixture.Customize<InvoiceDataEntity>(c => c
-            .With(x => x.SellerData,
-            JsonConvert.SerializeObject(fixture.Create<SellerEntity>()))
-            .With(x => x.UserData,
-            JsonConvert.SerializeObject(fixture.Create<UserEntity>()))
-            .With(x => x.CustomerData,
-            JsonConvert.SerializeObject(fixture.Create<CustomerEntity>()))
-            .With(x => x.ItemsData,
-            JsonConvert.SerializeObject(fixture.CreateMany<ItemEntity>(3)))
-            .With(x => x.ItemsData,
-            JsonConvert.SerializeObject(fixture.CreateMany<ItemEntity>(3)))
-            .With(x => x.ItemsData,
-            JsonConvert.SerializeObject(fixture.CreateMany<ItemEntity>(3))));
-
+            .Without(x => x.CustomerData)
+            .Without(x => x.SellerData)
+            .Without(x => x.UserData)
+            .Without(x => x.ItemsData)
+            .Without(x => x.CustomerId)
+            .Without(x => x.SellerId)
+            .Without(x => x.UserId)
+            .Without(x => x.InvoiceNumber)
+            .Do(x =>
+            {
+                var customer = fixture.Create<CustomerEntity>();
+                var seller = fixture.Create<SellerEntity>();
+                var user = fixture.Create<UserEntity>();
+                var items = fixture.CreateMany<InvoiceItemModel>(3).ToList();
+                
+                x.CustomerData = JsonConvert.SerializeObject(customer);
+                x.SellerData = JsonConvert.SerializeObject(seller);
+                x.UserData = JsonConvert.SerializeObject(user);
+                x.ItemsData = JsonConvert.SerializeObject(items);
+                
+                x.CustomerId = customer.Id;
+                x.InvoiceNumber = customer.InvoiceNumber;
+            }));
         return fixture;
     }
 }
@@ -115,7 +128,7 @@ public class InvoiceServiceTest
         //Assert
         result.Should().BeEquivalentTo(expectedResult);
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
     }
 
     [Theory]
@@ -129,7 +142,7 @@ public class InvoiceServiceTest
         // Act Assert
         await Assert.ThrowsAsync<NotFoundException>(async () => await _invoiceService.Get(id));
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
     [Theory]
@@ -142,9 +155,6 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(invoiceDataList);
 
-        _invoiceDataRepositoryMock.Setup(m => m.GetByCustomerId(It.IsAny<Guid>()))
-                        .ReturnsAsync((List<InvoiceDataEntity>)null!);
-
         List<InvoiceDataModel> expectedResult = invoiceDataList.Select(i => _mapper.Map<InvoiceDataModel>(i)).ToList();
 
         //Act
@@ -155,7 +165,6 @@ public class InvoiceServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -163,9 +172,6 @@ public class InvoiceServiceTest
     public async Task Get_GivenAddressIdQuery_ReturnsDTO(InvoiceDataGetRequest request, List<InvoiceDataEntity> invoiceDataList)
     {
         //Arrange
-        _invoiceDataRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync((List<InvoiceDataEntity>)null!);
-
         _invoiceDataRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.CustomerId!))
                         .ReturnsAsync(invoiceDataList);
 
@@ -177,8 +183,7 @@ public class InvoiceServiceTest
         //Assert
         result.Count().Should().Be(invoiceDataList.Count);
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.GetByCustomerId((Guid)request.CustomerId!), Times.Once());
     }
 
     [Fact]
@@ -189,9 +194,6 @@ public class InvoiceServiceTest
         List<InvoiceDataEntity> invoiceDataList = [];
 
         //Arrange
-        _invoiceDataRepositoryMock.Setup(m => m.GetByCustomerId(It.IsAny<Guid>()))
-                        .ReturnsAsync(invoiceDataList);
-
         _invoiceDataRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(invoiceDataList);
 
@@ -202,7 +204,6 @@ public class InvoiceServiceTest
         result.Should().BeEquivalentTo(new List<InvoiceDataModel>());
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -210,25 +211,9 @@ public class InvoiceServiceTest
     public async Task Add_GivenValidId_ReturnsGuid(InvoiceDataModel invoiceData)
     {
         //ArrangeSS
-        invoiceData.Customer!.InvoiceNumber++;
-        if (invoiceData.Customer.InvoiceNumber < 10)
-            invoiceData.Number = "00000";
-        else if (invoiceData.Customer.InvoiceNumber < 100)
-            invoiceData.Number = "0000";
-        else if (invoiceData.Customer.InvoiceNumber < 1000)
-            invoiceData.Number = "000";
-        else if (invoiceData.Customer.InvoiceNumber < 10000)
-            invoiceData.Number = "00";
-        else if (invoiceData.Customer.InvoiceNumber < 100000)
-            invoiceData.Number = "0";
-
-        invoiceData.Number += invoiceData.Customer.InvoiceNumber.ToString();
-
         InvoiceDataEntity invoiceDataEntity = _mapper.Map<InvoiceDataEntity>(invoiceData);
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
-
-        invoiceData.Customer.InvoiceNumber--;
-
+        
         _invoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
 
         _invoiceDataRepositoryMock.Setup(m => m.Add(It.Is<InvoiceDataEntity>
@@ -256,6 +241,10 @@ public class InvoiceServiceTest
         //Assert
         result.Should().Be(invoiceData.Id);
 
+        _userServiceMock.Verify(m => m.Get(invoiceData.User!.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.Get(invoiceData.Seller!.Id), Times.Once());
+        _customerServiceMock.Verify(m => m.Get(invoiceData.Customer!.Id), Times.Once());
+        _itemServiceMock.Verify(m => m.Get(It.IsAny<List<Guid>>()), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceDataEntity>()), Times.Once());
     }
 
@@ -277,8 +266,8 @@ public class InvoiceServiceTest
         await _invoiceService.Invoking(x => x.Update(invoiceData))
                                         .Should().NotThrowAsync<Exception>();
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceDataEntity>()), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Update(invoiceDataEntity), Times.Once());
     }
 
     [Theory]
@@ -288,9 +277,6 @@ public class InvoiceServiceTest
         //Arrange
         InvoiceDataEntity invoiceDataEntity = _mapper.Map<InvoiceDataEntity>(invoiceData);
 
-        _invoiceDataRepositoryMock.Setup(m => m.Update(It.Is<InvoiceDataEntity>
-                                (x => x == invoiceDataEntity)));
-
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
                         .ReturnsAsync((InvoiceDataEntity)null!);
 
@@ -299,26 +285,26 @@ public class InvoiceServiceTest
         await _invoiceService.Invoking(x => x.Update(invoiceData))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
     }
 
     [Theory]
     [AutoDataConfigured]
-    public async Task Delete_ValidId(InvoiceDataEntity invoiceData)
+    public async Task Delete_ValidId(Guid id)
     {
         //Arrange
-        _invoiceDataRepositoryMock.Setup(m => m.Delete(invoiceData.Id));
+        _invoiceDataRepositoryMock.Setup(m => m.Delete(id));
 
-        _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
-                        .ReturnsAsync(invoiceData);
+        _invoiceDataRepositoryMock.Setup(m => m.Get(id))
+                        .ReturnsAsync(new InvoiceDataEntity());
 
         //Act
         //Assert
-        await _invoiceService.Invoking(x => x.Delete(invoiceData.Id))
+        await _invoiceService.Invoking(x => x.Delete(id))
                             .Should().NotThrowAsync<Exception>();
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(id), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Delete(id), Times.Once());
     }
 
     [Theory]
@@ -336,6 +322,6 @@ public class InvoiceServiceTest
         await _invoiceService.Invoking(x => x.Delete(id))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 }

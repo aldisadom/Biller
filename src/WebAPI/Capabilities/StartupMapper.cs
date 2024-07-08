@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using WebAPI.MappingProfiles;
-
+using Mapster;
 
 namespace WebAPI.Capabilities;
 
@@ -30,6 +30,8 @@ public static class StartupMapper
 
         services.AddSingleton(mapper);
 
+        //services.AddMapster();
+        
         return services;
     }
 }

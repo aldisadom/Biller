@@ -61,8 +61,6 @@ public class CustomerService : ICustomerService
     {
         CustomerModel customer = await Get(id);
 
-        customer.InvoiceNumber++;
-
         CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
         await _customerRepository.UpdateInvoiceNumber(customerEntity);
     }

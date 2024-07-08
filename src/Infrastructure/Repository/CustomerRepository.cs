@@ -60,7 +60,7 @@ public class CustomerRepository : ICustomerRepository
     public async Task UpdateInvoiceNumber(CustomerEntity customer)
     {
         string sql = @"UPDATE customers
-                        SET invoice_number=@InvoiceNumber
+                        SET invoice_number=@InvoiceNumber+1
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, customer);

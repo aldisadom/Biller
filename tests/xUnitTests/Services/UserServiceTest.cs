@@ -56,8 +56,8 @@ public class UserServiceTest
         //Assert
         result.Should().BeEquivalentTo(expectedResult);
 
-        _userRepositoryMock.Verify(m => m.Get(It.IsAny<string>()), Times.Once());
-        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(It.IsAny<string>()), Times.Once());
+        _userRepositoryMock.Verify(m => m.Get(user.Email), Times.Once());
+        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password), Times.Once());
     }
 
     [Theory]
@@ -68,17 +68,13 @@ public class UserServiceTest
         _userRepositoryMock.Setup(m => m.Get(user.Email))
                         .ReturnsAsync((UserEntity)null!);
 
-        _passwordEncryptionServiceMock.Setup(m => m.Encrypt(user.Password))
-                        .Returns("a");
-
         UserModel userModel = _mapper.Map<UserModel>(user);
 
         //Act
         //Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await _userService.Login(userModel));
 
-        _userRepositoryMock.Verify(m => m.Get(It.IsAny<string>()), Times.Once());
-        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(It.IsAny<string>()), Times.Never());
+        _userRepositoryMock.Verify(m => m.Get(user.Email), Times.Once());
     }
 
     [Theory]
@@ -98,8 +94,8 @@ public class UserServiceTest
         //Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await _userService.Login(userModel));
 
-        _userRepositoryMock.Verify(m => m.Get(It.IsAny<string>()), Times.Once());
-        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(It.IsAny<string>()), Times.Once());
+        _userRepositoryMock.Verify(m => m.Get(user.Email), Times.Once());
+        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password), Times.Once());
     }
 
     [Theory]
@@ -118,7 +114,7 @@ public class UserServiceTest
         //Assert
         result.Should().BeEquivalentTo(expectedResult);
 
-        _userRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _userRepositoryMock.Verify(m => m.Get(user.Id), Times.Once());
     }
 
     [Theory]
@@ -132,7 +128,7 @@ public class UserServiceTest
         // Act Assert
         await Assert.ThrowsAsync<NotFoundException>(async () => await _userService.Get(id));
 
-        _userRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _userRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
     [Theory]
@@ -195,8 +191,8 @@ public class UserServiceTest
         //Assert
         result.Should().Be(user.Id);
 
-        _userRepositoryMock.Verify(m => m.Add(It.IsAny<UserEntity>()), Times.Once());
-        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(It.IsAny<string>()), Times.Once());
+        _userRepositoryMock.Verify(m => m.Add(userEntity), Times.Once());
+        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password), Times.Once());
     }
 
     [Theory]
@@ -217,8 +213,8 @@ public class UserServiceTest
         await _userService.Invoking(x => x.Update(user))
                                         .Should().NotThrowAsync<Exception>();
 
-        _userRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _userRepositoryMock.Verify(m => m.Update(It.IsAny<UserEntity>()), Times.Once());
+        _userRepositoryMock.Verify(m => m.Get(user.Id), Times.Once());
+        _userRepositoryMock.Verify(m => m.Update(userEntity), Times.Once());
     }
 
     [Theory]
@@ -239,7 +235,7 @@ public class UserServiceTest
         await _userService.Invoking(x => x.Update(user))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _userRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _userRepositoryMock.Verify(m => m.Get(user.Id), Times.Once());
     }
 
     [Theory]
@@ -257,8 +253,8 @@ public class UserServiceTest
         await _userService.Invoking(x => x.Delete(user.Id))
                             .Should().NotThrowAsync<Exception>();
 
-        _userRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _userRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Once());
+        _userRepositoryMock.Verify(m => m.Get(user.Id), Times.Once());
+        _userRepositoryMock.Verify(m => m.Delete(user.Id), Times.Once());
     }
 
     [Theory]
@@ -276,6 +272,6 @@ public class UserServiceTest
         await _userService.Invoking(x => x.Delete(id))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _userRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _userRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 }

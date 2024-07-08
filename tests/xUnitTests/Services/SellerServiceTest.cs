@@ -48,7 +48,7 @@ public class SellerServiceTest
         //Assert
         result.Should().BeEquivalentTo(expectedResult);
 
-        _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
     }
 
     [Theory]
@@ -62,7 +62,7 @@ public class SellerServiceTest
         // Act Assert
         await Assert.ThrowsAsync<NotFoundException>(async () => await _sellerService.Get(id));
 
-        _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
     [Theory]
@@ -75,9 +75,6 @@ public class SellerServiceTest
         _sellerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(sellerList);
 
-        _sellerRepositoryMock.Setup(m => m.GetByUser(It.IsAny<Guid>()))
-                        .ReturnsAsync((List<SellerEntity>)null!);
-
         List<SellerModel> expectedResult = _mapper.Map<List<SellerModel>>(sellerList);
 
         //Act
@@ -88,7 +85,6 @@ public class SellerServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -96,10 +92,6 @@ public class SellerServiceTest
     public async Task Get_GivenAddressIdQuery_ReturnsDTO(SellerGetRequest request, List<SellerEntity> sellerList)
     {
         //Arrange
-
-        _sellerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync((List<SellerEntity>)null!);
-
         _sellerRepositoryMock.Setup(m => m.GetByUser((Guid)request.UserId!))
                         .ReturnsAsync(sellerList);
 
@@ -111,8 +103,7 @@ public class SellerServiceTest
         //Assert
         result.Count().Should().Be(sellerList.Count);
 
-        _sellerRepositoryMock.Verify(m => m.Get(), Times.Never());
-        _sellerRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.GetByUser((Guid)request.UserId!), Times.Once());
     }
 
     [Fact]
@@ -123,9 +114,6 @@ public class SellerServiceTest
         List<SellerEntity> sellerList = [];
 
         //Arrange
-        _sellerRepositoryMock.Setup(m => m.GetByUser(It.IsAny<Guid>()))
-                        .ReturnsAsync(sellerList);
-
         _sellerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(sellerList);
 
@@ -136,7 +124,6 @@ public class SellerServiceTest
         result.Should().BeEquivalentTo(new List<SellerModel>());
 
         _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -156,7 +143,7 @@ public class SellerServiceTest
         //Assert
         result.Should().Be(seller.Id);
 
-        _sellerRepositoryMock.Verify(m => m.Add(It.IsAny<SellerEntity>()), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.Add(sellerEntity), Times.Once());
     }
 
     [Theory]
@@ -177,8 +164,8 @@ public class SellerServiceTest
         await _sellerService.Invoking(x => x.Update(seller))
                                         .Should().NotThrowAsync<Exception>();
 
-        _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.Update(It.IsAny<SellerEntity>()), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.Update(sellerEntity), Times.Once());
     }
 
     [Theory]
@@ -199,7 +186,7 @@ public class SellerServiceTest
         await _sellerService.Invoking(x => x.Update(seller))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
     }
 
     [Theory]
@@ -217,8 +204,8 @@ public class SellerServiceTest
         await _sellerService.Invoking(x => x.Delete(seller.Id))
                             .Should().NotThrowAsync<Exception>();
 
-        _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.Delete(seller.Id), Times.Once());
     }
 
     [Theory]
@@ -236,6 +223,6 @@ public class SellerServiceTest
         await _sellerService.Invoking(x => x.Delete(id))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 }

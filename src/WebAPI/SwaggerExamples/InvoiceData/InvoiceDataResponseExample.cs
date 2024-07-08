@@ -20,7 +20,7 @@ public class InvoiceDataResponseExample : IExamplesProvider<InvoiceDataResponse>
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
-            Number = "0001",
+            InvoiceNumber = 1,
             CreatedDate = DateTime.Now,
             DueDate = DateTime.Now.AddDays(10),
             Seller = new SellerResponse

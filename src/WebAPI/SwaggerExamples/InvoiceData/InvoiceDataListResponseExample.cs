@@ -36,7 +36,7 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceDataListR
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
-            Number = "0001",
+            InvoiceNumber = 1,
             CreatedDate = DateTime.Now,
             DueDate = DateTime.Now.AddDays(10),
             Seller = new SellerResponse
@@ -62,7 +62,7 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceDataListR
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
-            Number = "0005",
+            InvoiceNumber = 5,
             CreatedDate = DateTime.Now.AddDays(-1),
             DueDate = DateTime.Now.AddDays(10),
             Seller = new SellerResponse

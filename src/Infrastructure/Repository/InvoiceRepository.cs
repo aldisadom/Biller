@@ -56,9 +56,9 @@ public class InvoiceRepository : IInvoiceRepository
     public async Task<Guid> Add(InvoiceDataEntity invoice)
     {
         string sql = @"INSERT INTO invoices
-                        (customer_id, seller_id, user_id, file_path, number, user_data, created_date, due_date,
+                        (customer_id, seller_id, user_id, file_path, invoice_number, user_data, created_date, due_date,
                         seller_data, customer_data, items_data, comments, total_price)
-                        VALUES (@CustomerId, @SellerId, @UserId, @FilePath, @Number, @UserData, @CreatedDate, @DueDate,
+                        VALUES (@CustomerId, @SellerId, @UserId, @FilePath, @InvoiceNumber, @UserData, @CreatedDate, @DueDate,
                         @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice)
                         RETURNING id";
 
@@ -68,7 +68,7 @@ public class InvoiceRepository : IInvoiceRepository
     public async Task Update(InvoiceDataEntity invoice)
     {
         string sql = @"UPDATE invoices
-                        SET customer_id=@CustomerId, seller_id=@SellerId, file_path=@FilePath, number=@Number, user_data=@UserData,
+                        SET customer_id=@CustomerId, seller_id=@SellerId, file_path=@FilePath, invoice_number=@InvoiceNumber, user_data=@UserData,
                         created_date=@CreatedDate, due_date=@DueDate, seller_data=@SellerData, customer_data=@CustomerData,
                         items_data=@ItemsData, comments=@Comments, total_price=@TotalPrice
                         WHERE id=@Id";

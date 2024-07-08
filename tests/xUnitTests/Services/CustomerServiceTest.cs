@@ -49,7 +49,7 @@ public class CustomerServiceTest
         //Assert
         result.Should().BeEquivalentTo(expectedResult);
 
-        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
     }
 
     [Theory]
@@ -63,7 +63,7 @@ public class CustomerServiceTest
         // Act Assert
         await Assert.ThrowsAsync<NotFoundException>(async () => await _customerService.Get(id));
 
-        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
     [Theory]
@@ -76,9 +76,6 @@ public class CustomerServiceTest
         _customerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(customerList);
 
-        _customerRepositoryMock.Setup(m => m.GetBySeller(It.IsAny<Guid>()))
-                        .ReturnsAsync((List<CustomerEntity>)null!);
-
         List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(customerList);
 
         //Act
@@ -89,7 +86,6 @@ public class CustomerServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _customerRepositoryMock.Verify(m => m.GetBySeller(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -97,10 +93,6 @@ public class CustomerServiceTest
     public async Task Get_GivenAddressIdQuery_ReturnsDTO(CustomerGetRequest request, List<CustomerEntity> customerList)
     {
         //Arrange
-
-        _customerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync((List<CustomerEntity>)null!);
-
         _customerRepositoryMock.Setup(m => m.GetBySeller((Guid)request.SellerId!))
                         .ReturnsAsync(customerList);
 
@@ -112,8 +104,7 @@ public class CustomerServiceTest
         //Assert
         result.Count().Should().Be(customerList.Count);
 
-        _customerRepositoryMock.Verify(m => m.Get(), Times.Never());
-        _customerRepositoryMock.Verify(m => m.GetBySeller(It.IsAny<Guid>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.GetBySeller((Guid)request.SellerId!), Times.Once());
     }
 
     [Fact]
@@ -124,9 +115,6 @@ public class CustomerServiceTest
         List<CustomerEntity> customerList = [];
 
         //Arrange
-        _customerRepositoryMock.Setup(m => m.GetBySeller(It.IsAny<Guid>()))
-                        .ReturnsAsync(customerList);
-
         _customerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(customerList);
 
@@ -137,7 +125,6 @@ public class CustomerServiceTest
         result.Should().BeEquivalentTo(new List<CustomerModel>());
 
         _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _customerRepositoryMock.Verify(m => m.GetBySeller(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -157,7 +144,7 @@ public class CustomerServiceTest
         //Assert
         result.Should().Be(customer.Id);
 
-        _customerRepositoryMock.Verify(m => m.Add(It.IsAny<CustomerEntity>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Add(customerEntity), Times.Once());
     }
 
     [Theory]
@@ -178,8 +165,8 @@ public class CustomerServiceTest
         await _customerService.Invoking(x => x.Update(customer))
                                         .Should().NotThrowAsync<Exception>();
 
-        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _customerRepositoryMock.Verify(m => m.Update(It.IsAny<CustomerEntity>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Update(customerEntity), Times.Once());
     }
 
     [Theory]
@@ -200,7 +187,7 @@ public class CustomerServiceTest
         await _customerService.Invoking(x => x.Update(customer))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
     }
 
     [Theory]
@@ -221,8 +208,8 @@ public class CustomerServiceTest
         await _customerService.Invoking(x => x.UpdateInvoiceNumber(customer.Id))
                                         .Should().NotThrowAsync<Exception>();
 
-        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _customerRepositoryMock.Verify(m => m.UpdateInvoiceNumber(It.IsAny<CustomerEntity>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
+        _customerRepositoryMock.Verify(m => m.UpdateInvoiceNumber(customerEntity), Times.Once());
     }
 
     [Theory]
@@ -243,7 +230,7 @@ public class CustomerServiceTest
         await _customerService.Invoking(x => x.UpdateInvoiceNumber(customer.Id))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
     }
 
     [Theory]
@@ -261,8 +248,8 @@ public class CustomerServiceTest
         await _customerService.Invoking(x => x.Delete(customer.Id))
                             .Should().NotThrowAsync<Exception>();
 
-        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
-        _customerRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Delete(customer.Id), Times.Once());
     }
 
     [Theory]
@@ -280,6 +267,6 @@ public class CustomerServiceTest
         await _customerService.Invoking(x => x.Delete(id))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _customerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 }

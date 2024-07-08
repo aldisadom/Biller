@@ -7,7 +7,7 @@ public class InvoiceDataResponse
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
-    public string Number { get; set; } = string.Empty;
+    public int InvoiceNumber { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime DueDate { get; set; }
     public SellerResponse? Seller { get; set; }

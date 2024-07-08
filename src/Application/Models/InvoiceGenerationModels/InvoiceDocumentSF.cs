@@ -126,7 +126,7 @@ public class InvoiceDocument : IDocument
             row.RelativeItem().Column(column =>
             {
                 column.Item().AlignCenter().Text($"SĄSKAITA FAKTŪRA").Style(titleStyle);
-                column.Item().AlignCenter().Text($"Serija {Model.Customer!.InvoiceName} Nr. {Model.Number}");
+                column.Item().AlignCenter().Text($"Serija {Model.Customer!.InvoiceName} Nr. {Model.GenerateInvoiceName()}");
             });
             //place for image
             //            row.ConstantItem(100).Height(50).Placeholder();

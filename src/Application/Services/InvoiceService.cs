@@ -41,34 +41,17 @@ public class InvoiceService : IInvoiceService
             Directory.CreateDirectory(folderPath);
     }
 
-    private static void GenerateInvoiceName(InvoiceDataModel invoiceData)
-    {
-        invoiceData.Customer!.InvoiceNumber++;
-        if (invoiceData.Customer.InvoiceNumber < 10)
-            invoiceData.Number = "00000";
-        else if (invoiceData.Customer.InvoiceNumber < 100)
-            invoiceData.Number = "0000";
-        else if (invoiceData.Customer.InvoiceNumber < 1000)
-            invoiceData.Number = "000";
-        else if (invoiceData.Customer.InvoiceNumber < 10000)
-            invoiceData.Number = "00";
-        else if (invoiceData.Customer.InvoiceNumber < 100000)
-            invoiceData.Number = "0";
-
-        invoiceData.Number += invoiceData.Customer.InvoiceNumber.ToString();
-    }
-
     private async Task GetInvoiceDetails(InvoiceDataModel invoiceData)
     {
         invoiceData.User = await _userService.Get(invoiceData.User!.Id);
         invoiceData.Seller = await _sellerService.Get(invoiceData.Seller!.Id);
         invoiceData.Customer = await _customerService.Get(invoiceData.Customer!.Id);
+        invoiceData.InvoiceNumber = invoiceData.Customer.InvoiceNumber;
         List<ItemModel> items = (await _itemService.Get(invoiceData.Items!.Select(x => x.Id).ToList())).ToList();
 
         MapItemToInvoiceItem(invoiceData.Items!, items);
 
         GenerateInvoiceFolderPath(invoiceData);
-        GenerateInvoiceName(invoiceData);
     }
 
     public void MapInvoiceItemToItem(List<InvoiceItemModel> invoiceItems, List<ItemModel> items)
