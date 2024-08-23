@@ -7,11 +7,11 @@ namespace Application.Models.InvoiceGenerationModels;
 
 public class InvoiceDocumentADA : IDocument
 {
-    public InvoiceDataModel Model { get; }
+    public InvoiceModel Model { get; }
     public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     public DocumentSettings GetSettings() => DocumentSettings.Default;
 
-    public InvoiceDocumentADA(InvoiceDataModel model)
+    public InvoiceDocumentADA(InvoiceModel model)
     {
         Model = model;
     }

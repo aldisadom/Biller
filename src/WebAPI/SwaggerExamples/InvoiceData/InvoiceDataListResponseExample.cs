@@ -1,5 +1,5 @@
 ﻿using Contracts.Responses.Customer;
-using Contracts.Responses.InvoiceData;
+using Contracts.Responses.Invoice;
 using Contracts.Responses.Seller;
 using Swashbuckle.AspNetCore.Filters;
 
@@ -8,15 +8,15 @@ namespace WebAPI.SwaggerExamples.InvoiceData;
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceDataListResponse>
+public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceListResponse>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public InvoiceDataListResponse GetExamples()
+    public InvoiceListResponse GetExamples()
     {
-        InvoiceDataListResponse invoiceDataListResponse = new();
+        InvoiceListResponse invoiceDataListResponse = new();
 
         /*
          * public Guid Id { get; set; }
@@ -32,7 +32,7 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceDataListR
     public decimal TotalPrice { get; set; }
         */
 
-        invoiceDataListResponse.Invoices.Add(new InvoiceDataResponse()
+        invoiceDataListResponse.Invoices.Add(new InvoiceResponse()
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
@@ -58,7 +58,7 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceDataListR
             TotalPrice = 1500m,
         });
 
-        invoiceDataListResponse.Invoices.Add(new InvoiceDataResponse()
+        invoiceDataListResponse.Invoices.Add(new InvoiceResponse()
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),

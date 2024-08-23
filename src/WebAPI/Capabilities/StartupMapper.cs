@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using WebAPI.MappingProfiles;
-using Mapster;
 
 namespace WebAPI.Capabilities;
 
@@ -21,7 +20,7 @@ public static class StartupMapper
             mc.AddProfile(new ItemMappingProfile());
             mc.AddProfile(new CustomerMappingProfile());
             mc.AddProfile(new SellerMappingProfile());
-            mc.AddProfile(new InvoiceDataMappingProfile());
+            mc.AddProfile(new InvoiceMappingProfile());
         });
 
         mapperConfig.AssertConfigurationIsValid();
@@ -30,8 +29,6 @@ public static class StartupMapper
 
         services.AddSingleton(mapper);
 
-        //services.AddMapster();
-        
         return services;
     }
 }

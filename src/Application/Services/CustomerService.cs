@@ -43,6 +43,7 @@ public class CustomerService : ICustomerService
 
     public async Task<Guid> Add(CustomerModel customer)
     {
+        customer.InvoiceNumber = 1;
         CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
 
         return await _customerRepository.Add(customerEntity);
@@ -60,9 +61,9 @@ public class CustomerService : ICustomerService
     public async Task UpdateInvoiceNumber(Guid id)
     {
         CustomerModel customer = await Get(id);
-
+        customer.InvoiceNumber++;
         CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
-        await _customerRepository.UpdateInvoiceNumber(customerEntity);
+        await _customerRepository.Update(customerEntity);
     }
 
     public async Task Delete(Guid id)

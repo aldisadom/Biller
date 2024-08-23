@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Contracts.Requests.InvoiceData;
+namespace Contracts.Requests.Invoice;
 
 public class InvoiceItemRequest
 {

@@ -1,6 +1,6 @@
 ﻿namespace Application.Models;
 
-public class InvoiceDataModel
+public class InvoiceModel
 {
     public Guid Id { get; set; }
     public UserModel? User { get; set; }
@@ -35,7 +35,7 @@ public class InvoiceDataModel
     {
         return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{GenerateInvoiceName()}-{modifier}.pdf";
     }
-    
+
     public string GenerateInvoiceName()
     {
         string name = string.Empty;

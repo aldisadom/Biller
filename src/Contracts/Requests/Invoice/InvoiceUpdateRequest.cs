@@ -2,11 +2,12 @@
 using Contracts.Requests.Seller;
 using System.ComponentModel.DataAnnotations;
 
-namespace Contracts.Requests.InvoiceData;
+namespace Contracts.Requests.Invoice;
 
-public class InvoiceDataUpdateRequest
+public class InvoiceUpdateRequest
 {
     public Guid Id { get; set; }
+    public int InvoiceNumber { get; set; }
     [Required]
     public required SellerUpdateRequest Seller { get; set; }
     [Required]

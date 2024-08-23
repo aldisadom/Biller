@@ -2,7 +2,7 @@
 using Application.Models;
 using Application.Models.InvoiceGenerationModels;
 using AutoMapper;
-using Contracts.Requests.InvoiceData;
+using Contracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -34,14 +34,14 @@ public class InvoiceService : IInvoiceService
         _invoiceRepository = invoiceRepository;
     }
 
-    private static void GenerateInvoiceFolderPath(InvoiceDataModel invoiceData)
+    private static void GenerateInvoiceFolderPath(InvoiceModel invoiceData)
     {
         string folderPath = invoiceData.GenerateFolderLocation();
         if (!Directory.Exists(folderPath))
             Directory.CreateDirectory(folderPath);
     }
 
-    private async Task GetInvoiceDetails(InvoiceDataModel invoiceData)
+    private async Task GetInvoiceDetails(InvoiceModel invoiceData)
     {
         invoiceData.User = await _userService.Get(invoiceData.User!.Id);
         invoiceData.Seller = await _sellerService.Get(invoiceData.Seller!.Id);
@@ -86,17 +86,17 @@ public class InvoiceService : IInvoiceService
         }
     }
 
-    public async Task<InvoiceDataModel> Get(Guid id)
+    public async Task<InvoiceModel> Get(Guid id)
     {
-        InvoiceDataEntity invoiceDataEntity = await _invoiceRepository.Get(id)
+        InvoiceEntity invoiceDataEntity = await _invoiceRepository.Get(id)
             ?? throw new NotFoundException($"Invoice data:{id} not found");
 
-        return _mapper.Map<InvoiceDataModel>(invoiceDataEntity);
+        return _mapper.Map<InvoiceModel>(invoiceDataEntity);
     }
 
-    public async Task<IEnumerable<InvoiceDataModel>> Get(InvoiceDataGetRequest query)
+    public async Task<IEnumerable<InvoiceModel>> Get(InvoiceGetRequest query)
     {
-        IEnumerable<InvoiceDataEntity> invoiceDataEntities;
+        IEnumerable<InvoiceEntity> invoiceDataEntities;
 
         if (query is null)
             invoiceDataEntities = await _invoiceRepository.Get();
@@ -109,14 +109,14 @@ public class InvoiceService : IInvoiceService
         else
             invoiceDataEntities = await _invoiceRepository.Get();
 
-        return invoiceDataEntities.Select(i => _mapper.Map<InvoiceDataModel>(i));
+        return invoiceDataEntities.Select(i => _mapper.Map<InvoiceModel>(i));
     }
 
-    public async Task<Guid> Add(InvoiceDataModel invoiceData)
+    public async Task<Guid> Add(InvoiceModel invoiceData)
     {
         await GetInvoiceDetails(invoiceData);
 
-        InvoiceDataEntity invoiceDataEntity = _mapper.Map<InvoiceDataEntity>(invoiceData);
+        InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
 
         Guid id = await _invoiceRepository.Add(invoiceDataEntity);
         await _customerService.UpdateInvoiceNumber(invoiceData.Customer!.Id);
@@ -124,11 +124,11 @@ public class InvoiceService : IInvoiceService
         return id;
     }
 
-    public async Task Update(InvoiceDataModel invoiceData)
+    public async Task Update(InvoiceModel invoiceData)
     {
         await Get(invoiceData.Id);
 
-        InvoiceDataEntity invoiceEntity = _mapper.Map<InvoiceDataEntity>(invoiceData);
+        InvoiceEntity invoiceEntity = _mapper.Map<InvoiceEntity>(invoiceData);
 
         await _invoiceRepository.Update(invoiceEntity);
     }
@@ -142,7 +142,7 @@ public class InvoiceService : IInvoiceService
 
     public async Task GeneratePDF(Guid id)
     {
-        InvoiceDataModel invoiceData = await Get(id);
+        InvoiceModel invoiceData = await Get(id);
         InvoiceDocument document = new(invoiceData);
         document.GeneratePdf(invoiceData.GenerateFileLocation());
 

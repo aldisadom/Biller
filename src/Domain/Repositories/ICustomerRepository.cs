@@ -9,6 +9,5 @@ public interface ICustomerRepository
     Task<IEnumerable<CustomerEntity>> Get();
     Task<Guid> Add(CustomerEntity customer);
     Task Update(CustomerEntity customer);
-    Task UpdateInvoiceNumber(CustomerEntity customer);
     Task Delete(Guid id);
 }

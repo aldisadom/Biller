@@ -1,9 +1,9 @@
 ﻿using Contracts.Responses.Customer;
 using Contracts.Responses.Seller;
 
-namespace Contracts.Responses.InvoiceData;
+namespace Contracts.Responses.Invoice;
 
-public class InvoiceDataResponse
+public class InvoiceResponse
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }

@@ -16,7 +16,7 @@ public class ItemMappingProfile : Profile
     /// </summary>
     public ItemMappingProfile()
     {
-        //source, destination
+        //source, destination (which parameters must be mapped)
         CreateMap<ItemModel, ItemEntity>(MemberList.Source);
         CreateMap<ItemEntity, ItemModel>(MemberList.Destination);
 

@@ -108,11 +108,11 @@ public class SellerComponent : IComponent
 
 public class InvoiceDocument : IDocument
 {
-    public InvoiceDataModel Model { get; }
+    public InvoiceModel Model { get; }
     public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     public DocumentSettings GetSettings() => DocumentSettings.Default;
 
-    public InvoiceDocument(InvoiceDataModel model)
+    public InvoiceDocument(InvoiceModel model)
     {
         Model = model;
     }
