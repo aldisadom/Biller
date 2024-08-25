@@ -1,13 +1,13 @@
 ﻿namespace Domain.Entities;
 
-public record InvoiceDataEntity
+public record InvoiceEntity
 {
     public Guid Id { get; set; }
     public Guid CustomerId { get; set; }
     public Guid SellerId { get; set; }
     public Guid UserId { get; set; }
     public string FilePath { get; set; } = string.Empty;
-    public string Number { get; set; } = string.Empty;
+    public int InvoiceNumber { get; set; }
     public string UserData { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; }
     public DateTime DueDate { get; set; }

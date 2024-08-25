@@ -61,7 +61,7 @@ public class ItemController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(ItemListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery] ItemGetRequest query)
+    public async Task<IActionResult> Get([FromQuery] ItemGetRequest? query)
     {
         IEnumerable<ItemModel> items = await _itemService.Get(query);
 

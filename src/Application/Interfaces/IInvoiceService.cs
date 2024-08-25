@@ -1,16 +1,14 @@
 ﻿using Application.Models;
-using Contracts.Requests.InvoiceData;
-using Contracts.Requests.Item;
-using Domain.Entities;
+using Contracts.Requests.Invoice;
 
 namespace Application.Interfaces;
 
 public interface IInvoiceService
 {
-    Task<Guid> Add(InvoiceDataModel invoiceData);
+    Task<Guid> Add(InvoiceModel invoiceData);
     Task Delete(Guid id);
-    Task<IEnumerable<InvoiceDataModel>> Get(InvoiceDataGetRequest query);
-    Task<InvoiceDataModel> Get(Guid id);
-    Task Update(InvoiceDataModel invoiceData);
+    Task<IEnumerable<InvoiceModel>> Get(InvoiceGetRequest? query);
+    Task<InvoiceModel> Get(Guid id);
+    Task Update(InvoiceModel invoiceData);
     Task GeneratePDF(Guid id);
 }

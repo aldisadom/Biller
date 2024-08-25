@@ -1,6 +1,6 @@
-﻿namespace Contracts.Requests.InvoiceData;
+﻿namespace Contracts.Requests.Invoice;
 
-public record InvoiceDataGetRequest
+public record InvoiceGetRequest
 {
     public Guid? UserId { get; set; }
     public Guid? SellerId { get; set; }

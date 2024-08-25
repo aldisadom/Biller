@@ -10,8 +10,9 @@ public class PasswordEncryptionService : IPasswordEncryptionService
 
     public PasswordEncryptionService(IOptions<PasswordEncryption> passwordEncryption)
     {
-        _passwordSalt = passwordEncryption.Value.Salt
-            ?? throw new ArgumentNullException($"Password salt is missing");
+        _passwordSalt = passwordEncryption.Value.Salt;
+        if (string.IsNullOrEmpty(_passwordSalt))
+            throw new ArgumentNullException(_passwordSalt, "Password salt is missing");
     }
 
     public string Encrypt(string password)

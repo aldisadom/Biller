@@ -16,7 +16,7 @@ public class CustomerMappingProfile : Profile
     /// </summary>
     public CustomerMappingProfile()
     {
-        //source, destination
+        //source, destination (which parameters must be mapped)
         CreateMap<CustomerModel, CustomerEntity>(MemberList.Source);
         CreateMap<CustomerEntity, CustomerModel>(MemberList.Destination);
 

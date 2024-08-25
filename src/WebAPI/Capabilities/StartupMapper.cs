@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using WebAPI.MappingProfiles;
 
-
 namespace WebAPI.Capabilities;
 
 /// <summary>
@@ -21,7 +20,7 @@ public static class StartupMapper
             mc.AddProfile(new ItemMappingProfile());
             mc.AddProfile(new CustomerMappingProfile());
             mc.AddProfile(new SellerMappingProfile());
-            mc.AddProfile(new InvoiceDataMappingProfile());
+            mc.AddProfile(new InvoiceMappingProfile());
         });
 
         mapperConfig.AssertConfigurationIsValid();

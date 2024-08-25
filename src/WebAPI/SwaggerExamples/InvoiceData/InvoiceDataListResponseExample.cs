@@ -1,23 +1,22 @@
 ﻿using Contracts.Responses.Customer;
-using Contracts.Responses.InvoiceData;
+using Contracts.Responses.Invoice;
 using Contracts.Responses.Seller;
 using Swashbuckle.AspNetCore.Filters;
-using System.Xml.Linq;
 
 namespace WebAPI.SwaggerExamples.InvoiceData;
 
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceDataListResponse>
+public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceListResponse>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public InvoiceDataListResponse GetExamples()
+    public InvoiceListResponse GetExamples()
     {
-        InvoiceDataListResponse invoiceDataListResponse = new();
+        InvoiceListResponse invoiceDataListResponse = new();
 
         /*
          * public Guid Id { get; set; }
@@ -33,11 +32,11 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceDataListR
     public decimal TotalPrice { get; set; }
         */
 
-        invoiceDataListResponse.Invoices.Add(new InvoiceDataResponse()
+        invoiceDataListResponse.Invoices.Add(new InvoiceResponse()
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
-            Number = "0001",
+            InvoiceNumber = 1,
             CreatedDate = DateTime.Now,
             DueDate = DateTime.Now.AddDays(10),
             Seller = new SellerResponse
@@ -51,19 +50,19 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceDataListR
             Items =
             [
                 new InvoiceItemResponse()
-                {  
+                {
                     Id = Guid.NewGuid(),
-                } 
+                }
             ],
             Comments = "",
             TotalPrice = 1500m,
         });
 
-        invoiceDataListResponse.Invoices.Add(new InvoiceDataResponse()
+        invoiceDataListResponse.Invoices.Add(new InvoiceResponse()
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
-            Number = "0005",
+            InvoiceNumber = 5,
             CreatedDate = DateTime.Now.AddDays(-1),
             DueDate = DateTime.Now.AddDays(10),
             Seller = new SellerResponse

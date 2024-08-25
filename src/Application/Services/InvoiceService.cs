@@ -1,11 +1,11 @@
 ﻿using Application.Interfaces;
 using Application.Models;
+using Application.Models.InvoiceGenerationModels;
 using AutoMapper;
-using Contracts.Requests.InvoiceData;
+using Contracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
-using Newtonsoft.Json;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 
@@ -34,41 +34,24 @@ public class InvoiceService : IInvoiceService
         _invoiceRepository = invoiceRepository;
     }
 
-    private static void GenerateInvoiceFolderPath(InvoiceDataModel invoiceData)
+    private static void GenerateInvoiceFolderPath(InvoiceModel invoiceData)
     {
         string folderPath = invoiceData.GenerateFolderLocation();
         if (!Directory.Exists(folderPath))
             Directory.CreateDirectory(folderPath);
     }
 
-    private static void GenerateInvoiceName(InvoiceDataModel invoiceData)
-    {
-        invoiceData.Customer!.InvoiceNumber++;
-        if (invoiceData.Customer.InvoiceNumber < 10)
-            invoiceData.Number = "00000";
-        else if (invoiceData.Customer.InvoiceNumber < 100)
-            invoiceData.Number = "0000";
-        else if (invoiceData.Customer.InvoiceNumber < 1000)
-            invoiceData.Number = "000";
-        else if (invoiceData.Customer.InvoiceNumber < 10000)
-            invoiceData.Number = "00";
-        else if (invoiceData.Customer.InvoiceNumber < 100000)
-            invoiceData.Number = "0";
-
-        invoiceData.Number += invoiceData.Customer.InvoiceNumber.ToString();
-    }
-
-    private async Task GetInvoiceDetails(InvoiceDataModel invoiceData)
+    private async Task GetInvoiceDetails(InvoiceModel invoiceData)
     {
         invoiceData.User = await _userService.Get(invoiceData.User!.Id);
         invoiceData.Seller = await _sellerService.Get(invoiceData.Seller!.Id);
         invoiceData.Customer = await _customerService.Get(invoiceData.Customer!.Id);
+        invoiceData.InvoiceNumber = invoiceData.Customer.InvoiceNumber;
         List<ItemModel> items = (await _itemService.Get(invoiceData.Items!.Select(x => x.Id).ToList())).ToList();
 
         MapItemToInvoiceItem(invoiceData.Items!, items);
 
         GenerateInvoiceFolderPath(invoiceData);
-        GenerateInvoiceName(invoiceData);
     }
 
     public void MapInvoiceItemToItem(List<InvoiceItemModel> invoiceItems, List<ItemModel> items)
@@ -103,66 +86,18 @@ public class InvoiceService : IInvoiceService
         }
     }
 
-    public ItemModel MapInvoiceItem(InvoiceItemModel invoiceItem)
+    public async Task<InvoiceModel> Get(Guid id)
     {
-        return new ItemModel()
-        {
-            Id = invoiceItem.Id,
-            Price = invoiceItem.Price,
-            Name = invoiceItem.Name
-        };
-    }
-
-    public InvoiceDataEntity MapInvoiceData(InvoiceDataModel invoiceData)
-    {
-        return  new InvoiceDataEntity()
-        {
-            Id = invoiceData.Id,
-            SellerId = invoiceData.Seller!.Id,
-            CustomerId = invoiceData.Customer!.Id,
-            UserId = invoiceData.User!.Id,
-
-            FilePath = invoiceData.GenerateFileLocation(),
-            Number = invoiceData.Number,
-            UserData = JsonConvert.SerializeObject(invoiceData.User),
-            CreatedDate = invoiceData.CreatedDate,
-            DueDate = invoiceData.DueDate,
-            SellerData = JsonConvert.SerializeObject(invoiceData.Seller),
-            CustomerData = JsonConvert.SerializeObject(invoiceData.Customer),
-            Comments = invoiceData.Comments,
-            TotalPrice = invoiceData.CalculateTotal(),
-            ItemsData = JsonConvert.SerializeObject(invoiceData.Items)
-        };
-    }
-
-    public InvoiceDataModel MapInvoiceData(InvoiceDataEntity invoiceData)
-    {
-        return new InvoiceDataModel()
-        {
-            Id = invoiceData.Id,
-            Number = invoiceData.Number,
-            User = JsonConvert.DeserializeObject<UserModel>(invoiceData.UserData),
-            CreatedDate = invoiceData.CreatedDate,
-            DueDate = invoiceData.DueDate,
-            Seller = JsonConvert.DeserializeObject<SellerModel>(invoiceData.SellerData),
-            Customer = JsonConvert.DeserializeObject<CustomerModel>(invoiceData.CustomerData),
-            Comments = invoiceData.Comments,
-            Items = JsonConvert.DeserializeObject<List<InvoiceItemModel>>(invoiceData.ItemsData)
-        };
-    }
-
-    public async Task<InvoiceDataModel> Get(Guid id)
-    {
-        InvoiceDataEntity invoiceDataEntity = await _invoiceRepository.Get(id)
+        InvoiceEntity invoiceDataEntity = await _invoiceRepository.Get(id)
             ?? throw new NotFoundException($"Invoice data:{id} not found");
 
-        return MapInvoiceData(invoiceDataEntity);
+        return _mapper.Map<InvoiceModel>(invoiceDataEntity);
     }
 
-    public async Task<IEnumerable<InvoiceDataModel>> Get(InvoiceDataGetRequest query)
+    public async Task<IEnumerable<InvoiceModel>> Get(InvoiceGetRequest? query)
     {
-        IEnumerable<InvoiceDataEntity> invoiceDataEntities;
-                
+        IEnumerable<InvoiceEntity> invoiceDataEntities;
+
         if (query is null)
             invoiceDataEntities = await _invoiceRepository.Get();
         else if (query.CustomerId is not null)
@@ -174,26 +109,26 @@ public class InvoiceService : IInvoiceService
         else
             invoiceDataEntities = await _invoiceRepository.Get();
 
-        return invoiceDataEntities.Select(i=>MapInvoiceData(i));
+        return invoiceDataEntities.Select(i => _mapper.Map<InvoiceModel>(i));
     }
 
-    public async Task<Guid> Add(InvoiceDataModel invoiceData)
+    public async Task<Guid> Add(InvoiceModel invoiceData)
     {
         await GetInvoiceDetails(invoiceData);
 
-        InvoiceDataEntity invoiceDataEntity = MapInvoiceData(invoiceData);
+        InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
 
         Guid id = await _invoiceRepository.Add(invoiceDataEntity);
-        await _customerService.UpdateInvoiceNumber(invoiceData!.Customer.Id);
+        await _customerService.IncreaseInvoiceNumber(invoiceData.Customer!.Id);
 
         return id;
     }
 
-    public async Task Update(InvoiceDataModel invoiceData)
+    public async Task Update(InvoiceModel invoiceData)
     {
         await Get(invoiceData.Id);
 
-        InvoiceDataEntity invoiceEntity = MapInvoiceData(invoiceData);
+        InvoiceEntity invoiceEntity = _mapper.Map<InvoiceEntity>(invoiceData);
 
         await _invoiceRepository.Update(invoiceEntity);
     }
@@ -207,11 +142,11 @@ public class InvoiceService : IInvoiceService
 
     public async Task GeneratePDF(Guid id)
     {
-        InvoiceDataModel invoiceData = await Get(id);
+        InvoiceModel invoiceData = await Get(id);
         InvoiceDocument document = new(invoiceData);
         document.GeneratePdf(invoiceData.GenerateFileLocation());
 
         InvoiceDocumentADA documentADA = new(invoiceData);
-        documentADA.GeneratePdf(invoiceData.GenerateFileLocation() + "a");
+        documentADA.GeneratePdf(invoiceData.GenerateFileLocation("ADA"));
     }
 }

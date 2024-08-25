@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Contracts.Requests.InvoiceData;
+namespace Contracts.Requests.Invoice;
 
-public class InvoiceDataAddRequest
+public class InvoiceAddRequest
 {
     [Required]
     public Guid SellerId { get; set; }

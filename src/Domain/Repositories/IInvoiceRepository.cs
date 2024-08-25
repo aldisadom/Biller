@@ -4,13 +4,13 @@ namespace Domain.Repositories
 {
     public interface IInvoiceRepository
     {
-        Task<Guid> Add(InvoiceDataEntity invoice);
+        Task<Guid> Add(InvoiceEntity invoice);
         Task Delete(Guid id);
-        Task<IEnumerable<InvoiceDataEntity>> Get();
-        Task<InvoiceDataEntity?> Get(Guid id);
-        Task<IEnumerable<InvoiceDataEntity>> GetByUserId(Guid userId);
-        Task<IEnumerable<InvoiceDataEntity>> GetBySellerId(Guid sellerId);
-        Task<IEnumerable<InvoiceDataEntity>> GetByCustomerId(Guid customerId);
-        Task Update(InvoiceDataEntity invoice);
+        Task<IEnumerable<InvoiceEntity>> Get();
+        Task<InvoiceEntity?> Get(Guid id);
+        Task<IEnumerable<InvoiceEntity>> GetByUserId(Guid userId);
+        Task<IEnumerable<InvoiceEntity>> GetBySellerId(Guid sellerId);
+        Task<IEnumerable<InvoiceEntity>> GetByCustomerId(Guid customerId);
+        Task Update(InvoiceEntity invoice);
     }
 }

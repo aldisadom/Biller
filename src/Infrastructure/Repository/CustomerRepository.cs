@@ -40,8 +40,8 @@ public class CustomerRepository : ICustomerRepository
     public async Task<Guid> Add(CustomerEntity customer)
     {
         string sql = @"INSERT INTO customers
-                        (seller_id, company_name, street, city, email, phone, state, invoice_name, company_number)
-                        VALUES (@SellerId, @CompanyName, @Street, @City, @Email, @Phone, @State, @InvoiceName, @CompanyNumber)
+                        (seller_id, company_name, street, city, email, phone, state, invoice_name, company_number, invoice_number)
+                        VALUES (@SellerId, @CompanyName, @Street, @City, @Email, @Phone, @State, @InvoiceName, @CompanyNumber, 1)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, customer);
@@ -51,19 +51,20 @@ public class CustomerRepository : ICustomerRepository
     {
         string sql = @"UPDATE customers
                         SET company_name=@CompanyName, street=@Street, city=@City, email=@Email,
-                            phone=@Phone, state=@State, invoice_name=@InvoiceName, company_number=@CompanyNumber
+                            phone=@Phone, state=@State, invoice_name=@InvoiceName, company_number=@CompanyNumber,
+                            invoice_number = @InvoiceNumber
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, customer);
     }
 
-    public async Task UpdateInvoiceNumber(CustomerEntity customer)
+    public async Task IncreaseInvoiceNumber(Guid id)
     {
         string sql = @"UPDATE customers
-                        SET invoice_number=@InvoiceNumber
+                        SET invoice_number += 1
                         WHERE id=@Id";
 
-        await _dbConnection.ExecuteAsync(sql, customer);
+        await _dbConnection.ExecuteAsync(sql, new { id });
     }
 
     public async Task Delete(Guid id)

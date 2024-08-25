@@ -1,6 +1,5 @@
 ﻿using Contracts.Responses.Customer;
-using Contracts.Responses.InvoiceData;
-using Contracts.Responses.Item;
+using Contracts.Responses.Invoice;
 using Contracts.Responses.Seller;
 using Swashbuckle.AspNetCore.Filters;
 
@@ -9,19 +8,19 @@ namespace WebAPI.SwaggerExamples.InvoiceData;
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataResponseExample : IExamplesProvider<InvoiceDataResponse>
+public class InvoiceDataResponseExample : IExamplesProvider<InvoiceResponse>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public InvoiceDataResponse GetExamples()
+    public InvoiceResponse GetExamples()
     {
-        return new InvoiceDataResponse()
+        return new InvoiceResponse()
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
-            Number = "0001",
+            InvoiceNumber = 1,
             CreatedDate = DateTime.Now,
             DueDate = DateTime.Now.AddDays(10),
             Seller = new SellerResponse

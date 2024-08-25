@@ -50,6 +50,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{F4A54032-C55
 		migrations\sql\025-Alter-table-customers_add_number_column.sql = migrations\sql\025-Alter-table-customers_add_number_column.sql
 		migrations\sql\026-Create-table-invoices.sql = migrations\sql\026-Create-table-invoices.sql
 		migrations\sql\027-Alter-table-items_quantity.sql = migrations\sql\027-Alter-table-items_quantity.sql
+		migrations\sql\028-Alter-table-invoice_invoice_number.sql = migrations\sql\028-Alter-table-invoice_invoice_number.sql
 	EndProjectSection
 EndProject
 Global

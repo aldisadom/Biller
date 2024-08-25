@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
-using Contracts.Requests.InvoiceData;
 using Contracts.Requests.Item;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -37,7 +36,7 @@ public class ItemService : IItemService
         return _mapper.Map<IEnumerable<ItemModel>>(itemEntities);
     }
 
-    public async Task<IEnumerable<ItemModel>> Get(ItemGetRequest query)
+    public async Task<IEnumerable<ItemModel>> Get(ItemGetRequest? query)
     {
         IEnumerable<ItemEntity> itemEntities;
 

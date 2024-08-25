@@ -1,40 +1,43 @@
-﻿using Contracts.Requests.InvoiceData;
-using Contracts.Requests.Item;
-using Contracts.Responses.Customer;
-using Contracts.Responses.InvoiceData;
-using Contracts.Responses.Seller;
+﻿using Contracts.Requests.Customer;
+using Contracts.Requests.Invoice;
+using Contracts.Requests.Seller;
 using Swashbuckle.AspNetCore.Filters;
-using System.ComponentModel.DataAnnotations;
 
 namespace WebAPI.SwaggerExamples.InvoiceData;
 
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataUpdateRequestExample : IExamplesProvider<InvoiceDataUpdateRequest>
+public class InvoiceDataUpdateRequestExample : IExamplesProvider<InvoiceUpdateRequest>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public InvoiceDataUpdateRequest GetExamples()
+    public InvoiceUpdateRequest GetExamples()
     {
-        return new InvoiceDataUpdateRequest()
+        return new InvoiceUpdateRequest()
         {
-            Id = Guid.NewGuid(),            
+            Id = Guid.NewGuid(),
             CreatedDate = DateTime.Now,
             DueDate = DateTime.Now.AddDays(10),
-            SellerId = Guid.NewGuid(),
-            CustomerId = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
+            Seller = new SellerUpdateRequest()
+            {
+                Id = Guid.NewGuid()
+            },
+            Customer = new CustomerUpdateRequest()
+            {
+                Id = Guid.NewGuid()
+            },
             Items =
             [
-                new InvoiceItemResponse()
+                new InvoiceItemUpdateRequest()
                 {
                     Id = Guid.NewGuid(),
                 }
             ],
-            Comments = "Invoice comment",
-            TotalPrice = 1500m,
+            Comments = "Invoice comment"
         };
     }
 }

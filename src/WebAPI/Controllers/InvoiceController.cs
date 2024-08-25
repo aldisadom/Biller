@@ -1,12 +1,10 @@
 ﻿using Application.Interfaces;
 using Application.Models;
-using Application.Services;
 using AutoMapper;
-using Contracts.Requests.InvoiceData;
+using Contracts.Requests.Invoice;
 using Contracts.Responses;
-using Contracts.Responses.InvoiceData;
+using Contracts.Responses.Invoice;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Swashbuckle.AspNetCore.Filters;
 using WebAPI.SwaggerExamples.InvoiceData;
 
@@ -43,14 +41,14 @@ public class InvoiceController : ControllerBase
     /// <param name="id">Invoices unique ID</param>
     /// <returns>invoice data</returns>
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(InvoiceDataResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(InvoiceResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataResponseExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id)
     {
-        InvoiceDataModel invoice = await _invoiceService.Get(id);
+        InvoiceModel invoice = await _invoiceService.Get(id);
 
-        InvoiceDataResponse result = _mapper.Map<InvoiceDataResponse>(invoice);
+        InvoiceResponse result = _mapper.Map<InvoiceResponse>(invoice);
 
         return Ok(result);
     }
@@ -61,15 +59,15 @@ public class InvoiceController : ControllerBase
     /// <param name="query">filtering parameters</param>
     /// <returns>list of invoices</returns>
     [HttpGet]
-    [ProducesResponseType(typeof(InvoiceDataListResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(InvoiceListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery] InvoiceDataGetRequest query)
+    public async Task<IActionResult> Get([FromQuery] InvoiceGetRequest? query)
     {
-        IEnumerable<InvoiceDataModel> invoicesData = await _invoiceService.Get(query);
+        IEnumerable<InvoiceModel> invoicesData = await _invoiceService.Get(query);
 
-        InvoiceDataListResponse result = new()
+        InvoiceListResponse result = new()
         {
-            Invoices = invoicesData.Select(i => _mapper.Map<InvoiceDataResponse>(i)).ToList()
+            Invoices = invoicesData.Select(i => _mapper.Map<InvoiceResponse>(i)).ToList()
         };
 
         return Ok(result);
@@ -80,29 +78,11 @@ public class InvoiceController : ControllerBase
     /// </summary>
     /// <returns>Invoice file name</returns>
     [HttpPost]
-    [SwaggerRequestExample(typeof(InvoiceDataAddRequest), typeof(InvoiceDataAddRequestExample))]
+    [SwaggerRequestExample(typeof(InvoiceAddRequest), typeof(InvoiceDataAddRequestExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Add(InvoiceDataAddRequest invoiceDataRequest)
+    public async Task<IActionResult> Add(InvoiceAddRequest invoiceDataRequest)
     {
-        InvoiceDataModel invoiceData = new()
-        {
-            Seller = new SellerModel{
-                Id = invoiceDataRequest.SellerId 
-            },
-            Customer = new CustomerModel
-            {
-                Id = invoiceDataRequest.CustomerId
-            },
-            User = new UserModel
-            {
-                Id = invoiceDataRequest.UserId
-            },
-            DueDate = invoiceDataRequest.DueDate,
-            Items = invoiceDataRequest.Items.Select(i => _mapper.Map<InvoiceItemModel>(i)).ToList(),
-
-            Comments = invoiceDataRequest.Comments,
-            CreatedDate = invoiceDataRequest.CreatedDate,
-        };
+        InvoiceModel invoiceData = _mapper.Map<InvoiceModel>(invoiceDataRequest);
 
         AddResponse result = new()
         {
@@ -117,8 +97,7 @@ public class InvoiceController : ControllerBase
     /// <param name="id">Invoices unique ID</param>
     /// <returns>invoice pdf</returns>
     [HttpPost("generate")]
-    [ProducesResponseType(typeof(InvoiceDataResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataResponseExample))]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GeneratePDF(Guid id)
     {
@@ -134,10 +113,10 @@ public class InvoiceController : ControllerBase
     /// <returns></returns>
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [SwaggerRequestExample(typeof(InvoiceDataUpdateRequest), typeof(InvoiceDataUpdateRequestExample))]
-    public async Task<IActionResult> Update(InvoiceDataUpdateRequest invoice)
+    [SwaggerRequestExample(typeof(InvoiceUpdateRequest), typeof(InvoiceDataUpdateRequestExample))]
+    public async Task<IActionResult> Update(InvoiceUpdateRequest invoice)
     {
-        InvoiceDataModel invoiceData = _mapper.Map<InvoiceDataModel>(invoice);
+        InvoiceModel invoiceData = _mapper.Map<InvoiceModel>(invoice);
 
         await _invoiceService.Update(invoiceData);
 

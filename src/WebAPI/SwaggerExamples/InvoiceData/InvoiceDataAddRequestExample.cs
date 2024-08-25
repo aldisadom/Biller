@@ -1,4 +1,4 @@
-﻿using Contracts.Requests.InvoiceData;
+﻿using Contracts.Requests.Invoice;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.InvoiceData;
@@ -6,15 +6,15 @@ namespace WebAPI.SwaggerExamples.InvoiceData;
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataAddRequestExample : IExamplesProvider<InvoiceDataAddRequest>
+public class InvoiceDataAddRequestExample : IExamplesProvider<InvoiceAddRequest>
 {
     /// <summary>
     /// example
     /// </summary>
     /// <returns></returns>
-    public InvoiceDataAddRequest GetExamples()
+    public InvoiceAddRequest GetExamples()
     {
-        return new InvoiceDataAddRequest()
+        return new InvoiceAddRequest()
         {
             UserId = Guid.Parse("2271c7b3-69ed-4e0c-a820-ecafbd57ac80"),
             SellerId = Guid.Parse("c85f22c7-1323-423a-a402-9b711a44c119"),

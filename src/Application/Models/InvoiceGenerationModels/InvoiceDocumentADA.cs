@@ -1,18 +1,17 @@
 ﻿using Application.Helpers;
-using Application.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-namespace Application.Services;
+namespace Application.Models.InvoiceGenerationModels;
 
 public class InvoiceDocumentADA : IDocument
 {
-    public InvoiceDataModel Model { get; }
+    public InvoiceModel Model { get; }
     public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     public DocumentSettings GetSettings() => DocumentSettings.Default;
 
-    public InvoiceDocumentADA(InvoiceDataModel model)
+    public InvoiceDocumentADA(InvoiceModel model)
     {
         Model = model;
     }
@@ -26,7 +25,7 @@ public class InvoiceDocumentADA : IDocument
             row.RelativeItem().Column(column =>
             {
                 column.Item().AlignCenter().Text($"ATLIKTŲ DARBŲ AKTAS").Style(titleStyle);
-                column.Item().AlignCenter().Text($"Serija {Model.Customer!.InvoiceName} Nr. {Model.Number}");
+                column.Item().AlignCenter().Text($"Serija {Model.Customer!.InvoiceName} Nr. {Model.GenerateInvoiceName()}");
             });
             //place for image
             //            row.ConstantItem(100).Height(50).Placeholder();
@@ -110,7 +109,7 @@ public class InvoiceDocumentADA : IDocument
 
                 table.Cell().Element(CellStyle).AlignRight().Text($"{item.Price}");
                 table.Cell().Element(CellStyle).AlignRight().Text($"{item.Quantity}");
-                table.Cell().Element(CellStyle).AlignRight().Text($"{item.CalculateTotal}");
+                table.Cell().Element(CellStyle).AlignRight().Text($"{item.CalculateTotal():0.##}");
 
                 static IContainer CellStyle(IContainer container)
                 {
@@ -127,7 +126,7 @@ public class InvoiceDocumentADA : IDocument
     {
         container.ShowEntire().PaddingTop(5).Column(column =>
         {
-            column.Item().AlignRight().Text($"Bendra suma: {Model.CalculateTotal()}€").FontSize(14);
+            column.Item().AlignRight().Text($"Bendra suma: {Model.CalculateTotal():0.##}€").FontSize(14);
             column.Spacing(5);
             column.Item().Text($"Suma žodžiais: {NumberToWordsLT.Decode(Model.CalculateTotal())}");
         });

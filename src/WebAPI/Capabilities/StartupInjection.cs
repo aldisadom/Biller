@@ -26,8 +26,9 @@ public static class StartupInjection
         services.AddApplication();
         services.AddClients();
 
-        string dbConnectionString = configuration.GetConnectionString("PostgreConnection")
-            ?? throw new ArgumentNullException("Postgre connection string not found");
+        string? dbConnectionString = configuration.GetConnectionString("PostgreConnection");
+        if (string.IsNullOrEmpty(dbConnectionString))
+            throw new ArgumentNullException(dbConnectionString, "Postgre connection string not found");
 
         services.AddInfrastructure(dbConnectionString);
 
