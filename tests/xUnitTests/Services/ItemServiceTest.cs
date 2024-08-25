@@ -4,7 +4,6 @@ using AutoFixture.Xunit2;
 using AutoMapper;
 using Contracts.Requests.Item;
 using Domain.Entities;
-
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
@@ -21,7 +20,7 @@ public class ItemServiceTest
 
     public ItemServiceTest()
     {
-        _itemRepositoryMock = new Mock<IItemRepository>();
+        _itemRepositoryMock = new Mock<IItemRepository>(MockBehavior.Strict);
 
         var mapperConfig = new MapperConfiguration(mc =>
         {
@@ -68,7 +67,7 @@ public class ItemServiceTest
 
     [Theory]
     [AutoData]
-    public async Task GetIds_GivenValidids_ReturnsDTOs(List<ItemEntity> itemList)
+    public async Task GetIds_GivenValidIds_ReturnsDTOs(List<ItemEntity> itemList)
     {
         //Arrange
         List<Guid> ids = itemList.Select(x => x.Id).ToList();
@@ -108,13 +107,42 @@ public class ItemServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _itemRepositoryMock.Verify(m => m.Get(), Times.Once());
+        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
     [AutoData]
-    public async Task Get_GivenAddressIdQuery_ReturnsDTO(ItemGetRequest request, List<ItemEntity> itemList)
+    public async Task Get_GivenNullQuery_ReturnsDTO(List<ItemEntity> itemList)
     {
         //Arrange
+        ItemGetRequest? request = null;
+
+        _itemRepositoryMock.Setup(m => m.Get())
+                        .ReturnsAsync(itemList);
+
+        List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);
+
+        //Act
+        var result = await _itemService.Get(request);
+
+        //Assert
+        result.Count().Should().Be(itemList.Count);
+        result.Should().BeEquivalentTo(expectedResult);
+
+        _itemRepositoryMock.Verify(m => m.Get(), Times.Once());
+        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task Get_GivenAddressIdQuery_ReturnsDTO(List<ItemEntity> itemList)
+    {
+        //Arrange
+        ItemGetRequest? request = new ItemGetRequest()
+        {
+            CustomerId = new Guid()
+        };
+
         _itemRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.CustomerId!))
                         .ReturnsAsync(itemList);
 
@@ -127,6 +155,7 @@ public class ItemServiceTest
         result.Count().Should().Be(itemList.Count);
 
         _itemRepositoryMock.Verify(m => m.GetByCustomerId((Guid)request.CustomerId!), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Never());
     }
 
     [Fact]
@@ -147,6 +176,7 @@ public class ItemServiceTest
         result.Should().BeEquivalentTo(new List<ItemModel>());
 
         _itemRepositoryMock.Verify(m => m.Get(), Times.Once());
+        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -156,8 +186,7 @@ public class ItemServiceTest
         //Arrange
         ItemEntity itemEntity = _mapper.Map<ItemEntity>(item);
 
-        _itemRepositoryMock.Setup(m => m.Add(It.Is<ItemEntity>
-                                (x => x == itemEntity)))
+        _itemRepositoryMock.Setup(m => m.Add(It.Is<ItemEntity>(x => x == itemEntity)))
                                  .ReturnsAsync(item.Id);
 
         //Act
@@ -176,8 +205,8 @@ public class ItemServiceTest
         //Arrange
         ItemEntity itemEntity = _mapper.Map<ItemEntity>(item);
 
-        _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>
-                                (x => x == itemEntity)));
+        _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>(x => x == itemEntity)))
+                        .Returns(Task.CompletedTask);
 
         _itemRepositoryMock.Setup(m => m.Get(itemEntity.Id))
                                 .ReturnsAsync(itemEntity);
@@ -210,6 +239,7 @@ public class ItemServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Update(It.IsAny<ItemEntity>()), Times.Never());
     }
 
     [Theory]
@@ -217,7 +247,8 @@ public class ItemServiceTest
     public async Task Delete_ValidId(ItemEntity item)
     {
         //Arrange
-        _itemRepositoryMock.Setup(m => m.Delete(item.Id));
+        _itemRepositoryMock.Setup(m => m.Delete(item.Id))
+                        .Returns(Task.CompletedTask);
 
         _itemRepositoryMock.Setup(m => m.Get(item.Id))
                         .ReturnsAsync(item);
@@ -247,5 +278,6 @@ public class ItemServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _itemRepositoryMock.Verify(m => m.Get(id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Never());
     }
 }

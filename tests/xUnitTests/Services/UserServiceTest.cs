@@ -4,7 +4,6 @@ using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
 using Domain.Entities;
-
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
@@ -22,7 +21,7 @@ public class UserServiceTest
 
     public UserServiceTest()
     {
-        _userRepositoryMock = new Mock<IUserRepository>();
+        _userRepositoryMock = new Mock<IUserRepository>(MockBehavior.Strict);
 
         var mapperConfig = new MapperConfiguration(mc =>
         {
@@ -31,7 +30,7 @@ public class UserServiceTest
         mapperConfig.AssertConfigurationIsValid();
         _mapper = mapperConfig.CreateMapper();
 
-        _passwordEncryptionServiceMock = new Mock<IPasswordEncryptionService>();
+        _passwordEncryptionServiceMock = new Mock<IPasswordEncryptionService>(MockBehavior.Strict);
         _userService = new UserService(_userRepositoryMock.Object, _passwordEncryptionServiceMock.Object, _mapper);
     }
 
@@ -75,6 +74,7 @@ public class UserServiceTest
         await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await _userService.Login(userModel));
 
         _userRepositoryMock.Verify(m => m.Get(user.Email), Times.Once());
+        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(It.IsAny<string>()), Times.Never());
     }
 
     [Theory]
@@ -202,8 +202,8 @@ public class UserServiceTest
         //Arrange
         UserEntity userEntity = _mapper.Map<UserEntity>(user);
 
-        _userRepositoryMock.Setup(m => m.Update(It.Is<UserEntity>
-                                (x => x == userEntity)));
+        _userRepositoryMock.Setup(m => m.Update(It.Is<UserEntity>(x => x == userEntity)))
+                        .Returns(Task.CompletedTask);
 
         _userRepositoryMock.Setup(m => m.Get(userEntity.Id))
                                 .ReturnsAsync(userEntity);
@@ -236,6 +236,7 @@ public class UserServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _userRepositoryMock.Verify(m => m.Get(user.Id), Times.Once());
+        _userRepositoryMock.Verify(m => m.Update(It.IsAny<UserEntity>()), Times.Never());
     }
 
     [Theory]
@@ -243,7 +244,8 @@ public class UserServiceTest
     public async Task Delete_ValidId(UserEntity user)
     {
         //Arrange
-        _userRepositoryMock.Setup(m => m.Delete(user.Id));
+        _userRepositoryMock.Setup(m => m.Delete(user.Id))
+                        .Returns(Task.CompletedTask);
 
         _userRepositoryMock.Setup(m => m.Get(user.Id))
                         .ReturnsAsync(user);
@@ -273,5 +275,6 @@ public class UserServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _userRepositoryMock.Verify(m => m.Get(id), Times.Once());
+        _userRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Never());
     }
 }

@@ -94,7 +94,7 @@ public class InvoiceService : IInvoiceService
         return _mapper.Map<InvoiceModel>(invoiceDataEntity);
     }
 
-    public async Task<IEnumerable<InvoiceModel>> Get(InvoiceGetRequest query)
+    public async Task<IEnumerable<InvoiceModel>> Get(InvoiceGetRequest? query)
     {
         IEnumerable<InvoiceEntity> invoiceDataEntities;
 
@@ -119,7 +119,7 @@ public class InvoiceService : IInvoiceService
         InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
 
         Guid id = await _invoiceRepository.Add(invoiceDataEntity);
-        await _customerService.UpdateInvoiceNumber(invoiceData.Customer!.Id);
+        await _customerService.IncreaseInvoiceNumber(invoiceData.Customer!.Id);
 
         return id;
     }

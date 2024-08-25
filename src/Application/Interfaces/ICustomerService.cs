@@ -7,8 +7,8 @@ public interface ICustomerService
 {
     Task<Guid> Add(CustomerModel Customer);
     Task Delete(Guid id);
-    Task<IEnumerable<CustomerModel>> Get(CustomerGetRequest query);
+    Task<IEnumerable<CustomerModel>> Get(CustomerGetRequest? query);
     Task<CustomerModel> Get(Guid id);
     Task Update(CustomerModel Customer);
-    Task UpdateInvoiceNumber(Guid id);
+    Task IncreaseInvoiceNumber(Guid id);
 }
