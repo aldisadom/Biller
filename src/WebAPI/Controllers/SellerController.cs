@@ -61,7 +61,7 @@ public class SellerController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(SellerListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(SellerListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery] SellerGetRequest query)
+    public async Task<IActionResult> Get([FromQuery] SellerGetRequest? query)
     {
         IEnumerable<SellerModel> sellers = await _sellerService.Get(query);
 

@@ -2,7 +2,9 @@
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
+using Castle.Core.Resource;
 using Contracts.Requests.Customer;
+using Contracts.Requests.Invoice;
 using Domain.Entities;
 
 using Domain.Exceptions;
@@ -21,7 +23,7 @@ public class CustomerServiceTest
 
     public CustomerServiceTest()
     {
-        _customerRepositoryMock = new Mock<ICustomerRepository>();
+        _customerRepositoryMock = new Mock<ICustomerRepository>(MockBehavior.Strict);
 
         var mapperConfig = new MapperConfiguration(mc =>
         {
@@ -90,9 +92,36 @@ public class CustomerServiceTest
 
     [Theory]
     [AutoData]
-    public async Task Get_GivenAddressIdQuery_ReturnsDTO(CustomerGetRequest request, List<CustomerEntity> customerList)
+    public async Task Get_GivenNullQuery_ReturnsDTO(List<CustomerEntity> customerList)
     {
         //Arrange
+        CustomerGetRequest? request = null;
+
+        _customerRepositoryMock.Setup(m => m.Get())
+                        .ReturnsAsync(customerList);
+
+        List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(customerList);
+
+        //Act
+        var result = await _customerService.Get(request);
+
+        //Assert
+        result.Count().Should().Be(customerList.Count);
+        result.Should().BeEquivalentTo(expectedResult);
+
+        _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task Get_GivenAddressIdQuery_ReturnsDTO(List<CustomerEntity> customerList)
+    {
+        //Arrange
+        CustomerGetRequest? request = new CustomerGetRequest()
+        {
+            SellerId = new Guid()
+        };
+
         _customerRepositoryMock.Setup(m => m.GetBySeller((Guid)request.SellerId!))
                         .ReturnsAsync(customerList);
 
@@ -132,6 +161,7 @@ public class CustomerServiceTest
     public async Task Add_GivenValidId_ReturnsGuid(CustomerModel customer)
     {
         //Arrange
+        customer.InvoiceNumber = 1;
         CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
 
         _customerRepositoryMock.Setup(m => m.Add(It.Is<CustomerEntity>
@@ -154,8 +184,8 @@ public class CustomerServiceTest
         //Arrange
         CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
 
-        _customerRepositoryMock.Setup(m => m.Update(It.Is<CustomerEntity>
-                                (x => x == customerEntity)));
+        _customerRepositoryMock.Setup(m => m.Update(It.Is<CustomerEntity>(x => x == customerEntity)))
+                        .Returns(Task.CompletedTask);
 
         _customerRepositoryMock.Setup(m => m.Get(customerEntity.Id))
                                 .ReturnsAsync(customerEntity);
@@ -175,10 +205,7 @@ public class CustomerServiceTest
     {
         //Arrange
         CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
-
-        _customerRepositoryMock.Setup(m => m.Update(It.Is<CustomerEntity>
-                                (x => x == customerEntity)));
-
+        
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync((CustomerEntity)null!);
 
@@ -188,49 +215,23 @@ public class CustomerServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Update(It.IsAny<CustomerEntity>()), Times.Never());
     }
 
     [Theory]
     [AutoData]
-    public async Task UpdateInvoiceNumber_ReturnsSuccess(CustomerModel customer)
+    public async Task IncreaseInvoiceNumber_ReturnsSuccess(Guid id)
     {
         //Arrange
-        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
-
-        _customerRepositoryMock.Setup(m => m.UpdateInvoiceNumber(It.Is<CustomerEntity>
-                                (x => x == customerEntity)));
-
-        _customerRepositoryMock.Setup(m => m.Get(customerEntity.Id))
-                                .ReturnsAsync(customerEntity);
+        _customerRepositoryMock.Setup(m => m.IncreaseInvoiceNumber(id))
+                        .Returns(Task.CompletedTask);
 
         //Act
         //Assert
-        await _customerService.Invoking(x => x.UpdateInvoiceNumber(customer.Id))
+        await _customerService.Invoking(x => x.IncreaseInvoiceNumber(id))
                                         .Should().NotThrowAsync<Exception>();
-
-        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
-        _customerRepositoryMock.Verify(m => m.UpdateInvoiceNumber(customerEntity), Times.Once());
-    }
-
-    [Theory]
-    [AutoData]
-    public async Task UpdateInvoiceNumber_InvalidId_NotFoundException(CustomerModel customer)
-    {
-        //Arrange
-        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
-
-        _customerRepositoryMock.Setup(m => m.UpdateInvoiceNumber(It.Is<CustomerEntity>
-                                (x => x == customerEntity)));
-
-        _customerRepositoryMock.Setup(m => m.Get(customer.Id))
-                        .ReturnsAsync((CustomerEntity)null!);
-
-        //Act
-        //Assert
-        await _customerService.Invoking(x => x.UpdateInvoiceNumber(customer.Id))
-                            .Should().ThrowAsync<NotFoundException>();
-
-        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
+        
+        _customerRepositoryMock.Verify(m => m.IncreaseInvoiceNumber(id), Times.Once());
     }
 
     [Theory]
@@ -238,7 +239,8 @@ public class CustomerServiceTest
     public async Task Delete_ValidId(CustomerEntity customer)
     {
         //Arrange
-        _customerRepositoryMock.Setup(m => m.Delete(customer.Id));
+        _customerRepositoryMock.Setup(m => m.Delete(customer.Id))
+                        .Returns(Task.CompletedTask);
 
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
@@ -257,8 +259,6 @@ public class CustomerServiceTest
     public async Task Delete_InvalidId_ThrowNotFoundException(Guid id)
     {
         //Arrange
-        _customerRepositoryMock.Setup(m => m.Delete(id));
-
         _customerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((CustomerEntity)null!);
 
@@ -268,5 +268,6 @@ public class CustomerServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Delete(id), Times.Never());
     }
 }

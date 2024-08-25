@@ -27,7 +27,7 @@ public class CustomerService : ICustomerService
         return _mapper.Map<CustomerModel>(customerEntity);
     }
 
-    public async Task<IEnumerable<CustomerModel>> Get(CustomerGetRequest query)
+    public async Task<IEnumerable<CustomerModel>> Get(CustomerGetRequest? query)
     {
         IEnumerable<CustomerEntity> customerEntities;
 
@@ -58,12 +58,9 @@ public class CustomerService : ICustomerService
         await _customerRepository.Update(customerEntity);
     }
 
-    public async Task UpdateInvoiceNumber(Guid id)
-    {
-        CustomerModel customer = await Get(id);
-        customer.InvoiceNumber++;
-        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
-        await _customerRepository.Update(customerEntity);
+    public async Task IncreaseInvoiceNumber(Guid id)
+    {        
+        await _customerRepository.IncreaseInvoiceNumber(id);
     }
 
     public async Task Delete(Guid id)

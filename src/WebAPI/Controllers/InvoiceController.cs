@@ -61,7 +61,7 @@ public class InvoiceController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(InvoiceListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery] InvoiceGetRequest query)
+    public async Task<IActionResult> Get([FromQuery] InvoiceGetRequest? query)
     {
         IEnumerable<InvoiceModel> invoicesData = await _invoiceService.Get(query);
 

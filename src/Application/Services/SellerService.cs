@@ -27,7 +27,7 @@ public class SellerService : ISellerService
         return _mapper.Map<SellerModel>(sellerEntity);
     }
 
-    public async Task<IEnumerable<SellerModel>> Get(SellerGetRequest query)
+    public async Task<IEnumerable<SellerModel>> Get(SellerGetRequest? query)
     {
         IEnumerable<SellerEntity> sellerEntities;
 

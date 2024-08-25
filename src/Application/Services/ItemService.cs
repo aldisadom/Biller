@@ -36,7 +36,7 @@ public class ItemService : IItemService
         return _mapper.Map<IEnumerable<ItemModel>>(itemEntities);
     }
 
-    public async Task<IEnumerable<ItemModel>> Get(ItemGetRequest query)
+    public async Task<IEnumerable<ItemModel>> Get(ItemGetRequest? query)
     {
         IEnumerable<ItemEntity> itemEntities;
 

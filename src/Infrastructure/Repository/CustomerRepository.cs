@@ -58,6 +58,15 @@ public class CustomerRepository : ICustomerRepository
         await _dbConnection.ExecuteAsync(sql, customer);
     }
 
+    public async Task IncreaseInvoiceNumber(Guid id)
+    {
+        string sql = @"UPDATE customers
+                        SET invoice_number += 1
+                        WHERE id=@Id";
+
+        await _dbConnection.ExecuteAsync(sql, new { id });
+    }
+
     public async Task Delete(Guid id)
     {
         string sql = @"DELETE FROM customers

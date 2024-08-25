@@ -8,7 +8,7 @@ namespace Application.Interfaces
         Task<Guid> Add(SellerModel seller);
         Task Delete(Guid id);
         Task<SellerModel> Get(Guid id);
-        Task<IEnumerable<SellerModel>> Get(SellerGetRequest query);
+        Task<IEnumerable<SellerModel>> Get(SellerGetRequest? query);
         Task Update(SellerModel seller);
     }
 }

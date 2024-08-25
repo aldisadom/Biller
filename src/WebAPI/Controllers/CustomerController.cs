@@ -61,7 +61,7 @@ public class CustomerController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(CustomerListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(CustomerListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery] CustomerGetRequest query)
+    public async Task<IActionResult> Get([FromQuery] CustomerGetRequest? query)
     {
         IEnumerable<CustomerModel> customers = await _customerService.Get(query);
 
