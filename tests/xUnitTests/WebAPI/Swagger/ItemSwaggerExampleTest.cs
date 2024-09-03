@@ -1,17 +1,17 @@
 ﻿using FluentAssertions;
 using WebAPI.SwaggerExamples.InvoiceData;
+using WebAPI.SwaggerExamples.Item;
 using xUnitTests.Helpers;
 
-namespace xUnitTests.Swagger;
+namespace xUnitTests.WebAPI.Swagger;
 
-public class InvoiceSwaggerExampleTest
+public class ItemSwaggerExampleTest
 {
-
     [Fact]
-    public void InvoiceDataAddRequestExample_ReturnEmptyList()
+    public void ItemAddRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataAddRequestExample example = new();
+        ItemAddRequestExample example = new();
         //Act
         var exampleValues = example.GetExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
@@ -21,10 +21,10 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceDataUpdateRequestExample_ReturnEmptyList()
+    public void ItemUpdateRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataUpdateRequestExample example = new();
+        ItemUpdateRequestExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();
@@ -35,7 +35,7 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceDataListResponseExample_ReturnEmptyList()
+    public void ItemListResponseExample_ReturnEmptyList()
     {
         //Arrange
         InvoiceDataListResponseExample example = new();
@@ -49,10 +49,10 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceDataResponseExample_ReturnEmptyList()
+    public void ItemResponseExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataResponseExample example = new();
+        ItemResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();

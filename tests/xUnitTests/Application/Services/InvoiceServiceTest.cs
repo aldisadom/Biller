@@ -1,10 +1,11 @@
-﻿using Application.Interfaces;
+﻿using Application.Helpers.NumberToWords;
+using Application.Helpers.PriceToWords;
+using Application.Interfaces;
 using Application.Models;
 using Application.Services;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using AutoMapper;
-using Castle.Core.Resource;
 using Contracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -14,7 +15,7 @@ using Moq;
 using Newtonsoft.Json;
 using WebAPI.MappingProfiles;
 
-namespace xUnitTests.Services;
+namespace xUnitTests.Application.Services;
 
 public class AutoDataConfigured : AutoDataAttribute
 {
@@ -82,6 +83,7 @@ public class InvoiceServiceTest
     private readonly Mock<IUserService> _userServiceMock;
     private readonly Mock<ICustomerService> _customerServiceMock;
     private readonly Mock<ISellerService> _sellerServiceMock;
+    private readonly Mock<IPriceToWords> _priceToWords;
 
     private readonly InvoiceService _invoiceService;
     private readonly IMapper _mapper;
@@ -106,11 +108,12 @@ public class InvoiceServiceTest
         _userServiceMock = new Mock<IUserService>(MockBehavior.Strict);
         _customerServiceMock = new Mock<ICustomerService>(MockBehavior.Strict);
         _sellerServiceMock = new Mock<ISellerService>(MockBehavior.Strict);
+        _priceToWords = new Mock<IPriceToWords>(MockBehavior.Strict);
 
         _fixture = AutoDataConfigured.CreateFixture();
 
         _invoiceService = new InvoiceService(_mapper, _userServiceMock.Object, _customerServiceMock.Object,
-            _itemServiceMock.Object, _sellerServiceMock.Object, _invoiceDataRepositoryMock.Object);
+            _itemServiceMock.Object, _sellerServiceMock.Object, _invoiceDataRepositoryMock.Object, _priceToWords.Object);
     }
 
     [Theory]
@@ -201,7 +204,7 @@ public class InvoiceServiceTest
     public async Task Get_GivenCustomerIdQuery_ReturnsDTO(List<InvoiceEntity> invoiceDataList)
     {
         //Arrange
-        InvoiceGetRequest? request = new InvoiceGetRequest()
+        InvoiceGetRequest? request = new()
         {
             CustomerId = new Guid()
         };
@@ -228,7 +231,7 @@ public class InvoiceServiceTest
     public async Task Get_GivenSellerIdQuery_ReturnsDTO(List<InvoiceEntity> invoiceDataList)
     {
         //Arrange
-        InvoiceGetRequest? request = new InvoiceGetRequest()
+        InvoiceGetRequest? request = new()
         {
             SellerId = new Guid()
         };
@@ -255,7 +258,7 @@ public class InvoiceServiceTest
     public async Task Get_GivenUserIdQuery_ReturnsDTO(List<InvoiceEntity> invoiceDataList)
     {
         //Arrange
-        InvoiceGetRequest? request = new InvoiceGetRequest()
+        InvoiceGetRequest? request = new()
         {
             UserId = new Guid()
         };
@@ -396,6 +399,26 @@ public class InvoiceServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(id), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Never());
+    }
+
+    [Theory]
+    [AutoDataConfigured]
+    public async Task GeneratePDF_ValidId_Generates(Guid id)
+    {
+        //sutvarkyt testa i ta ka reik
+        //Arrange
+        _invoiceDataRepositoryMock.Setup(m => m.Delete(id));
+
+        _invoiceDataRepositoryMock.Setup(m => m.Get(id))
+                        .ReturnsAsync((InvoiceEntity)null!);
+
+        //Act
+        //Assert
+        await _invoiceService.Invoking(x => x.Delete(id))
+                            .Should().ThrowAsync<NotFoundException>();
+
+        _invoiceDataRepositoryMock.Verify(m => m.Get(id), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Never());
     }
 }

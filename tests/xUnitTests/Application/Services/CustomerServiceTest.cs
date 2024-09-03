@@ -2,9 +2,7 @@
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
-using Castle.Core.Resource;
 using Contracts.Requests.Customer;
-using Contracts.Requests.Invoice;
 using Domain.Entities;
 
 using Domain.Exceptions;
@@ -13,15 +11,15 @@ using FluentAssertions;
 using Moq;
 using WebAPI.MappingProfiles;
 
-namespace xUnitTests.Services;
+namespace xUnitTests.Application.Services;
 
-public class CustomerServiceTest
+public class NumberToWordsLTTest
 {
     private readonly Mock<ICustomerRepository> _customerRepositoryMock;
     private readonly CustomerService _customerService;
     private readonly IMapper _mapper;
 
-    public CustomerServiceTest()
+    public NumberToWordsLTTest()
     {
         _customerRepositoryMock = new Mock<ICustomerRepository>(MockBehavior.Strict);
 
@@ -117,7 +115,7 @@ public class CustomerServiceTest
     public async Task Get_GivenAddressIdQuery_ReturnsDTO(List<CustomerEntity> customerList)
     {
         //Arrange
-        CustomerGetRequest? request = new CustomerGetRequest()
+        CustomerGetRequest? request = new()
         {
             SellerId = new Guid()
         };
@@ -205,7 +203,7 @@ public class CustomerServiceTest
     {
         //Arrange
         CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
-        
+
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync((CustomerEntity)null!);
 
@@ -230,7 +228,7 @@ public class CustomerServiceTest
         //Assert
         await _customerService.Invoking(x => x.IncreaseInvoiceNumber(id))
                                         .Should().NotThrowAsync<Exception>();
-        
+
         _customerRepositoryMock.Verify(m => m.IncreaseInvoiceNumber(id), Times.Once());
     }
 

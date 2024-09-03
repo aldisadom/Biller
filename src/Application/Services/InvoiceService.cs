@@ -1,4 +1,6 @@
-﻿using Application.Interfaces;
+﻿using Application.Helpers.NumberToWords;
+using Application.Helpers.PriceToWords;
+using Application.Interfaces;
 using Application.Models;
 using Application.Models.InvoiceGenerationModels;
 using AutoMapper;
@@ -19,12 +21,14 @@ public class InvoiceService : IInvoiceService
     private readonly IItemService _itemService;
     private readonly IUserService _userService;
     private readonly IInvoiceRepository _invoiceRepository;
+    private readonly IPriceToWords _priceToWords;
 
     private static DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     private static DocumentSettings GetSettings() => DocumentSettings.Default;
 
     public InvoiceService(IMapper mapper, IUserService userService, ICustomerService CustomerService,
-                        IItemService itemService, ISellerService sellerService, IInvoiceRepository invoiceRepository)
+                        IItemService itemService, ISellerService sellerService, IInvoiceRepository invoiceRepository,
+                        IPriceToWords priceToWords)
     {
         _mapper = mapper;
         _userService = userService;
@@ -32,6 +36,7 @@ public class InvoiceService : IInvoiceService
         _customerService = CustomerService;
         _sellerService = sellerService;
         _invoiceRepository = invoiceRepository;
+        _priceToWords = priceToWords;
     }
 
     private static void GenerateInvoiceFolderPath(InvoiceModel invoiceData)
@@ -143,10 +148,10 @@ public class InvoiceService : IInvoiceService
     public async Task GeneratePDF(Guid id)
     {
         InvoiceModel invoiceData = await Get(id);
-        InvoiceDocument document = new(invoiceData);
+        InvoiceDocumentSF document = new(invoiceData, _priceToWords);
         document.GeneratePdf(invoiceData.GenerateFileLocation());
 
-        InvoiceDocumentADA documentADA = new(invoiceData);
+        InvoiceDocumentADA documentADA = new(invoiceData, _priceToWords);
         documentADA.GeneratePdf(invoiceData.GenerateFileLocation("ADA"));
     }
 }

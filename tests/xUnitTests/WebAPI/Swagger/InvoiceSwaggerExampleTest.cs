@@ -1,16 +1,17 @@
 ﻿using FluentAssertions;
-using WebAPI.SwaggerExamples.Customer;
+using WebAPI.SwaggerExamples.InvoiceData;
 using xUnitTests.Helpers;
 
-namespace xUnitTests.Swagger;
+namespace xUnitTests.WebAPI.Swagger;
 
-public class CustomerSwaggerExampleTest
+public class InvoiceSwaggerExampleTest
 {
+
     [Fact]
-    public void CustomerAddRequestExample_ReturnEmptyList()
+    public void InvoiceDataAddRequestExample_ReturnEmptyList()
     {
         //Arrange
-        CustomerAddRequestExample example = new();
+        InvoiceDataAddRequestExample example = new();
         //Act
         var exampleValues = example.GetExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
@@ -20,24 +21,10 @@ public class CustomerSwaggerExampleTest
     }
 
     [Fact]
-    public void CustomerUpdateRequestExample_ReturnEmptyList()
+    public void InvoiceDataUpdateRequestExample_ReturnEmptyList()
     {
         //Arrange
-        CustomerUpdateRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void CustomerListResponseExample_ReturnEmptyList()
-    {
-        //Arrange
-        CustomerListResponseExample example = new();
+        InvoiceDataUpdateRequestExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();
@@ -48,10 +35,24 @@ public class CustomerSwaggerExampleTest
     }
 
     [Fact]
-    public void CustomerResponseExample_ReturnEmptyList()
+    public void InvoiceDataListResponseExample_ReturnEmptyList()
     {
         //Arrange
-        CustomerResponseExample example = new();
+        InvoiceDataListResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
+
+        //Assert
+        nullProperties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void InvoiceDataResponseExample_ReturnEmptyList()
+    {
+        //Arrange
+        InvoiceDataResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();

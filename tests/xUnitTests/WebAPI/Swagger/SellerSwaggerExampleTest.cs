@@ -2,7 +2,7 @@
 using WebAPI.SwaggerExamples.Seller;
 using xUnitTests.Helpers;
 
-namespace xUnitTests.Swagger;
+namespace xUnitTests.WebAPI.Swagger;
 
 public class SellerSwaggerExampleTest
 {
