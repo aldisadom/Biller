@@ -1,11 +1,12 @@
-﻿using Application.Helpers.NumberToWords;
-using Application.Helpers.PriceToWords;
+﻿using Application.Helpers.PriceToWords;
 using Application.Interfaces;
 using Application.Models;
+using Application.Models.InvoiceGenerationModels;
 using Application.Services;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using AutoMapper;
+using Common.Enums;
 using Contracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -84,6 +85,7 @@ public class InvoiceServiceTest
     private readonly Mock<ICustomerService> _customerServiceMock;
     private readonly Mock<ISellerService> _sellerServiceMock;
     private readonly Mock<IPriceToWords> _priceToWords;
+    private readonly Mock<IInvoiceDocumentFactory> _invoiceDocumentFactory;
 
     private readonly InvoiceService _invoiceService;
     private readonly IMapper _mapper;
@@ -109,11 +111,12 @@ public class InvoiceServiceTest
         _customerServiceMock = new Mock<ICustomerService>(MockBehavior.Strict);
         _sellerServiceMock = new Mock<ISellerService>(MockBehavior.Strict);
         _priceToWords = new Mock<IPriceToWords>(MockBehavior.Strict);
+        _invoiceDocumentFactory = new Mock<IInvoiceDocumentFactory>(MockBehavior.Strict);
 
         _fixture = AutoDataConfigured.CreateFixture();
 
         _invoiceService = new InvoiceService(_mapper, _userServiceMock.Object, _customerServiceMock.Object,
-            _itemServiceMock.Object, _sellerServiceMock.Object, _invoiceDataRepositoryMock.Object, _priceToWords.Object);
+            _itemServiceMock.Object, _sellerServiceMock.Object, _invoiceDataRepositoryMock.Object, _invoiceDocumentFactory.Object);
     }
 
     [Theory]
@@ -402,23 +405,35 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Never());
     }
 
-    [Theory]
-    [AutoDataConfigured]
-    public async Task GeneratePDF_ValidId_Generates(Guid id)
+    [Fact]
+    public async Task GeneratePDF_ValidId_Generates()
     {
-        //sutvarkyt testa i ta ka reik
         //Arrange
-        _invoiceDataRepositoryMock.Setup(m => m.Delete(id));
+        InvoiceEntity invoiceEntity = new();
+        Language languageCode = Language.LT;
+        DocumentType documentType = DocumentType.Invoice;
 
-        _invoiceDataRepositoryMock.Setup(m => m.Get(id))
-                        .ReturnsAsync((InvoiceEntity)null!);
+        _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceEntity.Id))
+                        .ReturnsAsync(invoiceEntity);
 
-        //Act
+        InvoiceModel invoice = _mapper.Map<InvoiceModel>(invoiceEntity);
+
+        _invoiceDocumentFactory.Setup(x => x.GeneratePdf(documentType, languageCode, It.Is<InvoiceModel>(i =>
+            i.Id == invoice.Id &&
+            i.User == invoice.User &&
+            i.CreatedDate == invoice.CreatedDate &&
+            i.DueDate == invoice.DueDate &&
+            i.Seller == invoice.Seller &&
+            i.Customer == invoice.Customer &&
+            i.Items != null &&
+            i.Items.All(expectedItem => i.Items.Any(invoiceItem => invoiceItem == expectedItem)) &&
+            i.InvoiceNumber == invoice.InvoiceNumber &&
+            i.Comments == invoice.Comments)));
+
+        //Act        
+        await _invoiceService.GeneratePDF(invoiceEntity.Id, languageCode, documentType);
+
         //Assert
-        await _invoiceService.Invoking(x => x.Delete(id))
-                            .Should().ThrowAsync<NotFoundException>();
-
-        _invoiceDataRepositoryMock.Verify(m => m.Get(id), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Never());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceEntity.Id), Times.Once());
     }
 }

@@ -1,15 +1,12 @@
-﻿using Application.Helpers.NumberToWords;
-using Application.Helpers.PriceToWords;
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Models;
 using Application.Models.InvoiceGenerationModels;
 using AutoMapper;
+using Common.Enums;
 using Contracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
-using QuestPDF.Fluent;
-using QuestPDF.Infrastructure;
 
 namespace Application.Services;
 
@@ -21,14 +18,10 @@ public class InvoiceService : IInvoiceService
     private readonly IItemService _itemService;
     private readonly IUserService _userService;
     private readonly IInvoiceRepository _invoiceRepository;
-    private readonly IPriceToWords _priceToWords;
-
-    private static DocumentMetadata GetMetadata() => DocumentMetadata.Default;
-    private static DocumentSettings GetSettings() => DocumentSettings.Default;
+    private readonly IInvoiceDocumentFactory _invoiceDocumentFactory;
 
     public InvoiceService(IMapper mapper, IUserService userService, ICustomerService CustomerService,
-                        IItemService itemService, ISellerService sellerService, IInvoiceRepository invoiceRepository,
-                        IPriceToWords priceToWords)
+                        IItemService itemService, ISellerService sellerService, IInvoiceRepository invoiceRepository, IInvoiceDocumentFactory invoiceDocumentFactory)
     {
         _mapper = mapper;
         _userService = userService;
@@ -36,7 +29,7 @@ public class InvoiceService : IInvoiceService
         _customerService = CustomerService;
         _sellerService = sellerService;
         _invoiceRepository = invoiceRepository;
-        _priceToWords = priceToWords;
+        _invoiceDocumentFactory = invoiceDocumentFactory;
     }
 
     private static void GenerateInvoiceFolderPath(InvoiceModel invoiceData)
@@ -145,13 +138,9 @@ public class InvoiceService : IInvoiceService
         await _invoiceRepository.Delete(id);
     }
 
-    public async Task GeneratePDF(Guid id)
+    public async Task GeneratePDF(Guid id, Language languageCode, DocumentType documentType)
     {
         InvoiceModel invoiceData = await Get(id);
-        InvoiceDocumentSF document = new(invoiceData, _priceToWords);
-        document.GeneratePdf(invoiceData.GenerateFileLocation());
-
-        InvoiceDocumentADA documentADA = new(invoiceData, _priceToWords);
-        documentADA.GeneratePdf(invoiceData.GenerateFileLocation("ADA"));
+        _invoiceDocumentFactory.GeneratePdf(documentType, languageCode, invoiceData);
     }
 }

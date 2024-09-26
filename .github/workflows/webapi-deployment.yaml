@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapi
+  template:
+    metadata:
+      labels:
+        app: webapi
+    spec:
+      containers:
+      - name: webapi
+        image: webapi:latest
+        ports:
+        - containerPort: 8070
+        - containerPort: 8071
+        env:
+        - name: ASPNETCORE_Kestrel__Certificates__Default__Password
+          value: "mypassword123456789mypassword"
+        - name: ASPNETCORE_Kestrel__Certificates__Default__Path
+          value: "/https/aspnetapp.pfx"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Prod"
+        - name: ASPNETCORE_HTTP_PORTS
+          value: "8070"
+        - name: ASPNETCORE_HTTPS_PORTS
+          value: "8071"
+        volumeMounts:
+        - name: https-cert
+          mountPath: /https
+        - name: fonts
+          mountPath: /Fonts
+      volumes:
+      - name: https-cert
+        hostPath:
+          path: /path/to/local/https # Update this to your correct path
+      - name: fonts
+        hostPath:
+          path: /path/to/local/Fonts # Update this to your correct path
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapi-service
+spec:
+  selector:
+    app: webapi
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8070
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 8071
+  type: NodePort

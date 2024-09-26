@@ -14,14 +14,14 @@ public class PasswordEncryptionServiceTest
     public void Encrypt_GivenValidOptions_ReturnsEncrypted()
     {
         //Arrange        
-        Mock<IOptions<PasswordEncryption>>  _passwordEncryption = new Mock<IOptions<PasswordEncryption>>();
+        Mock<IOptions<PasswordEncryption>> _passwordEncryption = new();
         _passwordEncryption.Setup(x => x.Value)
             .Returns(new PasswordEncryption()
             {
                 Salt = _salt
             });
 
-        PasswordEncryptionService _passwordEncryptionService = new PasswordEncryptionService(_passwordEncryption.Object);
+        PasswordEncryptionService _passwordEncryptionService = new(_passwordEncryption.Object);
 
         //Act
         string result = _passwordEncryptionService.Encrypt("MyPassword");
@@ -38,7 +38,7 @@ public class PasswordEncryptionServiceTest
     public void Encrypt_GivenInValidOptions_ThrowsException(string salt)
     {
         //Arrange        
-        Mock<IOptions<PasswordEncryption>> _passwordEncryption = new Mock<IOptions<PasswordEncryption>>();
+        Mock<IOptions<PasswordEncryption>> _passwordEncryption = new();
         _passwordEncryption.Setup(x => x.Value)
             .Returns(new PasswordEncryption()
             {
@@ -49,7 +49,7 @@ public class PasswordEncryptionServiceTest
         //Act
         try
         {
-            PasswordEncryptionService _passwordEncryptionService = new PasswordEncryptionService(_passwordEncryption.Object);
+            PasswordEncryptionService _passwordEncryptionService = new(_passwordEncryption.Object);
         }
         catch (ArgumentNullException)
         {

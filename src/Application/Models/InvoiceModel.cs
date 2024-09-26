@@ -1,6 +1,6 @@
 ﻿namespace Application.Models;
 
-public class InvoiceModel
+public record InvoiceModel
 {
     public Guid Id { get; set; }
     public UserModel? User { get; set; }

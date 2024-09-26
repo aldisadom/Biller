@@ -1,0 +1,21 @@
+cd C:\Users\Aldis\source\repos\Biller\.github\workflows
+kubectl apply -f postgres-pvc.yaml
+kubectl apply -f migrations-pvc.yaml
+
+kubectl apply -f temp-pod.yaml
+kubectl cp ../../migrations temp-pod:/mnt
+kubectl exec -it temp-pod -- /bin/sh
+cd /mnt/migrations
+ls -la
+exit
+kubectl delete pod temp-pod
+
+kubectl apply -f db-deployment.yaml
+kubectl apply -f pgadmin-deployment.yaml
+kubectl apply -f liquibase-job.yaml
+kubectl apply -f webapi-deployment.yaml
+
+kubectl delete deployment db-deployment
+kubectl delete deployment pgadmin-deployment
+kubectl delete job liquibase-job
+kubectl delete deployment webapi-deployment

@@ -1,6 +1,4 @@
-﻿using System.Xml;
-
-namespace Application.Helpers.NumberToWords;
+﻿namespace Application.Helpers.NumberToWords;
 
 public class NumberToWordsLT : INumberToWords
 {
@@ -10,32 +8,33 @@ public class NumberToWordsLT : INumberToWords
     private readonly IThousandsToWords _thousandsToWords;
     private readonly IMillionsToWords _millionsToWords;
 
-    public NumberToWordsLT()
+    public NumberToWordsLT(IOnesToWords onesToWords, ITensToWords tensToWords,
+        IHundredsToWords hundredsToWords, IThousandsToWords thousandsToWords, IMillionsToWords millionsToWords)
     {
-        _onesToWords = new OnesToWordsLT(_tensToWords);
-        _tensToWords = new TensToWordsLT(_onesToWords, _hundredsToWords);
-        _hundredsToWords = new HundredsToWordsLT(_onesToWords, _tensToWords, _thousandsToWords);
-        _thousandsToWords = new ThousandsToWordsLT(_hundredsToWords, _millionsToWords);
-        _millionsToWords = new MillionsToWordsLT(_hundredsToWords, _thousandsToWords);
-    }   
-
-    public string OnesSplit(int number)
-    {
-        return _onesToWords.OnesSplit(number);
+        _onesToWords = onesToWords;
+        _tensToWords = tensToWords;
+        _hundredsToWords = hundredsToWords;
+        _thousandsToWords = thousandsToWords;
+        _millionsToWords = millionsToWords;
     }
 
-    public string TensSplit(int number)
+    public string OnesSplit(int number, bool hasBefore)
     {
-        return _tensToWords.TensSplit(number);
+        return _onesToWords.OnesSplit(number, hasBefore);
     }
 
-    public string HundredsSplit(int number)
+    public string TensSplit(int number, bool hasBefore)
     {
-        return _hundredsToWords.HundredsSplit(number);
+        return _tensToWords.TensSplit(number, hasBefore);
     }
-    public string ThousandsSplit(int number)
+
+    public string HundredsSplit(int number, bool hasBefore)
     {
-        return _thousandsToWords.ThousandsSplit(number);
+        return _hundredsToWords.HundredsSplit(number, hasBefore);
+    }
+    public string ThousandsSplit(int number, bool hasBefore)
+    {
+        return _thousandsToWords.ThousandsSplit(number, hasBefore);
     }
     public string MillionsSplit(int number)
     {
@@ -45,19 +44,17 @@ public class NumberToWordsLT : INumberToWords
 
 public class OnesToWordsLT : IOnesToWords
 {
-    private readonly ITensToWords _tensToWordsLT;
-
-    public OnesToWordsLT(ITensToWords tensToWords)
+    public string OnesSplit(int number, bool hasBefore)
     {
-        _tensToWordsLT = tensToWords;
-    }
+        if (number >= 10 || number < 0)
+            throw new ArgumentException($"OnesSplitLT got {number}");
 
-    public string OnesSplit(int number)
-    {
-        if (number >= 10)
-            return _tensToWordsLT.TensSplit(number);
+        if (number == 0 && hasBefore)
+            return string.Empty;
 
-        string text = number switch
+        string text = hasBefore ? " " : string.Empty;
+
+        text += number switch
         {
             0 => "nulis",
             1 => "vienas",
@@ -71,33 +68,37 @@ public class OnesToWordsLT : IOnesToWords
             9 => "devyni",
             _ => throw new ArgumentException($"OnesSplitLT got {number}"),
         };
+
         return text;
-    }    
+    }
 }
 
 public class TensToWordsLT : ITensToWords
 {
     private readonly IOnesToWords _onesToWordsLT;
-    private readonly IHundredsToWords _hundredsToWords;
 
-    public TensToWordsLT(IOnesToWords onesToWords, IHundredsToWords hundredsToWords)
+    public TensToWordsLT(IOnesToWords onesToWords)
     {
         _onesToWordsLT = onesToWords;
-        _hundredsToWords = hundredsToWords;
     }
 
-    public string TensSplit(int number)
+    public string TensSplit(int number, bool hasBefore)
     {
-        if (number >= 100)
-            return _hundredsToWords.HundredsSplit(number);
+        if (number >= 100 || number < 0)
+            throw new ArgumentException($"TensSplitLT got {number}");
 
+        bool addWhitespace = hasBefore;
         string text = string.Empty;
         int tens = number / 10;
+        int ones = number % 10;
 
         if (tens > 0)
         {
+            text = hasBefore ? " " : string.Empty;
+            addWhitespace = true;
             if (tens == 1)
-                text = (number%10) switch
+            {
+                text += (number % 10) switch
                 {
                     0 => "dešimt",
                     1 => "vienuolika",
@@ -108,47 +109,50 @@ public class TensToWordsLT : ITensToWords
                     6 => "šešiolika",
                     7 => "septyniolika",
                     8 => "aštuoniolika",
-                    9 => "devyniolika"
+                    9 => "devyniolika",
+                    _ => throw new NotImplementedException()
                 };
-            if (tens == 2)                          
-                text = "tvidešimt";
+                return text;
+            }
+            else if (tens == 2)
+                text += "dvidešimt";
             else if (tens == 3)
-                text = "trisdešimt";
+                text += "trisdešimt";
             else
-                text = _onesToWordsLT.OnesSplit(number / 10) + "asdešimt";
+                text += _onesToWordsLT.OnesSplit(number / 10, false) + "asdešimt";
         }
 
-        int ones = number % 100;
-        text += _onesToWordsLT.OnesSplit(ones);
+        text += _onesToWordsLT.OnesSplit(ones, addWhitespace);
 
-        return text;   
-    }    
+        return text;
+    }
 }
 
 public class HundredsToWordsLT : IHundredsToWords
 {
     private readonly IOnesToWords _onesToWordsLT;
     private readonly ITensToWords _tensToWordsLT;
-    private readonly IThousandsToWords _thousandsToWordsLT;
 
-    public HundredsToWordsLT(IOnesToWords onesToWords, ITensToWords tensToWords, IThousandsToWords thousandsToWordsLT)
+    public HundredsToWordsLT(IOnesToWords onesToWords, ITensToWords tensToWords)
     {
         _onesToWordsLT = onesToWords;
         _tensToWordsLT = tensToWords;
-        _thousandsToWordsLT = thousandsToWordsLT;
     }
 
-    public string HundredsSplit(int number)
-    {        
-        if (number >= 1000)
-            return _thousandsToWordsLT.ThousandsSplit(number);
+    public string HundredsSplit(int number, bool hasBefore)
+    {
+        if (number >= 1000 || number < 0)
+            throw new ArgumentException($"HundredsSplitLT got {number}");
 
+        bool addWhitespace = hasBefore;
         string text = string.Empty;
         int hundreds = number / 100;
 
         if (hundreds > 0)
         {
-            text = _onesToWordsLT.OnesSplit(number / 100);
+            text = hasBefore ? " " : string.Empty;
+            addWhitespace = true;
+            text += _onesToWordsLT.OnesSplit(number / 100, false);
             if (number / 100 == 1)
                 text += " šimtas";
             else
@@ -156,43 +160,47 @@ public class HundredsToWordsLT : IHundredsToWords
         }
 
         int tens = number % 100;
-        text += _tensToWordsLT.TensSplit(tens);
+        text += _tensToWordsLT.TensSplit(tens, addWhitespace);
 
-        return text;        
+        return text;
     }
 }
 
 public class ThousandsToWordsLT : IThousandsToWords
 {
     private readonly IHundredsToWords _hundredsToWords;
-    private readonly IMillionsToWords _millionsToWords;
 
-    public ThousandsToWordsLT(IHundredsToWords hundredsToWords, IMillionsToWords millionsToWords)
+    public ThousandsToWordsLT(IHundredsToWords hundredsToWords)
     {
         _hundredsToWords = hundredsToWords;
-        _millionsToWords = millionsToWords;
     }
 
-    public string ThousandsSplit(int number)
+    public string ThousandsSplit(int number, bool hasBefore)
     {
-        if (number >= 1000000)
-            return _millionsToWords.MillionsSplit(number);
+        if (number >= 1000000 || number < 0)
+            throw new ArgumentException($"ThousandsSplitLT got {number}");
 
+        bool addWhitespace = hasBefore;
         string text = string.Empty;
         int thousands = number / 1000;
 
         if (thousands > 0)
         {
-            if (thousands % 100 > 10 && thousands % 100 < 20 || thousands > 0 && thousands % 10 == 0)
-                text = _hundredsToWords.HundredsSplit(thousands) + " tūkstančių ";
+            text = hasBefore ? " " : string.Empty;
+            addWhitespace = true;
+            int tensOfThousands = thousands / 10 % 10;
+            int hundredsOfThousands = thousands % 1000;
+
+            if (thousands % 10 == 0 || tensOfThousands == 1)
+                text += _hundredsToWords.HundredsSplit(hundredsOfThousands, false) + " tūkstančių";
             else if (thousands % 10 == 1)
-                text = _hundredsToWords.HundredsSplit(thousands) + " tūkstantis ";
+                text += _hundredsToWords.HundredsSplit(hundredsOfThousands, false) + " tūkstantis";
             else if (thousands > 1)
-                text = _hundredsToWords.HundredsSplit(thousands) + " tūkstančiai ";
+                text += _hundredsToWords.HundredsSplit(hundredsOfThousands, false) + " tūkstančiai";
         }
-        
+
         int hundreds = number % 1000;
-        text += _hundredsToWords.HundredsSplit(hundreds);
+        text += _hundredsToWords.HundredsSplit(hundreds, addWhitespace);
 
         return text;
     }
@@ -211,25 +219,30 @@ public class MillionsToWordsLT : IMillionsToWords
 
     public string MillionsSplit(int number)
     {
+        bool addWhitespace = false;
         string text = string.Empty;
         int millions = number / 1000000;
 
         // billions not supported
-        if (number >= 1000000000)
+        if (number >= 1000000000 || number < 0)
             throw new ArgumentException($"MillionsToWordsLT got {number}");
 
         if (millions > 0)
         {
-            if (millions % 100 > 10 && millions % 100 < 20 || millions > 0 && millions % 10 == 0)
-                text = _hundredsToWords.HundredsSplit(millions) + " milijonų ";
+            addWhitespace = true;
+            int tensOfMillions = millions / 10 % 10;
+            int hundredsOfMillions = millions % 1000;
+
+            if (millions % 10 == 0 || tensOfMillions == 1)
+                text += _hundredsToWords.HundredsSplit(hundredsOfMillions, false) + " milijonų";
             else if (millions % 10 == 1)
-                text = _hundredsToWords.HundredsSplit(millions) + " milijonas ";
+                text = _hundredsToWords.HundredsSplit(hundredsOfMillions, false) + " milijonas";
             else if (millions > 1)
-                text = _hundredsToWords.HundredsSplit(millions) + " milijonai ";
+                text += _hundredsToWords.HundredsSplit(hundredsOfMillions, false) + " milijonai";
         }
 
         int thousands = number % 1000000;
-        text += _thousandsToWords.ThousandsSplit(thousands);
+        text += _thousandsToWords.ThousandsSplit(thousands, addWhitespace);
 
         return text;
     }

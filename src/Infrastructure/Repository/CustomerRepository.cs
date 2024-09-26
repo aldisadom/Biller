@@ -61,7 +61,7 @@ public class CustomerRepository : ICustomerRepository
     public async Task IncreaseInvoiceNumber(Guid id)
     {
         string sql = @"UPDATE customers
-                        SET invoice_number += 1
+                        SET invoice_number = invoice_number + 1
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, new { id });

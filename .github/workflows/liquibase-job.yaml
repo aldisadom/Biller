@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: liquibase-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: liquibase
+        image: liquibase/liquibase:latest
+        command:
+          - liquibase
+        args:
+          - update
+          - --changeLogFile=/migrations/dbChangeLog.yaml
+          - --url=jdbc:postgresql://postgres-service:5432/Data
+          - --username=postgres #pakeisti
+          - --password=postgres #pakeisti
+        volumeMounts:
+        - name: migrations
+          mountPath: /liquibase/migrations
+      restartPolicy: Never
+      volumes:
+      - name: migrations
+        persistentVolumeClaim:
+          claimName: migrations-pvc  # Refers to the PVC for your migrations
