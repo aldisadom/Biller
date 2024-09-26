@@ -10,7 +10,7 @@ using FluentAssertions;
 using Moq;
 using WebAPI.MappingProfiles;
 
-namespace xUnitTests.Services;
+namespace xUnitTests.Application.Services;
 
 public class UserServiceTest
 {

@@ -59,7 +59,7 @@ public class CustomerService : ICustomerService
     }
 
     public async Task IncreaseInvoiceNumber(Guid id)
-    {        
+    {
         await _customerRepository.IncreaseInvoiceNumber(id);
     }
 

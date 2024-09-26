@@ -1,4 +1,6 @@
-﻿using Application.Interfaces;
+﻿using Application.Helpers.PriceToWords;
+using Application.Interfaces;
+using Application.Models.InvoiceGenerationModels;
 using Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +18,9 @@ public static class DependencyInjection
         services.AddScoped<IPasswordEncryptionService, PasswordEncryptionService>();
 
         services.AddScoped<IInvoiceService, InvoiceService>();
+
+        services.AddSingleton<IInvoiceDocumentFactory, InvoiceDocumentFactory>();
+        services.AddSingleton<IPriceToWordsFactory, PriceToWordsFactory>();
     }
 }
 

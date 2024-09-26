@@ -10,7 +10,7 @@ using FluentAssertions;
 using Moq;
 using WebAPI.MappingProfiles;
 
-namespace xUnitTests.Services;
+namespace xUnitTests.Application.Services;
 
 public class SellerServiceTest
 {
@@ -116,7 +116,7 @@ public class SellerServiceTest
     public async Task Get_GivenAddressIdQuery_ReturnsDTO(List<SellerEntity> sellerList)
     {
         //Arrange
-        SellerGetRequest? request = new SellerGetRequest()
+        SellerGetRequest? request = new()
         {
             UserId = new Guid()
         };

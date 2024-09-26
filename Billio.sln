@@ -38,10 +38,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{F4A54032-C55
 		migrations\sql\005-Create-table-users_permissions.sql = migrations\sql\005-Create-table-users_permissions.sql
 		migrations\sql\006-Create-table-items.sql = migrations\sql\006-Create-table-items.sql
 		migrations\sql\007-Create-table-invoices.sql = migrations\sql\007-Create-table-invoices.sql
-		migrations\sql\010-Insert-initial-users.sql = migrations\sql\010-Insert-initial-users.sql
-		migrations\sql\011-Insert-initial-sellers.sql = migrations\sql\011-Insert-initial-sellers.sql
-		migrations\sql\012-Insert-initial-customers.sql = migrations\sql\012-Insert-initial-customers.sql
-		migrations\sql\013-Insert-initial-items.sql = migrations\sql\013-Insert-initial-items.sql
 		migrations\sql\020-Alter-table-customers_add_invoice_number_column.sql = migrations\sql\020-Alter-table-customers_add_invoice_number_column.sql
 		migrations\sql\021-Alter-table-customers_add_number_column.sql = migrations\sql\021-Alter-table-customers_add_number_column.sql
 		migrations\sql\022-Alter-table-seller_add_number_and_bank_column.sql = migrations\sql\022-Alter-table-seller_add_number_and_bank_column.sql
@@ -52,6 +48,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{F4A54032-C55
 		migrations\sql\027-Alter-table-items_quantity.sql = migrations\sql\027-Alter-table-items_quantity.sql
 		migrations\sql\028-Alter-table-invoice_invoice_number.sql = migrations\sql\028-Alter-table-invoice_invoice_number.sql
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "src\Common\Common.csproj", "{4113D52B-7580-4B69-87BB-5AE61503CFAE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "tests\IntegrationTests\IntegrationTests.csproj", "{96B062B3-7DF0-4A9F-B870-8D1E26801046}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,6 +91,14 @@ Global
 		{E609DF34-75C8-4364-91B4-9B0FBA5CEAD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E609DF34-75C8-4364-91B4-9B0FBA5CEAD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E609DF34-75C8-4364-91B4-9B0FBA5CEAD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4113D52B-7580-4B69-87BB-5AE61503CFAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4113D52B-7580-4B69-87BB-5AE61503CFAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4113D52B-7580-4B69-87BB-5AE61503CFAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4113D52B-7580-4B69-87BB-5AE61503CFAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96B062B3-7DF0-4A9F-B870-8D1E26801046}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96B062B3-7DF0-4A9F-B870-8D1E26801046}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96B062B3-7DF0-4A9F-B870-8D1E26801046}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96B062B3-7DF0-4A9F-B870-8D1E26801046}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -28,6 +28,12 @@ public class Program
 
         builder.Host.UseSerilog();
 
+        builder.Host.UseDefaultServiceProvider((_, serviceProviderOptions) =>
+        {
+            serviceProviderOptions.ValidateScopes = true;
+            serviceProviderOptions.ValidateOnBuild = true;
+        });
+
         var app = builder.Build();
 
         //custom error handling middleware        

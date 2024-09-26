@@ -1,17 +1,16 @@
 ﻿using FluentAssertions;
-using WebAPI.SwaggerExamples.User;
+using WebAPI.SwaggerExamples.Customer;
 using xUnitTests.Helpers;
 
-namespace xUnitTests.Swagger;
+namespace xUnitTests.WebAPI.Swagger;
 
-public class UserSwaggerExampleTest
+public class CustomerSwaggerExampleTest
 {
-
     [Fact]
-    public void UserAddRequestExample_ReturnEmptyList()
+    public void CustomerAddRequestExample_ReturnEmptyList()
     {
         //Arrange
-        UserAddRequestExample example = new();
+        CustomerAddRequestExample example = new();
         //Act
         var exampleValues = example.GetExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
@@ -21,24 +20,10 @@ public class UserSwaggerExampleTest
     }
 
     [Fact]
-    public void UserUpdateRequestExample_ReturnEmptyList()
+    public void CustomerUpdateRequestExample_ReturnEmptyList()
     {
         //Arrange
-        UserUpdateRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void UserListResponseExample_ReturnEmptyList()
-    {
-        //Arrange
-        UserListResponseExample example = new();
+        CustomerUpdateRequestExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();
@@ -49,10 +34,24 @@ public class UserSwaggerExampleTest
     }
 
     [Fact]
-    public void UserResponseExample_ReturnEmptyList()
+    public void CustomerListResponseExample_ReturnEmptyList()
     {
         //Arrange
-        UserResponseExample example = new();
+        CustomerListResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
+
+        //Assert
+        nullProperties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void CustomerResponseExample_ReturnEmptyList()
+    {
+        //Arrange
+        CustomerResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();

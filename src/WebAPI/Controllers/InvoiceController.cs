@@ -94,14 +94,14 @@ public class InvoiceController : ControllerBase
     /// <summary>
     /// Get invoice pdf
     /// </summary>
-    /// <param name="id">Invoices unique ID</param>
+    /// <param name="query">Invoices ID and language selection</param>
     /// <returns>invoice pdf</returns>
     [HttpPost("generate")]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(InvoiceGenerateRequest), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GeneratePDF(Guid id)
+    public async Task<IActionResult> GeneratePDF([FromQuery] InvoiceGenerateRequest query)
     {
-        await _invoiceService.GeneratePDF(id);
+        await _invoiceService.GeneratePDF(query.Id, query.LanguageCode, query.DocumentType);
 
         return Ok();
     }

@@ -1,4 +1,4 @@
-﻿using Application.Helpers;
+﻿using Application.Helpers.PriceToWords;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -8,12 +8,15 @@ namespace Application.Models.InvoiceGenerationModels;
 public class InvoiceDocumentADA : IDocument
 {
     public InvoiceModel Model { get; }
+    private readonly IPriceToWords _priceToWords;
+
     public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     public DocumentSettings GetSettings() => DocumentSettings.Default;
 
-    public InvoiceDocumentADA(InvoiceModel model)
+    public InvoiceDocumentADA(InvoiceModel model, IPriceToWords priceToWords)
     {
         Model = model;
+        _priceToWords = priceToWords;
     }
 
     private void ComposeHeader(IContainer container)
@@ -128,7 +131,7 @@ public class InvoiceDocumentADA : IDocument
         {
             column.Item().AlignRight().Text($"Bendra suma: {Model.CalculateTotal():0.##}€").FontSize(14);
             column.Spacing(5);
-            column.Item().Text($"Suma žodžiais: {NumberToWordsLT.Decode(Model.CalculateTotal())}");
+            column.Item().Text($"Suma žodžiais: {_priceToWords.Decode(Model.CalculateTotal())}");
         });
     }
 
