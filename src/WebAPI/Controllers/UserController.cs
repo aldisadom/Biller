@@ -6,7 +6,9 @@ using Contracts.Responses;
 using Contracts.Responses.User;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
+using WebAPI.Middleware;
 using WebAPI.SwaggerExamples.User;
+using WebAPI.Validations.User;
 
 namespace WebAPI.Controllers;
 
@@ -46,6 +48,8 @@ public class UserController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromQuery] UserLoginRequest user)
     {
+        new UserLoginValidator().CheckValidation(user);
+
         UserModel userModel = _mapper.Map<UserModel>(user);
 
         UserLoginResponse result = new()
@@ -103,6 +107,8 @@ public class UserController : ControllerBase
     [SwaggerRequestExample(typeof(UserAddRequest), typeof(UserAddRequestExample))]
     public async Task<IActionResult> Add(UserAddRequest user)
     {
+        new UserAddValidator().CheckValidation(user);
+
         UserModel userModel = _mapper.Map<UserModel>(user);
 
         AddResponse result = new()
@@ -122,6 +128,8 @@ public class UserController : ControllerBase
     [SwaggerRequestExample(typeof(UserUpdateRequest), typeof(UserUpdateRequestExample))]
     public async Task<IActionResult> Update(UserUpdateRequest user)
     {
+        new UserUpdateValidator().CheckValidation(user);
+
         UserModel userModel = _mapper.Map<UserModel>(user);
 
         await _userService.Update(userModel);

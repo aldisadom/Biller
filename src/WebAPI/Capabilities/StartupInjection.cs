@@ -19,18 +19,15 @@ public static class StartupInjection
     /// <exception cref="ArgumentNullException"></exception>
     public static IServiceCollection ConfigureInjection(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddHttpClient();
-
-        services.Configure<PasswordEncryption>(configuration.GetSection("PasswordEncryption"));
-
-        services.AddApplication();
-        services.AddClients();
-
         string? dbConnectionString = configuration.GetConnectionString("PostgreConnection");
         if (string.IsNullOrEmpty(dbConnectionString))
             throw new ArgumentNullException(dbConnectionString, "Postgre connection string not found");
 
-        services.AddInfrastructure(dbConnectionString);
+        services.AddHttpClient()
+                .Configure<PasswordEncryption>(configuration.GetSection("PasswordEncryption"))
+                .AddApplication()
+                .AddClients()
+                .AddInfrastructure(dbConnectionString);
 
         return services;
     }
