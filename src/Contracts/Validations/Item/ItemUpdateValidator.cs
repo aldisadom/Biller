@@ -6,6 +6,7 @@ namespace Contracts.Validations.Item;
 /// <summary>
 /// Item update validation
 /// </summary>
+
 public class ItemUpdateValidator : AbstractValidator<ItemUpdateRequest>
 {
     /// <summary>
