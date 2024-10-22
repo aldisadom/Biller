@@ -14,6 +14,7 @@ public class SellerUpdateValidator : AbstractValidator<SellerUpdateRequest>
     /// </summary>
     public SellerUpdateValidator()
     {
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify seller Id");
         RuleFor(x => x.CompanyNumber).NotEmpty().WithMessage("Please specify company number");
         RuleFor(x => x.CompanyName).NotEmpty().WithMessage("Please specify company name");
         RuleFor(x => x.Street).NotEmpty().WithMessage("Please specify street of company");

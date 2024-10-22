@@ -6,7 +6,9 @@ using Contracts.Responses;
 using Contracts.Responses.Customer;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
+using WebAPI.Middleware;
 using WebAPI.SwaggerExamples.Customer;
+using WebAPI.Validations.Customer;
 
 namespace WebAPI.Controllers;
 
@@ -76,14 +78,15 @@ public class CustomerController : ControllerBase
     /// <summary>
     /// Add new Customer
     /// </summary>
-    /// <param name="Customer">Customer data to add</param>
+    /// <param name="customer">Customer data to add</param>
     /// <returns></returns>
     [HttpPost]
     [ProducesResponseType(typeof(AddResponse), StatusCodes.Status201Created)]
     [SwaggerRequestExample(typeof(CustomerAddRequest), typeof(CustomerAddRequestExample))]
-    public async Task<IActionResult> Add(CustomerAddRequest Customer)
+    public async Task<IActionResult> Add(CustomerAddRequest customer)
     {
-        CustomerModel customerModel = _mapper.Map<CustomerModel>(Customer);
+        new CustomerAddValidator().CheckValidation(customer);
+        CustomerModel customerModel = _mapper.Map<CustomerModel>(customer);
 
         AddResponse result = new()
         {
@@ -95,14 +98,15 @@ public class CustomerController : ControllerBase
     /// <summary>
     /// Update Customer
     /// </summary>
-    /// <param name="Customer">Customer data to update</param>
+    /// <param name="customer">Customer data to update</param>
     /// <returns></returns>
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [SwaggerRequestExample(typeof(CustomerUpdateRequest), typeof(CustomerUpdateRequestExample))]
-    public async Task<IActionResult> Update(CustomerUpdateRequest Customer)
+    public async Task<IActionResult> Update(CustomerUpdateRequest customer)
     {
-        CustomerModel customerModel = _mapper.Map<CustomerModel>(Customer);
+        new CustomerUpdateValidator().CheckValidation(customer);
+        CustomerModel customerModel = _mapper.Map<CustomerModel>(customer);
 
         await _customerService.Update(customerModel);
 
