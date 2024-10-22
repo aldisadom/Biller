@@ -182,11 +182,6 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-See code coverage write
-
-dotnet test tests/xUnitTests/xUnitTests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura --collect:"XPlat Code Coverage"
-reportgenerator -reports:"tests\xUnitTests\TestResults\{GUID}\coverage.cobertura.xml" -targetdir:"coveragereport" -reporttypes:Html
-
 <!-- ROADMAP -->
 ## Roadmap
 
