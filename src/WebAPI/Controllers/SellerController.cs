@@ -6,7 +6,9 @@ using Contracts.Responses;
 using Contracts.Responses.Seller;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
+using WebAPI.Middleware;
 using WebAPI.SwaggerExamples.Seller;
+using WebAPI.Validations.Seller;
 
 namespace WebAPI.Controllers;
 
@@ -76,14 +78,16 @@ public class SellerController : ControllerBase
     /// <summary>
     /// Add new Seller
     /// </summary>
-    /// <param name="Seller">Seller data to add</param>
+    /// <param name="seller">Seller data to add</param>
     /// <returns></returns>
     [HttpPost]
     [ProducesResponseType(typeof(AddResponse), StatusCodes.Status201Created)]
     [SwaggerRequestExample(typeof(SellerAddRequest), typeof(SellerAddRequestExample))]
-    public async Task<IActionResult> Add(SellerAddRequest Seller)
+    public async Task<IActionResult> Add(SellerAddRequest seller)
     {
-        SellerModel sellerModel = _mapper.Map<SellerModel>(Seller);
+        new SellerAddValidator().CheckValidation(seller);
+
+        SellerModel sellerModel = _mapper.Map<SellerModel>(seller);
 
         AddResponse result = new()
         {
@@ -95,14 +99,16 @@ public class SellerController : ControllerBase
     /// <summary>
     /// Update Seller
     /// </summary>
-    /// <param name="Seller">Seller data to update</param>
+    /// <param name="seller">Seller data to update</param>
     /// <returns></returns>
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [SwaggerRequestExample(typeof(SellerUpdateRequest), typeof(SellerUpdateRequestExample))]
-    public async Task<IActionResult> Update(SellerUpdateRequest Seller)
+    public async Task<IActionResult> Update(SellerUpdateRequest seller)
     {
-        SellerModel sellerModel = _mapper.Map<SellerModel>(Seller);
+        new SellerUpdateValidator().CheckValidation(seller);
+
+        SellerModel sellerModel = _mapper.Map<SellerModel>(seller);
 
         await _sellerService.Update(sellerModel);
 
