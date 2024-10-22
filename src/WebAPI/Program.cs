@@ -36,7 +36,7 @@ public class Program
 
         var app = builder.Build();
 
-        //custom error handling middleware        
+        //custom error handling middleware
         app.UseMiddleware<ErrorChecking>();
 
         app.UseHttpsRedirection();

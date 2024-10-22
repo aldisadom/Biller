@@ -46,9 +46,6 @@ public class OnesToWordsLT : IOnesToWords
 {
     public string OnesSplit(int number, bool hasBefore)
     {
-        if (number >= 10 || number < 0)
-            throw new ArgumentException($"OnesSplitLT got {number}");
-
         if (number == 0 && hasBefore)
             return string.Empty;
 
@@ -98,7 +95,7 @@ public class TensToWordsLT : ITensToWords
             addWhitespace = true;
             if (tens == 1)
             {
-                text += (number % 10) switch
+                text += ones switch
                 {
                     0 => "dešimt",
                     1 => "vienuolika",
@@ -109,8 +106,7 @@ public class TensToWordsLT : ITensToWords
                     6 => "šešiolika",
                     7 => "septyniolika",
                     8 => "aštuoniolika",
-                    9 => "devyniolika",
-                    _ => throw new NotImplementedException()
+                    9 => "devyniolika"
                 };
                 return text;
             }

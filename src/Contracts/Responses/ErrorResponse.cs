@@ -2,5 +2,6 @@
 
 public record ErrorResponse
 {
-    public string ErrorMessage { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string ExtendedMessage { get; set; } = string.Empty;
 }

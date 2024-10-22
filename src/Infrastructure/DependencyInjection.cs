@@ -10,7 +10,7 @@ namespace Infrastructure;
 
 public static class DependencyInjection
 {
-    public static void AddInfrastructure(this IServiceCollection services, string dbConnectionString)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string dbConnectionString)
     {
         services.AddScoped<IDbConnection>(sp => new NpgsqlConnection(dbConnectionString));
 
@@ -28,5 +28,7 @@ public static class DependencyInjection
         QuestPDF.Settings.License = LicenseType.Community;
 
         FontManager.RegisterFontWithCustomName("calibri", File.OpenRead("/Fonts/calibri.ttf"));
+
+        return services;
     }
 }
