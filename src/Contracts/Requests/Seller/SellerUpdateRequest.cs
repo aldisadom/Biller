@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Contracts.Requests.Seller;
+﻿namespace Contracts.Requests.Seller;
 
 public record SellerUpdateRequest
 {

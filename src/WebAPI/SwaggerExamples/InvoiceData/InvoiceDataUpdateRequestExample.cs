@@ -21,7 +21,6 @@ public class InvoiceDataUpdateRequestExample : IExamplesProvider<InvoiceUpdateRe
             Id = Guid.NewGuid(),
             CreatedDate = DateTime.Now,
             DueDate = DateTime.Now.AddDays(10),
-            UserId = Guid.NewGuid(),
             Seller = new SellerUpdateRequest()
             {
                 Id = Guid.NewGuid()

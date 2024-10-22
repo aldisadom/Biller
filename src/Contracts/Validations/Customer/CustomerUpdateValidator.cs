@@ -1,23 +1,18 @@
-﻿using Common.Validators;
-using Contracts.Requests.Customer;
-using Contracts.Requests.Seller;
+﻿using Contracts.Requests.Customer;
+using Contracts.Validations;
 using FluentValidation;
-using FluentValidation.Validators;
-using System.ComponentModel.DataAnnotations;
-
-namespace WebAPI.Validations.Customer;
 
 /// <summary>
-/// Customer add validation
+/// Customer update validation
 /// </summary>
-public class CustomerAddValidator : AbstractValidator<CustomerAddRequest>
+public class CustomerUpdateValidator : AbstractValidator<CustomerUpdateRequest>
 {
     /// <summary>
     /// Validation
     /// </summary>
-    public CustomerAddValidator()
+    public CustomerUpdateValidator()
     {
-        RuleFor(x => x.SellerId).NotEmpty().WithMessage("Please specify seller Id");
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify customer Id");
         RuleFor(x => x.CompanyNumber).NotEmpty().WithMessage("Please specify company number");
         RuleFor(x => x.CompanyName).NotEmpty().WithMessage("Please specify company name");
         RuleFor(x => x.Street).NotEmpty().WithMessage("Please specify street of customer");

@@ -47,10 +47,6 @@ public class InvoiceMappingProfile : Profile
            .ForMember(dest => dest.Items, opts => opts.MapFrom(src => JsonConvert.DeserializeObject<List<InvoiceItemModel>>(src.ItemsData)));
 
         //source, destination (which parameters must be mapped)
-        CreateMap<InvoiceUpdateRequest, InvoiceModel>(MemberList.Source)
-            .ForPath(dest => dest.User!.Id, opts => opts.MapFrom(src => src.UserId));
-
-        //source, destination (which parameters must be mapped)
         CreateMap<InvoiceAddRequest, InvoiceModel>(MemberList.Source)
            .ForPath(dest => dest.User!.Id, opts => opts.MapFrom(src => src.UserId))
            .ForPath(dest => dest.Seller!.Id, opts => opts.MapFrom(src => src.SellerId))

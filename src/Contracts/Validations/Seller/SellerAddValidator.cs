@@ -1,16 +1,13 @@
-﻿using Common.Validators;
-using Contracts.Requests.Seller;
+﻿using Contracts.Requests.Seller;
 using FluentValidation;
-using FluentValidation.Validators;
-using System.ComponentModel.DataAnnotations;
 
-namespace WebAPI.Validations.Seller;
+namespace Contracts.Validations.Seller;
 
 /// <summary>
 /// Seller add validation
 /// </summary>
 public class SellerAddValidator : AbstractValidator<SellerAddRequest>
-{    
+{
     /// <summary>
     /// Validation
     /// </summary>

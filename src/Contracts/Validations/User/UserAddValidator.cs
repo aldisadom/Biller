@@ -1,8 +1,7 @@
-﻿using Common.Validators;
-using Contracts.Requests.User;
+﻿using Contracts.Requests.User;
 using FluentValidation;
 
-namespace WebAPI.Validations.User;
+namespace Contracts.Validations.User;
 
 /// <summary>
 /// User add validation
@@ -19,7 +18,7 @@ public class UserAddValidator : AbstractValidator<UserAddRequest>
         RuleFor(x => x.Email).Must(EmailValidator.BeValidEmail).WithMessage("Please provide valid email address");
         RuleFor(x => x.Password).Must(BeValidPassword).WithMessage("Please specify a more complex password");
     }
-    
+
     private bool BeValidPassword(string password)
     {
         return PasswordAdvisor.CheckStrength(password) >= PasswordScore.VeryWeak;

@@ -1,8 +1,7 @@
-﻿using Common.Validators;
-using Contracts.Requests.Seller;
+﻿using Contracts.Requests.Seller;
 using FluentValidation;
 
-namespace WebAPI.Validations.Seller;
+namespace Contracts.Validations.Seller;
 
 /// <summary>
 /// Seller update validation

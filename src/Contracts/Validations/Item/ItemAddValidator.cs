@@ -1,20 +1,19 @@
-﻿using Common.Validators;
-using Contracts.Requests.Item;
+﻿using Contracts.Requests.Item;
 using FluentValidation;
 
-namespace WebAPI.Validations.Item;
+namespace Contracts.Validations.Item;
 
 /// <summary>
-/// Item update validation
+/// Item add validation
 /// </summary>
-public class ItemUpdateValidator : AbstractValidator<ItemUpdateRequest>
+public class ItemAddValidator : AbstractValidator<ItemAddRequest>
 {
     /// <summary>
     /// Validation
     /// </summary>
-    public ItemUpdateValidator()
+    public ItemAddValidator()
     {
-        RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify item Id");
+        RuleFor(x => x.CustomerId).NotEmpty().WithMessage("Please specify customer Id");
         RuleFor(x => x.Name).NotEmpty().WithMessage("Please name of item");
         RuleFor(x => x.Price).NotEmpty().WithMessage("Please specify price of item")
             .GreaterThan(0).WithMessage("Price should be more than zero");

@@ -4,11 +4,11 @@ using AutoMapper;
 using Contracts.Requests.User;
 using Contracts.Responses;
 using Contracts.Responses.User;
+using Contracts.Validations;
+using Contracts.Validations.User;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
-using WebAPI.Middleware;
 using WebAPI.SwaggerExamples.User;
-using WebAPI.Validations.User;
 
 namespace WebAPI.Controllers;
 
