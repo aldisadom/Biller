@@ -133,8 +133,7 @@ public class ErrorChecking
 
         ErrorResponse response = new()
         {
-            Message = errorMessage.Message,
-            ExtendedMessage = errorMessage.ExtendedMessage,
+            Message = errorMessage.Message
         };
 
         await context.Response.WriteAsJsonAsync(response);
