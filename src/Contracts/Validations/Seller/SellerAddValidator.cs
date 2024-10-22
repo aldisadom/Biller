@@ -6,6 +6,7 @@ namespace Contracts.Validations.Seller;
 /// <summary>
 /// Seller add validation
 /// </summary>
+
 public class SellerAddValidator : AbstractValidator<SellerAddRequest>
 {
     /// <summary>
