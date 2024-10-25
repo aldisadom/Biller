@@ -3,6 +3,7 @@ using Domain.Exceptions;
 using Domain.Models;
 using Newtonsoft.Json;
 using System.Data.Common;
+using System.Linq;
 using System.Security;
 using ValidationException = FluentValidation.ValidationException;
 
@@ -42,7 +43,7 @@ public class ErrorChecking
         {
             string message;
             string extendedMessage;
-            string exceptionMessage;
+            Exception exception;
             int statusCode;
 
             switch (e)
@@ -50,75 +51,95 @@ public class ErrorChecking
                 case ValidationException:
                     message = "Validation failure";
                     extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
+                    exception = e;
                     statusCode = StatusCodes.Status400BadRequest;
                     break;
 
                 case UnauthorizedAccessException:
                     message = "Unauthorized";
                     extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
+                    exception = e;
                     statusCode = StatusCodes.Status401Unauthorized;
                     break;
 
                 case NotImplementedException:
                     message = "Not implemented";
                     extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
+                    exception = e;
                     statusCode = StatusCodes.Status501NotImplemented;
                     break;
 
                 case SecurityException:
                     message = "Authentication error";
                     extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
+                    exception = e;
                     statusCode = StatusCodes.Status401Unauthorized;
                     break;
 
                 case NullReferenceException:
                     message = "Null reference caught";
                     extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
+                    exception = e;
                     statusCode = StatusCodes.Status404NotFound;
                     break;
 
                 case ArgumentException:
                     message = "Argument is incorrect";
                     extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
+                    exception = e;
                     statusCode = StatusCodes.Status400BadRequest;
                     break;
 
                 case NotFoundException:
                     message = "Entity not found";
                     extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
+                    exception = e;
                     statusCode = StatusCodes.Status404NotFound;
                     break;
 
                 case Npgsql.PostgresException:
-                    message = "Database error";
-                    extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
-                    statusCode = StatusCodes.Status500InternalServerError;
+
+                    string constrain = ((Npgsql.PostgresException)e).ConstraintName ?? "";
+
+                    if (e.Message.Contains("duplicate key value violates unique constraint"))
+                    {
+                        message = "Validation failure";
+                        extendedMessage ="Key is already used: " + constrain.Split("_")[1];
+                        exception = e;
+                        statusCode = StatusCodes.Status400BadRequest;
+                    }
+                    else if(e.Message.Contains("violates foreign key constraint"))
+                    {
+                        message = "Validation failure";
+                        extendedMessage = "Key does not exist: " + constrain.Split("fk_")[1];
+                        exception = e;
+                        statusCode = StatusCodes.Status400BadRequest;
+                    }
+                    else
+                    {
+                        message = "Database error";
+                        extendedMessage = e.Message;
+                        exception = e;
+                        statusCode = StatusCodes.Status500InternalServerError;
+                    }
                     break;
 
                 case DbException:
                     message = "Database error";
                     extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
+                    exception = e;
                     statusCode = StatusCodes.Status500InternalServerError;
                     break;
 
                 default:
                     message = "General error";
                     extendedMessage = e.Message;
-                    exceptionMessage = e.Message;
+                    exception = e;
                     statusCode = StatusCodes.Status500InternalServerError;
                     break;
             }
 
-            ErrorModel errorMessage = new(message, exceptionMessage, exceptionMessage, statusCode, e);
+            ErrorModel errorMessage = new(message, extendedMessage, statusCode, e);
             await UpdateContextAndLog(errorMessage, context);
         }
     }
@@ -131,7 +152,8 @@ public class ErrorChecking
 
         ErrorResponse response = new()
         {
-            Message = errorMessage.Message
+            Message = errorMessage.Message,
+            ExtendedMessage = errorMessage.ExtendedMessage
         };
 
         await context.Response.WriteAsJsonAsync(response);
