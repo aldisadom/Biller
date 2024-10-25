@@ -14,7 +14,7 @@ public class UserUpdateValidator : AbstractValidator<UserUpdateRequest>
     public UserUpdateValidator()
     {
         RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify id of user");
-        RuleFor(x => x.Name).NotEmpty().WithMessage("Please specify a last name");
+        RuleFor(x => x.Name).NotEmpty().WithMessage("Please specify a name");
         RuleFor(x => x.LastName).NotEmpty().WithMessage("Please specify a last name");
     }
 }

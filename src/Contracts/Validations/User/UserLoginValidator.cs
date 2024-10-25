@@ -13,7 +13,7 @@ public class UserLoginValidator : AbstractValidator<UserLoginRequest>
     /// </summary>
     public UserLoginValidator()
     {
-        RuleFor(x => x.Email).NotEmpty().WithMessage("Please specify a last name");
+        RuleFor(x => x.Email).NotEmpty().WithMessage("Please specify email");
         RuleFor(x => x.Password).NotEmpty().WithMessage("Please specify a password");
     }
 }

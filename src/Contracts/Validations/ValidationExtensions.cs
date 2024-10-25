@@ -13,8 +13,11 @@ public static class ValidationExtensions
     /// </summary>
     /// <param name="validator"></param>
     /// <exception cref="ValidationException"></exception>
-    public static void CheckValidation<T>(this AbstractValidator<T> validator, T data)
+    public static void CheckValidation<T>(this AbstractValidator<T> validator, T? data)
     {
+        if (data is null)
+            throw new ValidationException($"{typeof(T)} is not provided");
+
         ValidationResult validation = validator.Validate(data);
 
         if (!validation.IsValid)
