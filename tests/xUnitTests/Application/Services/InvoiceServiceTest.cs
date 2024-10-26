@@ -7,7 +7,12 @@ using AutoFixture;
 using AutoFixture.Xunit2;
 using AutoMapper;
 using Common.Enums;
+using Contracts.Requests.Customer;
 using Contracts.Requests.Invoice;
+using Contracts.Requests.Item;
+using Contracts.Requests.User;
+using Contracts.Validations.Customer;
+using Contracts.Validations.Item;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -345,6 +350,44 @@ public class InvoiceServiceTest
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Update(invoiceDataEntity), Times.Once());
+    }
+
+    [Fact]
+    public void testasaasasasaas()
+    {
+        //Arrange
+        ItemAddRequest item = new()
+        {
+            //Name = "asda",
+            Price = 123.1M,
+            Quantity = 9999,
+        };
+        CustomerAddRequest addRequest = new()
+        {
+            SellerId = Guid.NewGuid(),
+            Email = "delete@me.com",
+            CompanyName = "Super deleters",
+            CompanyNumber = "CN000000",
+            Street = "Unknown",
+            City = "Empty",
+            State = "Void",
+            Phone = "+000000000",
+        //    InvoiceName = "Hole"
+        };
+
+        try
+        {
+            (new ItemAddValidator()).Validate(item);
+            (new CustomerAddValidator()).Validate(addRequest);
+        }
+        catch (Exception ex )
+        {
+
+            Console.WriteLine(ex.Message);
+            throw ex;
+        }
+        var i = 5;
+
     }
 
     [Theory]

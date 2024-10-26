@@ -1,4 +1,5 @@
 ﻿using Contracts.Requests.Item;
+using Contracts.Requests.User;
 using FluentValidation;
 
 namespace Contracts.Validations.Item;
@@ -14,10 +15,9 @@ public class ItemAddValidator : AbstractValidator<ItemAddRequest>
     public ItemAddValidator()
     {
         RuleFor(x => x.CustomerId).NotEmpty().WithMessage("Please specify customer Id");
-        RuleFor(x => x.Name).NotEmpty().WithMessage("Please name of item");
-        RuleFor(x => x.Price).NotEmpty().WithMessage("Please specify price of item")
-            .GreaterThan(0).WithMessage("Price should be more than zero");
-        RuleFor(x => x.Quantity).NotEmpty().WithMessage("Please specify quantity of item")
-            .GreaterThanOrEqualTo(-1).WithMessage("Quantity can not be negative, except -1 quantity not used");
+        RuleFor(x => x.Name).NotEmpty().WithMessage("Please specify item name");
+        RuleFor(x => x.Price).GreaterThan(0.0M).WithMessage("Price should be more than zero");
+        RuleFor(x => x.Quantity).NotEmpty().WithMessage("Please specify item quantity")
+            .GreaterThan(-1).WithMessage("Quantity can not be negative, except -1 quantity not used");
     }
 }
