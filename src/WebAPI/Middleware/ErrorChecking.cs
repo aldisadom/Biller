@@ -104,11 +104,18 @@ public class ErrorChecking
                     if (e.Message.Contains("duplicate key value violates unique constraint"))
                     {
                         message = "Validation failure";
-                        extendedMessage ="Key is already used: " + constrain.Split("_")[1];
+                        extendedMessage = "Key is already used: " + constrain.Split("_")[1];
                         exception = e;
                         statusCode = StatusCodes.Status400BadRequest;
                     }
-                    else if(e.Message.Contains("violates foreign key constraint"))
+                    else if (e.Message.Contains("update or delete") && e.Message.Contains("violates foreign key constraint"))
+                    {                        
+                        message = "Validation failure";
+                        extendedMessage = "Can not delete (please clear all dependants) or update (item not found): " + constrain.Split("fk_")[1];
+                        exception = e;
+                        statusCode = StatusCodes.Status400BadRequest;                        
+                    }
+                    else if (e.Message.Contains("insert or update") && e.Message.Contains("violates foreign key constraint"))
                     {
                         message = "Validation failure";
                         extendedMessage = "Key does not exist: " + constrain.Split("fk_")[1];

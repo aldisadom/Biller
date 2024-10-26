@@ -4,6 +4,7 @@ using AutoMapper;
 using Contracts.Requests.Item;
 using Contracts.Responses;
 using Contracts.Responses.Item;
+using Contracts.Validations;
 using Contracts.Validations.Item;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
@@ -84,7 +85,7 @@ public class ItemController : ControllerBase
     [SwaggerRequestExample(typeof(ItemAddRequest), typeof(ItemAddRequestExample))]
     public async Task<IActionResult> Add(ItemAddRequest item)
     {
-        new ItemAddValidator().Validate(item);
+        new ItemAddValidator().CheckValidation(item);
         ItemModel itemModel = _mapper.Map<ItemModel>(item);
 
         AddResponse result = new()
@@ -104,7 +105,7 @@ public class ItemController : ControllerBase
     [SwaggerRequestExample(typeof(ItemUpdateRequest), typeof(ItemUpdateRequestExample))]
     public async Task<IActionResult> Update(ItemUpdateRequest item)
     {
-        new ItemUpdateValidator().Validate(item);
+        new ItemUpdateValidator().CheckValidation(item);
         ItemModel itemModel = _mapper.Map<ItemModel>(item);
 
         await _itemService.Update(itemModel);

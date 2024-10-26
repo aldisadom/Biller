@@ -14,11 +14,8 @@ public class InvoiceItemUpdateValidator : AbstractValidator<InvoiceItemUpdateReq
     public InvoiceItemUpdateValidator()
     {
         RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify item Id");
-        RuleFor(x => x.Quantity).NotEmpty().WithMessage("Please specify quantity of item")
-            .GreaterThan(0).WithMessage("Quantity must be more than 0");
-
         RuleFor(x => x.Name).NotEmpty().WithMessage("Please specify item name");
-        RuleFor(x => x.Price).NotEmpty().WithMessage("Please specify price of item")
-            .GreaterThan(0).WithMessage("Price must be more than 0");
+        RuleFor(x => x.Quantity).GreaterThan(-1).WithMessage("Please provide quantity that should be more than zero, or -1 if quantity is not used");
+        RuleFor(x => x.Price).GreaterThan(0).WithMessage("Please provide price that must be more than 0");
     }
 }
