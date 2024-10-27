@@ -10,7 +10,6 @@ using Common.Enums;
 using Contracts.Requests.Customer;
 using Contracts.Requests.Invoice;
 using Contracts.Requests.Item;
-using Contracts.Requests.User;
 using Contracts.Validations.Customer;
 using Contracts.Validations.Item;
 using Domain.Entities;
@@ -372,15 +371,15 @@ public class InvoiceServiceTest
             City = "Empty",
             State = "Void",
             Phone = "+000000000",
-        //    InvoiceName = "Hole"
+            //    InvoiceName = "Hole"
         };
 
         try
         {
-            (new ItemAddValidator()).Validate(item);
-            (new CustomerAddValidator()).Validate(addRequest);
+            new ItemAddValidator().Validate(item);
+            new CustomerAddValidator().Validate(addRequest);
         }
-        catch (Exception ex )
+        catch (Exception ex)
         {
 
             Console.WriteLine(ex.Message);

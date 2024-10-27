@@ -1,17 +1,36 @@
-﻿namespace Domain.Models;
+﻿using System.Net;
+
+namespace Domain.Models;
 
 public class ErrorModel
 {
-    public int StatusCode { get; set; }
-    public Exception Exception { get; set; }
+    public HttpStatusCode StatusCode { get; set; }
     public string Message { get; set; }
     public string ExtendedMessage { get; set; }
 
-    public ErrorModel(string message, string extendedMessage, int statusCode, Exception e)
+    public ErrorModel()
+    {
+        Message = string.Empty;
+        ExtendedMessage = string.Empty;
+    }
+
+    public ErrorModel(string message, string extendedMessage, HttpStatusCode statusCode)
     {
         Message = message;
         ExtendedMessage = extendedMessage;
-        Exception = e;
         StatusCode = statusCode;
+    }
+
+    public override string ToString()
+    {
+        string errorMessage = $"Error status code: {StatusCode}";
+
+        if (!string.IsNullOrEmpty(Message))
+        {
+            errorMessage += $", message: " + Message;
+            if (!string.IsNullOrEmpty(Message))
+                errorMessage += $", extended message: " + ExtendedMessage;
+        }
+        return errorMessage;
     }
 }
