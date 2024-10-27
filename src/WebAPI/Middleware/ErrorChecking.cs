@@ -3,7 +3,7 @@ using Domain.Exceptions;
 using Domain.Models;
 using Newtonsoft.Json;
 using System.Data.Common;
-using System.Linq;
+using System.Net;
 using System.Security;
 using ValidationException = FluentValidation.ValidationException;
 
@@ -44,7 +44,7 @@ public class ErrorChecking
             string message;
             string extendedMessage;
             Exception exception;
-            int statusCode;
+            HttpStatusCode statusCode;
 
             switch (e)
             {
@@ -52,49 +52,49 @@ public class ErrorChecking
                     message = "Validation failure";
                     extendedMessage = e.Message;
                     exception = e;
-                    statusCode = StatusCodes.Status400BadRequest;
+                    statusCode = HttpStatusCode.BadRequest;
                     break;
 
                 case UnauthorizedAccessException:
                     message = "Unauthorized";
                     extendedMessage = e.Message;
                     exception = e;
-                    statusCode = StatusCodes.Status401Unauthorized;
+                    statusCode = HttpStatusCode.Unauthorized;
                     break;
 
                 case NotImplementedException:
                     message = "Not implemented";
                     extendedMessage = e.Message;
                     exception = e;
-                    statusCode = StatusCodes.Status501NotImplemented;
+                    statusCode = HttpStatusCode.NotImplemented;
                     break;
 
                 case SecurityException:
                     message = "Authentication error";
                     extendedMessage = e.Message;
                     exception = e;
-                    statusCode = StatusCodes.Status401Unauthorized;
+                    statusCode = HttpStatusCode.Unauthorized;
                     break;
 
                 case NullReferenceException:
                     message = "Null reference caught";
                     extendedMessage = e.Message;
                     exception = e;
-                    statusCode = StatusCodes.Status404NotFound;
+                    statusCode = HttpStatusCode.NotFound;
                     break;
 
                 case ArgumentException:
                     message = "Argument is incorrect";
                     extendedMessage = e.Message;
                     exception = e;
-                    statusCode = StatusCodes.Status400BadRequest;
+                    statusCode = HttpStatusCode.BadRequest;
                     break;
 
                 case NotFoundException:
                     message = "Entity not found";
                     extendedMessage = e.Message;
                     exception = e;
-                    statusCode = StatusCodes.Status404NotFound;
+                    statusCode = HttpStatusCode.NotFound;
                     break;
 
                 case Npgsql.PostgresException:
@@ -106,28 +106,28 @@ public class ErrorChecking
                         message = "Validation failure";
                         extendedMessage = "Key is already used: " + constrain.Split("_")[1];
                         exception = e;
-                        statusCode = StatusCodes.Status400BadRequest;
+                        statusCode = HttpStatusCode.BadRequest;
                     }
                     else if (e.Message.Contains("update or delete") && e.Message.Contains("violates foreign key constraint"))
-                    {                        
+                    {
                         message = "Validation failure";
                         extendedMessage = "Can not delete (please clear all dependants) or update (item not found): " + constrain.Split("fk_")[1];
                         exception = e;
-                        statusCode = StatusCodes.Status400BadRequest;                        
+                        statusCode = HttpStatusCode.BadRequest;
                     }
-                    else if (e.Message.Contains("insert or update") && e.Message.Contains("violates foreign key constraint"))
+                    else if (e.Message.Contains("insert or update"))
                     {
                         message = "Validation failure";
                         extendedMessage = "Key does not exist: " + constrain.Split("fk_")[1];
                         exception = e;
-                        statusCode = StatusCodes.Status400BadRequest;
+                        statusCode = HttpStatusCode.BadRequest;
                     }
                     else
                     {
                         message = "Database error";
                         extendedMessage = e.Message;
                         exception = e;
-                        statusCode = StatusCodes.Status500InternalServerError;
+                        statusCode = HttpStatusCode.InternalServerError;
                     }
                     break;
 
@@ -135,25 +135,25 @@ public class ErrorChecking
                     message = "Database error";
                     extendedMessage = e.Message;
                     exception = e;
-                    statusCode = StatusCodes.Status500InternalServerError;
+                    statusCode = HttpStatusCode.InternalServerError;
                     break;
 
                 default:
                     message = "General error";
                     extendedMessage = e.Message;
                     exception = e;
-                    statusCode = StatusCodes.Status500InternalServerError;
+                    statusCode = HttpStatusCode.InternalServerError;
                     break;
             }
 
-            ErrorModel errorMessage = new(message, extendedMessage, statusCode, e);
+            ErrorModel errorMessage = new(message, extendedMessage, statusCode);
             await UpdateContextAndLog(errorMessage, context);
         }
     }
 
     private async Task UpdateContextAndLog(ErrorModel errorMessage, HttpContext context)
     {
-        context.Response.StatusCode = errorMessage.StatusCode;
+        context.Response.StatusCode = (int)errorMessage.StatusCode;
 
         _logger.LogError("{Message}", JsonConvert.SerializeObject(errorMessage));
 

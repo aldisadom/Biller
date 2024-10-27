@@ -4,6 +4,8 @@ using AutoMapper;
 using Contracts.Requests.Invoice;
 using Contracts.Responses;
 using Contracts.Responses.Invoice;
+using Contracts.Validations;
+using Contracts.Validations.Invoice;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using WebAPI.SwaggerExamples.InvoiceData;
@@ -82,6 +84,7 @@ public class InvoiceController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Add(InvoiceAddRequest invoiceDataRequest)
     {
+        new InvoiceAddValidator().CheckValidation(invoiceDataRequest);
         InvoiceModel invoiceData = _mapper.Map<InvoiceModel>(invoiceDataRequest);
 
         AddResponse result = new()
@@ -101,6 +104,7 @@ public class InvoiceController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GeneratePDF([FromQuery] InvoiceGenerateRequest query)
     {
+        new InvoiceGenerateValidator().CheckValidation(query);
         await _invoiceService.GeneratePDF(query.Id, query.LanguageCode, query.DocumentType);
 
         return Ok();
@@ -116,6 +120,7 @@ public class InvoiceController : ControllerBase
     [SwaggerRequestExample(typeof(InvoiceUpdateRequest), typeof(InvoiceDataUpdateRequestExample))]
     public async Task<IActionResult> Update(InvoiceUpdateRequest invoice)
     {
+        new InvoiceUpdateValidator().CheckValidation(invoice);
         InvoiceModel invoiceData = _mapper.Map<InvoiceModel>(invoice);
 
         await _invoiceService.Update(invoiceData);

@@ -1,5 +1,4 @@
 ﻿using Contracts.Requests.Item;
-using Contracts.Requests.User;
 using FluentValidation;
 
 namespace Contracts.Validations.Item;
