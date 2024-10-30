@@ -52,6 +52,8 @@ jobs:
       - name: Run YAML files in deploy folder
         shell: bash
         run: |
+          cd deploy
+          ls
           kubectl apply -f postgres-pvc.yaml
           kubectl apply -f migrations-pvc.yaml
 
@@ -67,6 +69,3 @@ jobs:
           kubectl apply -f pgadmin-deployment.yaml
           kubectl apply -f liquibase-job.yaml
           kubectl apply -f webapi-deployment.yaml
-
-      - name: Stop Docker Compose
-        run: docker-compose -f docker-compose.yml down
