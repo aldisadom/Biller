@@ -1,13 +1,15 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
+using Contracts.Requests.Item;
+using Contracts.Requests.Seller;
 using Contracts.Requests.User;
 using Contracts.Responses;
 using Contracts.Responses.User;
-using Contracts.Validations;
-using Contracts.Validations.User;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
+using Validators;
 using WebAPI.SwaggerExamples.User;
 
 namespace WebAPI.Controllers;
@@ -23,6 +25,9 @@ public class UserController : ControllerBase
     private readonly IUserService _userService;
     private readonly ILogger<UserController> _logger;
     private readonly IMapper _mapper;
+    private readonly IValidator<UserAddRequest> _validatorAdd;
+    private readonly IValidator<UserUpdateRequest> _validatorUpdate;
+    private readonly IValidator<UserLoginRequest> _validatorLogin;
 
     /// <summary>
     /// Constructor
@@ -30,11 +35,19 @@ public class UserController : ControllerBase
     /// <param name="userService"></param>
     /// <param name="logger"></param>
     /// <param name="mapper"></param>
-    public UserController(IUserService userService, ILogger<UserController> logger, IMapper mapper)
+    /// <param name="validatorAdd"></param>
+    /// <param name="validatorUpdate"></param>
+    /// <param name="validatorLogin"></param>
+    public UserController(IUserService userService, ILogger<UserController> logger, IMapper mapper,
+        IValidator<UserAddRequest> validatorAdd, IValidator<UserUpdateRequest> validatorUpdate, IValidator<UserLoginRequest> validatorLogin)
     {
         _userService = userService;
         _logger = logger;
         _mapper = mapper;
+
+        _validatorAdd = validatorAdd;
+        _validatorUpdate = validatorUpdate;
+        _validatorLogin = validatorLogin;
     }
 
     /// <summary>
@@ -42,13 +55,13 @@ public class UserController : ControllerBase
     /// </summary>
     /// <param name="user">Users unique ID</param>
     /// <returns>taken</returns>
-    [HttpPost("Login")]
+    [HttpGet("Login")]
     [ProducesResponseType(typeof(UserLoginResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(UserLoginResponseExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login(UserLoginRequest user)
+    public async Task<IActionResult> Login([FromQuery] UserLoginRequest user)
     {
-        new UserLoginValidator().CheckValidation(user);
+        _validatorLogin.CheckValidation(user);
 
         UserModel userModel = _mapper.Map<UserModel>(user);
 
@@ -107,7 +120,7 @@ public class UserController : ControllerBase
     [SwaggerRequestExample(typeof(UserAddRequest), typeof(UserAddRequestExample))]
     public async Task<IActionResult> Add(UserAddRequest user)
     {
-        new UserAddValidator().CheckValidation(user);
+        _validatorAdd.CheckValidation(user);
 
         UserModel userModel = _mapper.Map<UserModel>(user);
 
@@ -128,7 +141,7 @@ public class UserController : ControllerBase
     [SwaggerRequestExample(typeof(UserUpdateRequest), typeof(UserUpdateRequestExample))]
     public async Task<IActionResult> Update(UserUpdateRequest user)
     {
-        new UserUpdateValidator().CheckValidation(user);
+        _validatorUpdate.CheckValidation(user);
 
         UserModel userModel = _mapper.Map<UserModel>(user);
 

@@ -39,7 +39,7 @@ public class InvoiceDataAddRequestExample : IExamplesProvider<InvoiceAddRequest>
                 }
             ],
             Comments = "Not necessary",
-            DueDate = DateTime.Now.AddDays(10)
+            DueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(10))
         };
     }
 }

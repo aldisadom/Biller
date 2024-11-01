@@ -7,11 +7,7 @@ using AutoFixture;
 using AutoFixture.Xunit2;
 using AutoMapper;
 using Common.Enums;
-using Contracts.Requests.Customer;
 using Contracts.Requests.Invoice;
-using Contracts.Requests.Item;
-using Contracts.Validations.Customer;
-using Contracts.Validations.Item;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -45,11 +41,15 @@ public class AutoDataConfigured : AutoDataAttribute
             .Without(x => x.Customer)
             .Without(x => x.InvoiceNumber)
             .Without(x => x.Items)
+            .Without(x => x.CreatedDate)
+            .Without(x => x.DueDate)
             .Do(x =>
             {
                 var customer = fixture.Create<CustomerModel>();
                 x.Customer = customer;
                 x.InvoiceNumber = customer.InvoiceNumber;
+                x.CreatedDate = DateOnly.FromDateTime(DateTime.Today);
+                x.DueDate = DateOnly.FromDateTime(DateTime.Today.AddDays(5));
             }));
 
         fixture.Customize<InvoiceEntity>(c => c
@@ -61,6 +61,8 @@ public class AutoDataConfigured : AutoDataAttribute
             .Without(x => x.SellerId)
             .Without(x => x.UserId)
             .Without(x => x.InvoiceNumber)
+            .Without(x => x.CreatedDate)
+            .Without(x => x.DueDate)
             .Do(x =>
             {
                 var customer = fixture.Create<CustomerEntity>();
@@ -72,9 +74,10 @@ public class AutoDataConfigured : AutoDataAttribute
                 x.SellerData = JsonConvert.SerializeObject(seller);
                 x.UserData = JsonConvert.SerializeObject(user);
                 x.ItemsData = JsonConvert.SerializeObject(items);
-
                 x.CustomerId = customer.Id;
                 x.InvoiceNumber = customer.InvoiceNumber;
+                x.CreatedDate = DateTime.Today;
+                x.DueDate = DateTime.Today.AddDays(5);
             }));
         return fixture;
     }
@@ -328,7 +331,7 @@ public class InvoiceServiceTest
         _itemServiceMock.Verify(m => m.Get(It.IsAny<List<Guid>>()), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Once());
     }
-
+   
     [Theory]
     [AutoDataConfigured]
     public async Task Update_ReturnsSuccess(InvoiceModel invoiceData)
@@ -349,44 +352,6 @@ public class InvoiceServiceTest
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Update(invoiceDataEntity), Times.Once());
-    }
-
-    [Fact]
-    public void testasaasasasaas()
-    {
-        //Arrange
-        ItemAddRequest item = new()
-        {
-            //Name = "asda",
-            Price = 123.1M,
-            Quantity = 9999,
-        };
-        CustomerAddRequest addRequest = new()
-        {
-            SellerId = Guid.NewGuid(),
-            Email = "delete@me.com",
-            CompanyName = "Super deleters",
-            CompanyNumber = "CN000000",
-            Street = "Unknown",
-            City = "Empty",
-            State = "Void",
-            Phone = "+000000000",
-            //    InvoiceName = "Hole"
-        };
-
-        try
-        {
-            new ItemAddValidator().Validate(item);
-            new CustomerAddValidator().Validate(addRequest);
-        }
-        catch (Exception ex)
-        {
-
-            Console.WriteLine(ex.Message);
-            throw ex;
-        }
-        var i = 5;
-
     }
 
     [Theory]

@@ -4,10 +4,11 @@ using AutoMapper;
 using Contracts.Requests.Customer;
 using Contracts.Responses;
 using Contracts.Responses.Customer;
-using Contracts.Validations;
-using Contracts.Validations.Customer;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
+using Validators;
+using Validators.Customer;
 using WebAPI.SwaggerExamples.Customer;
 
 namespace WebAPI.Controllers;
@@ -23,6 +24,9 @@ public class CustomerController : ControllerBase
     private readonly ICustomerService _customerService;
     private readonly ILogger<CustomerController> _logger;
     private readonly IMapper _mapper;
+    private readonly IValidator<CustomerAddRequest> _validatorAdd;
+    private readonly IValidator<CustomerUpdateRequest> _validatorUpdate;
+    private readonly IValidator<CustomerModel> _validatorModel;
 
     /// <summary>
     /// Constructor
@@ -30,11 +34,19 @@ public class CustomerController : ControllerBase
     /// <param name="customerService"></param>
     /// <param name="logger"></param>
     /// <param name="mapper"></param>
-    public CustomerController(ICustomerService customerService, ILogger<CustomerController> logger, IMapper mapper)
+    /// <param name="validatorAdd"></param>
+    /// <param name="validatorUpdate"></param>
+    /// <param name="validatorModel"></param>
+    public CustomerController(ICustomerService customerService, ILogger<CustomerController> logger, IMapper mapper,
+        IValidator<CustomerAddRequest> validatorAdd, IValidator<CustomerUpdateRequest> validatorUpdate, IValidator<CustomerModel> validatorModel)
     {
         _customerService = customerService;
         _logger = logger;
         _mapper = mapper;
+
+        _validatorAdd = validatorAdd;
+        _validatorUpdate = validatorUpdate;
+        _validatorModel = validatorModel;
     }
 
     /// <summary>
@@ -85,7 +97,7 @@ public class CustomerController : ControllerBase
     [SwaggerRequestExample(typeof(CustomerAddRequest), typeof(CustomerAddRequestExample))]
     public async Task<IActionResult> Add(CustomerAddRequest customer)
     {
-        new CustomerAddValidator().CheckValidation(customer);
+        _validatorAdd.CheckValidation(customer);
         CustomerModel customerModel = _mapper.Map<CustomerModel>(customer);
 
         AddResponse result = new()
@@ -105,7 +117,7 @@ public class CustomerController : ControllerBase
     [SwaggerRequestExample(typeof(CustomerUpdateRequest), typeof(CustomerUpdateRequestExample))]
     public async Task<IActionResult> Update(CustomerUpdateRequest customer)
     {
-        new CustomerUpdateValidator().CheckValidation(customer);
+        _validatorUpdate.CheckValidation(customer);
         CustomerModel customerModel = _mapper.Map<CustomerModel>(customer);
 
         await _customerService.Update(customerModel);

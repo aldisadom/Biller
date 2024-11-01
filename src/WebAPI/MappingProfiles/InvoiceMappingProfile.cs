@@ -37,14 +37,19 @@ public class InvoiceMappingProfile : Profile
            .ForMember(dest => dest.UserData, opts => opts.MapFrom(src => JsonConvert.SerializeObject(src.User)))
            .ForMember(dest => dest.ItemsData, opts => opts.MapFrom(src => JsonConvert.SerializeObject(src.Items)))
            .ForMember(dest => dest.TotalPrice, opts => opts.MapFrom(src => src.CalculateTotal()))
-           .ForMember(dest => dest.FilePath, opts => opts.MapFrom(src => src.GenerateFileLocation()));
+           .ForMember(dest => dest.FilePath, opts => opts.MapFrom(src => src.GenerateFileLocation()))
+           .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate.ToDateTime(TimeOnly.MinValue)))
+           .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate.ToDateTime(TimeOnly.MinValue)));
+
 
         //source, destination (which parameters must be mapped)
         CreateMap<InvoiceEntity, InvoiceModel>(MemberList.Destination)
            .ForMember(dest => dest.Seller, opts => opts.MapFrom(src => JsonConvert.DeserializeObject<SellerModel>(src.SellerData)))
            .ForMember(dest => dest.Customer, opts => opts.MapFrom(src => JsonConvert.DeserializeObject<CustomerModel>(src.CustomerData)))
            .ForMember(dest => dest.User, opts => opts.MapFrom(src => JsonConvert.DeserializeObject<UserModel>(src.UserData)))
-           .ForMember(dest => dest.Items, opts => opts.MapFrom(src => JsonConvert.DeserializeObject<List<InvoiceItemModel>>(src.ItemsData)));
+           .ForMember(dest => dest.Items, opts => opts.MapFrom(src => JsonConvert.DeserializeObject<List<InvoiceItemModel>>(src.ItemsData)))
+           .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.CreatedDate)))
+           .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DueDate)));
 
         //source, destination (which parameters must be mapped)
         CreateMap<InvoiceAddRequest, InvoiceModel>(MemberList.Source)

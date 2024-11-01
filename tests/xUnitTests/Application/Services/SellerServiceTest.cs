@@ -85,7 +85,7 @@ public class SellerServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
+        _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -108,7 +108,7 @@ public class SellerServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
+        _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -121,7 +121,7 @@ public class SellerServiceTest
             UserId = new Guid()
         };
 
-        _sellerRepositoryMock.Setup(m => m.GetByUser((Guid)request.UserId!))
+        _sellerRepositoryMock.Setup(m => m.GetByUserId((Guid)request.UserId!))
                         .ReturnsAsync(sellerList);
 
         List<SellerModel> expectedResult = _mapper.Map<List<SellerModel>>(sellerList);
@@ -132,7 +132,7 @@ public class SellerServiceTest
         //Assert
         result.Count().Should().Be(sellerList.Count);
 
-        _sellerRepositoryMock.Verify(m => m.GetByUser((Guid)request.UserId!), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.GetByUserId((Guid)request.UserId!), Times.Once());
         _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Never());
     }
 
@@ -154,7 +154,7 @@ public class SellerServiceTest
         result.Should().BeEquivalentTo(new List<SellerModel>());
 
         _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
+        _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
