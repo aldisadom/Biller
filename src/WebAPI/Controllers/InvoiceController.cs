@@ -4,10 +4,10 @@ using AutoMapper;
 using Contracts.Requests.Invoice;
 using Contracts.Responses;
 using Contracts.Responses.Invoice;
-using Contracts.Validations;
-using Contracts.Validations.Invoice;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
+using Validators;
+using Validators.Invoice;
 using WebAPI.SwaggerExamples.InvoiceData;
 
 namespace WebAPI.Controllers;

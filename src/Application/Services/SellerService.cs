@@ -34,7 +34,7 @@ public class SellerService : ISellerService
         if (query is null)
             sellerEntities = await _sellerRepository.Get();
         else if (query.UserId is not null)
-            sellerEntities = await _sellerRepository.GetByUser((Guid)query.UserId);
+            sellerEntities = await _sellerRepository.GetByUserId((Guid)query.UserId);
         else
             sellerEntities = await _sellerRepository.Get();
 

@@ -1,7 +1,7 @@
 ﻿using Contracts.Requests.Invoice;
 using FluentValidation;
 
-namespace Contracts.Validations.Invoice;
+namespace Validators.Invoice;
 
 /// <summary>
 /// Invoice generate validation

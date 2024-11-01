@@ -6,7 +6,7 @@ public class InvoiceAddRequest
     public Guid CustomerId { get; set; }
     public Guid UserId { get; set; }
     public List<InvoiceItemRequest> Items { get; set; } = [];
-    public string Comments { get; set; } = string.Empty;
-    public DateTime DueDate { get; set; }
-    public DateTime CreatedDate { get; set; } = DateTime.Now;
+    public string? Comments { get; set; }
+    public DateOnly DueDate { get; set; }
+    public DateOnly CreatedDate { get; set; }
 }

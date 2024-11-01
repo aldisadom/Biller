@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
 
-namespace Contracts.Validations;
+namespace Validators;
 
 /// <summary>
 /// Fluent validation extension to throw exception when not valid
@@ -13,7 +13,7 @@ public static class ValidationExtensions
     /// </summary>
     /// <param name="validator"></param>
     /// <exception cref="ValidationException"></exception>
-    public static void CheckValidation<T>(this AbstractValidator<T> validator, T? data)
+    public static void CheckValidation<T>(this IValidator<T> validator, T? data)
     {
         if (data is null)
             throw new ValidationException($"{typeof(T)} is not provided");

@@ -1,21 +1,19 @@
 ﻿using Contracts.Requests.Invoice;
 using FluentValidation;
 
-namespace Contracts.Validations.Invoice;
+namespace Validators.Invoice;
 
 /// <summary>
-/// Invoice item update validation
+/// Invoice item validation
 /// </summary>
-public class InvoiceItemUpdateValidator : AbstractValidator<InvoiceItemUpdateRequest>
+public class InvoiceItemValidator : AbstractValidator<InvoiceItemRequest>
 {
     /// <summary>
     /// Validation
     /// </summary>
-    public InvoiceItemUpdateValidator()
+    public InvoiceItemValidator()
     {
         RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify item Id");
-        RuleFor(x => x.Name).NotEmpty().WithMessage("Please specify item name");
         RuleFor(x => x.Quantity).GreaterThan(-1).WithMessage("Please provide quantity that should be more than zero, or -1 if quantity is not used");
-        RuleFor(x => x.Price).GreaterThan(0).WithMessage("Please provide price that must be more than 0");
     }
 }

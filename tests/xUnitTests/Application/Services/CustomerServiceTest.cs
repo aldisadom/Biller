@@ -120,7 +120,7 @@ public class NumberToWordsLTTest
             SellerId = new Guid()
         };
 
-        _customerRepositoryMock.Setup(m => m.GetBySeller((Guid)request.SellerId!))
+        _customerRepositoryMock.Setup(m => m.GetBySellerId((Guid)request.SellerId!))
                         .ReturnsAsync(customerList);
 
         List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(customerList);
@@ -131,7 +131,7 @@ public class NumberToWordsLTTest
         //Assert
         result.Count().Should().Be(customerList.Count);
 
-        _customerRepositoryMock.Verify(m => m.GetBySeller((Guid)request.SellerId!), Times.Once());
+        _customerRepositoryMock.Verify(m => m.GetBySellerId((Guid)request.SellerId!), Times.Once());
     }
 
     [Fact]
