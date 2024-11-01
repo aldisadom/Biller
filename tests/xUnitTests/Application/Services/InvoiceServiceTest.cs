@@ -334,6 +334,21 @@ public class InvoiceServiceTest
    
     [Theory]
     [AutoDataConfigured]
+    public async Task testas1(InvoiceModel invoiceData)
+    {
+        //ArrangeSS
+        InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
+    }
+    [Theory]
+    [AutoDataConfigured]
+    public async Task testas2(InvoiceEntity invoiceData)
+    {
+        //ArrangeSS
+        InvoiceModel invoiceDataEntity = _mapper.Map<InvoiceModel>(invoiceData);
+    }
+
+    [Theory]
+    [AutoDataConfigured]
     public async Task Update_ReturnsSuccess(InvoiceModel invoiceData)
     {
         //Arrange

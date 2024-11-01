@@ -55,11 +55,11 @@ public class UserController : ControllerBase
     /// </summary>
     /// <param name="user">Users unique ID</param>
     /// <returns>taken</returns>
-    [HttpPost("Login")]
+    [HttpGet("Login")]
     [ProducesResponseType(typeof(UserLoginResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(UserLoginResponseExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login(UserLoginRequest user)
+    public async Task<IActionResult> Login([FromQuery] UserLoginRequest user)
     {
         _validatorLogin.CheckValidation(user);
 
