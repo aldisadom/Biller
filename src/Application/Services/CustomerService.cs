@@ -1,10 +1,12 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
+using Common;
 using Contracts.Requests.Customer;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
+using System.Net;
 
 namespace Application.Services;
 
@@ -39,6 +41,17 @@ public class CustomerService : ICustomerService
             customerEntities = await _customerRepository.Get();
 
         return _mapper.Map<IEnumerable<CustomerModel>>(customerEntities);
+    }
+
+    public async Task<Result<CustomerModel>> GetWithValidation(Guid id, Guid sellerId)
+    {
+        var customers = await _customerRepository.GetBySellerId(sellerId);
+        var result = customers.Where(x => x.Id == id).ToList();
+
+        if (result is null || result.Count != 1)
+            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Customer id {id} is invalid for seller id {sellerId}" };
+
+        return _mapper.Map<CustomerModel>(result.First());
     }
 
     public async Task<Guid> Add(CustomerModel customer)

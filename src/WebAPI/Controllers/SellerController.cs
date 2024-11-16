@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
-using Contracts.Requests.Customer;
 using Contracts.Requests.Seller;
 using Contracts.Responses;
 using Contracts.Responses.Seller;
@@ -26,7 +25,6 @@ public class SellerController : ControllerBase
     private readonly IMapper _mapper;
     private readonly IValidator<SellerAddRequest> _validatorAdd;
     private readonly IValidator<SellerUpdateRequest> _validatorUpdate;
-    private readonly IValidator<SellerModel> _validatorModel;
 
     /// <summary>
     /// Constructor
@@ -36,9 +34,8 @@ public class SellerController : ControllerBase
     /// <param name="mapper"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
-    /// <param name="validatorModel"></param>
     public SellerController(ISellerService sellerService, ILogger<SellerController> logger, IMapper mapper,
-        IValidator<SellerAddRequest> validatorAdd, IValidator<SellerUpdateRequest> validatorUpdate, IValidator<SellerModel> validatorModel)
+        IValidator<SellerAddRequest> validatorAdd, IValidator<SellerUpdateRequest> validatorUpdate)
     {
         _sellerService = sellerService;
         _logger = logger;
@@ -46,7 +43,6 @@ public class SellerController : ControllerBase
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
-        _validatorModel = validatorModel;
     }
 
     /// <summary>

@@ -1,10 +1,12 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
+using Common;
 using Contracts.Requests.Item;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
+using System.Net;
 
 namespace Application.Services;
 
@@ -48,6 +50,25 @@ public class ItemService : IItemService
             itemEntities = await _itemRepository.Get();
 
         return _mapper.Map<IEnumerable<ItemModel>>(itemEntities);
+    }
+
+    public async Task<Result<List<ItemModel>>> GetWithValidation(List<Guid> ids, Guid customerId)
+    {
+        var items = await _itemRepository.GetByCustomerId(customerId);
+        var uniqueIds = ids.Distinct().ToList();
+        var result = items.Where(x => uniqueIds.Contains(x.Id)).ToList();
+
+        if (result is null || result.Count != uniqueIds.Count)
+        {
+            string idString = string.Empty;
+
+            foreach (var item in ids.Where(x => !(result ?? new()).Any(rez => rez.Id == x)))
+                idString += " " + item.ToString();
+
+            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Items id{idString} is invalid for customer id {customerId}" };
+        }
+
+        return _mapper.Map<List<ItemModel>>(result);
     }
 
     public async Task<Guid> Add(ItemModel item)

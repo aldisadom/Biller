@@ -10,6 +10,6 @@ public interface IInvoiceService
     Task Delete(Guid id);
     Task<IEnumerable<InvoiceModel>> Get(InvoiceGetRequest? query);
     Task<InvoiceModel> Get(Guid id);
-    Task Update(InvoiceModel invoiceData);
+    Task Update(InvoiceModel invoiceDetails);
     Task GeneratePDF(Guid id, Language languageCode, DocumentType documentType);
 }

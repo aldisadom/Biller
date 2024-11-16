@@ -3,12 +3,12 @@ using Contracts.Responses.Invoice;
 using Contracts.Responses.Seller;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace WebAPI.SwaggerExamples.InvoiceData;
+namespace WebAPI.SwaggerExamples.Invoice;
 
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataResponseExample : IExamplesProvider<InvoiceResponse>
+public class InvoiceResponseExample : IExamplesProvider<InvoiceResponse>
 {
     /// <summary>
     /// example

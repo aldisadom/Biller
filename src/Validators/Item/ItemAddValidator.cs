@@ -15,7 +15,7 @@ public class ItemAddValidator : AbstractValidator<ItemAddRequest>
     {
         RuleFor(x => x.CustomerId).NotEmpty().WithMessage("Please specify customer Id");
         RuleFor(x => x.Name).NotEmpty().WithMessage("Please specify name");
-        RuleFor(x => x.Price).GreaterThan(0.0M).WithMessage("Price should be more than zero");
+        RuleFor(x => x.Price).GreaterThan(0.0M).WithMessage("Please provide price that must be > 0");
         RuleFor(x => x.Quantity).NotEmpty().WithMessage("Please specify quantity")
             .GreaterThan(-1).WithMessage("Quantity can not be negative, except -1 quantity not used");
     }

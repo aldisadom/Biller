@@ -1,5 +1,6 @@
 ﻿using Contracts.Requests.Invoice;
 using FluentValidation;
+using FluentValidation.Results;
 
 namespace Validators.Invoice;
 
@@ -26,9 +27,18 @@ public class InvoiceAddValidator : AbstractValidator<InvoiceAddRequest>
     {
         InvoiceItemValidator validator = new();
 
-        foreach (var item in items)
-            validator.CheckValidation(item);
+        string errorMessage = string.Empty;
 
-        return true;
+        foreach (var item in items)
+        {
+            ValidationResult result = validator.Validate(item);
+            if (!result.IsValid)
+                errorMessage += (errorMessage.Length == 0 ? "" : "\n") + result.ToString();
+        }
+
+        if (string.IsNullOrEmpty(errorMessage))
+            return true;
+        else
+            throw new ValidationException(errorMessage);
     }
 }

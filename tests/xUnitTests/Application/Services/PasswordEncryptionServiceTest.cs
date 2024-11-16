@@ -35,14 +35,14 @@ public class PasswordEncryptionServiceTest
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Encrypt_GivenInValidOptions_ThrowsException(string salt)
+    public void Encrypt_GivenInValidOptions_ThrowsException(string? salt)
     {
         //Arrange        
         Mock<IOptions<PasswordEncryption>> _passwordEncryption = new();
         _passwordEncryption.Setup(x => x.Value)
             .Returns(new PasswordEncryption()
             {
-                Salt = salt
+                Salt = salt!
             });
         bool pass = false;
 

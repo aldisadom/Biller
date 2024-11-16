@@ -23,7 +23,7 @@ public record InvoiceModel
 
     public string GenerateFolderLocation()
     {
-        return $"Data/Invoices/{User!.Id}/{Seller!.Id}/{Customer!.Id}";
+        return $"./Data/Invoices";//{User!.Id}/{Seller!.Id}/{Customer!.Id}";
     }
 
     public string GenerateFileLocation()

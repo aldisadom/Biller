@@ -34,6 +34,7 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
                 throw new NotSupportedException($"Language {documentType} is not supported");
 
         }
-        document.GeneratePdf();
+        string path = invoiceData.GenerateFileLocation();
+        document.GeneratePdf(path);
     }
 }
