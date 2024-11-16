@@ -2,7 +2,6 @@ using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
 using Contracts.Requests.Item;
-using Contracts.Requests.Seller;
 using Contracts.Responses;
 using Contracts.Responses.Item;
 using FluentValidation;
@@ -26,7 +25,6 @@ public class ItemController : ControllerBase
     private readonly IMapper _mapper;
     private readonly IValidator<ItemAddRequest> _validatorAdd;
     private readonly IValidator<ItemUpdateRequest> _validatorUpdate;
-    private readonly IValidator<ItemModel> _validatorModel;
 
     /// <summary>
     /// Constructor
@@ -36,9 +34,8 @@ public class ItemController : ControllerBase
     /// <param name="mapper"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
-    /// <param name="validatorModel"></param>
     public ItemController(IItemService itemService, ILogger<ItemController> logger, IMapper mapper,
-        IValidator<ItemAddRequest> validatorAdd, IValidator<ItemUpdateRequest> validatorUpdate, IValidator<ItemModel> validatorModel)
+        IValidator<ItemAddRequest> validatorAdd, IValidator<ItemUpdateRequest> validatorUpdate)
     {
         _itemService = itemService;
         _logger = logger;
@@ -46,7 +43,6 @@ public class ItemController : ControllerBase
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
-        _validatorModel = validatorModel;
     }
 
     /// <summary>
@@ -97,7 +93,7 @@ public class ItemController : ControllerBase
     [SwaggerRequestExample(typeof(ItemAddRequest), typeof(ItemAddRequestExample))]
     public async Task<IActionResult> Add(ItemAddRequest item)
     {
-       _validatorAdd.CheckValidation(item);
+        _validatorAdd.CheckValidation(item);
         ItemModel itemModel = _mapper.Map<ItemModel>(item);
 
         AddResponse result = new()

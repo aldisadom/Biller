@@ -1,5 +1,5 @@
 ﻿using FluentAssertions;
-using WebAPI.SwaggerExamples.InvoiceData;
+using WebAPI.SwaggerExamples.Invoice;
 using xUnitTests.Helpers;
 
 namespace xUnitTests.WebAPI.Swagger;
@@ -8,10 +8,10 @@ public class InvoiceSwaggerExampleTest
 {
 
     [Fact]
-    public void InvoiceDataAddRequestExample_ReturnEmptyList()
+    public void InvoiceAddRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataAddRequestExample example = new();
+        InvoiceAddRequestExample example = new();
         //Act
         var exampleValues = example.GetExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
@@ -21,24 +21,10 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceDataUpdateRequestExample_ReturnEmptyList()
+    public void InvoiceUpdateRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataUpdateRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void InvoiceDataListResponseExample_ReturnEmptyList()
-    {
-        //Arrange
-        InvoiceDataListResponseExample example = new();
+        InvoiceUpdateRequestExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();
@@ -49,10 +35,24 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceDataResponseExample_ReturnEmptyList()
+    public void InvoiceListResponseExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataResponseExample example = new();
+        InvoiceListResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
+
+        //Assert
+        nullProperties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void InvoiceResponseExample_ReturnEmptyList()
+    {
+        //Arrange
+        InvoiceResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();

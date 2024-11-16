@@ -56,5 +56,7 @@ public class InvoiceMappingProfile : Profile
            .ForPath(dest => dest.User!.Id, opts => opts.MapFrom(src => src.UserId))
            .ForPath(dest => dest.Seller!.Id, opts => opts.MapFrom(src => src.SellerId))
            .ForPath(dest => dest.Customer!.Id, opts => opts.MapFrom(src => src.CustomerId));
+
+        CreateMap<InvoiceUpdateRequest, InvoiceModel>(MemberList.Source);
     }
 }

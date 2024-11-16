@@ -1,10 +1,6 @@
 ﻿using Application.Models;
-using Contracts.Requests.Customer;
-using Contracts.Requests.Invoice;
-using Contracts.Requests.Seller;
 using Domain.Repositories;
 using FluentValidation;
-using Validators.Seller;
 
 namespace Validators.Invoice;
 
@@ -24,9 +20,9 @@ public class InvoiceValidator : AbstractValidator<InvoiceModel>
     {
         _customer = customer;
         _seller = seller;
-        _item = item;        
+        _item = item;
     }
-    
+
     public async Task<bool> IsValidSellerId(Guid sellerId, Guid userId)
     {
         var sellers = await _seller.GetByUserId(userId);

@@ -1,8 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
-using Contracts.Requests.Item;
-using Contracts.Requests.Seller;
 using Contracts.Requests.User;
 using Contracts.Responses;
 using Contracts.Responses.User;

@@ -1,6 +1,6 @@
-﻿using Contracts.Responses;
+﻿using Common;
+using Contracts.Responses;
 using Domain.Exceptions;
-using Domain.Models;
 using FluentValidation;
 using Newtonsoft.Json;
 using System.Data.Common;

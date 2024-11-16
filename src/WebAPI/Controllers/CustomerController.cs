@@ -8,7 +8,6 @@ using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using Validators;
-using Validators.Customer;
 using WebAPI.SwaggerExamples.Customer;
 
 namespace WebAPI.Controllers;
@@ -26,7 +25,6 @@ public class CustomerController : ControllerBase
     private readonly IMapper _mapper;
     private readonly IValidator<CustomerAddRequest> _validatorAdd;
     private readonly IValidator<CustomerUpdateRequest> _validatorUpdate;
-    private readonly IValidator<CustomerModel> _validatorModel;
 
     /// <summary>
     /// Constructor
@@ -36,9 +34,8 @@ public class CustomerController : ControllerBase
     /// <param name="mapper"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
-    /// <param name="validatorModel"></param>
     public CustomerController(ICustomerService customerService, ILogger<CustomerController> logger, IMapper mapper,
-        IValidator<CustomerAddRequest> validatorAdd, IValidator<CustomerUpdateRequest> validatorUpdate, IValidator<CustomerModel> validatorModel)
+        IValidator<CustomerAddRequest> validatorAdd, IValidator<CustomerUpdateRequest> validatorUpdate)
     {
         _customerService = customerService;
         _logger = logger;
@@ -46,7 +43,6 @@ public class CustomerController : ControllerBase
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
-        _validatorModel = validatorModel;
     }
 
     /// <summary>

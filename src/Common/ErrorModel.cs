@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace Domain.Models;
+namespace Common;
 
 public class ErrorModel
 {
