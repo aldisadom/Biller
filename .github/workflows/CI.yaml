@@ -61,8 +61,8 @@ jobs:
           echo "Using branch: $BRANCH_NAME"
           echo "test_branch=$BRANCH_NAME" >> $GITHUB_ENV
         else
-          echo "Branch $BRANCH_NAME not found. Defaulting to 'main'."
-          echo "test_branch=main" >> $GITHUB_ENV
+          echo "Branch $BRANCH_NAME not found. Defaulting to 'master'."
+          echo "test_branch=master" >> $GITHUB_ENV
         fi
 
     # Step 3: Clone the BillioIntegrationTest repository with the determined branch
