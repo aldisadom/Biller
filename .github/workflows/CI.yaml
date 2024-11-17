@@ -80,6 +80,7 @@ jobs:
     - name: Start services
       run: |
         docker compose up -d
+        sleep 30
         docker ps -a
         docker logs $(docker ps -q --filter ancestor=webapi)
         sleep 10
