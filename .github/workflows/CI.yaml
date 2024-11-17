@@ -80,6 +80,8 @@ jobs:
     - name: Start services
       run: |
         docker compose up -d
+        sleep 30
+        docker ps
 
     # Step 6: Wait for services to be ready
     - name: Wait for services to be ready
