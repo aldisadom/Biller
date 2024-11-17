@@ -57,7 +57,7 @@ jobs:
         echo "Branch detected: $BRANCH_NAME"
 
         # Check if the branch exists in BillioIntegrationTest
-        if (git ls-remote --heads https://github.com/aldisadom/BillioIntegrationTest.git refs/heads/$BRANCH_NAME | wc -l) eq 1 then
+        if [ "$(git ls-remote --heads https://github.com/aldisadom/BillioIntegrationTest.git refs/heads/$BRANCH_NAME | wc -l)" -eq 1 ]; then
           echo "Using branch: $BRANCH_NAME"
           echo "test_branch=$BRANCH_NAME" >> $GITHUB_ENV
         else
