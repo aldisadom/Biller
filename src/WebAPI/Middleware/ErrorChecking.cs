@@ -1,11 +1,10 @@
-﻿using Common;
-using Contracts.Responses;
+﻿using Contracts.Responses;
 using Domain.Exceptions;
-using FluentValidation;
 using Newtonsoft.Json;
 using System.Data.Common;
 using System.Net;
 using System.Security;
+using ValidationException = FluentValidation.ValidationException;
 
 namespace WebAPI.Middleware;
 
@@ -43,6 +42,7 @@ public class ErrorChecking
         {
             string message;
             string extendedMessage;
+            Exception exception;
             HttpStatusCode statusCode;
 
             switch (e)
@@ -50,42 +50,49 @@ public class ErrorChecking
                 case ValidationException:
                     message = "Validation failure";
                     extendedMessage = e.Message;
+                    exception = e;
                     statusCode = HttpStatusCode.BadRequest;
                     break;
 
                 case UnauthorizedAccessException:
                     message = "Unauthorized";
                     extendedMessage = e.Message;
+                    exception = e;
                     statusCode = HttpStatusCode.Unauthorized;
                     break;
 
                 case NotImplementedException:
                     message = "Not implemented";
                     extendedMessage = e.Message;
+                    exception = e;
                     statusCode = HttpStatusCode.NotImplemented;
                     break;
 
                 case SecurityException:
                     message = "Authentication error";
                     extendedMessage = e.Message;
+                    exception = e;
                     statusCode = HttpStatusCode.Unauthorized;
                     break;
 
                 case NullReferenceException:
                     message = "Null reference caught";
                     extendedMessage = e.Message;
+                    exception = e;
                     statusCode = HttpStatusCode.NotFound;
                     break;
 
                 case ArgumentException:
                     message = "Argument is incorrect";
                     extendedMessage = e.Message;
+                    exception = e;
                     statusCode = HttpStatusCode.BadRequest;
                     break;
 
                 case NotFoundException:
                     message = "Entity not found";
                     extendedMessage = e.Message;
+                    exception = e;
                     statusCode = HttpStatusCode.NotFound;
                     break;
 
@@ -97,24 +104,28 @@ public class ErrorChecking
                     {
                         message = "Validation failure";
                         extendedMessage = "Key is already used: " + constrain.Split("_")[1];
+                        exception = e;
                         statusCode = HttpStatusCode.BadRequest;
                     }
                     else if (e.Message.Contains("update or delete") && e.Message.Contains("violates foreign key constraint"))
                     {
                         message = "Validation failure";
                         extendedMessage = "Can not delete (please clear all dependants) or update (item not found): " + constrain.Split("fk_")[1];
+                        exception = e;
                         statusCode = HttpStatusCode.BadRequest;
                     }
                     else if (e.Message.Contains("insert or update"))
                     {
                         message = "Validation failure";
                         extendedMessage = "Key does not exist: " + constrain.Split("fk_")[1];
+                        exception = e;
                         statusCode = HttpStatusCode.BadRequest;
                     }
                     else
                     {
                         message = "Database error";
                         extendedMessage = e.Message;
+                        exception = e;
                         statusCode = HttpStatusCode.InternalServerError;
                     }
                     break;
@@ -122,12 +133,14 @@ public class ErrorChecking
                 case DbException:
                     message = "Database error";
                     extendedMessage = e.Message;
+                    exception = e;
                     statusCode = HttpStatusCode.InternalServerError;
                     break;
 
                 default:
                     message = "General error";
                     extendedMessage = e.Message;
+                    exception = e;
                     statusCode = HttpStatusCode.InternalServerError;
                     break;
             }

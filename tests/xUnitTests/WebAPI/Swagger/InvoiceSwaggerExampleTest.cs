@@ -1,5 +1,4 @@
 ﻿using FluentAssertions;
-using WebAPI.SwaggerExamples.Invoice;
 using xUnitTests.Helpers;
 
 namespace xUnitTests.WebAPI.Swagger;
@@ -8,10 +7,10 @@ public class InvoiceSwaggerExampleTest
 {
 
     [Fact]
-    public void InvoiceAddRequestExample_ReturnEmptyList()
+    public void InvoiceDataAddRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceAddRequestExample example = new();
+        InvoiceDataAddRequestExample example = new();
         //Act
         var exampleValues = example.GetExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
@@ -21,24 +20,10 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceUpdateRequestExample_ReturnEmptyList()
+    public void InvoiceDataUpdateRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceUpdateRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void InvoiceListResponseExample_ReturnEmptyList()
-    {
-        //Arrange
-        InvoiceListResponseExample example = new();
+        InvoiceDataUpdateRequestExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();
@@ -49,10 +34,24 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceResponseExample_ReturnEmptyList()
+    public void InvoiceDataListResponseExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceResponseExample example = new();
+        InvoiceDataListResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
+
+        //Assert
+        nullProperties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void InvoiceDataResponseExample_ReturnEmptyList()
+    {
+        //Arrange
+        InvoiceDataResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();

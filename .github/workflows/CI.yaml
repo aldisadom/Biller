@@ -40,32 +40,44 @@ jobs:
 
   integration-tests:
     name: Integration tests
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # Step 1: Check out the Biller repository
+    - name: Checkout Biller repository
+      uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    # Step 2: Clone the BillioIntegrationTest repository
+    - name: Clone BillioIntegrationTest repository
+      run: |
+        git clone https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
 
-      - name: Run YAML files in deploy folder
-        shell: bash
-        run: |
-          cd deploy
-          ls
-          kubectl apply -f postgres-pvc.yaml
-          kubectl apply -f migrations-pvc.yaml
+    # Step 3: Set up Docker
+    - name: Set up Docker
+      run: |
+        docker --version
+        docker-compose --version
 
-          kubectl apply -f temp-pod.yaml
-          kubectl cp ../../migrations temp-pod:/mnt
-          kubectl exec -it temp-pod -- /bin/sh
-          cd /mnt/migrations
-          ls -la
-          exit
-          kubectl delete pod temp-pod
+    # Step 4: Start services using docker-compose
+    - name: Start services
+      run: |
+        docker-compose up -d
 
-          kubectl apply -f db-deployment.yaml
-          kubectl apply -f pgadmin-deployment.yaml
-          kubectl apply -f liquibase-job.yaml
-          kubectl apply -f webapi-deployment.yaml
+    # Step 5: Wait for services to be ready (customize for your environment)
+    - name: Wait for services to be ready
+      run: |
+        sleep 30 # Adjust the delay based on service startup time
+
+    # Step 6: Run integration tests
+    - name: Run integration tests
+      working-directory: ./BillioIntegrationTest
+      run: |
+        dotnet restore
+        dotnet build
+        dotnet test --logger:trx
+
+    # Step 7: Tear down services
+    - name: Stop and clean up services
+      run: |
+        docker-compose down

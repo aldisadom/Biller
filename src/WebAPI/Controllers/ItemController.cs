@@ -4,10 +4,8 @@ using AutoMapper;
 using Contracts.Requests.Item;
 using Contracts.Responses;
 using Contracts.Responses.Item;
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
-using Validators;
 using WebAPI.SwaggerExamples.Item;
 
 namespace WebAPI.Controllers;
@@ -23,8 +21,6 @@ public class ItemController : ControllerBase
     private readonly IItemService _itemService;
     private readonly ILogger<ItemController> _logger;
     private readonly IMapper _mapper;
-    private readonly IValidator<ItemAddRequest> _validatorAdd;
-    private readonly IValidator<ItemUpdateRequest> _validatorUpdate;
 
     /// <summary>
     /// Constructor
@@ -32,17 +28,11 @@ public class ItemController : ControllerBase
     /// <param name="itemService"></param>
     /// <param name="logger"></param>
     /// <param name="mapper"></param>
-    /// <param name="validatorAdd"></param>
-    /// <param name="validatorUpdate"></param>
-    public ItemController(IItemService itemService, ILogger<ItemController> logger, IMapper mapper,
-        IValidator<ItemAddRequest> validatorAdd, IValidator<ItemUpdateRequest> validatorUpdate)
+    public ItemController(IItemService itemService, ILogger<ItemController> logger, IMapper mapper)
     {
         _itemService = itemService;
         _logger = logger;
         _mapper = mapper;
-
-        _validatorAdd = validatorAdd;
-        _validatorUpdate = validatorUpdate;
     }
 
     /// <summary>
@@ -93,7 +83,7 @@ public class ItemController : ControllerBase
     [SwaggerRequestExample(typeof(ItemAddRequest), typeof(ItemAddRequestExample))]
     public async Task<IActionResult> Add(ItemAddRequest item)
     {
-        _validatorAdd.CheckValidation(item);
+        new ItemAddValidator().CheckValidation(item);
         ItemModel itemModel = _mapper.Map<ItemModel>(item);
 
         AddResponse result = new()
@@ -113,7 +103,7 @@ public class ItemController : ControllerBase
     [SwaggerRequestExample(typeof(ItemUpdateRequest), typeof(ItemUpdateRequestExample))]
     public async Task<IActionResult> Update(ItemUpdateRequest item)
     {
-        _validatorUpdate.CheckValidation(item);
+        new ItemUpdateValidator().CheckValidation(item);
         ItemModel itemModel = _mapper.Map<ItemModel>(item);
 
         await _itemService.Update(itemModel);
