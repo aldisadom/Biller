@@ -6,6 +6,8 @@ using Contracts.Responses;
 using Contracts.Responses.Item;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
+using Validators;
+using Validators.Item;
 using WebAPI.SwaggerExamples.Item;
 
 namespace WebAPI.Controllers;

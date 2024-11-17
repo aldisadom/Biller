@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using WebAPI.SwaggerExamples.Invoice;
 using xUnitTests.Helpers;
 
 namespace xUnitTests.WebAPI.Swagger;
@@ -10,7 +11,7 @@ public class InvoiceSwaggerExampleTest
     public void InvoiceDataAddRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataAddRequestExample example = new();
+        InvoiceAddRequestExample example = new();
         //Act
         var exampleValues = example.GetExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
@@ -23,7 +24,7 @@ public class InvoiceSwaggerExampleTest
     public void InvoiceDataUpdateRequestExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataUpdateRequestExample example = new();
+        InvoiceUpdateRequestExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();
@@ -37,7 +38,7 @@ public class InvoiceSwaggerExampleTest
     public void InvoiceDataListResponseExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataListResponseExample example = new();
+        InvoiceListResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();
@@ -51,7 +52,7 @@ public class InvoiceSwaggerExampleTest
     public void InvoiceDataResponseExample_ReturnEmptyList()
     {
         //Arrange
-        InvoiceDataResponseExample example = new();
+        InvoiceResponseExample example = new();
 
         //Act
         var exampleValues = example.GetExamples();

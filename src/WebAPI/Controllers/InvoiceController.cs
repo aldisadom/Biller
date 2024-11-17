@@ -6,6 +6,9 @@ using Contracts.Responses;
 using Contracts.Responses.Invoice;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
+using Validators;
+using Validators.Invoice;
+using WebAPI.SwaggerExamples.Invoice;
 
 namespace WebAPI.Controllers;
 
@@ -41,7 +44,7 @@ public class InvoiceController : ControllerBase
     /// <returns>invoice data</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(InvoiceResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataResponseExample))]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceResponseExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id)
     {
@@ -59,7 +62,7 @@ public class InvoiceController : ControllerBase
     /// <returns>list of invoices</returns>
     [HttpGet]
     [ProducesResponseType(typeof(InvoiceListResponse), StatusCodes.Status200OK)]
-    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceDataListResponseExample))]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceListResponseExample))]
     public async Task<IActionResult> Get([FromQuery] InvoiceGetRequest? query)
     {
         IEnumerable<InvoiceModel> invoicesData = await _invoiceService.Get(query);
@@ -77,7 +80,7 @@ public class InvoiceController : ControllerBase
     /// </summary>
     /// <returns>Invoice file name</returns>
     [HttpPost]
-    [SwaggerRequestExample(typeof(InvoiceAddRequest), typeof(InvoiceDataAddRequestExample))]
+    [SwaggerRequestExample(typeof(InvoiceAddRequest), typeof(InvoiceAddRequestExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Add(InvoiceAddRequest invoiceDataRequest)
     {
@@ -114,7 +117,7 @@ public class InvoiceController : ControllerBase
     /// <returns></returns>
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [SwaggerRequestExample(typeof(InvoiceUpdateRequest), typeof(InvoiceDataUpdateRequestExample))]
+    [SwaggerRequestExample(typeof(InvoiceUpdateRequest), typeof(InvoiceUpdateRequestExample))]
     public async Task<IActionResult> Update(InvoiceUpdateRequest invoice)
     {
         new InvoiceUpdateValidator().CheckValidation(invoice);
