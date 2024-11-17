@@ -1,8 +1,8 @@
-﻿namespace Contracts.Validations;
+﻿namespace Validators;
 
 public static class EmailValidator
 {
-    public static bool BeValidEmail(string email)
+    public static bool IsValidEmail(string email)
     {
         var trimmedEmail = email.Trim();
 

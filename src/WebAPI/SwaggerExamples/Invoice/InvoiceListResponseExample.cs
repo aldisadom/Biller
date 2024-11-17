@@ -3,12 +3,12 @@ using Contracts.Responses.Invoice;
 using Contracts.Responses.Seller;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace WebAPI.SwaggerExamples.InvoiceData;
+namespace WebAPI.SwaggerExamples.Invoice;
 
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceListResponse>
+public class InvoiceListResponseExample : IExamplesProvider<InvoiceListResponse>
 {
     /// <summary>
     /// example
@@ -23,8 +23,8 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceListRespo
     public Guid UserId { get; set; }
     public string Number { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public DateTime CreatedDate { get; set; }
-    public DateTime DueDate { get; set; }
+    public DateOnly CreatedDate { get; set; }
+    public DateOnly DueDate { get; set; }
     public SellerResponse? Seller { get; set; }
     public CustomerResponse? Customer { get; set; }
     public List<InvoiceItemResponse>? Items { get; set; }
@@ -37,8 +37,8 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceListRespo
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
             InvoiceNumber = 1,
-            CreatedDate = DateTime.Now,
-            DueDate = DateTime.Now.AddDays(10),
+            CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+            DueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(10)),
             Seller = new SellerResponse
             {
                 Id = Guid.NewGuid(),
@@ -63,8 +63,8 @@ public class InvoiceDataListResponseExample : IExamplesProvider<InvoiceListRespo
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
             InvoiceNumber = 5,
-            CreatedDate = DateTime.Now.AddDays(-1),
-            DueDate = DateTime.Now.AddDays(10),
+            CreatedDate = DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
+            DueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(10)),
             Seller = new SellerResponse
             {
                 Id = Guid.NewGuid(),

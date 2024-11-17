@@ -7,6 +7,7 @@ using Contracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
+using FluentValidation;
 
 namespace Application.Services;
 
@@ -39,13 +40,14 @@ public class InvoiceService : IInvoiceService
             Directory.CreateDirectory(folderPath);
     }
 
-    private async Task GetInvoiceDetails(InvoiceModel invoiceData)
+    private async Task GetInvoiceData(InvoiceModel invoiceData)
     {
         invoiceData.User = await _userService.Get(invoiceData.User!.Id);
-        invoiceData.Seller = await _sellerService.Get(invoiceData.Seller!.Id);
-        invoiceData.Customer = await _customerService.Get(invoiceData.Customer!.Id);
+
+        var (seller, customer, items) = await Validate(invoiceData);
+        invoiceData.Seller = seller;
+        invoiceData.Customer = customer;
         invoiceData.InvoiceNumber = invoiceData.Customer.InvoiceNumber;
-        List<ItemModel> items = (await _itemService.Get(invoiceData.Items!.Select(x => x.Id).ToList())).ToList();
 
         MapItemToInvoiceItem(invoiceData.Items!, items);
 
@@ -87,7 +89,7 @@ public class InvoiceService : IInvoiceService
     public async Task<InvoiceModel> Get(Guid id)
     {
         InvoiceEntity invoiceDataEntity = await _invoiceRepository.Get(id)
-            ?? throw new NotFoundException($"Invoice data:{id} not found");
+            ?? throw new NotFoundException($"Invoice:{id} not found");
 
         return _mapper.Map<InvoiceModel>(invoiceDataEntity);
     }
@@ -112,7 +114,7 @@ public class InvoiceService : IInvoiceService
 
     public async Task<Guid> Add(InvoiceModel invoiceData)
     {
-        await GetInvoiceDetails(invoiceData);
+        await GetInvoiceData(invoiceData);
 
         InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
 
@@ -124,11 +126,34 @@ public class InvoiceService : IInvoiceService
 
     public async Task Update(InvoiceModel invoiceData)
     {
-        await Get(invoiceData.Id);
+        var invoice = await Get(invoiceData.Id);
+        invoiceData.User = invoice.User;
+        await Validate(invoiceData);
 
         InvoiceEntity invoiceEntity = _mapper.Map<InvoiceEntity>(invoiceData);
 
         await _invoiceRepository.Update(invoiceEntity);
+    }
+
+    private async Task<(SellerModel seller, CustomerModel customer, List<ItemModel> items)> Validate(InvoiceModel invoiceData)
+    {
+        var sellerResult = await _sellerService.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id);
+        var seller = sellerResult.Match(
+            seller => { return seller; },
+            error => { throw new ValidationException(error.ExtendedMessage); }
+        );
+        var customerResult = await _customerService.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id);
+        var customer = customerResult.Match(
+            customer => { return customer; },
+            error => { throw new ValidationException(error.ExtendedMessage); }
+        );
+        var itemsResult = await _itemService.GetWithValidation(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.Customer!.Id);
+        var items = itemsResult.Match(
+            items => { return items; },
+            error => { throw new ValidationException(error.ExtendedMessage); }
+        );
+
+        return (seller, customer, items);
     }
 
     public async Task Delete(Guid id)

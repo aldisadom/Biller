@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Contracts.Requests.User;
+﻿namespace Contracts.Requests.User;
 
 public class UserUpdateRequest
 {

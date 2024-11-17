@@ -10,7 +10,7 @@ public class InvoiceUpdateRequest
     public required SellerUpdateRequest Seller { get; set; }
     public required CustomerUpdateRequest Customer { get; set; }
     public List<InvoiceItemUpdateRequest> Items { get; set; } = [];
-    public string Comments { get; set; } = string.Empty;
-    public DateTime DueDate { get; set; }
-    public DateTime CreatedDate { get; set; } = DateTime.Now;
+    public string? Comments { get; set; }
+    public DateOnly DueDate { get; set; }
+    public DateOnly CreatedDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 }

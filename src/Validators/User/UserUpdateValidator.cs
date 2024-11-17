@@ -1,7 +1,7 @@
 ﻿using Contracts.Requests.User;
 using FluentValidation;
 
-namespace Contracts.Validations.User;
+namespace Validators.User;
 
 /// <summary>
 /// User update validation

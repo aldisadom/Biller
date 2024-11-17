@@ -1,7 +1,8 @@
 ﻿using Contracts.Requests.Invoice;
 using FluentValidation;
+using FluentValidation.Results;
 
-namespace Contracts.Validations.Invoice;
+namespace Validators.Invoice;
 
 /// <summary>
 /// Invoice add validation
@@ -16,8 +17,8 @@ public class InvoiceAddValidator : AbstractValidator<InvoiceAddRequest>
         RuleFor(x => x.UserId).NotEmpty().WithMessage("Please specify user id");
         RuleFor(x => x.SellerId).NotEmpty().WithMessage("Please specify seller Id");
         RuleFor(x => x.CustomerId).NotEmpty().WithMessage("Please specify customer id");
-        RuleFor(x => x.Items).NotEmpty().Must(x => x.Count != 0).WithMessage("Please provide at least one item");
-        RuleFor(x => x.DueDate).NotEmpty().WithMessage("Please specify due date");
+        RuleFor(x => x.Items).Must(x => x.Count != 0).WithMessage("Please provide at least one item");
+        RuleFor(x => x.DueDate).GreaterThanOrEqualTo(x => x.CreatedDate).WithMessage("Please specify due date >= create date");
 
         RuleFor(x => x.Items).Must(ValidateInvoiceItems);
     }
@@ -26,9 +27,18 @@ public class InvoiceAddValidator : AbstractValidator<InvoiceAddRequest>
     {
         InvoiceItemValidator validator = new();
 
-        foreach (var item in items)
-            validator.CheckValidation(item);
+        string errorMessage = string.Empty;
 
-        return true;
+        foreach (var item in items)
+        {
+            ValidationResult result = validator.Validate(item);
+            if (!result.IsValid)
+                errorMessage += (errorMessage.Length == 0 ? "" : "\n") + result.ToString();
+        }
+
+        if (string.IsNullOrEmpty(errorMessage))
+            return true;
+        else
+            throw new ValidationException(errorMessage);
     }
 }

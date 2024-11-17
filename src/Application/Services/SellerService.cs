@@ -1,10 +1,12 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
+using Common;
 using Contracts.Requests.Seller;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
+using System.Net;
 
 namespace Application.Services;
 
@@ -34,11 +36,21 @@ public class SellerService : ISellerService
         if (query is null)
             sellerEntities = await _sellerRepository.Get();
         else if (query.UserId is not null)
-            sellerEntities = await _sellerRepository.GetByUser((Guid)query.UserId);
+            sellerEntities = await _sellerRepository.GetByUserId((Guid)query.UserId);
         else
             sellerEntities = await _sellerRepository.Get();
 
         return _mapper.Map<IEnumerable<SellerModel>>(sellerEntities);
+    }
+
+    public async Task<Result<SellerModel>> GetWithValidation(Guid id, Guid userId)
+    {
+        var seller = await _sellerRepository.Get(id);
+        
+        if (seller is null || seller.UserId != userId)
+            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Seller id {id} is invalid for user id {userId}" };
+
+        return _mapper.Map<SellerModel>(seller);
     }
 
     public async Task<Guid> Add(SellerModel seller)

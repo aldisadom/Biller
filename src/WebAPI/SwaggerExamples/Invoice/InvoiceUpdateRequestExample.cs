@@ -3,12 +3,12 @@ using Contracts.Requests.Invoice;
 using Contracts.Requests.Seller;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace WebAPI.SwaggerExamples.InvoiceData;
+namespace WebAPI.SwaggerExamples.Invoice;
 
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataUpdateRequestExample : IExamplesProvider<InvoiceUpdateRequest>
+public class InvoiceUpdateRequestExample : IExamplesProvider<InvoiceUpdateRequest>
 {
     /// <summary>
     /// example
@@ -19,8 +19,8 @@ public class InvoiceDataUpdateRequestExample : IExamplesProvider<InvoiceUpdateRe
         return new InvoiceUpdateRequest()
         {
             Id = Guid.NewGuid(),
-            CreatedDate = DateTime.Now,
-            DueDate = DateTime.Now.AddDays(10),
+            CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+            DueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(10)),
             Seller = new SellerUpdateRequest()
             {
                 Id = Guid.NewGuid()

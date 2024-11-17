@@ -2,12 +2,14 @@
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
+using Common;
 using Contracts.Requests.Seller;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
 using Moq;
+using System.Net;
 using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Application.Services;
@@ -67,6 +69,85 @@ public class SellerServiceTest
 
     [Theory]
     [AutoData]
+    public async Task GetIdWithValidation_GivenValidId_ReturnsDTO(SellerEntity seller)
+    {
+        //Arrange
+        _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
+                        .ReturnsAsync(seller);
+
+        SellerModel expectedResult = _mapper.Map<SellerModel>(seller);
+
+        //Act
+        var resultResponse = await _sellerService.GetWithValidation(seller.Id, seller.UserId);
+        SellerModel result = resultResponse.Match(
+            entity => { return entity; },
+            error => { throw new Exception(error.ToString()); }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
+
+        _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task GetIdWithValidation_GivenInvaliduserId_ReturnsErrorModel(SellerEntity seller)
+    {
+        // Arrange
+        _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
+                        .ReturnsAsync(seller);
+
+        var userId = Guid.NewGuid();
+        ErrorModel expectedResult = new()
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Message = "Validation failure",
+            ExtendedMessage = $"Seller id {seller.Id} is invalid for user id {userId}"
+        };
+
+        // Act
+        var resultResponse = await _sellerService.GetWithValidation(seller.Id, userId);
+        ErrorModel result = resultResponse.Match(
+            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
+        error => { return error; }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
+        _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel(Guid id)
+    {
+        // Arrange
+        _sellerRepositoryMock.Setup(m => m.Get(id))
+                        .ReturnsAsync((SellerEntity)null!);
+
+        var userId = Guid.NewGuid();
+        ErrorModel expectedResult = new()
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Message = "Validation failure",
+            ExtendedMessage = $"Seller id {id} is invalid for user id {userId}"
+        };
+
+        // Act
+        var resultResponse = await _sellerService.GetWithValidation(id, userId);
+        ErrorModel result = resultResponse.Match(
+            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
+        error => { return error; }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
+        _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
     public async Task Get_GivenNoQuery_ReturnsDTO(List<SellerEntity> sellerList)
     {
         //Arrange
@@ -85,7 +166,7 @@ public class SellerServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
+        _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -108,7 +189,7 @@ public class SellerServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
+        _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]
@@ -121,7 +202,7 @@ public class SellerServiceTest
             UserId = new Guid()
         };
 
-        _sellerRepositoryMock.Setup(m => m.GetByUser((Guid)request.UserId!))
+        _sellerRepositoryMock.Setup(m => m.GetByUserId((Guid)request.UserId!))
                         .ReturnsAsync(sellerList);
 
         List<SellerModel> expectedResult = _mapper.Map<List<SellerModel>>(sellerList);
@@ -132,7 +213,7 @@ public class SellerServiceTest
         //Assert
         result.Count().Should().Be(sellerList.Count);
 
-        _sellerRepositoryMock.Verify(m => m.GetByUser((Guid)request.UserId!), Times.Once());
+        _sellerRepositoryMock.Verify(m => m.GetByUserId((Guid)request.UserId!), Times.Once());
         _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Never());
     }
 
@@ -154,7 +235,7 @@ public class SellerServiceTest
         result.Should().BeEquivalentTo(new List<SellerModel>());
 
         _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUser(It.IsAny<Guid>()), Times.Never());
+        _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
     }
 
     [Theory]

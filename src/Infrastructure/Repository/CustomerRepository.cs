@@ -22,7 +22,7 @@ public class CustomerRepository : ICustomerRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<CustomerEntity>(sql, new { id });
     }
 
-    public async Task<IEnumerable<CustomerEntity>> GetBySeller(Guid sellerId)
+    public async Task<IEnumerable<CustomerEntity>> GetBySellerId(Guid sellerId)
     {
         string sql = @"SELECT * FROM customers
                         WHERE seller_id=@SellerId";

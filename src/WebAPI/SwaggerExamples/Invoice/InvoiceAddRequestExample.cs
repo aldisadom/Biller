@@ -1,12 +1,12 @@
 ﻿using Contracts.Requests.Invoice;
 using Swashbuckle.AspNetCore.Filters;
 
-namespace WebAPI.SwaggerExamples.InvoiceData;
+namespace WebAPI.SwaggerExamples.Invoice;
 
 /// <summary>
 /// example
 /// </summary>
-public class InvoiceDataAddRequestExample : IExamplesProvider<InvoiceAddRequest>
+public class InvoiceAddRequestExample : IExamplesProvider<InvoiceAddRequest>
 {
     /// <summary>
     /// example
@@ -39,7 +39,7 @@ public class InvoiceDataAddRequestExample : IExamplesProvider<InvoiceAddRequest>
                 }
             ],
             Comments = "Not necessary",
-            DueDate = DateTime.Now.AddDays(10)
+            DueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(10))
         };
     }
 }

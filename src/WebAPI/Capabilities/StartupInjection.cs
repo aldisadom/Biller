@@ -2,6 +2,7 @@
 using Clients;
 using Domain.IOptions;
 using Infrastructure;
+using Validators;
 
 namespace WebAPI.Capabilities;
 
@@ -27,7 +28,8 @@ public static class StartupInjection
                 .Configure<PasswordEncryption>(configuration.GetSection("PasswordEncryption"))
                 .AddApplication()
                 .AddClients()
-                .AddInfrastructure(dbConnectionString);
+                .AddInfrastructure(dbConnectionString)
+                .AddValidations();
 
         return services;
     }
