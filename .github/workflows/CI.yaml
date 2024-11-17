@@ -41,6 +41,7 @@ jobs:
     name: Integration tests
     needs: build
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' # Run only for PR events
 
     steps:
     # Step 1: Check out the Biller repository
@@ -51,30 +52,23 @@ jobs:
     - name: Determine branch for BillioIntegrationTest
       id: determine-branch
       run: |
-        if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
-          # For PRs, use the head branch (source branch)
-          BRANCH_NAME="${GITHUB_HEAD_REF}"
-        else
-          # For direct pushes, use the current branch
-          BRANCH_NAME=$(echo "${GITHUB_REF}" | sed 's|refs/heads/||')
-        fi
-
+        BRANCH_NAME="${GITHUB_HEAD_REF}"        
         # Echo branch for debugging
         echo "Branch detected: $BRANCH_NAME"
 
         # Check if the branch exists in BillioIntegrationTest
-        if git ls-remote --heads https://github.com/aldisadom/BillioIntegrationTest.git $BRANCH_NAME; then
+        if git ls-remote --heads https://github.com/aldisadom/BillioIntegrationTest.git "refs/heads/$BRANCH_NAME"; then
           echo "Using branch: $BRANCH_NAME"
-          echo "branch=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "test_branch=$BRANCH_NAME" >> $GITHUB_ENV
         else
           echo "Branch $BRANCH_NAME not found. Defaulting to 'main'."
-          echo "branch=main" >> $GITHUB_ENV
+          echo "test_branch=main" >> $GITHUB_ENV
         fi
 
     # Step 3: Clone the BillioIntegrationTest repository with the determined branch
     - name: Clone BillioIntegrationTest repository
       run: |
-        git clone --branch ${{ env.branch }} https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
+        git clone --branch ${{ env.test_branch }} https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
 
     # Step 4: Set up Docker
     - name: Set up Docker
@@ -98,7 +92,7 @@ jobs:
       run: |
         dotnet restore
         dotnet build
-        dotnet test
+        dotnet test --logger:trx
 
     # Step 8: Tear down services
     - name: Stop and clean up services
