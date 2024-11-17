@@ -82,7 +82,7 @@ jobs:
         docker compose up -d
         sleep 30
         docker ps -a
-        for id in $(docker ps -q --filter ancestor=webapi); do
+        for id in $(docker ps -a -q --filter ancestor=webapi); do
           echo "Logs for container $id:"
           docker logs $id
         done
