@@ -1,5 +1,3 @@
-# This file defines a workflow with separate jobs for build, test, publish, and deploy
-
 name: CI/CD Pipeline
 
 on:
@@ -20,23 +18,66 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-dotnet@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     - name: Build
       run: dotnet build ${{ env.PROJECT_NAME }}
 
   test:
-    name: Test
+    name: Unit tests
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-dotnet@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     - name: Run tests
       run: |
         dotnet test --configuration ${DOTNET_CONFIGURATION=Release} ${{ env.TESTS_LOCATION }} /p:CollectCoverage=true /p:CoverletOutputFormat=\"opencover\"
 
+  integration-tests:
+    name: Integration tests
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Check out the Biller repository
+    - name: Checkout Biller repository
+      uses: actions/checkout@v3
+
+    # Step 2: Clone the BillioIntegrationTest repository
+    - name: Clone BillioIntegrationTest repository
+      run: |
+        git clone https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
+
+    # Step 3: Set up Docker
+    - name: Set up Docker
+      run: |
+        docker --version
+        docker-compose --version
+
+    # Step 4: Start services using docker-compose
+    - name: Start services
+      run: |
+        docker-compose up -d
+
+    # Step 5: Wait for services to be ready (customize for your environment)
+    - name: Wait for services to be ready
+      run: |
+        sleep 30 # Adjust the delay based on service startup time
+
+    # Step 6: Run integration tests
+    - name: Run integration tests
+      working-directory: ./BillioIntegrationTest
+      run: |
+        dotnet restore
+        dotnet build
+        dotnet test --logger:trx
+
+    # Step 7: Tear down services
+    - name: Stop and clean up services
+      run: |
+        docker-compose down
