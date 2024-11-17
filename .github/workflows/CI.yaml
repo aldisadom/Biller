@@ -11,7 +11,6 @@ env:
   DOTNET_VERSION: 8.0.x
   PROJECT_NAME: Billio.sln
   TESTS_LOCATION: ./tests/xUnitTests
-  INTEGRATION_TESTS_LOCATION: ./tests/IntegrationTests
 
 jobs:
   build:
@@ -48,36 +47,53 @@ jobs:
     - name: Checkout Biller repository
       uses: actions/checkout@v4
 
-    # Step 2: Clone the BillioIntegrationTest repository
+    # Step 2: Determine the branch to use for BillioIntegrationTest
+    - name: Determine branch for BillioIntegrationTest
+      id: determine-branch
+      run: |
+        # Extract the current branch name
+        BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+        echo "Branch detected: $BRANCH_NAME"
+
+        # Check if the branch exists in BillioIntegrationTest
+        if git ls-remote --heads https://github.com/aldisadom/BillioIntegrationTest.git $BRANCH_NAME; then
+          echo "Using branch: $BRANCH_NAME"
+          echo "branch=$BRANCH_NAME" >> $GITHUB_ENV
+        else
+          echo "Branch $BRANCH_NAME not found. Defaulting to 'master'."
+          echo "branch=master" >> $GITHUB_ENV
+        fi
+
+    # Step 3: Clone the BillioIntegrationTest repository with the determined branch
     - name: Clone BillioIntegrationTest repository
       run: |
-        git clone https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
+        git clone --branch ${{ env.branch }} https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
 
-    # Step 3: Set up Docker
+    # Step 4: Set up Docker
     - name: Set up Docker
       run: |
         docker --version
         docker compose --version
 
-    # Step 4: Start services using docker-compose
+    # Step 5: Start services using docker-compose
     - name: Start services
       run: |
         docker compose up -d
 
-    # Step 5: Wait for services to be ready (customize for your environment)
+    # Step 6: Wait for services to be ready (customize for your environment)
     - name: Wait for services to be ready
       run: |
         sleep 30 # Adjust the delay based on service startup time
 
-    # Step 6: Run integration tests
+    # Step 7: Run integration tests
     - name: Run integration tests
       working-directory: ./BillioIntegrationTest
       run: |
         dotnet restore
         dotnet build
-        dotnet test --logger:trx
+        dotnet test
 
-    # Step 7: Tear down services
+    # Step 8: Tear down services
     - name: Stop and clean up services
       run: |
         docker compose down
