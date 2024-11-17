@@ -2,14 +2,21 @@
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
+using Castle.Core.Resource;
+using Common;
 using Contracts.Requests.Customer;
+using Contracts.Responses;
 using Domain.Entities;
 
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using Moq;
+using System.Net;
 using WebAPI.MappingProfiles;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace xUnitTests.Application.Services;
 
@@ -63,6 +70,85 @@ public class NumberToWordsLTTest
         // Act Assert
         await Assert.ThrowsAsync<NotFoundException>(async () => await _customerService.Get(id));
 
+        _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task GetIdWithValidation_GivenValidId_ReturnsDTO(CustomerEntity customer)
+    {
+        //Arrange
+        _customerRepositoryMock.Setup(m => m.Get(customer.Id))
+                        .ReturnsAsync(customer);
+
+        CustomerModel expectedResult = _mapper.Map<CustomerModel>(customer);
+
+        //Act
+        var resultResponse = await _customerService.GetWithValidation(customer.Id, customer.SellerId);
+        CustomerModel result = resultResponse.Match(
+            entity => { return entity; },
+            error => { throw new Exception(error.ToString()); }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
+
+        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task GetIdWithValidation_GivenInvalidSellerId_ReturnsErrorModel(CustomerEntity customer)
+    {
+        // Arrange
+        _customerRepositoryMock.Setup(m => m.Get(customer.Id))
+                        .ReturnsAsync(customer);
+
+        var sellerId = Guid.NewGuid();
+        ErrorModel expectedResult = new()
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Message = "Validation failure",
+            ExtendedMessage = $"Customer id {customer.Id} is invalid for seller id {sellerId}"
+        };
+
+        // Act
+        var resultResponse = await _customerService.GetWithValidation(customer.Id, sellerId);
+        ErrorModel result = resultResponse.Match(
+            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
+        error => { return error; }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
+        _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel(Guid id)
+    {
+        // Arrange
+        _customerRepositoryMock.Setup(m => m.Get(id))
+                        .ReturnsAsync((CustomerEntity)null!);
+
+        var sellerId = Guid.NewGuid();
+        ErrorModel expectedResult = new()
+        { 
+            StatusCode = HttpStatusCode.BadRequest,
+            Message = "Validation failure", 
+            ExtendedMessage = $"Customer id {id} is invalid for seller id {sellerId}" 
+        };
+
+        // Act
+        var resultResponse = await _customerService.GetWithValidation(id, sellerId);
+        ErrorModel result = resultResponse.Match(
+            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
+        error => { return error; }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
         _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 

@@ -2,12 +2,14 @@
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
+using Common;
 using Contracts.Requests.Item;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
 using Moq;
+using System.Net;
 using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Application.Services;
@@ -84,6 +86,97 @@ public class ItemServiceTest
         result.Count().Should().Be(itemList.Count);
         result.Should().BeEquivalentTo(expectedResult);
 
+        _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
+    }
+
+    [Theory]
+    [AutoDataConfigured]
+    public async Task GetIdsWithValidation_GivenValidId_ReturnsDTO(List<ItemEntity> itemList)
+    {
+        //Arrange
+        List<Guid> ids = itemList.Select(x => x.Id).ToList();
+        var customerId = Guid.NewGuid();
+
+        foreach (var item in itemList)
+            item.CustomerId = customerId;
+        
+        _itemRepositoryMock.Setup(m => m.Get(ids))
+                        .ReturnsAsync(itemList);
+
+        List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);
+
+        //Act
+        var resultResponse = await _itemService.GetWithValidation(ids, customerId);
+        List<ItemModel> result = resultResponse.Match(
+            entity => { return entity; },
+            error => { throw new Exception(error.ToString()); }
+        );
+
+        //Assert
+        result.Count().Should().Be(itemList.Count);
+        result.Should().BeEquivalentTo(expectedResult);
+
+        _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
+    }
+
+    [Theory]
+    [AutoDataConfigured]
+    public async Task GetIdsWithValidation_GivenInvalidcustomerId_ReturnsErrorModel(List<ItemEntity> itemList)
+    {
+        // Arrange
+        List<Guid> ids = itemList.Select(x => x.Id).ToList();
+        var customerId = Guid.NewGuid();
+
+        _itemRepositoryMock.Setup(m => m.Get(ids))
+                        .ReturnsAsync(itemList);
+
+        string itemsIds = String.Join(" ", ids);
+        ErrorModel expectedResult = new()
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Message = "Validation failure",
+            ExtendedMessage = $"Items id {itemsIds} is invalid for customer id {customerId}"
+        };
+
+        // Act
+        var resultResponse = await _itemService.GetWithValidation(ids, customerId);
+        ErrorModel result = resultResponse.Match(
+            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
+            error => { return error; }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
+        _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task GetIdsWithValidation_GivenInvalidId_ReturnsErrorModel()
+    {
+        // Arrange
+        List<Guid> ids = new List<Guid>() { Guid.NewGuid()};
+        var customerId = Guid.NewGuid();
+
+        _itemRepositoryMock.Setup(m => m.Get(ids))
+                        .ReturnsAsync((List<ItemEntity>)[]);
+        
+        ErrorModel expectedResult = new()
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Message = "Validation failure",
+            ExtendedMessage = $"Items id {ids[0]} is invalid for customer id {customerId}"
+        };
+
+        // Act
+        var resultResponse = await _itemService.GetWithValidation(ids, customerId);
+        ErrorModel result = resultResponse.Match(
+            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
+            error => { return error; }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
         _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
     }
 

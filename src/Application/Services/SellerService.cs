@@ -45,13 +45,12 @@ public class SellerService : ISellerService
 
     public async Task<Result<SellerModel>> GetWithValidation(Guid id, Guid userId)
     {
-        var sellers = await _sellerRepository.GetByUserId(userId);
-        var result = sellers.Where(x => x.Id == id).ToList();
-
-        if (result is null || result.Count != 1)
+        var seller = await _sellerRepository.Get(id);
+        
+        if (seller is null || seller.UserId != userId)
             return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Seller id {id} is invalid for user id {userId}" };
 
-        return _mapper.Map<SellerModel>(result.First());
+        return _mapper.Map<SellerModel>(seller);
     }
 
     public async Task<Guid> Add(SellerModel seller)
