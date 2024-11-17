@@ -51,8 +51,15 @@ jobs:
     - name: Determine branch for BillioIntegrationTest
       id: determine-branch
       run: |
-        # Extract the current branch name
-        BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's|refs/heads/||')
+        if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+          # For PRs, use the head branch (source branch)
+          BRANCH_NAME="${GITHUB_HEAD_REF}"
+        else
+          # For direct pushes, use the current branch
+          BRANCH_NAME=$(echo "${GITHUB_REF}" | sed 's|refs/heads/||')
+        fi
+
+        # Echo branch for debugging
         echo "Branch detected: $BRANCH_NAME"
 
         # Check if the branch exists in BillioIntegrationTest
@@ -60,8 +67,8 @@ jobs:
           echo "Using branch: $BRANCH_NAME"
           echo "branch=$BRANCH_NAME" >> $GITHUB_ENV
         else
-          echo "Branch $BRANCH_NAME not found. Defaulting to 'master'."
-          echo "branch=master" >> $GITHUB_ENV
+          echo "Branch $BRANCH_NAME not found. Defaulting to 'main'."
+          echo "branch=main" >> $GITHUB_ENV
         fi
 
     # Step 3: Clone the BillioIntegrationTest repository with the determined branch
