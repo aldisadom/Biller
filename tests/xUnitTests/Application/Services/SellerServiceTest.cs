@@ -2,12 +2,14 @@
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
+using Common;
 using Contracts.Requests.Seller;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
 using Moq;
+using System.Net;
 using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Application.Services;
@@ -62,6 +64,85 @@ public class SellerServiceTest
         // Act Assert
         await Assert.ThrowsAsync<NotFoundException>(async () => await _sellerService.Get(id));
 
+        _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task GetIdWithValidation_GivenValidId_ReturnsDTO(SellerEntity seller)
+    {
+        //Arrange
+        _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
+                        .ReturnsAsync(seller);
+
+        SellerModel expectedResult = _mapper.Map<SellerModel>(seller);
+
+        //Act
+        var resultResponse = await _sellerService.GetWithValidation(seller.Id, seller.UserId);
+        SellerModel result = resultResponse.Match(
+            entity => { return entity; },
+            error => { throw new Exception(error.ToString()); }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
+
+        _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task GetIdWithValidation_GivenInvaliduserId_ReturnsErrorModel(SellerEntity seller)
+    {
+        // Arrange
+        _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
+                        .ReturnsAsync(seller);
+
+        var userId = Guid.NewGuid();
+        ErrorModel expectedResult = new()
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Message = "Validation failure",
+            ExtendedMessage = $"Seller id {seller.Id} is invalid for user id {userId}"
+        };
+
+        // Act
+        var resultResponse = await _sellerService.GetWithValidation(seller.Id, userId);
+        ErrorModel result = resultResponse.Match(
+            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
+        error => { return error; }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
+        _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel(Guid id)
+    {
+        // Arrange
+        _sellerRepositoryMock.Setup(m => m.Get(id))
+                        .ReturnsAsync((SellerEntity)null!);
+
+        var userId = Guid.NewGuid();
+        ErrorModel expectedResult = new()
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Message = "Validation failure",
+            ExtendedMessage = $"Seller id {id} is invalid for user id {userId}"
+        };
+
+        // Act
+        var resultResponse = await _sellerService.GetWithValidation(id, userId);
+        ErrorModel result = resultResponse.Match(
+            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
+        error => { return error; }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
         _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 

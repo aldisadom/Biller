@@ -54,21 +54,21 @@ public class ItemService : IItemService
 
     public async Task<Result<List<ItemModel>>> GetWithValidation(List<Guid> ids, Guid customerId)
     {
-        var items = await _itemRepository.GetByCustomerId(customerId);
-        var uniqueIds = ids.Distinct().ToList();
-        var result = items.Where(x => uniqueIds.Contains(x.Id)).ToList();
+        var items = await _itemRepository.Get(ids);
+        
+        string idString = string.Empty;
 
-        if (result is null || result.Count != uniqueIds.Count)
-        {
-            string idString = string.Empty;
+        var nonMatching = ids
+            .Where(id => !items.Any(i => (i.Id == id) && (i.CustomerId == customerId)))
+            .ToList();
 
-            foreach (var item in ids.Where(x => !(result ?? new()).Any(rez => rez.Id == x)))
-                idString += " " + item.ToString();
+        foreach (var item in nonMatching)
+            idString += " " + item.ToString();
 
-            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Items id{idString} is invalid for customer id {customerId}" };
-        }
+        if (!string.IsNullOrEmpty(idString))
+            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Items id{idString} is invalid for customer id {customerId}" };        
 
-        return _mapper.Map<List<ItemModel>>(result);
+        return _mapper.Map<List<ItemModel>>(items);
     }
 
     public async Task<Guid> Add(ItemModel item)
