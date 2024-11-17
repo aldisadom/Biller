@@ -80,8 +80,9 @@ jobs:
     - name: Start services
       run: |
         docker compose up -d
-        sleep 30
+        sleep 60
         docker ps
+        curl -v https://localhost:8091/users
 
     # Step 6: Wait for services to be ready
     - name: Wait for services to be ready
