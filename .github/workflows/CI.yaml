@@ -92,7 +92,7 @@ jobs:
       run: |
         dotnet restore
         dotnet build
-        dotnet test --logger:trx
+        dotnet test
 
     # Step 8: Tear down services
     - name: Stop and clean up services
