@@ -81,7 +81,7 @@ jobs:
       run: |
         docker compose up -d
         docker ps -a
-        for id in $(docker ps -q --filter ancestor=webapi:dev); do
+        for id in $(docker ps -q --filter ancestor=webapi); do
           echo "Logs for container $id:"
           docker logs $id
         done
