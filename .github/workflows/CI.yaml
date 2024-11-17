@@ -46,7 +46,7 @@ jobs:
     steps:
     # Step 1: Check out the Biller repository
     - name: Checkout Biller repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # Step 2: Clone the BillioIntegrationTest repository
     - name: Clone BillioIntegrationTest repository
@@ -57,12 +57,12 @@ jobs:
     - name: Set up Docker
       run: |
         docker --version
-        docker-compose --version
+        docker compose --version
 
     # Step 4: Start services using docker-compose
     - name: Start services
       run: |
-        docker-compose up -d
+        docker compose up -d
 
     # Step 5: Wait for services to be ready (customize for your environment)
     - name: Wait for services to be ready
@@ -80,4 +80,4 @@ jobs:
     # Step 7: Tear down services
     - name: Stop and clean up services
       run: |
-        docker-compose down
+        docker compose down
