@@ -79,15 +79,7 @@ jobs:
     # Step 5: Start services using docker-compose
     - name: Start services
       run: |
-        docker compose up -d
-        sleep 30
-        docker ps -a
-        for id in $(docker ps -a -q --filter ancestor=webapi); do
-          echo "Logs for container $id:"
-          docker logs $id
-        done
-        sleep 10
-        curl -v https://localhost:8091/users
+        docker compose up -d        
 
     # Step 6: Wait for services to be ready
     - name: Wait for services to be ready
