@@ -84,7 +84,18 @@ jobs:
     # Step 6: Wait for services to be ready
     - name: Wait for services to be ready
       run: |
-        sleep 30
+        for i in {1..6}; do
+          echo "Attempt $i: Checking if service is ready..."
+          response=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8091/users)
+          if [ "$response" -eq 200 ]; then
+            echo "Service is ready!"
+            exit 0
+          fi
+          echo "Service not ready (status code: $response). Retrying in 10 seconds..."
+          sleep 10
+        done
+        echo "Service did not become ready in time. Failing the step."
+        exit 1
 
     # Step 7: Run integration tests
     - name: Run integration tests
