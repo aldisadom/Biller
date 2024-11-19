@@ -43,11 +43,12 @@ services:
     ports:
       - "8085:8080"
 
-  webapi:
+  webapi:      
     image: ${DOCKER_REGISTRY-}webapi    
     container_name: "billio-webapi"  
     depends_on: 
       - db
+      - liquibase
     environment:
       - ASPNETCORE_Kestrel__Certificates__Default__Password=mypassword123456789mypassword
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
@@ -55,19 +56,24 @@ services:
       - ASPNETCORE_HTTP_PORTS=8070
       - ASPNETCORE_HTTPS_PORTS=8071
     volumes:
-      - ${USERPROFILE}/.aspnet/https:/https/
+      #- webapi:/https
+      - ./certs:/https/  # Mount the /https folder for certificates
+      #- ${USERPROFILE}/.aspnet/https:/https/  # If you want to use a local user store for dev certificates
       - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
       - ./Fonts:/Fonts
     build:
       context: .
-      dockerfile: src/WebAPI/DockerfileLocal
+      dockerfile: src/WebAPI/Dockerfile
     ports:
      - "8090:8070"
      - "8091:8071"
 
 volumes:
   postgres_data:
+  webapi:
+    driver: local
+    name: aspnet_https_certs
 
 networks:
   frontend:
