@@ -95,6 +95,9 @@ jobs:
           sleep 10
         done
         echo "Service did not become ready in time. Failing the step."
+        CONTAINER_ID=$(docker ps --filter "name=billio-webapi" --format "{{.ID}}")
+        echo "Container is not healthy. Fetching logs..."
+        docker logs "$CONTAINER_ID"
         exit 1
 
     # Step 7: Run integration tests
