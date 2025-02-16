@@ -363,3 +363,4 @@ FodyWeavers.xsd
 /src/WebAPI/Data/Invoices
 /coveragereport
 *.pem
+*.pfx
