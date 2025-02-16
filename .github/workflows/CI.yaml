@@ -76,6 +76,13 @@ jobs:
         docker --version
         docker compose --version
 
+    - name: Setup SSL Certificates
+      run: |
+        echo "${{ secrets.SSL_CERTIFICATE }}" > certs/cert.pem
+        echo "${{ secrets.SSL_KEY }}" > certs/key.pem
+        ls -l cert.pem key.pem
+        openssl x509 -in cert.pem -text -noout
+
     # Step 5: Start services using docker-compose
     - name: Start services
       run: |
