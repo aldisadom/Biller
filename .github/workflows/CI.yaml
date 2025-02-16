@@ -78,10 +78,11 @@ jobs:
 
     - name: Setup SSL Certificates
       run: |
+        mkdir certs
         echo "${{ secrets.SSL_CERTIFICATE }}" > certs/cert.pem
         echo "${{ secrets.SSL_KEY }}" > certs/key.pem
-        ls -l cert.pem key.pem
-        openssl x509 -in cert.pem -text -noout
+        ls -l certs/cert.pem certs/key.pem
+        openssl x509 -in certs/cert.pem -text -noout
 
     # Step 5: Start services using docker-compose
     - name: Start services
