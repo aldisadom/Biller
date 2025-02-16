@@ -81,6 +81,8 @@ jobs:
         mkdir certs
         echo "${{ secrets.SSL_CERTIFICATE }}" > certs/cert.pem
         echo "${{ secrets.SSL_KEY }}" > certs/key.pem
+        echo "${{ secrets.SSL_CERTIFICATE }}" | base64 --decode > /certs/aspnetapp.pfx
+
         sudo cp certs/cert.pem /usr/local/share/ca-certificates/custom-cert.crt
         sudo update-ca-certificates
 

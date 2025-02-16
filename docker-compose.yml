@@ -59,8 +59,8 @@ services:
       #- webapi:/https
       - ./certs:/https/  # Mount the /https folder for certificates
       #- ${USERPROFILE}/.aspnet/https:/https/  # If you want to use a local user store for dev certificates
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      #- ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      #- ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
       - ./Fonts:/Fonts
     build:
       context: .
