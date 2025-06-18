@@ -69,7 +69,12 @@ jobs:
       run: |
         sleep 30 # Adjust the delay based on service startup time
 
-    # Step 6: Run integration tests
+    # Step 6: Run certbot to generate certificates
+    - name: Generate certificates with certbot
+      run: |
+        docker-compose run certbot
+
+    # Step 7: Run integration tests
     - name: Run integration tests
       working-directory: ./BillioIntegrationTest
       run: |
@@ -77,7 +82,7 @@ jobs:
         dotnet build
         dotnet test --logger:trx
 
-    # Step 7: Tear down services
+    # Step 8: Tear down services
     - name: Stop and clean up services
       run: |
         docker-compose down
