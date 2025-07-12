@@ -29,6 +29,7 @@ public static class StartupInjection
                 .AddApplication()
                 .AddClients()
                 .AddInfrastructure(dbConnectionString)
+                .AddPdfGenerator()
                 .AddValidations();
 
         return services;
