@@ -11,6 +11,8 @@ using Infrastructure;
 using Infrastructure.Repository;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System.Collections;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace xUnitTests.Application;
 
@@ -142,28 +144,18 @@ public class DependencyInjectionTests
     {
         // Arrange
         var services = new ServiceCollection();
-        IOptions<FontSettings> fontSettings = null;
 
         // Act
         // Assert
-        var exception = Assert.Throws<ArgumentNullException>(() => services.AddPdfGenerator(fontSettings));
+        var exception = Assert.Throws<ArgumentNullException>(() => services.AddPdfGenerator(null));
         Assert.Contains("Font settings cannot be null", exception.Message);
     }
 
-    public static IEnumerable<FontSettings> GetFontSettingsTestData()
+    public static IEnumerable<object[]> GetFontSettingsTestData()
     {
-        yield return null;
-
-        yield return new FontSettings { Fonts = null };
-
-        yield return new FontSettings { Fonts = [] };
-
-        yield return new FontSettings
-        {
-            Fonts = [ 
-                new FontSetting { Name = "calibri", Path = "nonexistent-path.ttf" }
-                ]                
-        };
+        yield return new object[] { null! };
+        yield return new object[] { new FontSettings { Fonts = null! } };
+        yield return new object[] { new FontSettings { Fonts = [] } };        
     }
 
     [Theory]
@@ -177,6 +169,24 @@ public class DependencyInjectionTests
         // Assert
         var exception = Assert.Throws<ArgumentException>(() => services.AddPdfGenerator(Options.Create(fontSettings)));
         Assert.Contains("Font settings must contain at least one font", exception.Message);
+    }
+
+    [Fact]
+    public void AddPdfGenerator_ShouldThrow_WhenFontIsNotFound()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var fontSettings = new FontSettings
+        {
+            Fonts = [
+                new FontSetting { Name = "calibri", Path = "nonexistent-path.ttf" }
+                ]
+        };
+
+        // Act
+        // Assert
+        var exception = Assert.Throws<FileNotFoundException>(() => services.AddPdfGenerator(Options.Create(fontSettings)));
+        Assert.Contains("Font calibri file not found at path: nonexistent-path.ttf", exception.Message);
     }
 
     [Fact]
