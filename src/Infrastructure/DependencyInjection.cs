@@ -2,8 +2,6 @@
 using Infrastructure.Repository;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using QuestPDF.Drawing;
-using QuestPDF.Infrastructure;
 using System.Data;
 
 namespace Infrastructure;
@@ -23,11 +21,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUserRepository, UserRepository>();
 
-        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        QuestPDF.Settings.License = LicenseType.Community;
-
-        FontManager.RegisterFontWithCustomName("calibri", File.OpenRead("/Fonts/calibri.ttf"));
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;        
 
         return services;
     }
