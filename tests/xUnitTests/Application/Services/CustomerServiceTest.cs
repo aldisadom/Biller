@@ -2,21 +2,16 @@
 using Application.Services;
 using AutoFixture.Xunit2;
 using AutoMapper;
-using Castle.Core.Resource;
 using Common;
 using Contracts.Requests.Customer;
-using Contracts.Responses;
 using Domain.Entities;
 
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using Moq;
 using System.Net;
 using WebAPI.MappingProfiles;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace xUnitTests.Application.Services;
 
@@ -134,10 +129,10 @@ public class NumberToWordsLTTest
 
         var sellerId = Guid.NewGuid();
         ErrorModel expectedResult = new()
-        { 
+        {
             StatusCode = HttpStatusCode.BadRequest,
-            Message = "Validation failure", 
-            ExtendedMessage = $"Customer id {id} is invalid for seller id {sellerId}" 
+            Message = "Validation failure",
+            ExtendedMessage = $"Customer id {id} is invalid for seller id {sellerId}"
         };
 
         // Act

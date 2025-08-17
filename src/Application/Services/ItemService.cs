@@ -55,7 +55,7 @@ public class ItemService : IItemService
     public async Task<Result<List<ItemModel>>> GetWithValidation(List<Guid> ids, Guid customerId)
     {
         var items = await _itemRepository.Get(ids);
-        
+
         string idString = string.Empty;
 
         var nonMatching = ids
@@ -66,7 +66,7 @@ public class ItemService : IItemService
             idString += " " + item.ToString();
 
         if (!string.IsNullOrEmpty(idString))
-            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Items id{idString} is invalid for customer id {customerId}" };        
+            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Items id{idString} is invalid for customer id {customerId}" };
 
         return _mapper.Map<List<ItemModel>>(items);
     }
