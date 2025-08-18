@@ -99,7 +99,7 @@ public class ItemServiceTest
 
         foreach (var item in itemList)
             item.CustomerId = customerId;
-        
+
         _itemRepositoryMock.Setup(m => m.Get(ids))
                         .ReturnsAsync(itemList);
 
@@ -155,12 +155,12 @@ public class ItemServiceTest
     public async Task GetIdsWithValidation_GivenInvalidId_ReturnsErrorModel()
     {
         // Arrange
-        List<Guid> ids = new List<Guid>() { Guid.NewGuid()};
+        List<Guid> ids = new List<Guid>() { Guid.NewGuid() };
         var customerId = Guid.NewGuid();
 
         _itemRepositoryMock.Setup(m => m.Get(ids))
                         .ReturnsAsync((List<ItemEntity>)[]);
-        
+
         ErrorModel expectedResult = new()
         {
             StatusCode = HttpStatusCode.BadRequest,

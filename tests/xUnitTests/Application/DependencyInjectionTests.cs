@@ -11,8 +11,6 @@ using Infrastructure;
 using Infrastructure.Repository;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System.Collections;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace xUnitTests.Application;
 
@@ -53,13 +51,13 @@ public class DependencyInjectionTests
         // Arrange
         var services = new ServiceCollection();
 
-        services.Configure<Domain.IOptions.PasswordEncryption>(options =>{options.Salt = "your-salt-value";});
+        services.Configure<Domain.IOptions.PasswordEncryption>(options => { options.Salt = "your-salt-value"; });
 
         // Act
         services.AddApplication();
         services.AddInfrastructure(_dbConnectionString);
 
-        var mapperConfig = new MapperConfiguration(mc =>{});
+        var mapperConfig = new MapperConfiguration(mc => { });
         IMapper mapper = mapperConfig.CreateMapper();
 
         services.AddSingleton(mapper);
@@ -155,7 +153,7 @@ public class DependencyInjectionTests
     {
         yield return new object[] { null! };
         yield return new object[] { new FontSettings { Fonts = null! } };
-        yield return new object[] { new FontSettings { Fonts = [] } };        
+        yield return new object[] { new FontSettings { Fonts = [] } };
     }
 
     [Theory]
