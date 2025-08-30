@@ -46,7 +46,7 @@ public class SellerService : ISellerService
     public async Task<Result<SellerModel>> GetWithValidation(Guid id, Guid userId)
     {
         var seller = await _sellerRepository.Get(id);
-        
+
         if (seller is null || seller.UserId != userId)
             return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Seller id {id} is invalid for user id {userId}" };
 

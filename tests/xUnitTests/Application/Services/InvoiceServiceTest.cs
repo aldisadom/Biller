@@ -7,17 +7,13 @@ using AutoFixture;
 using AutoFixture.Xunit2;
 using AutoMapper;
 using Common.Enums;
-using Contracts.Requests.Customer;
 using Contracts.Requests.Invoice;
-using Contracts.Requests.Item;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
-using Validators.Customer;
-using Validators.Item;
 using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Application.Services;
