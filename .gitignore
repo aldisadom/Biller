@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /src/WebAPI/Data/Invoices
 /coveragereport
+/certbot/conf/.certbot.lock
