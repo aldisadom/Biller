@@ -4,10 +4,10 @@ using AutoMapper;
 using Contracts.Requests.Seller;
 using Contracts.Responses;
 using Contracts.Responses.Seller;
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using Validators;
+using Validators.Seller;
 using WebAPI.SwaggerExamples.Seller;
 
 namespace WebAPI.Controllers;
@@ -23,8 +23,6 @@ public class SellerController : ControllerBase
     private readonly ISellerService _sellerService;
     private readonly ILogger<SellerController> _logger;
     private readonly IMapper _mapper;
-    private readonly IValidator<SellerAddRequest> _validatorAdd;
-    private readonly IValidator<SellerUpdateRequest> _validatorUpdate;
 
     /// <summary>
     /// Constructor
@@ -32,17 +30,11 @@ public class SellerController : ControllerBase
     /// <param name="sellerService"></param>
     /// <param name="logger"></param>
     /// <param name="mapper"></param>
-    /// <param name="validatorAdd"></param>
-    /// <param name="validatorUpdate"></param>
-    public SellerController(ISellerService sellerService, ILogger<SellerController> logger, IMapper mapper,
-        IValidator<SellerAddRequest> validatorAdd, IValidator<SellerUpdateRequest> validatorUpdate)
+    public SellerController(ISellerService sellerService, ILogger<SellerController> logger, IMapper mapper)
     {
         _sellerService = sellerService;
         _logger = logger;
         _mapper = mapper;
-
-        _validatorAdd = validatorAdd;
-        _validatorUpdate = validatorUpdate;
     }
 
     /// <summary>
@@ -93,7 +85,7 @@ public class SellerController : ControllerBase
     [SwaggerRequestExample(typeof(SellerAddRequest), typeof(SellerAddRequestExample))]
     public async Task<IActionResult> Add(SellerAddRequest seller)
     {
-        _validatorAdd.CheckValidation(seller);
+        new SellerAddValidator().CheckValidation(seller);
 
         SellerModel sellerModel = _mapper.Map<SellerModel>(seller);
 
@@ -114,7 +106,7 @@ public class SellerController : ControllerBase
     [SwaggerRequestExample(typeof(SellerUpdateRequest), typeof(SellerUpdateRequestExample))]
     public async Task<IActionResult> Update(SellerUpdateRequest seller)
     {
-        _validatorUpdate.CheckValidation(seller);
+        new SellerUpdateValidator().CheckValidation(seller);
 
         SellerModel sellerModel = _mapper.Map<SellerModel>(seller);
 

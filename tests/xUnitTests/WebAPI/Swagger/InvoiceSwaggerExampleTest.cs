@@ -8,7 +8,7 @@ public class InvoiceSwaggerExampleTest
 {
 
     [Fact]
-    public void InvoiceAddRequestExample_ReturnEmptyList()
+    public void InvoiceDataAddRequestExample_ReturnEmptyList()
     {
         //Arrange
         InvoiceAddRequestExample example = new();
@@ -21,7 +21,7 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceUpdateRequestExample_ReturnEmptyList()
+    public void InvoiceDataUpdateRequestExample_ReturnEmptyList()
     {
         //Arrange
         InvoiceUpdateRequestExample example = new();
@@ -35,7 +35,7 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceListResponseExample_ReturnEmptyList()
+    public void InvoiceDataListResponseExample_ReturnEmptyList()
     {
         //Arrange
         InvoiceListResponseExample example = new();
@@ -49,7 +49,7 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceResponseExample_ReturnEmptyList()
+    public void InvoiceDataResponseExample_ReturnEmptyList()
     {
         //Arrange
         InvoiceResponseExample example = new();
