@@ -54,7 +54,7 @@ public class InvoiceService : IInvoiceService
         GenerateInvoiceFolderPath(invoiceData);
     }
 
-    public void MapInvoiceItemToItem(List<InvoiceItemModel> invoiceItems, List<ItemModel> items)
+    public static void MapInvoiceItemToItem(List<InvoiceItemModel> invoiceItems, List<ItemModel> items)
     {
         foreach (ItemModel item in items)
         {
@@ -70,7 +70,7 @@ public class InvoiceService : IInvoiceService
         }
     }
 
-    public void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, List<ItemModel> items)
+    public static void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, List<ItemModel> items)
     {
         foreach (InvoiceItemModel invoiceItem in invoiceItems)
         {

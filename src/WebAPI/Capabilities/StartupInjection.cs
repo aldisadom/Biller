@@ -2,6 +2,7 @@
 using Clients;
 using Domain.IOptions;
 using Infrastructure;
+using Microsoft.Extensions.Options;
 using Validators;
 
 namespace WebAPI.Capabilities;
@@ -29,6 +30,8 @@ public static class StartupInjection
                 .AddApplication()
                 .AddClients()
                 .AddInfrastructure(dbConnectionString)
+                .Configure<FontSettings>(configuration.GetSection("FontSettings"))
+                .AddPdfGenerator(services.BuildServiceProvider().GetRequiredService<IOptions<FontSettings>>())
                 .AddValidations();
 
         return services;

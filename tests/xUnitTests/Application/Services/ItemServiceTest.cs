@@ -156,6 +156,7 @@ public class ItemServiceTest
     {
         // Arrange
         List<Guid> ids = new() { Guid.NewGuid() };
+
         var customerId = Guid.NewGuid();
 
         _itemRepositoryMock.Setup(m => m.Get(ids))

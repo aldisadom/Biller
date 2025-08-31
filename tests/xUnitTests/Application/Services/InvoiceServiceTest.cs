@@ -291,7 +291,7 @@ public class InvoiceServiceTest
         InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
 
-        _invoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
+        InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
 
         _invoiceDataRepositoryMock.Setup(m => m.Add(It.Is<InvoiceEntity>(x => x == invoiceDataEntity)))
                                  .ReturnsAsync(invoiceDataEntity.Id);
