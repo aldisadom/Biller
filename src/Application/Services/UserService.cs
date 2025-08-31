@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
+using BCrypt.Net;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -25,9 +26,9 @@ public class UserService : IUserService
         UserEntity userEntity = await _userRepository.Get(user.Email)
             ?? throw new UnauthorizedAccessException($"Invalid login data");
 
-        user.Password = _passwordEncryptionService.Encrypt(user.Password);
+        (string hashed, _) = _passwordEncryptionService.Encrypt(user.Password, userEntity.Salt);
 
-        if (user.Password != userEntity.Password)
+        if (hashed != userEntity.Password)
             throw new UnauthorizedAccessException($"Invalid login data");
 
         return "fakeToken";
@@ -50,9 +51,10 @@ public class UserService : IUserService
 
     public async Task<Guid> Add(UserModel user)
     {
-        user.Password = _passwordEncryptionService.Encrypt(user.Password);
+        (user.Password, string salt) = _passwordEncryptionService.Encrypt(user.Password);
 
         UserEntity userEntity = _mapper.Map<UserEntity>(user);
+        userEntity.Salt = salt;
 
         return await _userRepository.Add(userEntity);
     }

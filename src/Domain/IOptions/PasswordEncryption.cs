@@ -2,5 +2,5 @@
 
 public class PasswordEncryption
 {
-    public string Salt { get; set; } = string.Empty;
+    public string Pepper { get; set; } = string.Empty;
 }

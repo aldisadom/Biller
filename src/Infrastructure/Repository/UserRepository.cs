@@ -40,8 +40,8 @@ public class UserRepository : IUserRepository
     public async Task<Guid> Add(UserEntity item)
     {
         string sql = @"INSERT INTO users
-                        (name, last_name, email, password)
-                        VALUES (@Name, @LastName, @Email, @Password)
+                        (name, last_name, email, password, salt)
+                        VALUES (@Name, @LastName, @Email, @Password, @Salt)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);

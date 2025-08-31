@@ -51,7 +51,7 @@ public class DependencyInjectionTests
         // Arrange
         var services = new ServiceCollection();
 
-        services.Configure<Domain.IOptions.PasswordEncryption>(options => { options.Salt = "your-salt-value"; });
+        services.Configure<Domain.IOptions.PasswordEncryption>(options => { options.Pepper = "your-salt-value"; });
 
         // Act
         services.AddApplication();

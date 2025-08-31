@@ -2,5 +2,5 @@
 
 public interface IPasswordEncryptionService
 {
-    string Encrypt(string password);
+    (string hashed, string saltUsed) Encrypt(string password, string? salt = null);
 }
