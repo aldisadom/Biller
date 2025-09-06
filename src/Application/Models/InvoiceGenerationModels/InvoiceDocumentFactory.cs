@@ -7,7 +7,7 @@ namespace Application.Models.InvoiceGenerationModels;
 
 public interface IInvoiceDocumentFactory
 {
-    void GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModel invoiceData);
+    string GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModel invoiceData);
 }
 
 public class InvoiceDocumentFactory : IInvoiceDocumentFactory
@@ -19,7 +19,7 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
         _priceToWordsFactory = priceToWordsFactory;
     }
 
-    public void GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModel invoiceData)
+    public string GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModel invoiceData)
     {
         IDocument document;
         switch (documentType)
@@ -36,5 +36,7 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
         }
         string path = invoiceData.GenerateFileLocation();
         document.GeneratePdf(path);
+
+        return path;
     }
 }
