@@ -163,9 +163,11 @@ public class InvoiceService : IInvoiceService
         await _invoiceRepository.Delete(id);
     }
 
-    public async Task GeneratePDF(Guid id, Language languageCode, DocumentType documentType)
+    public async Task<FileStream> GeneratePDF(Guid id, Language languageCode, DocumentType documentType)
     {
         InvoiceModel invoiceData = await Get(id);
-        _invoiceDocumentFactory.GeneratePdf(documentType, languageCode, invoiceData);
+        var path = _invoiceDocumentFactory.GeneratePdf(documentType, languageCode, invoiceData);
+
+        return File.OpenRead(path);
     }
 }

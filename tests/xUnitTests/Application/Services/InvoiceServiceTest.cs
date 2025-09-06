@@ -375,6 +375,8 @@ public class InvoiceServiceTest
     public async Task GeneratePDF_ValidId_Generates()
     {
         //Arrange
+        string invoiceName = "invoice.pdf";
+        string invoicePath = Path.Combine(Directory.GetCurrentDirectory(), invoiceName);
         InvoiceEntity invoiceEntity = new();
         Language languageCode = Language.LT;
         DocumentType documentType = DocumentType.Invoice;
@@ -394,12 +396,26 @@ public class InvoiceServiceTest
             i.Items != null &&
             i.Items.All(expectedItem => i.Items.Any(invoiceItem => invoiceItem == expectedItem)) &&
             i.InvoiceNumber == invoice.InvoiceNumber &&
-            i.Comments == invoice.Comments)));
+            i.Comments == invoice.Comments))).Returns(invoiceName);
 
-        //Act        
-        await _invoiceService.GeneratePDF(invoiceEntity.Id, languageCode, documentType);
+        await File.WriteAllTextAsync(invoiceName, "dummy pdf content");
 
-        //Assert
-        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceEntity.Id), Times.Once());
+        try
+        {
+            // Act        
+            FileStream file = await _invoiceService.GeneratePDF(invoiceEntity.Id, languageCode, documentType);
+            file.Close();
+
+            // Assert
+            _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceEntity.Id), Times.Once());
+            Assert.NotNull(file);
+            Assert.Equal(invoicePath, file.Name);
+        }
+        finally
+        {
+            // Clean up the file after the test
+            if (File.Exists(invoicePath))
+                File.Delete(invoicePath);
+        }
     }
 }
