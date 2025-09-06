@@ -13,8 +13,9 @@ public static class StartupSwagger
     /// Configure swagger services 
     /// </summary>
     /// <param name="services"></param>
+    /// <param name="withOauth"></param>
     /// <returns></returns>
-    public static IServiceCollection ConfigureSwagger(this IServiceCollection services)
+    public static IServiceCollection ConfigureSwagger(this IServiceCollection services, bool withOauth = false)
     {
         // Add framework services.
         services.AddMvc();
@@ -32,50 +33,22 @@ public static class StartupSwagger
             c.IncludeXmlComments(xmlPath);
 
             c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>(); // Adds "(Auth)" to the summary so that you can see which endpoints have Authorization
-        });
 
-        services.AddSwaggerExamplesFromAssemblies(Assembly.GetEntryAssembly());
-
-        return services;
-    }
-
-    /// <summary>
-    /// Configure swagger services 
-    /// </summary>
-    /// <param name="services"></param>
-    /// <returns></returns>
-    public static IServiceCollection ConfigureSwaggerWithOauth(this IServiceCollection services)
-    {
-        // Add framework services.
-        services.AddMvc();
-
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen(c =>
-        {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
-
-            c.ExampleFilters();
-            // Set the comments path for the Swagger JSON and UI.
-            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            c.IncludeXmlComments(xmlPath);
-
-            c.OperationFilter<AppendAuthorizeToSummaryOperationFilter>(); // Adds "(Auth)" to the summary so that you can see which endpoints have Authorization
-                                                                          // or use the generic method, e.g. c.OperationFilter<AppendAuthorizeToSummaryOperationFilter<MyCustomAttribute>>();
-
-            // add Security information to each operation for OAuth2
-            c.OperationFilter<SecurityRequirementsOperationFilter>();
-            // or use the generic method, e.g. c.OperationFilter<SecurityRequirementsOperationFilter<MyCustomAttribute>>();
-
-            // if you're using the SecurityRequirementsOperationFilter, you also need to tell Swashbuckle you're using OAuth2
-            c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+            if (withOauth)
             {
-                Description = "Standard Authorization header using the Bearer scheme. Example: \"bearer {token}\"",
-                In = ParameterLocation.Header,
-                Name = "Authorization",
-                Type = SecuritySchemeType.ApiKey
-            });
+                // add Security information to each operation for OAuth2
+                c.OperationFilter<SecurityRequirementsOperationFilter>();
+                // or use the generic method, e.g. c.OperationFilter<SecurityRequirementsOperationFilter<MyCustomAttribute>>();
+
+                // if you're using the SecurityRequirementsOperationFilter, you also need to tell Swashbuckle you're using OAuth2
+                c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+                {
+                    Description = "Standard Authorization header using the Bearer scheme. Example: \"bearer {token}\"",
+                    In = ParameterLocation.Header,
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey
+                });
+            }
         });
 
         services.AddSwaggerExamplesFromAssemblies(Assembly.GetEntryAssembly());
