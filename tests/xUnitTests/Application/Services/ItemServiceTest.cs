@@ -150,8 +150,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
+    [Fact]
     public async Task GetIdsWithValidation_GivenInvalidId_ReturnsErrorModel()
     {
         // Arrange

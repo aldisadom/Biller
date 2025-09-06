@@ -106,7 +106,8 @@ public class TensToWordsLT : ITensToWords
                     6 => "šešiolika",
                     7 => "septyniolika",
                     8 => "aštuoniolika",
-                    9 => "devyniolika"
+                    9 => "devyniolika",
+                    _ => throw new ArgumentException($"TensSplitLT got {number} to parse"),
                 };
                 return text;
             }

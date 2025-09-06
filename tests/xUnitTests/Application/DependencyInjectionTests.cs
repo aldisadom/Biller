@@ -145,7 +145,7 @@ public class DependencyInjectionTests
 
         // Act
         // Assert
-        var exception = Assert.Throws<ArgumentNullException>(() => services.AddPdfGenerator(null));
+        var exception = Assert.Throws<ArgumentNullException>(() => services.AddPdfGenerator(null!));
         Assert.Contains("Font settings cannot be null", exception.Message);
     }
 
