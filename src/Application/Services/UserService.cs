@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using AutoMapper;
-using BCrypt.Net;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;

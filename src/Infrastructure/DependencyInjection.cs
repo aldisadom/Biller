@@ -21,7 +21,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUserRepository, UserRepository>();
 
-        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;        
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
         return services;
     }
