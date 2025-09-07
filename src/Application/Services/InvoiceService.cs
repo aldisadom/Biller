@@ -135,6 +135,16 @@ public class InvoiceService : IInvoiceService
         await _invoiceRepository.Update(invoiceEntity);
     }
 
+    public async Task UpdateStatus(InvoiceUpdateStatusRequest invoiceData)
+    {
+        if (!Enum.IsDefined(typeof(InvoiceStatus), invoiceData.Status))
+            throw new ValidationException($"Invalid invoice status: {invoiceData.Status}");
+
+        await Get(invoiceData.Id);
+
+        await _invoiceRepository.UpdateStatus(invoiceData.Id, invoiceData.Status);
+    }
+
     private async Task<(SellerModel seller, CustomerModel customer, List<ItemModel> items)> Validate(InvoiceModel invoiceData)
     {
         var sellerResult = await _sellerService.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id);
@@ -165,6 +175,12 @@ public class InvoiceService : IInvoiceService
 
     public async Task<FileStream> GeneratePDF(Guid id, Language languageCode, DocumentType documentType)
     {
+        if (!Enum.IsDefined(typeof(Language), languageCode))
+            throw new ValidationException($"Invalid language code: {languageCode}");
+
+        if (!Enum.IsDefined(typeof(DocumentType), documentType))
+            throw new ValidationException($"Invalid document type: {documentType}");
+
         InvoiceModel invoiceData = await Get(id);
         var path = _invoiceDocumentFactory.GeneratePdf(documentType, languageCode, invoiceData);
 

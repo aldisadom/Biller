@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using Common.Enums;
+using Dapper;
 using Domain.Entities;
 using Domain.Repositories;
 using System.Data;
@@ -57,9 +58,9 @@ public class InvoiceRepository : IInvoiceRepository
     {
         string sql = @"INSERT INTO invoices
                         (customer_id, seller_id, user_id, file_path, invoice_number, user_data, created_date, due_date,
-                        seller_data, customer_data, items_data, comments, total_price)
+                        seller_data, customer_data, items_data, comments, total_price, status)
                         VALUES (@CustomerId, @SellerId, @UserId, @FilePath, @InvoiceNumber, @UserData, @CreatedDate, @DueDate,
-                        @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice)
+                        @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice, @Status)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, invoice);
@@ -74,6 +75,15 @@ public class InvoiceRepository : IInvoiceRepository
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, invoice);
+    }
+
+    public async Task UpdateStatus(Guid id, InvoiceStatus status)
+    {
+        string sql = @"UPDATE invoices
+                        SET status=@status
+                        WHERE id=@Id";
+
+        await _dbConnection.ExecuteAsync(sql, new { Id = id, Status = status });
     }
 
     public async Task Delete(Guid id)

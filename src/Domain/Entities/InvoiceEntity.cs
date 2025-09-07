@@ -1,4 +1,6 @@
-﻿namespace Domain.Entities;
+﻿using Common.Enums;
+
+namespace Domain.Entities;
 
 public record InvoiceEntity
 {
@@ -16,4 +18,5 @@ public record InvoiceEntity
     public string ItemsData { get; set; } = string.Empty;
     public string? Comments { get; set; }
     public decimal TotalPrice { get; set; }
+    public InvoiceStatus Status { get; set; }
 }

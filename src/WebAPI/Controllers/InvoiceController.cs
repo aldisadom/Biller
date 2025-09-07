@@ -143,4 +143,20 @@ public class InvoiceController : ControllerBase
 
         return NoContent();
     }
+
+    
+    ///<summary>
+    /// Updates the status of an invoice.
+    /// </summary>
+    /// <param name="invoice">The invoice status update request.</param>
+    /// <returns>No content if the update is successful.</returns>
+    [HttpPut("update_status")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [SwaggerRequestExample(typeof(InvoiceUpdateStatusRequest), typeof(InvoiceUpdateStatusRequestExample))]
+    public async Task<IActionResult> UpdateStatus(InvoiceUpdateStatusRequest invoice)
+    {
+        await _invoiceService.UpdateStatus(invoice);
+
+        return NoContent();
+    }
 }

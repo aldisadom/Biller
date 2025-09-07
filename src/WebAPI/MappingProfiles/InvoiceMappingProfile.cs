@@ -1,5 +1,6 @@
 ﻿using Application.Models;
 using AutoMapper;
+using Common.Enums;
 using Contracts.Requests.Invoice;
 using Contracts.Responses.Invoice;
 using Domain.Entities;
@@ -39,7 +40,8 @@ public class InvoiceMappingProfile : Profile
            .ForMember(dest => dest.TotalPrice, opts => opts.MapFrom(src => src.CalculateTotal()))
            .ForMember(dest => dest.FilePath, opts => opts.MapFrom(src => src.GenerateFileLocation()))
            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate.ToDateTime(TimeOnly.MinValue)))
-           .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate.ToDateTime(TimeOnly.MinValue)));
+           .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate.ToDateTime(TimeOnly.MinValue)))
+           .ForMember(dest => dest.Status, opt => opt.MapFrom(src => InvoiceStatus.Created));
 
 
         //source, destination (which parameters must be mapped)

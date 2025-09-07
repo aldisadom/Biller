@@ -1,4 +1,5 @@
-﻿using Contracts.Responses.Customer;
+﻿using Common.Enums;
+using Contracts.Responses.Customer;
 using Contracts.Responses.Seller;
 
 namespace Contracts.Responses.Invoice;
@@ -15,4 +16,5 @@ public class InvoiceResponse
     public List<InvoiceItemResponse>? Items { get; set; }
     public string? Comments { get; set; }
     public decimal TotalPrice { get; set; }
+    public InvoiceStatus Status { get; set; }
 }
