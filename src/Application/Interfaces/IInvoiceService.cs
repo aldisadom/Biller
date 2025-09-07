@@ -11,5 +11,6 @@ public interface IInvoiceService
     Task<IEnumerable<InvoiceModel>> Get(InvoiceGetRequest? query);
     Task<InvoiceModel> Get(Guid id);
     Task Update(InvoiceModel invoiceDetails);
+    Task UpdateStatus(InvoiceUpdateStatusRequest invoiceDetails);
     Task<FileStream> GeneratePDF(Guid id, Language languageCode, DocumentType documentType);
 }

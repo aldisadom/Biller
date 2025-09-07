@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Common.Enums;
+using Domain.Entities;
 
 namespace Domain.Repositories
 {
@@ -12,5 +13,6 @@ namespace Domain.Repositories
         Task<IEnumerable<InvoiceEntity>> GetBySellerId(Guid sellerId);
         Task<IEnumerable<InvoiceEntity>> GetByCustomerId(Guid customerId);
         Task Update(InvoiceEntity invoice);
+        Task UpdateStatus(Guid id, InvoiceStatus status);
     }
 }

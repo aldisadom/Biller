@@ -1,4 +1,6 @@
-﻿namespace Application.Models;
+﻿using Common.Enums;
+
+namespace Application.Models;
 
 public record InvoiceModel
 {
@@ -11,6 +13,7 @@ public record InvoiceModel
     public List<InvoiceItemModel>? Items { get; set; }
     public int InvoiceNumber { get; set; }
     public string? Comments { get; set; }
+    public InvoiceStatus Status { get; set; }
 
     public decimal CalculateTotal()
     {
