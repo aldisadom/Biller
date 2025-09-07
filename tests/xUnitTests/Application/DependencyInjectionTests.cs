@@ -149,6 +149,27 @@ public class DependencyInjectionTests
         Assert.Contains("Font settings cannot be null", exception.Message);
     }
 
+    [Theory]
+    [InlineData(null, "calibri")]
+    [InlineData("", "calibri")]
+    [InlineData("some-path.ttf", null)]
+    [InlineData("some-path.ttf", "")]
+    public void AddPdfGenerator_ShouldThrow_WhenFontPathOrNameIsNullOrEmpty(string path, string name)
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var fontSettings = Options.Create(new FontSettings
+        {
+            Fonts = [
+                new FontSetting { Name = name, Path = path }
+            ]
+        });
+
+        // Act & Assert
+        var exception = Assert.Throws<ArgumentException>(() => services.AddPdfGenerator(fontSettings));
+        Assert.Contains("Font path or name cannot be null or empty", exception.Message);
+    }
+
     public static IEnumerable<object[]> GetFontSettingsTestData()
     {
         yield return new object[] { null! };

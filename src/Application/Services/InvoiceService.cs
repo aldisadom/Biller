@@ -36,8 +36,6 @@ public class InvoiceService : IInvoiceService
     private static void GenerateInvoiceFolderPath(InvoiceModel invoiceData)
     {
         string folderPath = invoiceData.GenerateFolderLocation();
-        if (!Directory.Exists(folderPath))
-            Directory.CreateDirectory(folderPath);
     }
 
     private async Task GetInvoiceData(InvoiceModel invoiceData)

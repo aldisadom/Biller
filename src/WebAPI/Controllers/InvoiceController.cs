@@ -144,7 +144,7 @@ public class InvoiceController : ControllerBase
         return NoContent();
     }
 
-    
+
     ///<summary>
     /// Updates the status of an invoice.
     /// </summary>
