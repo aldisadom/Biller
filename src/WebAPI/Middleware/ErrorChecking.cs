@@ -1,11 +1,11 @@
 ﻿using Common;
 using Contracts.Responses;
 using Domain.Exceptions;
-using FluentValidation;
 using Newtonsoft.Json;
 using System.Data.Common;
 using System.Net;
 using System.Security;
+using ValidationException = FluentValidation.ValidationException;
 
 namespace WebAPI.Middleware;
 

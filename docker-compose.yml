@@ -66,6 +66,28 @@ services:
      - "8090:8070"
      - "8091:8071"
 
+  nginx:
+    image: nginx:latest
+    container_name: "billio-nginx"
+    depends_on:
+      - webapi
+    volumes:
+    nera sito failo
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
+
+  certbot:
+    image: certbot/certbot
+    container_name: "billio-certbot"
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email test@example.com --agree-tos --no-eff-email -d testdomain.com
+    
 volumes:
   postgres_data:
 
