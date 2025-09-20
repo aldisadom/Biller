@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
-using AutoMapper;
 using Contracts.Requests.User;
 using Contracts.Responses;
 using Contracts.Responses.User;
@@ -22,7 +22,6 @@ public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly ILogger<UserController> _logger;
-    private readonly IMapper _mapper;
     private readonly IValidator<UserAddRequest> _validatorAdd;
     private readonly IValidator<UserUpdateRequest> _validatorUpdate;
     private readonly IValidator<UserLoginRequest> _validatorLogin;
@@ -32,16 +31,14 @@ public class UserController : ControllerBase
     /// </summary>
     /// <param name="userService"></param>
     /// <param name="logger"></param>
-    /// <param name="mapper"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
     /// <param name="validatorLogin"></param>
-    public UserController(IUserService userService, ILogger<UserController> logger, IMapper mapper,
+    public UserController(IUserService userService, ILogger<UserController> logger,
         IValidator<UserAddRequest> validatorAdd, IValidator<UserUpdateRequest> validatorUpdate, IValidator<UserLoginRequest> validatorLogin)
     {
         _userService = userService;
         _logger = logger;
-        _mapper = mapper;
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
@@ -61,7 +58,7 @@ public class UserController : ControllerBase
     {
         _validatorLogin.CheckValidation(user);
 
-        UserModel userModel = _mapper.Map<UserModel>(user);
+        UserModel userModel = user.ToModel();
 
         UserLoginResponse result = new()
         {
@@ -84,7 +81,7 @@ public class UserController : ControllerBase
     {
         UserModel user = await _userService.Get(id);
 
-        UserResponse result = _mapper.Map<UserResponse>(user);
+        UserResponse result = user.ToResponse();
 
         return Ok(result);
     }
@@ -102,7 +99,7 @@ public class UserController : ControllerBase
 
         UserListResponse result = new()
         {
-            Users = users.Select(i => _mapper.Map<UserResponse>(i)).ToList()
+            Users = users.Select(u => u.ToResponse()).ToList()
         };
 
         return Ok(result);
@@ -120,7 +117,7 @@ public class UserController : ControllerBase
     {
         _validatorAdd.CheckValidation(user);
 
-        UserModel userModel = _mapper.Map<UserModel>(user);
+        UserModel userModel = user.ToModel();
 
         AddResponse result = new()
         {
@@ -141,7 +138,7 @@ public class UserController : ControllerBase
     {
         _validatorUpdate.CheckValidation(user);
 
-        UserModel userModel = _mapper.Map<UserModel>(user);
+        UserModel userModel = user.ToModel();
 
         await _userService.Update(userModel);
 

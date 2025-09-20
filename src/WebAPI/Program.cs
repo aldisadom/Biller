@@ -28,7 +28,6 @@ public class Program
         builder.Services
             .ConfigureInjection(builder.Configuration)
             .ConfigureLogging(builder.Configuration)
-            .ConfigureAutoMapper()
             .ConfigureSwagger();
 
         builder.Host.UseSerilog();

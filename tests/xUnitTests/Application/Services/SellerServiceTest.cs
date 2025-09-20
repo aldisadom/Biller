@@ -1,7 +1,7 @@
-﻿using Application.Models;
+﻿using Application.MappingProfiles;
+using Application.Models;
 using Application.Services;
 using AutoFixture.Xunit2;
-using AutoMapper;
 using Common;
 using Contracts.Requests.Seller;
 using Domain.Entities;
@@ -10,7 +10,6 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using System.Net;
-using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Application.Services;
 
@@ -18,20 +17,12 @@ public class SellerServiceTest
 {
     private readonly Mock<ISellerRepository> _sellerRepositoryMock;
     private readonly SellerService _sellerService;
-    private readonly IMapper _mapper;
 
     public SellerServiceTest()
     {
         _sellerRepositoryMock = new Mock<ISellerRepository>(MockBehavior.Strict);
 
-        var mapperConfig = new MapperConfiguration(mc =>
-        {
-            mc.AddProfile(new SellerMappingProfile());
-        });
-        mapperConfig.AssertConfigurationIsValid();
-        _mapper = mapperConfig.CreateMapper();
-
-        _sellerService = new SellerService(_sellerRepositoryMock.Object, _mapper);
+        _sellerService = new SellerService(_sellerRepositoryMock.Object);
     }
 
     [Theory]
@@ -42,7 +33,7 @@ public class SellerServiceTest
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
 
-        SellerModel expectedResult = _mapper.Map<SellerModel>(seller);
+        SellerModel expectedResult = seller.ToModel();
 
         //Act
         SellerModel result = await _sellerService.Get(seller.Id);
@@ -75,7 +66,7 @@ public class SellerServiceTest
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
 
-        SellerModel expectedResult = _mapper.Map<SellerModel>(seller);
+        SellerModel expectedResult = seller.ToModel();
 
         //Act
         var resultResponse = await _sellerService.GetWithValidation(seller.Id, seller.UserId);
@@ -156,7 +147,7 @@ public class SellerServiceTest
         _sellerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(sellerList);
 
-        List<SellerModel> expectedResult = _mapper.Map<List<SellerModel>>(sellerList);
+        var expectedResult = sellerList.Select(s => s.ToModel());
 
         //Act
         var result = await _sellerService.Get(request);
@@ -179,7 +170,7 @@ public class SellerServiceTest
         _sellerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(sellerList);
 
-        List<SellerModel> expectedResult = _mapper.Map<List<SellerModel>>(sellerList);
+        var expectedResult = sellerList.Select(s => s.ToModel());
 
         //Act
         var result = await _sellerService.Get(request);
@@ -205,7 +196,7 @@ public class SellerServiceTest
         _sellerRepositoryMock.Setup(m => m.GetByUserId((Guid)request.UserId!))
                         .ReturnsAsync(sellerList);
 
-        List<SellerModel> expectedResult = _mapper.Map<List<SellerModel>>(sellerList);
+        var expectedResult = sellerList.Select(s => s.ToModel());
 
         //Act
         var result = await _sellerService.Get(request);
@@ -243,7 +234,7 @@ public class SellerServiceTest
     public async Task Add_GivenValidId_ReturnsGuid(SellerModel seller)
     {
         //Arrange
-        SellerEntity sellerEntity = _mapper.Map<SellerEntity>(seller);
+        SellerEntity sellerEntity = seller.ToEntity();
 
         _sellerRepositoryMock.Setup(m => m.Add(It.Is<SellerEntity>(x => x == sellerEntity)))
                                  .ReturnsAsync(seller.Id);
@@ -262,7 +253,7 @@ public class SellerServiceTest
     public async Task Update_ReturnsSuccess(SellerModel seller)
     {
         //Arrange
-        SellerEntity sellerEntity = _mapper.Map<SellerEntity>(seller);
+        SellerEntity sellerEntity = seller.ToEntity();
 
         _sellerRepositoryMock.Setup(m => m.Update(It.Is<SellerEntity>(x => x == sellerEntity)))
                         .Returns(Task.CompletedTask);
@@ -284,7 +275,7 @@ public class SellerServiceTest
     public async Task Update_InvalidId_NotFoundException(SellerModel seller)
     {
         //Arrange
-        SellerEntity sellerEntity = _mapper.Map<SellerEntity>(seller);
+        SellerEntity sellerEntity = seller.ToEntity();
 
         _sellerRepositoryMock.Setup(m => m.Update(It.Is<SellerEntity>
                                 (x => x == sellerEntity)));

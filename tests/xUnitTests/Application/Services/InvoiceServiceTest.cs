@@ -1,11 +1,11 @@
 ﻿using Application.Helpers.PriceToWords;
 using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
 using Application.Models.InvoiceGenerationModels;
 using Application.Services;
 using AutoFixture;
 using AutoFixture.Xunit2;
-using AutoMapper;
 using Common;
 using Common.Enums;
 using Contracts.Requests.Invoice;
@@ -15,7 +15,6 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
-using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Application.Services;
 
@@ -96,23 +95,11 @@ public class InvoiceServiceTest
     private readonly Mock<IInvoiceDocumentFactory> _invoiceDocumentFactory;
 
     private readonly InvoiceService _invoiceService;
-    private readonly IMapper _mapper;
     private readonly IFixture _fixture;
 
     public InvoiceServiceTest()
     {
         _invoiceDataRepositoryMock = new Mock<IInvoiceRepository>(MockBehavior.Strict);
-
-        var mapperConfig = new MapperConfiguration(mc =>
-        {
-            mc.AddProfile(new InvoiceMappingProfile());
-            mc.AddProfile(new ItemMappingProfile());
-            mc.AddProfile(new SellerMappingProfile());
-            mc.AddProfile(new CustomerMappingProfile());
-            mc.AddProfile(new UserMappingProfile());
-        });
-        mapperConfig.AssertConfigurationIsValid();
-        _mapper = mapperConfig.CreateMapper();
 
         _itemServiceMock = new Mock<IItemService>(MockBehavior.Strict);
         _userServiceMock = new Mock<IUserService>(MockBehavior.Strict);
@@ -123,7 +110,7 @@ public class InvoiceServiceTest
 
         _fixture = AutoDataConfigured.CreateFixture();
 
-        _invoiceService = new InvoiceService(_mapper, _userServiceMock.Object, _customerServiceMock.Object,
+        _invoiceService = new InvoiceService(_userServiceMock.Object, _customerServiceMock.Object,
             _itemServiceMock.Object, _sellerServiceMock.Object, _invoiceDataRepositoryMock.Object, _invoiceDocumentFactory.Object);
     }
 
@@ -135,7 +122,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
                         .ReturnsAsync(invoiceData);
 
-        InvoiceModel expectedResult = _mapper.Map<InvoiceModel>(invoiceData);
+        InvoiceModel expectedResult = invoiceData.ToModel();
 
         //Act
         InvoiceModel result = await _invoiceService.Get(invoiceData.Id);
@@ -170,7 +157,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(invoiceDataList);
 
-        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => _mapper.Map<InvoiceModel>(i)).ToList();
+        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
         var result = await _invoiceService.Get(request);
@@ -195,7 +182,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(invoiceDataList);
 
-        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => _mapper.Map<InvoiceModel>(i)).ToList();
+        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
         var result = await _invoiceService.Get(request);
@@ -223,7 +210,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.CustomerId!))
                         .ReturnsAsync(invoiceDataList);
 
-        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => _mapper.Map<InvoiceModel>(i)).ToList();
+        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
         var result = await _invoiceService.Get(request);
@@ -250,7 +237,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.GetBySellerId((Guid)request.SellerId!))
                         .ReturnsAsync(invoiceDataList);
 
-        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => _mapper.Map<InvoiceModel>(i)).ToList();
+        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
         var result = await _invoiceService.Get(request);
@@ -277,7 +264,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.GetByUserId((Guid)request.UserId!))
                         .ReturnsAsync(invoiceDataList);
 
-        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => _mapper.Map<InvoiceModel>(i)).ToList();
+        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
         var result = await _invoiceService.Get(request);
@@ -296,7 +283,7 @@ public class InvoiceServiceTest
     public async Task Add_GivenInValidSeller_Throws(InvoiceModel invoiceData)
     {
         //Arrange
-        InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
+        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
 
         InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
@@ -337,7 +324,7 @@ public class InvoiceServiceTest
     public async Task Add_GivenInValidCustomer_Throws(InvoiceModel invoiceData)
     {
         //Arrange
-        InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
+        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
 
         InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
@@ -378,7 +365,7 @@ public class InvoiceServiceTest
     public async Task Add_GivenInValidItem_Throws(InvoiceModel invoiceData)
     {
         //Arrange
-        InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
+        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
 
         InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
@@ -419,7 +406,7 @@ public class InvoiceServiceTest
     public async Task Add_GivenValidData_ReturnsGuid(InvoiceModel invoiceData)
     {
         //Arrange
-        InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
+        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
 
         InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
@@ -531,14 +518,33 @@ public class InvoiceServiceTest
         //Arrange
         string invoiceName = "invoice.pdf";
         string invoicePath = Path.Combine(Directory.GetCurrentDirectory(), invoiceName);
-        InvoiceEntity invoiceEntity = new();
+        InvoiceEntity invoiceEntity = new()
+        {
+            Id = Guid.NewGuid(),
+            UserData = JsonConvert.SerializeObject(new UserModel()
+            {
+                Id = Guid.NewGuid(),
+                Name = "UserName",
+                LastName = "UserLastName",
+                Email = "user@email.com",
+                Password = "hashedPassword"
+
+            }),
+            SellerData = JsonConvert.SerializeObject(new SellerModel()),
+            CustomerData = JsonConvert.SerializeObject(new CustomerModel()),
+            ItemsData = JsonConvert.SerializeObject(new List<InvoiceItemModel>() { new() }),
+            InvoiceNumber = 5,
+            Comments = "Test invoice",
+            CreatedDate = DateTime.Today,
+            DueDate = DateTime.Today.AddDays(5)
+        };
         Language languageCode = Language.LT;
         DocumentType documentType = DocumentType.Invoice;
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceEntity.Id))
                         .ReturnsAsync(invoiceEntity);
 
-        InvoiceModel invoice = _mapper.Map<InvoiceModel>(invoiceEntity);
+        InvoiceModel invoice = invoiceEntity.ToModel();
 
         _invoiceDocumentFactory.Setup(x => x.GeneratePdf(documentType, languageCode, It.Is<InvoiceModel>(i =>
             i.Id == invoice.Id &&
@@ -552,6 +558,7 @@ public class InvoiceServiceTest
             i.InvoiceNumber == invoice.InvoiceNumber &&
             i.Comments == invoice.Comments))).Returns(invoiceName);
 
+        invoice.Should().BeEquivalentTo(invoiceEntity.ToModel());
         await File.WriteAllTextAsync(invoiceName, "dummy pdf content");
 
         try
@@ -578,7 +585,7 @@ public class InvoiceServiceTest
     public async Task Update_GivenValidInvoice_UpdatesInvoice(InvoiceModel invoiceData)
     {
         // Arrange
-        var invoiceEntity = _mapper.Map<InvoiceEntity>(invoiceData);
+        var invoiceEntity = invoiceData.ToEntity();
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
             .ReturnsAsync(invoiceEntity);

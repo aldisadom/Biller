@@ -1,7 +1,7 @@
-﻿using Application.Models;
+﻿using Application.MappingProfiles;
+using Application.Models;
 using Application.Services;
 using AutoFixture.Xunit2;
-using AutoMapper;
 using Common;
 using Contracts.Requests.Item;
 using Domain.Entities;
@@ -10,7 +10,6 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using System.Net;
-using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Application.Services;
 
@@ -18,20 +17,12 @@ public class ItemServiceTest
 {
     private readonly Mock<IItemRepository> _itemRepositoryMock;
     private readonly ItemService _itemService;
-    private readonly IMapper _mapper;
 
     public ItemServiceTest()
     {
         _itemRepositoryMock = new Mock<IItemRepository>(MockBehavior.Strict);
 
-        var mapperConfig = new MapperConfiguration(mc =>
-        {
-            mc.AddProfile(new ItemMappingProfile());
-        });
-        mapperConfig.AssertConfigurationIsValid();
-        _mapper = mapperConfig.CreateMapper();
-
-        _itemService = new ItemService(_itemRepositoryMock.Object, _mapper);
+        _itemService = new ItemService(_itemRepositoryMock.Object);
     }
 
     [Theory]
@@ -42,7 +33,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Get(item.Id))
                         .ReturnsAsync(item);
 
-        ItemModel expectedResult = _mapper.Map<ItemModel>(item);
+        ItemModel expectedResult = item.ToModel();
 
         //Act
         ItemModel result = await _itemService.Get(item.Id);
@@ -77,7 +68,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Get(ids))
                         .ReturnsAsync(itemList);
 
-        List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);
+        var expectedResult = itemList.Select(i => i.ToModel());
 
         //Act
         var result = await _itemService.Get(ids);
@@ -103,11 +94,11 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Get(ids))
                         .ReturnsAsync(itemList);
 
-        List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);
+        var expectedResult = itemList.Select(i => i.ToModel());
 
         //Act
         var resultResponse = await _itemService.GetWithValidation(ids, customerId);
-        List<ItemModel> result = resultResponse.Match(
+        IEnumerable<ItemModel> result = resultResponse.Match(
             entity => { return entity; },
             error => { throw new Exception(error.ToString()); }
         );
@@ -189,7 +180,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(itemList);
 
-        List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);
+        var expectedResult = itemList.Select(i => i.ToModel());
 
         //Act
         var result = await _itemService.Get(request);
@@ -212,7 +203,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(itemList);
 
-        List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);
+        var expectedResult = itemList.Select(i => i.ToModel());
 
         //Act
         var result = await _itemService.Get(request);
@@ -238,7 +229,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.CustomerId!))
                         .ReturnsAsync(itemList);
 
-        List<ItemModel> expectedResult = _mapper.Map<List<ItemModel>>(itemList);
+        var expectedResult = itemList.Select(i => i.ToModel());
 
         //Act
         var result = await _itemService.Get(request);
@@ -276,7 +267,7 @@ public class ItemServiceTest
     public async Task Add_GivenValidId_ReturnsGuid(ItemModel item)
     {
         //Arrange
-        ItemEntity itemEntity = _mapper.Map<ItemEntity>(item);
+        ItemEntity itemEntity = item.ToEntity();
 
         _itemRepositoryMock.Setup(m => m.Add(It.Is<ItemEntity>(x => x == itemEntity)))
                                  .ReturnsAsync(item.Id);
@@ -295,7 +286,7 @@ public class ItemServiceTest
     public async Task Update_ReturnsSuccess(ItemModel item)
     {
         //Arrange
-        ItemEntity itemEntity = _mapper.Map<ItemEntity>(item);
+        ItemEntity itemEntity = item.ToEntity();
 
         _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>(x => x == itemEntity)))
                         .Returns(Task.CompletedTask);
@@ -317,7 +308,7 @@ public class ItemServiceTest
     public async Task Update_InvalidId_NotFoundException(ItemModel item)
     {
         //Arrange
-        ItemEntity itemEntity = _mapper.Map<ItemEntity>(item);
+        ItemEntity itemEntity = item.ToEntity();
 
         _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>
                                 (x => x == itemEntity)));

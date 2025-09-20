@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
-using AutoMapper;
 using Contracts.Requests.Customer;
 using Contracts.Responses;
 using Contracts.Responses.Customer;
@@ -22,7 +22,6 @@ public class CustomerController : ControllerBase
 {
     private readonly ICustomerService _customerService;
     private readonly ILogger<CustomerController> _logger;
-    private readonly IMapper _mapper;
     private readonly IValidator<CustomerAddRequest> _validatorAdd;
     private readonly IValidator<CustomerUpdateRequest> _validatorUpdate;
 
@@ -31,15 +30,13 @@ public class CustomerController : ControllerBase
     /// </summary>
     /// <param name="customerService"></param>
     /// <param name="logger"></param>
-    /// <param name="mapper"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
-    public CustomerController(ICustomerService customerService, ILogger<CustomerController> logger, IMapper mapper,
+    public CustomerController(ICustomerService customerService, ILogger<CustomerController> logger,
         IValidator<CustomerAddRequest> validatorAdd, IValidator<CustomerUpdateRequest> validatorUpdate)
     {
         _customerService = customerService;
         _logger = logger;
-        _mapper = mapper;
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
@@ -58,7 +55,7 @@ public class CustomerController : ControllerBase
     {
         CustomerModel customer = await _customerService.Get(id);
 
-        CustomerResponse result = _mapper.Map<CustomerResponse>(customer);
+        CustomerResponse result = customer.ToResponse();
 
         return Ok(result);
     }
@@ -77,7 +74,7 @@ public class CustomerController : ControllerBase
 
         CustomerListResponse result = new()
         {
-            Customers = customers.Select(i => _mapper.Map<CustomerResponse>(i)).ToList()
+            Customers = customers.Select(c => c.ToResponse()).ToList()
         };
 
         return Ok(result);
@@ -94,7 +91,7 @@ public class CustomerController : ControllerBase
     public async Task<IActionResult> Add(CustomerAddRequest customer)
     {
         _validatorAdd.CheckValidation(customer);
-        CustomerModel customerModel = _mapper.Map<CustomerModel>(customer);
+        CustomerModel customerModel = customer.ToModel();
 
         AddResponse result = new()
         {
@@ -114,7 +111,7 @@ public class CustomerController : ControllerBase
     public async Task<IActionResult> Update(CustomerUpdateRequest customer)
     {
         _validatorUpdate.CheckValidation(customer);
-        CustomerModel customerModel = _mapper.Map<CustomerModel>(customer);
+        CustomerModel customerModel = customer.ToModel();
 
         await _customerService.Update(customerModel);
 

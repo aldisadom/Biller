@@ -1,14 +1,13 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
 using AutoFixture.Xunit2;
-using AutoMapper;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
 using Moq;
-using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Application.Services;
 
@@ -17,21 +16,13 @@ public class UserServiceTest
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IPasswordEncryptionService> _passwordEncryptionServiceMock;
     private readonly UserService _userService;
-    private readonly IMapper _mapper;
 
     public UserServiceTest()
     {
         _userRepositoryMock = new Mock<IUserRepository>(MockBehavior.Strict);
 
-        var mapperConfig = new MapperConfiguration(mc =>
-        {
-            mc.AddProfile(new UserMappingProfile());
-        });
-        mapperConfig.AssertConfigurationIsValid();
-        _mapper = mapperConfig.CreateMapper();
-
         _passwordEncryptionServiceMock = new Mock<IPasswordEncryptionService>(MockBehavior.Strict);
-        _userService = new UserService(_userRepositoryMock.Object, _passwordEncryptionServiceMock.Object, _mapper);
+        _userService = new UserService(_userRepositoryMock.Object, _passwordEncryptionServiceMock.Object);
     }
 
     [Theory]
@@ -47,7 +38,7 @@ public class UserServiceTest
         _passwordEncryptionServiceMock.Setup(m => m.Encrypt(user.Password, It.IsAny<string>()))
                         .Returns((user.Password, " "));
 
-        UserModel userModel = _mapper.Map<UserModel>(user);
+        UserModel userModel = user.ToModel();
 
         //Act
         string result = await _userService.Login(userModel);
@@ -67,7 +58,7 @@ public class UserServiceTest
         _userRepositoryMock.Setup(m => m.Get(user.Email))
                         .ReturnsAsync((UserEntity)null!);
 
-        UserModel userModel = _mapper.Map<UserModel>(user);
+        UserModel userModel = user.ToModel();
 
         //Act
         //Assert
@@ -88,7 +79,7 @@ public class UserServiceTest
         _passwordEncryptionServiceMock.Setup(m => m.Encrypt(user.Password, It.IsAny<string>()))
                         .Returns(("a", " "));
 
-        UserModel userModel = _mapper.Map<UserModel>(user);
+        UserModel userModel = user.ToModel();
 
         //Act
         //Assert
@@ -106,7 +97,7 @@ public class UserServiceTest
         _userRepositoryMock.Setup(m => m.Get(user.Id))
                         .ReturnsAsync(user);
 
-        UserModel expectedResult = _mapper.Map<UserModel>(user);
+        UserModel expectedResult = user.ToModel();
 
         //Act
         UserModel result = await _userService.Get(user.Id);
@@ -139,7 +130,7 @@ public class UserServiceTest
         _userRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(userList);
 
-        List<UserModel> expectedResult = _mapper.Map<List<UserModel>>(userList);
+        var expectedResult = userList.Select(u => u.ToModel());
 
         //Act
         var result = await _userService.Get();
@@ -176,7 +167,7 @@ public class UserServiceTest
     public async Task Add_GivenValidId_ReturnsGuid(UserModel user)
     {
         //Arrange
-        UserEntity userEntity = _mapper.Map<UserEntity>(user);
+        UserEntity userEntity = user.ToEntity();
         userEntity.Salt = " ";
         _userRepositoryMock.Setup(m => m.Add(It.Is<UserEntity>
                                 (x => x == userEntity)))
@@ -200,7 +191,7 @@ public class UserServiceTest
     public async Task Update_ReturnsSuccess(UserModel user)
     {
         //Arrange
-        UserEntity userEntity = _mapper.Map<UserEntity>(user);
+        UserEntity userEntity = user.ToEntity();
 
         _userRepositoryMock.Setup(m => m.Update(It.Is<UserEntity>(x => x == userEntity)))
                         .Returns(Task.CompletedTask);
@@ -222,7 +213,7 @@ public class UserServiceTest
     public async Task Update_InvalidId_NotFoundException(UserModel user)
     {
         //Arrange
-        UserEntity userEntity = _mapper.Map<UserEntity>(user);
+        UserEntity userEntity = user.ToEntity();
 
         _userRepositoryMock.Setup(m => m.Update(It.Is<UserEntity>
                                 (x => x == userEntity)));

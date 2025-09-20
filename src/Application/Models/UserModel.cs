@@ -1,6 +1,6 @@
 ﻿namespace Application.Models;
 
-public class UserModel
+public record UserModel
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;

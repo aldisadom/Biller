@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
-using AutoMapper;
 using Common;
 using Contracts.Requests.Seller;
 using Domain.Entities;
@@ -13,12 +13,10 @@ namespace Application.Services;
 public class SellerService : ISellerService
 {
     private readonly ISellerRepository _sellerRepository;
-    private readonly IMapper _mapper;
 
-    public SellerService(ISellerRepository sellerRepository, IMapper mapper)
+    public SellerService(ISellerRepository sellerRepository)
     {
         _sellerRepository = sellerRepository;
-        _mapper = mapper;
     }
 
     public async Task<SellerModel> Get(Guid id)
@@ -26,7 +24,7 @@ public class SellerService : ISellerService
         SellerEntity sellerEntity = await _sellerRepository.Get(id)
             ?? throw new NotFoundException($"Invoice seller:{id} not found");
 
-        return _mapper.Map<SellerModel>(sellerEntity);
+        return sellerEntity.ToModel();
     }
 
     public async Task<IEnumerable<SellerModel>> Get(SellerGetRequest? query)
@@ -40,7 +38,7 @@ public class SellerService : ISellerService
         else
             sellerEntities = await _sellerRepository.Get();
 
-        return _mapper.Map<IEnumerable<SellerModel>>(sellerEntities);
+        return sellerEntities.Select(s => s.ToModel());
     }
 
     public async Task<Result<SellerModel>> GetWithValidation(Guid id, Guid userId)
@@ -50,12 +48,12 @@ public class SellerService : ISellerService
         if (seller is null || seller.UserId != userId)
             return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Seller id {id} is invalid for user id {userId}" };
 
-        return _mapper.Map<SellerModel>(seller);
+        return seller.ToModel();
     }
 
     public async Task<Guid> Add(SellerModel seller)
     {
-        SellerEntity sellerEntity = _mapper.Map<SellerEntity>(seller);
+        SellerEntity sellerEntity = seller.ToEntity();
 
         return await _sellerRepository.Add(sellerEntity);
     }
@@ -64,7 +62,7 @@ public class SellerService : ISellerService
     {
         await Get(seller.Id);
 
-        SellerEntity sellerEntity = _mapper.Map<SellerEntity>(seller);
+        SellerEntity sellerEntity = seller.ToEntity();
 
         await _sellerRepository.Update(sellerEntity);
     }
