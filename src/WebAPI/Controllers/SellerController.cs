@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
-using AutoMapper;
 using Contracts.Requests.Seller;
 using Contracts.Responses;
 using Contracts.Responses.Seller;
@@ -22,7 +22,6 @@ public class SellerController : ControllerBase
 {
     private readonly ISellerService _sellerService;
     private readonly ILogger<SellerController> _logger;
-    private readonly IMapper _mapper;
     private readonly IValidator<SellerAddRequest> _validatorAdd;
     private readonly IValidator<SellerUpdateRequest> _validatorUpdate;
 
@@ -31,15 +30,13 @@ public class SellerController : ControllerBase
     /// </summary>
     /// <param name="sellerService"></param>
     /// <param name="logger"></param>
-    /// <param name="mapper"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
-    public SellerController(ISellerService sellerService, ILogger<SellerController> logger, IMapper mapper,
+    public SellerController(ISellerService sellerService, ILogger<SellerController> logger,
         IValidator<SellerAddRequest> validatorAdd, IValidator<SellerUpdateRequest> validatorUpdate)
     {
         _sellerService = sellerService;
         _logger = logger;
-        _mapper = mapper;
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
@@ -58,7 +55,7 @@ public class SellerController : ControllerBase
     {
         SellerModel seller = await _sellerService.Get(id);
 
-        SellerResponse result = _mapper.Map<SellerResponse>(seller);
+        SellerResponse result = seller.ToResponse();
 
         return Ok(result);
     }
@@ -77,7 +74,7 @@ public class SellerController : ControllerBase
 
         SellerListResponse result = new()
         {
-            Sellers = sellers.Select(i => _mapper.Map<SellerResponse>(i)).ToList()
+            Sellers = sellers.Select(s => s.ToResponse()).ToList()
         };
 
         return Ok(result);
@@ -95,7 +92,7 @@ public class SellerController : ControllerBase
     {
         _validatorAdd.CheckValidation(seller);
 
-        SellerModel sellerModel = _mapper.Map<SellerModel>(seller);
+        SellerModel sellerModel = seller.ToModel();
 
         AddResponse result = new()
         {
@@ -116,7 +113,7 @@ public class SellerController : ControllerBase
     {
         _validatorUpdate.CheckValidation(seller);
 
-        SellerModel sellerModel = _mapper.Map<SellerModel>(seller);
+        SellerModel sellerModel = seller.ToModel();
 
         await _sellerService.Update(sellerModel);
 

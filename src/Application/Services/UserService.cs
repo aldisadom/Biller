@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
-using AutoMapper;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -10,13 +10,11 @@ namespace Application.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
-    private readonly IMapper _mapper;
     private readonly IPasswordEncryptionService _passwordEncryptionService;
 
-    public UserService(IUserRepository userRepository, IPasswordEncryptionService passwordEncryptionService, IMapper mapper)
+    public UserService(IUserRepository userRepository, IPasswordEncryptionService passwordEncryptionService)
     {
         _userRepository = userRepository;
-        _mapper = mapper;
         _passwordEncryptionService = passwordEncryptionService;
     }
 
@@ -38,21 +36,21 @@ public class UserService : IUserService
         UserEntity userEntity = await _userRepository.Get(id)
             ?? throw new NotFoundException($"User:{id} not found");
 
-        return _mapper.Map<UserModel>(userEntity);
+        return userEntity.ToModel();
     }
 
     public async Task<IEnumerable<UserModel>> Get()
     {
         IEnumerable<UserEntity> userEntities = await _userRepository.Get();
 
-        return _mapper.Map<IEnumerable<UserModel>>(userEntities);
+        return userEntities.Select(u => u.ToModel());
     }
 
     public async Task<Guid> Add(UserModel user)
     {
         (user.Password, string salt) = _passwordEncryptionService.Encrypt(user.Password);
 
-        UserEntity userEntity = _mapper.Map<UserEntity>(user);
+        UserEntity userEntity = user.ToEntity();
         userEntity.Salt = salt;
 
         return await _userRepository.Add(userEntity);
@@ -62,7 +60,7 @@ public class UserService : IUserService
     {
         await Get(user.Id);
 
-        UserEntity userEntity = _mapper.Map<UserEntity>(user);
+        UserEntity userEntity = user.ToEntity();
 
         await _userRepository.Update(userEntity);
     }

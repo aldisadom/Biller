@@ -1,17 +1,15 @@
-﻿using Application.Models;
+﻿using Application.MappingProfiles;
+using Application.Models;
 using Application.Services;
 using AutoFixture.Xunit2;
-using AutoMapper;
 using Common;
 using Contracts.Requests.Customer;
 using Domain.Entities;
-
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using System.Net;
-using WebAPI.MappingProfiles;
 
 namespace xUnitTests.Application.Services;
 
@@ -19,20 +17,12 @@ public class NumberToWordsLTTest
 {
     private readonly Mock<ICustomerRepository> _customerRepositoryMock;
     private readonly CustomerService _customerService;
-    private readonly IMapper _mapper;
 
     public NumberToWordsLTTest()
     {
         _customerRepositoryMock = new Mock<ICustomerRepository>(MockBehavior.Strict);
 
-        var mapperConfig = new MapperConfiguration(mc =>
-        {
-            mc.AddProfile(new CustomerMappingProfile());
-        });
-        mapperConfig.AssertConfigurationIsValid();
-        _mapper = mapperConfig.CreateMapper();
-
-        _customerService = new CustomerService(_customerRepositoryMock.Object, _mapper);
+        _customerService = new CustomerService(_customerRepositoryMock.Object);
     }
 
     [Theory]
@@ -43,7 +33,7 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
 
-        CustomerModel expectedResult = _mapper.Map<CustomerModel>(customer);
+        CustomerModel expectedResult = customer.ToModel();
 
         //Act
         CustomerModel result = await _customerService.Get(customer.Id);
@@ -76,7 +66,7 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
 
-        CustomerModel expectedResult = _mapper.Map<CustomerModel>(customer);
+        CustomerModel expectedResult = customer.ToModel();
 
         //Act
         var resultResponse = await _customerService.GetWithValidation(customer.Id, customer.SellerId);
@@ -157,7 +147,7 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(customerList);
 
-        List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(customerList);
+        List<CustomerModel> expectedResult = customerList.Select(c => c.ToModel()).ToList();
 
         //Act
         var result = await _customerService.Get(request);
@@ -179,7 +169,7 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(customerList);
 
-        List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(customerList);
+        List<CustomerModel> expectedResult = customerList.Select(c => c.ToModel()).ToList();
 
         //Act
         var result = await _customerService.Get(request);
@@ -204,7 +194,7 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Setup(m => m.GetBySellerId((Guid)request.SellerId!))
                         .ReturnsAsync(customerList);
 
-        List<CustomerModel> expectedResult = _mapper.Map<List<CustomerModel>>(customerList);
+        List<CustomerModel> expectedResult = customerList.Select(c => c.ToModel()).ToList();
 
         //Act
         var result = await _customerService.Get(request);
@@ -241,7 +231,7 @@ public class NumberToWordsLTTest
     {
         //Arrange
         customer.InvoiceNumber = 1;
-        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
+        CustomerEntity customerEntity = customer.ToEntity();
 
         _customerRepositoryMock.Setup(m => m.Add(It.Is<CustomerEntity>
                                 (x => x == customerEntity)))
@@ -261,7 +251,7 @@ public class NumberToWordsLTTest
     public async Task Update_ReturnsSuccess(CustomerModel customer)
     {
         //Arrange
-        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
+        CustomerEntity customerEntity = customer.ToEntity();
 
         _customerRepositoryMock.Setup(m => m.Update(It.Is<CustomerEntity>(x => x == customerEntity)))
                         .Returns(Task.CompletedTask);
@@ -283,7 +273,7 @@ public class NumberToWordsLTTest
     public async Task Update_InvalidId_NotFoundException(CustomerModel customer)
     {
         //Arrange
-        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
+        CustomerEntity customerEntity = customer.ToEntity();
 
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync((CustomerEntity)null!);

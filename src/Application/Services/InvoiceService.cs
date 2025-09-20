@@ -1,7 +1,7 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
 using Application.Models.InvoiceGenerationModels;
-using AutoMapper;
 using Common.Enums;
 using Contracts.Requests.Invoice;
 using Domain.Entities;
@@ -13,7 +13,6 @@ namespace Application.Services;
 
 public class InvoiceService : IInvoiceService
 {
-    private readonly IMapper _mapper;
     private readonly ICustomerService _customerService;
     private readonly ISellerService _sellerService;
     private readonly IItemService _itemService;
@@ -21,10 +20,9 @@ public class InvoiceService : IInvoiceService
     private readonly IInvoiceRepository _invoiceRepository;
     private readonly IInvoiceDocumentFactory _invoiceDocumentFactory;
 
-    public InvoiceService(IMapper mapper, IUserService userService, ICustomerService CustomerService,
+    public InvoiceService(IUserService userService, ICustomerService CustomerService,
                         IItemService itemService, ISellerService sellerService, IInvoiceRepository invoiceRepository, IInvoiceDocumentFactory invoiceDocumentFactory)
     {
-        _mapper = mapper;
         _userService = userService;
         _itemService = itemService;
         _customerService = CustomerService;
@@ -68,7 +66,7 @@ public class InvoiceService : IInvoiceService
         }
     }
 
-    public static void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, List<ItemModel> items)
+    public static void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, IEnumerable<ItemModel> items)
     {
         foreach (InvoiceItemModel invoiceItem in invoiceItems)
         {
@@ -89,7 +87,7 @@ public class InvoiceService : IInvoiceService
         InvoiceEntity invoiceDataEntity = await _invoiceRepository.Get(id)
             ?? throw new NotFoundException($"Invoice:{id} not found");
 
-        return _mapper.Map<InvoiceModel>(invoiceDataEntity);
+        return invoiceDataEntity.ToModel();
     }
 
     public async Task<IEnumerable<InvoiceModel>> Get(InvoiceGetRequest? query)
@@ -107,14 +105,14 @@ public class InvoiceService : IInvoiceService
         else
             invoiceDataEntities = await _invoiceRepository.Get();
 
-        return invoiceDataEntities.Select(i => _mapper.Map<InvoiceModel>(i));
+        return invoiceDataEntities.Select(i => i.ToModel());
     }
 
     public async Task<Guid> Add(InvoiceModel invoiceData)
     {
         await GetInvoiceData(invoiceData);
 
-        InvoiceEntity invoiceDataEntity = _mapper.Map<InvoiceEntity>(invoiceData);
+        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
 
         Guid id = await _invoiceRepository.Add(invoiceDataEntity);
         await _customerService.IncreaseInvoiceNumber(invoiceData.Customer!.Id);
@@ -128,7 +126,7 @@ public class InvoiceService : IInvoiceService
         invoiceData.User = invoice.User;
         await Validate(invoiceData);
 
-        InvoiceEntity invoiceEntity = _mapper.Map<InvoiceEntity>(invoiceData);
+        InvoiceEntity invoiceEntity = invoiceData.ToEntity();
 
         await _invoiceRepository.Update(invoiceEntity);
     }
@@ -143,7 +141,7 @@ public class InvoiceService : IInvoiceService
         await _invoiceRepository.UpdateStatus(invoiceData.Id, invoiceData.Status);
     }
 
-    private async Task<(SellerModel seller, CustomerModel customer, List<ItemModel> items)> Validate(InvoiceModel invoiceData)
+    private async Task<(SellerModel seller, CustomerModel customer, IEnumerable<ItemModel> items)> Validate(InvoiceModel invoiceData)
     {
         var sellerResult = await _sellerService.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id);
         var seller = sellerResult.Match(

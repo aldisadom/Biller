@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
-using AutoMapper;
 using Common;
 using Contracts.Requests.Item;
 using Domain.Entities;
@@ -13,12 +13,10 @@ namespace Application.Services;
 public class ItemService : IItemService
 {
     private readonly IItemRepository _itemRepository;
-    private readonly IMapper _mapper;
 
-    public ItemService(IItemRepository itemRepository, IMapper mapper)
+    public ItemService(IItemRepository itemRepository)
     {
         _itemRepository = itemRepository;
-        _mapper = mapper;
     }
 
     public async Task<ItemModel> Get(Guid id)
@@ -26,7 +24,7 @@ public class ItemService : IItemService
         ItemEntity itemEntity = await _itemRepository.Get(id)
             ?? throw new NotFoundException($"Invoice item:{id} not found");
 
-        return _mapper.Map<ItemModel>(itemEntity);
+        return itemEntity.ToModel();
     }
 
     public async Task<IEnumerable<ItemModel>> Get(List<Guid> ids)
@@ -35,7 +33,7 @@ public class ItemService : IItemService
 
         itemEntities = await _itemRepository.Get(ids);
 
-        return _mapper.Map<IEnumerable<ItemModel>>(itemEntities);
+        return itemEntities.Select(i => i.ToModel());
     }
 
     public async Task<IEnumerable<ItemModel>> Get(ItemGetRequest? query)
@@ -49,10 +47,10 @@ public class ItemService : IItemService
         else
             itemEntities = await _itemRepository.Get();
 
-        return _mapper.Map<IEnumerable<ItemModel>>(itemEntities);
+        return itemEntities.Select(i => i.ToModel());
     }
 
-    public async Task<Result<List<ItemModel>>> GetWithValidation(List<Guid> ids, Guid customerId)
+    public async Task<Result<IEnumerable<ItemModel>>> GetWithValidation(List<Guid> ids, Guid customerId)
     {
         var items = await _itemRepository.Get(ids);
 
@@ -68,12 +66,12 @@ public class ItemService : IItemService
         if (!string.IsNullOrEmpty(idString))
             return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Items id{idString} is invalid for customer id {customerId}" };
 
-        return _mapper.Map<List<ItemModel>>(items);
+        return items.ToList().Select(i => i.ToModel()).ToList();
     }
 
     public async Task<Guid> Add(ItemModel item)
     {
-        ItemEntity itemEntity = _mapper.Map<ItemEntity>(item);
+        ItemEntity itemEntity = item.ToEntity();
 
         return await _itemRepository.Add(itemEntity);
     }
@@ -82,7 +80,7 @@ public class ItemService : IItemService
     {
         await Get(item.Id);
 
-        ItemEntity itemEntity = _mapper.Map<ItemEntity>(item);
+        ItemEntity itemEntity = item.ToEntity();
 
         await _itemRepository.Update(itemEntity);
     }

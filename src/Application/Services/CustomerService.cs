@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
-using AutoMapper;
 using Common;
 using Contracts.Requests.Customer;
 using Domain.Entities;
@@ -13,12 +13,10 @@ namespace Application.Services;
 public class CustomerService : ICustomerService
 {
     private readonly ICustomerRepository _customerRepository;
-    private readonly IMapper _mapper;
 
-    public CustomerService(ICustomerRepository customerRepository, IMapper mapper)
+    public CustomerService(ICustomerRepository customerRepository)
     {
         _customerRepository = customerRepository;
-        _mapper = mapper;
     }
 
     public async Task<CustomerModel> Get(Guid id)
@@ -26,7 +24,7 @@ public class CustomerService : ICustomerService
         CustomerEntity customerEntity = await _customerRepository.Get(id)
             ?? throw new NotFoundException($"Invoice customer:{id} not found");
 
-        return _mapper.Map<CustomerModel>(customerEntity);
+        return customerEntity.ToModel();
     }
 
     public async Task<IEnumerable<CustomerModel>> Get(CustomerGetRequest? query)
@@ -40,7 +38,7 @@ public class CustomerService : ICustomerService
         else
             customerEntities = await _customerRepository.Get();
 
-        return _mapper.Map<IEnumerable<CustomerModel>>(customerEntities);
+        return customerEntities.Select(c => c.ToModel());
     }
 
     public async Task<Result<CustomerModel>> GetWithValidation(Guid id, Guid sellerId)
@@ -50,13 +48,13 @@ public class CustomerService : ICustomerService
         if (customer is null || customer.SellerId != sellerId)
             return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Customer id {id} is invalid for seller id {sellerId}" };
 
-        return _mapper.Map<CustomerModel>(customer);
+        return customer.ToModel();
     }
 
     public async Task<Guid> Add(CustomerModel customer)
     {
         customer.InvoiceNumber = 1;
-        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
+        CustomerEntity customerEntity = customer.ToEntity();
 
         return await _customerRepository.Add(customerEntity);
     }
@@ -65,7 +63,7 @@ public class CustomerService : ICustomerService
     {
         await Get(customer.Id);
 
-        CustomerEntity customerEntity = _mapper.Map<CustomerEntity>(customer);
+        CustomerEntity customerEntity = customer.ToEntity();
 
         await _customerRepository.Update(customerEntity);
     }

@@ -3,7 +3,6 @@ using Application.Helpers.PriceToWords;
 using Application.Interfaces;
 using Application.Models.InvoiceGenerationModels;
 using Application.Services;
-using AutoMapper;
 using Clients;
 using Domain.IOptions;
 using Domain.Repositories;
@@ -56,11 +55,6 @@ public class DependencyInjectionTests
         // Act
         services.AddApplication();
         services.AddInfrastructure(_dbConnectionString);
-
-        var mapperConfig = new MapperConfiguration(mc => { });
-        IMapper mapper = mapperConfig.CreateMapper();
-
-        services.AddSingleton(mapper);
 
         var serviceProvider = services.BuildServiceProvider();
 
@@ -154,14 +148,14 @@ public class DependencyInjectionTests
     [InlineData("", "calibri")]
     [InlineData("some-path.ttf", null)]
     [InlineData("some-path.ttf", "")]
-    public void AddPdfGenerator_ShouldThrow_WhenFontPathOrNameIsNullOrEmpty(string path, string name)
+    public void AddPdfGenerator_ShouldThrow_WhenFontPathOrNameIsNullOrEmpty(string? path, string? name)
     {
         // Arrange
         var services = new ServiceCollection();
         var fontSettings = Options.Create(new FontSettings
         {
             Fonts = [
-                new FontSetting { Name = name, Path = path }
+                new FontSetting { Name = name!, Path = path! }
             ]
         });
 

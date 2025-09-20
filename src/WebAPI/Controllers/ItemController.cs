@@ -1,6 +1,6 @@
 using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
-using AutoMapper;
 using Contracts.Requests.Item;
 using Contracts.Responses;
 using Contracts.Responses.Item;
@@ -22,7 +22,6 @@ public class ItemController : ControllerBase
 {
     private readonly IItemService _itemService;
     private readonly ILogger<ItemController> _logger;
-    private readonly IMapper _mapper;
     private readonly IValidator<ItemAddRequest> _validatorAdd;
     private readonly IValidator<ItemUpdateRequest> _validatorUpdate;
 
@@ -31,15 +30,13 @@ public class ItemController : ControllerBase
     /// </summary>
     /// <param name="itemService"></param>
     /// <param name="logger"></param>
-    /// <param name="mapper"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
-    public ItemController(IItemService itemService, ILogger<ItemController> logger, IMapper mapper,
+    public ItemController(IItemService itemService, ILogger<ItemController> logger,
         IValidator<ItemAddRequest> validatorAdd, IValidator<ItemUpdateRequest> validatorUpdate)
     {
         _itemService = itemService;
         _logger = logger;
-        _mapper = mapper;
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
@@ -58,7 +55,7 @@ public class ItemController : ControllerBase
     {
         ItemModel item = await _itemService.Get(id);
 
-        ItemResponse result = _mapper.Map<ItemResponse>(item);
+        ItemResponse result = item.ToResponse();
 
         return Ok(result);
     }
@@ -77,7 +74,7 @@ public class ItemController : ControllerBase
 
         ItemListResponse result = new()
         {
-            Items = items.Select(i => _mapper.Map<ItemResponse>(i)).ToList()
+            Items = items.Select(i => i.ToResponse()).ToList()
         };
 
         return Ok(result);
@@ -94,7 +91,7 @@ public class ItemController : ControllerBase
     public async Task<IActionResult> Add(ItemAddRequest item)
     {
         _validatorAdd.CheckValidation(item);
-        ItemModel itemModel = _mapper.Map<ItemModel>(item);
+        ItemModel itemModel = item.ToModel();
 
         AddResponse result = new()
         {
@@ -114,7 +111,7 @@ public class ItemController : ControllerBase
     public async Task<IActionResult> Update(ItemUpdateRequest item)
     {
         _validatorUpdate.CheckValidation(item);
-        ItemModel itemModel = _mapper.Map<ItemModel>(item);
+        ItemModel itemModel = item.ToModel();
 
         await _itemService.Update(itemModel);
 

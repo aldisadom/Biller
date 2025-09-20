@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces;
+using Application.MappingProfiles;
 using Application.Models;
-using AutoMapper;
 using Contracts.Requests.Invoice;
 using Contracts.Responses;
 using Contracts.Responses.Invoice;
@@ -22,19 +22,16 @@ public class InvoiceController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
     private readonly ILogger<InvoiceController> _logger;
-    private readonly IMapper _mapper;
 
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="invoiceService"></param>
     /// <param name="logger"></param>
-    /// <param name="mapper"></param>
-    public InvoiceController(IInvoiceService invoiceService, ILogger<InvoiceController> logger, IMapper mapper)
+    public InvoiceController(IInvoiceService invoiceService, ILogger<InvoiceController> logger)
     {
         _invoiceService = invoiceService;
         _logger = logger;
-        _mapper = mapper;
     }
 
     /// <summary>
@@ -50,7 +47,7 @@ public class InvoiceController : ControllerBase
     {
         InvoiceModel invoice = await _invoiceService.Get(id);
 
-        InvoiceResponse result = _mapper.Map<InvoiceResponse>(invoice);
+        InvoiceResponse result = invoice.ToResponse();
 
         return Ok(result);
     }
@@ -69,7 +66,7 @@ public class InvoiceController : ControllerBase
 
         InvoiceListResponse result = new()
         {
-            Invoices = invoicesData.Select(i => _mapper.Map<InvoiceResponse>(i)).ToList()
+            Invoices = invoicesData.Select(i => i.ToResponse()).ToList()
         };
 
         return Ok(result);
@@ -85,7 +82,7 @@ public class InvoiceController : ControllerBase
     public async Task<IActionResult> Add(InvoiceAddRequest invoiceDataRequest)
     {
         new InvoiceAddValidator().CheckValidation(invoiceDataRequest);
-        InvoiceModel invoiceData = _mapper.Map<InvoiceModel>(invoiceDataRequest);
+        InvoiceModel invoiceData = invoiceDataRequest.ToModel();
 
         AddResponse result = new()
         {
@@ -123,7 +120,7 @@ public class InvoiceController : ControllerBase
     public async Task<IActionResult> Update(InvoiceUpdateRequest invoice)
     {
         new InvoiceUpdateValidator().CheckValidation(invoice);
-        InvoiceModel invoiceData = _mapper.Map<InvoiceModel>(invoice);
+        InvoiceModel invoiceData = invoice.ToModel();
 
         await _invoiceService.Update(invoiceData);
 
