@@ -56,11 +56,11 @@ jobs:
     - name: Set up Docker
       run: |
         docker --version
-        docker-compose --version
+        docker compose version
 
     - name: Start services
       run: |
-        docker-compose up -d
+        docker compose up -d
 
     - name: Wait for services to be ready
       run: |
@@ -75,4 +75,4 @@ jobs:
 
     - name: Stop and clean up services
       run: |
-        docker-compose down
+        docker compose down
