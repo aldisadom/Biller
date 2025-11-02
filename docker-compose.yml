@@ -28,7 +28,7 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: 'False'
 
   liquibase:
-    image: liquibase/liquibase
+    image: liquibase/liquibase:4.26.0
     container_name: "billio-liquibase"    
     depends_on: 
       - db
