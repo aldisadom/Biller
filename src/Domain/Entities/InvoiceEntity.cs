@@ -1,4 +1,4 @@
-﻿
+﻿using Contracts.Enums;
 
 namespace Domain.Entities;
 

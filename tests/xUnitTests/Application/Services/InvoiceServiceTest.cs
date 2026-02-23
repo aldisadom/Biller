@@ -7,7 +7,7 @@ using Application.Services;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using Common;
-using Common.Enums;
+using Contracts.Enums;
 using Contracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;

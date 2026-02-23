@@ -1,4 +1,4 @@
-﻿using Common.Enums;
+﻿using Contracts.Enums;
 using Contracts.Requests.Invoice;
 using Swashbuckle.AspNetCore.Filters;
 

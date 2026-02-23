@@ -1,5 +1,5 @@
 ﻿using Application.Helpers.PriceToWords;
-using Common.Enums;
+using Contracts.Enums;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 
