@@ -1,6 +1,6 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
-using Common.Enums;
+using Contracts.Enums;
 using Contracts.Requests.Customer;
 using Contracts.Requests.Invoice;
 using Contracts.Requests.Seller;
