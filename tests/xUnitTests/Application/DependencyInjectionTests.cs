@@ -1,7 +1,6 @@
 using Application;
 using Application.Helpers.PriceToWords;
 using Application.Interfaces;
-using Application.Models.InvoiceGenerationModels;
 using Application.Services;
 using Clients;
 using Domain.IOptions;

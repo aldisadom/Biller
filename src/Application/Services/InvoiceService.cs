@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using Application.Models.InvoiceGenerationModels;
 using Contracts.Enums;
 using Contracts.Requests.Invoice;
 using Domain.Entities;

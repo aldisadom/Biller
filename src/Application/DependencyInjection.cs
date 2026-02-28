@@ -1,6 +1,5 @@
 ﻿using Application.Helpers.PriceToWords;
 using Application.Interfaces;
-using Application.Models.InvoiceGenerationModels;
 using Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
