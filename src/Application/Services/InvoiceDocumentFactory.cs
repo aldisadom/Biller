@@ -1,4 +1,5 @@
 ﻿using Application.Helpers.PriceToWords;
+using Application.Helpers.Texts;
 using Application.Models;
 using Application.Models.Invoice.InvoiceGenerationModels;
 using Application.Models.Invoice.Texts;
@@ -24,28 +25,33 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
 
     public string GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModel invoiceData)
     {
-        var texts = languageCode switch
-        {
-            Language.LT => new InvoiceTextsLT(),
-            _ => throw new NotSupportedException($"Languge {languageCode} is not supported")
-        };
+        var texts = GetTexts(languageCode);        
+        var document = GetDocument(languageCode, documentType, invoiceData, texts);
         
-        IDocument document;
-        switch (documentType)
-        {
-            case DocumentType.Invoice:
-                document = new InvoiceDocumentSF(invoiceData, _priceToWordsFactory.GetConverter(languageCode), texts);
-                break;
-            case DocumentType.JobDoneAct:
-                document = new InvoiceDocumentADA(invoiceData, _priceToWordsFactory.GetConverter(languageCode), texts);
-                break;
-            default:
-                throw new NotSupportedException($"Document type {documentType} is not supported");
-
-        }
         string path = invoiceData.GenerateFileLocation();
         document.GeneratePdf(path);
 
         return path;
+    }
+
+    private static IInvoiceTexts GetTexts(Language languageCode)
+    {
+        return languageCode switch
+        {
+            Language.LT => new InvoiceTextsLT(),
+            Language.EN => new InvoiceTextsEN(),
+            _ => throw new NotSupportedException($"Languge {languageCode} is not supported")
+        };
+    }
+
+    private IDocument GetDocument(Language languageCode, DocumentType documentType, InvoiceModel invoiceData, IInvoiceTexts texts)
+    {
+        var priceToWords = _priceToWordsFactory.GetConverter(languageCode);
+        return documentType switch
+        {
+            DocumentType.Invoice => new InvoiceDocumentSF(invoiceData, priceToWords, texts),
+            DocumentType.JobDoneAct => new InvoiceDocumentADA(invoiceData, priceToWords, texts),
+            _ => throw new NotSupportedException($"Document type {documentType} is not supported")
+        };
     }
 }
