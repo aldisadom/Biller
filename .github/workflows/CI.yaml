@@ -10,6 +10,7 @@ env:
   DOTNET_VERSION: '8.0.x'
   DOTNET_CONFIGURATION: Release
   TESTS_LOCATION: tests/xUnitTests
+  PROJECT_NAME: Billio.sln
 
 jobs:
   build:
@@ -21,7 +22,7 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Build
-        run: dotnet build --configuration ${{ env.DOTNET_CONFIGURATION }}
+        run: dotnet build ${{ env.PROJECT_NAME }} --configuration ${{ env.DOTNET_CONFIGURATION }}
 
   unit-tests:
     name: Unit tests
