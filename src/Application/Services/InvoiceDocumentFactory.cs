@@ -1,7 +1,6 @@
 ﻿using Application.Helpers.PriceToWords;
-using Application.Helpers.Texts;
 using Application.Models;
-using Application.Models.Invoice.InvoiceGenerationModels;
+using Application.Models.Invoice.Documents;
 using Application.Models.Invoice.Texts;
 using Contracts.Enums;
 using QuestPDF.Fluent;
@@ -25,9 +24,9 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
 
     public string GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModel invoiceData)
     {
-        var texts = GetTexts(languageCode);        
+        var texts = GetTexts(languageCode);
         var document = GetDocument(languageCode, documentType, invoiceData, texts);
-        
+
         string path = invoiceData.GenerateFileLocation();
         document.GeneratePdf(path);
 

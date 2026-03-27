@@ -4,7 +4,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-namespace Application.Models.Invoice.InvoiceGenerationModels;
+namespace Application.Models.Invoice.Documents;
 
 public class InvoiceDocumentADA : IDocument
 {

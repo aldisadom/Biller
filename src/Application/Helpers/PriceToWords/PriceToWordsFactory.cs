@@ -22,6 +22,13 @@ namespace Application.Helpers.PriceToWords
                     MillionsToWordsLT millionsToWords = new(hundredsToWords, thousandsToWords);
 
                     return new PriceToWordsLT(new NumberToWordsLT(onesToWords, tensToWords, hundredsToWords, thousandsToWords, millionsToWords));
+                case Language.EN:
+                    OnesToWordsEN onesToWordsEN = new();
+                    TensToWordsEN tensToWordsEN = new(onesToWordsEN);
+                    HundredsToWordsEN hundredsToWordsEN = new(onesToWordsEN, tensToWordsEN);
+                    ThousandsToWordsEN thousandsToWordsEN = new(hundredsToWordsEN);
+                    MillionsToWordsEN millionsToWordsEN = new(hundredsToWordsEN, thousandsToWordsEN);
+                    return new PriceToWordsEN(new NumberToWordsEN(onesToWordsEN, tensToWordsEN, hundredsToWordsEN, thousandsToWordsEN, millionsToWordsEN));
                 default:
                     throw new NotSupportedException($"Language {languageCode} is not supported");
             }

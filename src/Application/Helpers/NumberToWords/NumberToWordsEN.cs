@@ -18,28 +18,15 @@ public class NumberToWordsEN : INumberToWords
         _millionsToWords = millionsToWords;
     }
 
-    public string OnesSplit(int number, bool hasBefore)
-    {
-        return _onesToWords.OnesSplit(number, hasBefore);
-    }
+    public string OnesSplit(int number, bool hasBefore) => _onesToWords.OnesSplit(number, hasBefore);
 
-    public string TensSplit(int number, bool hasBefore)
-    {
-        return _tensToWords.TensSplit(number, hasBefore);
-    }
+    public string TensSplit(int number, bool hasBefore) => _tensToWords.TensSplit(number, hasBefore);
 
-    public string HundredsSplit(int number, bool hasBefore)
-    {
-        return _hundredsToWords.HundredsSplit(number, hasBefore);
-    }
-    public string ThousandsSplit(int number, bool hasBefore)
-    {
-        return _thousandsToWords.ThousandsSplit(number, hasBefore);
-    }
-    public string MillionsSplit(int number)
-    {
-        return _millionsToWords.MillionsSplit(number);
-    }
+    public string HundredsSplit(int number, bool hasBefore) => _hundredsToWords.HundredsSplit(number, hasBefore);
+
+    public string ThousandsSplit(int number, bool hasBefore) => _thousandsToWords.ThousandsSplit(number, hasBefore);
+
+    public string MillionsSplit(int number) => _millionsToWords.MillionsSplit(number);
 }
 
 public class OnesToWordsEN : IOnesToWords
@@ -53,16 +40,16 @@ public class OnesToWordsEN : IOnesToWords
 
         text += number switch
         {
-            0 => "nulis",
-            1 => "vienas",
-            2 => "du",
-            3 => "trys",
-            4 => "keturi",
-            5 => "penki",
-            6 => "šeši",
-            7 => "septyni",
-            8 => "aštuoni",
-            9 => "devyni",
+            0 => "zero",
+            1 => "one",
+            2 => "two",
+            3 => "three",
+            4 => "four",
+            5 => "five",
+            6 => "six",
+            7 => "seven",
+            8 => "eight",
+            9 => "nine",
             _ => throw new ArgumentException($"OnesSplitEN got {number}"),
         };
 
@@ -93,30 +80,38 @@ public class TensToWordsEN : ITensToWords
         {
             text = hasBefore ? " " : string.Empty;
             addWhitespace = true;
+
             if (tens == 1)
             {
                 text += ones switch
                 {
-                    0 => "dešimt",
-                    1 => "vienuolika",
-                    2 => "dvylika",
-                    3 => "trylika",
-                    4 => "keturiolika",
-                    5 => "penkiolika",
-                    6 => "šešiolika",
-                    7 => "septyniolika",
-                    8 => "aštuoniolika",
-                    9 => "devyniolika",
+                    0 => "ten",
+                    1 => "eleven",
+                    2 => "twelve",
+                    3 => "thirteen",
+                    4 => "fourteen",
+                    5 => "fifteen",
+                    6 => "sixteen",
+                    7 => "seventeen",
+                    8 => "eighteen",
+                    9 => "nineteen",
                     _ => throw new ArgumentException($"TensSplitEN got {number} to parse"),
                 };
                 return text;
             }
-            else if (tens == 2)
-                text += "dvidešimt";
-            else if (tens == 3)
-                text += "trisdešimt";
-            else
-                text += _onesToWordsEN.OnesSplit(number / 10, false) + "asdešimt";
+
+            text += tens switch
+            {
+                2 => "twenty",
+                3 => "thirty",
+                4 => "forty",
+                5 => "fifty",
+                6 => "sixty",
+                7 => "seventy",
+                8 => "eighty",
+                9 => "ninety",
+                _ => string.Empty
+            };
         }
 
         text += _onesToWordsEN.OnesSplit(ones, addWhitespace);
@@ -149,11 +144,7 @@ public class HundredsToWordsEN : IHundredsToWords
         {
             text = hasBefore ? " " : string.Empty;
             addWhitespace = true;
-            text += _onesToWordsEN.OnesSplit(number / 100, false);
-            if (number / 100 == 1)
-                text += " šimtas";
-            else
-                text += " šimtai";
+            text += _onesToWordsEN.OnesSplit(hundreds, false) + " hundred";
         }
 
         int tens = number % 100;
@@ -185,15 +176,8 @@ public class ThousandsToWordsEN : IThousandsToWords
         {
             text = hasBefore ? " " : string.Empty;
             addWhitespace = true;
-            int tensOfThousands = thousands / 10 % 10;
-            int hundredsOfThousands = thousands % 1000;
-
-            if (thousands % 10 == 0 || tensOfThousands == 1)
-                text += _hundredsToWords.HundredsSplit(hundredsOfThousands, false) + " tūkstančių";
-            else if (thousands % 10 == 1)
-                text += _hundredsToWords.HundredsSplit(hundredsOfThousands, false) + " tūkstantis";
-            else if (thousands > 1)
-                text += _hundredsToWords.HundredsSplit(hundredsOfThousands, false) + " tūkstančiai";
+            // use hundreds splitter for thousands chunk
+            text += _hundredsToWords.HundredsSplit(thousands, false) + " thousand";
         }
 
         int hundreds = number % 1000;
@@ -220,22 +204,14 @@ public class MillionsToWordsEN : IMillionsToWords
         string text = string.Empty;
         int millions = number / 1000000;
 
-        // billions not supported
         if (number >= 1000000000 || number < 0)
             throw new ArgumentException($"MillionsToWordsEN got {number}");
 
         if (millions > 0)
         {
             addWhitespace = true;
-            int tensOfMillions = millions / 10 % 10;
-            int hundredsOfMillions = millions % 1000;
-
-            if (millions % 10 == 0 || tensOfMillions == 1)
-                text += _hundredsToWords.HundredsSplit(hundredsOfMillions, false) + " milijonų";
-            else if (millions % 10 == 1)
-                text = _hundredsToWords.HundredsSplit(hundredsOfMillions, false) + " milijonas";
-            else if (millions > 1)
-                text += _hundredsToWords.HundredsSplit(hundredsOfMillions, false) + " milijonai";
+            // use hundreds splitter for millions chunk
+            text += _hundredsToWords.HundredsSplit(millions, false) + " million";
         }
 
         int thousands = number % 1000000;

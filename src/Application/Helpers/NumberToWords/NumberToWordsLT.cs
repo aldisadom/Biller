@@ -18,28 +18,15 @@ public class NumberToWordsLT : INumberToWords
         _millionsToWords = millionsToWords;
     }
 
-    public string OnesSplit(int number, bool hasBefore)
-    {
-        return _onesToWords.OnesSplit(number, hasBefore);
-    }
+    public string OnesSplit(int number, bool hasBefore) => _onesToWords.OnesSplit(number, hasBefore);
 
-    public string TensSplit(int number, bool hasBefore)
-    {
-        return _tensToWords.TensSplit(number, hasBefore);
-    }
+    public string TensSplit(int number, bool hasBefore) => _tensToWords.TensSplit(number, hasBefore);
 
-    public string HundredsSplit(int number, bool hasBefore)
-    {
-        return _hundredsToWords.HundredsSplit(number, hasBefore);
-    }
-    public string ThousandsSplit(int number, bool hasBefore)
-    {
-        return _thousandsToWords.ThousandsSplit(number, hasBefore);
-    }
-    public string MillionsSplit(int number)
-    {
-        return _millionsToWords.MillionsSplit(number);
-    }
+    public string HundredsSplit(int number, bool hasBefore) => _hundredsToWords.HundredsSplit(number, hasBefore);
+
+    public string ThousandsSplit(int number, bool hasBefore) => _thousandsToWords.ThousandsSplit(number, hasBefore);
+
+    public string MillionsSplit(int number) => _millionsToWords.MillionsSplit(number);
 }
 
 public class OnesToWordsLT : IOnesToWords

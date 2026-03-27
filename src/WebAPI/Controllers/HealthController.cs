@@ -1,14 +1,5 @@
-﻿using Application.Interfaces;
-using Application.MappingProfiles;
-using Application.Models;
-using Contracts.Requests.User;
-using Contracts.Responses;
-using Contracts.Responses.User;
-using FluentValidation;
+﻿using Contracts.Responses;
 using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.AspNetCore.Filters;
-using Validators;
-using WebAPI.SwaggerExamples.User;
 
 namespace WebAPI.Controllers;
 

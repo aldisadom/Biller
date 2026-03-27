@@ -4,7 +4,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-namespace Application.Models.Invoice.InvoiceGenerationModels;
+namespace Application.Models.Invoice.Documents;
 
 public class InvoiceDocumentSF : IDocument
 {
@@ -50,7 +50,7 @@ public class InvoiceDocumentSF : IDocument
     }
 
     private void ComposeInvoiceDetails(IContainer container)
-    {        
+    {
         container.ShowEntire().PaddingTop(5).Column(column =>
         {
             column.Item().Text(text =>
