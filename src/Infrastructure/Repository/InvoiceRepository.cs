@@ -1,4 +1,4 @@
-﻿using Common.Enums;
+﻿using Contracts.Enums;
 using Dapper;
 using Domain.Entities;
 using Domain.Repositories;

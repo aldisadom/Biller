@@ -1,6 +1,6 @@
 ﻿using Application.Helpers.NumberToWords;
 using Application.Helpers.PriceToWords;
-using Common.Enums;
+using Contracts.Enums;
 using FluentAssertions;
 using Moq;
 

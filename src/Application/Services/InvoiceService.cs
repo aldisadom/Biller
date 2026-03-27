@@ -2,7 +2,7 @@
 using Application.MappingProfiles;
 using Application.Models;
 using Application.Models.InvoiceGenerationModels;
-using Common.Enums;
+using Contracts.Enums;
 using Contracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;

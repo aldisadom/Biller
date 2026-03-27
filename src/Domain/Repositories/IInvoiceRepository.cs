@@ -1,4 +1,4 @@
-﻿using Common.Enums;
+﻿using Contracts.Enums;
 using Domain.Entities;
 
 namespace Domain.Repositories

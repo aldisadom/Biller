@@ -1,5 +1,5 @@
 ﻿using Application.Models;
-using Common.Enums;
+using Contracts.Enums;
 using Contracts.Requests.Invoice;
 
 namespace Application.Interfaces;
