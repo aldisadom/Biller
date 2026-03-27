@@ -61,7 +61,7 @@ jobs:
         run: |
           echo "Waiting for Biller API on port 8070..."
           for i in $(seq 1 15); do
-            if curl -sf http://localhost:8070 2>/dev/null; then
+            if curl -sf http://localhost:8090 2>/dev/null; then
               echo "API is up!"
               exit 0
             fi
