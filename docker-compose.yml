@@ -49,15 +49,10 @@ services:
     depends_on: 
       - db
     environment:
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=mypassword123456789mypassword
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
       - ASPNETCORE_ENVIRONMENT=LocalDocker
       - ASPNETCORE_HTTP_PORTS=8070
       - ASPNETCORE_HTTPS_PORTS=8071
     volumes:
-      - ./certs:/https/
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
       - ./Fonts:/Fonts
     build:
       context: .

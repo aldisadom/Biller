@@ -55,28 +55,22 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Start services
-        run: |
-          # Override Windows-only volume mounts that don't work on Linux runners
-          docker compose up -d --build
-        env:
-          USERPROFILE: /tmp/userprofile
-          APPDATA: /tmp/appdata
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
       - name: Wait for API to be ready
         run: |
           echo "Waiting for Biller API on port 8070..."
           for i in $(seq 1 15); do
-            if curl -sf http://localhost:8070/health 2>/dev/null || \
-               curl -sf http://localhost:8070 2>/dev/null; then
+            if curl -sf http://localhost:8070 2>/dev/null; then
               echo "API is up!"
-              break
+              exit 0
             fi
-            echo "Attempt $i/15 — sleeping 10s..."
+            echo "Attempt $i/15 - sleeping 10s..."
             sleep 10
           done
-          # Show container logs if something looks off
-          docker compose ps
-          docker compose logs biller
+          echo "ERROR: API did not become ready. Dumping logs:"
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs
+          exit 1
 
       - name: Run integration tests
         working-directory: ./BillioIntegrationTest
@@ -96,7 +90,4 @@ jobs:
 
       - name: Stop and clean up services
         if: always()
-        run: docker compose down -v
-        env:
-          USERPROFILE: /tmp/userprofile
-          APPDATA: /tmp/appdata
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
