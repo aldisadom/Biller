@@ -55,7 +55,7 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Start services
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+        run: docker compose -f docker-compose.yml up -d --build
 
       - name: Wait for API to be ready
         run: |
