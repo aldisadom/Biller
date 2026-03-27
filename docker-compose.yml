@@ -50,8 +50,8 @@ services:
       - db
     environment:
       - ASPNETCORE_ENVIRONMENT=LocalDocker
-      - ASPNETCORE_HTTP_PORTS=8070
-      - ASPNETCORE_HTTPS_PORTS=8071
+      - ASPNETCORE_URLS=http://+:8070
+      - ASPNETCORE_HTTPS_PORTS=
     volumes:
       - ./Fonts:/Fonts
     build:
