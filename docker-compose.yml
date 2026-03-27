@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   db:
-    image: postgres
+    image: postgres:17
     container_name: "billio-db"
     restart: always
     environment:
@@ -28,7 +28,7 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: 'False'
 
   liquibase:
-    image: liquibase/liquibase
+    image: liquibase/liquibase:4.26.0
     container_name: "billio-liquibase"    
     depends_on: 
       - db
@@ -49,22 +49,16 @@ services:
     depends_on: 
       - db
     environment:
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=mypassword123456789mypassword
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
       - ASPNETCORE_ENVIRONMENT=LocalDocker
       - ASPNETCORE_HTTP_PORTS=8070
-      - ASPNETCORE_HTTPS_PORTS=8071
+      - ASPNETCORE_HTTPS_PORTS=
     volumes:
-      - ${USERPROFILE}/.aspnet/https:/https/
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
       - ./Fonts:/Fonts
     build:
       context: .
       dockerfile: src/WebAPI/DockerfileLocal
     ports:
      - "8090:8070"
-     - "8091:8071"
 
 volumes:
   postgres_data:

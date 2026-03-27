@@ -1,0 +1,9 @@
+# CI override: forces HTTP-only and removes Windows-specific volume mounts.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+services:
+  webapi:
+    environment:
+      - ASPNETCORE_URLS=http://+:8070
+      - ASPNETCORE_HTTPS_PORTS=
+    volumes:
+      - ./certs:/https/

@@ -1,42 +1,93 @@
-# This file defines a workflow with separate jobs for build, test, publish, and deploy
-
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]
   pull_request:
-  release:
-    types: [published]
+    branches: [ master ]
 
 env:
-  DOTNET_VERSION: 8.0.x
+  DOTNET_VERSION: '8.0.x'
+  DOTNET_CONFIGURATION: Release
+  TESTS_LOCATION: tests/xUnitTests
   PROJECT_NAME: Billio.sln
-  TESTS_LOCATION: ./tests/xUnitTests
-  INTEGRATION_TESTS_LOCATION: ./tests/IntegrationTests
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-    - name: Build
-      run: dotnet build ${{ env.PROJECT_NAME }}
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Build
+        run: dotnet build ${{ env.PROJECT_NAME }} --configuration ${{ env.DOTNET_CONFIGURATION }}
 
-  test:
-    name: Test
+  unit-tests:
+    name: Unit tests
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-    - name: Run tests
-      run: |
-        dotnet test --configuration ${DOTNET_CONFIGURATION=Release} ${{ env.TESTS_LOCATION }} /p:CollectCoverage=true /p:CoverletOutputFormat=\"opencover\"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Run tests
+        run: |
+          dotnet test --configuration ${{ env.DOTNET_CONFIGURATION }} ${{ env.TESTS_LOCATION }} /p:CollectCoverage=true /p:CoverletOutputFormat="opencover"
 
+  integration-tests:
+    name: Integration tests
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Biller repository
+        uses: actions/checkout@v4
+
+      - name: Clone BillioIntegrationTest repository
+        run: git clone https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Start services
+        run: docker compose -f docker-compose.yml up -d --build
+
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting for Biller API..."
+          for i in $(seq 1 5); do
+            if curl -sf http://localhost:8090/health 2>/dev/null; then
+              echo "API is up!"
+              exit 0
+            fi
+            echo "Attempt $i/5 - sleeping 10s..."
+            sleep 10
+          done
+          echo "ERROR: API did not become ready. Dumping logs:"
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs
+          exit 1
+
+      - name: Run integration tests
+        working-directory: ./BillioIntegrationTest
+        run: |
+          dotnet restore BillioIntegrationTest.sln
+          dotnet build BillioIntegrationTest.sln --configuration ${{ env.DOTNET_CONFIGURATION }} --no-restore
+          dotnet test BillioIntegrationTest.sln --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build \
+            --logger "trx;LogFileName=integration-results.trx" \
+            --results-directory ./TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: ./BillioIntegrationTest/TestResults/*.trx
+
+      - name: Stop and clean up services
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
