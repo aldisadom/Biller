@@ -1,44 +1,40 @@
-# This file defines a workflow with separate jobs for build, test, publish, and deploy
-
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]
   pull_request:
-  release:
-    types: [published]
+    branches: [ master ]
 
 env:
-  DOTNET_VERSION: 8.0.x
-  PROJECT_NAME: Billio.sln
-  TESTS_LOCATION: ./tests/xUnitTests
-  INTEGRATION_TESTS_LOCATION: ./tests/IntegrationTests
+  DOTNET_VERSION: '8.0.x'
+  DOTNET_CONFIGURATION: Release
+  TESTS_LOCATION: tests/xUnitTests
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-    - name: Build
-      run: dotnet build ${{ env.PROJECT_NAME }}
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Build
+        run: dotnet build --configuration ${{ env.DOTNET_CONFIGURATION }}
 
-  test:
-    name: Test
+  unit-tests:
+    name: Unit tests
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-    - name: Run tests
-      run: |
-        dotnet test --configuration ${DOTNET_CONFIGURATION=Release} ${{ env.TESTS_LOCATION }} /p:CollectCoverage=true /p:CoverletOutputFormat=\"opencover\"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Run tests
+        run: |
+          dotnet test --configuration ${{ env.DOTNET_CONFIGURATION }} ${{ env.TESTS_LOCATION }} /p:CollectCoverage=true /p:CoverletOutputFormat="opencover"
 
   integration-tests:
     name: Integration tests
@@ -46,34 +42,60 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Biller repository
-      uses: actions/checkout@v4
+      - name: Checkout Biller repository
+        uses: actions/checkout@v4
 
-    - name: Clone BillioIntegrationTest repository
-      run: |
-        git clone https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
+      - name: Clone BillioIntegrationTest repository
+        run: git clone https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
 
-    - name: Set up Docker
-      run: |
-        docker --version
-        docker compose version
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Start services
-      run: |
-        docker compose up -d
+      - name: Start services
+        run: |
+          # Override Windows-only volume mounts that don't work on Linux runners
+          docker compose up -d --build
+        env:
+          USERPROFILE: /tmp/userprofile
+          APPDATA: /tmp/appdata
 
-    - name: Wait for services to be ready
-      run: |
-        sleep 30
-        curl --retry 5 --retry-delay 10 --retry-connrefused http://localhost:8085
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting for Biller API on port 8070..."
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:8070/health 2>/dev/null || \
+               curl -sf http://localhost:8070 2>/dev/null; then
+              echo "API is up!"
+              break
+            fi
+            echo "Attempt $i/15 — sleeping 10s..."
+            sleep 10
+          done
+          # Show container logs if something looks off
+          docker compose ps
+          docker compose logs biller
 
-    - name: Run integration tests
-      working-directory: ./BillioIntegrationTest
-      run: |
-        dotnet restore
-        dotnet build
-        dotnet test --logger:trx
+      - name: Run integration tests
+        working-directory: ./BillioIntegrationTest
+        run: |
+          dotnet restore BillioIntegrationTest.sln
+          dotnet build BillioIntegrationTest.sln --configuration ${{ env.DOTNET_CONFIGURATION }} --no-restore
+          dotnet test BillioIntegrationTest.sln --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build \
+            --logger "trx;LogFileName=integration-results.trx" \
+            --results-directory ./TestResults
 
-    - name: Stop and clean up services
-      run: |
-        docker compose down
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: ./BillioIntegrationTest/TestResults/*.trx
+
+      - name: Stop and clean up services
+        if: always()
+        run: docker compose down -v
+        env:
+          USERPROFILE: /tmp/userprofile
+          APPDATA: /tmp/appdata
