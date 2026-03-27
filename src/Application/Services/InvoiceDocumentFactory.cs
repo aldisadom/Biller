@@ -27,7 +27,7 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
         var texts = languageCode switch
         {
             Language.LT => new InvoiceTextsLT(),
-            _ => throw new NotSupportedException($"Document languge {languageCode} is not supported")
+            _ => throw new NotSupportedException($"Languge {languageCode} is not supported")
         };
         
         IDocument document;
@@ -40,7 +40,7 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
                 document = new InvoiceDocumentADA(invoiceData, _priceToWordsFactory.GetConverter(languageCode), texts);
                 break;
             default:
-                throw new NotSupportedException($"Language {documentType} is not supported");
+                throw new NotSupportedException($"Document type {documentType} is not supported");
 
         }
         string path = invoiceData.GenerateFileLocation();
