@@ -2,7 +2,6 @@
 using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using Application.Models.InvoiceGenerationModels;
 using Application.Services;
 using AutoFixture;
 using AutoFixture.Xunit2;

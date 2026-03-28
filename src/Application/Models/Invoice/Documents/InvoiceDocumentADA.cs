@@ -1,22 +1,25 @@
-﻿using Application.Helpers.PriceToWords;
+﻿using Application.Helpers.Invoice;
+using Application.Helpers.PriceToWords;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-namespace Application.Models.InvoiceGenerationModels;
+namespace Application.Models.Invoice.Documents;
 
-public class InvoiceDocumentSF : IDocument
+public class InvoiceDocumentADA : IDocument
 {
     public InvoiceModel Model { get; }
     private readonly IPriceToWords _priceToWords;
+    private readonly IInvoiceTexts _texts;
 
     public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     public DocumentSettings GetSettings() => DocumentSettings.Default;
 
-    public InvoiceDocumentSF(InvoiceModel model, IPriceToWords priceToWords)
+    public InvoiceDocumentADA(InvoiceModel model, IPriceToWords priceToWords, IInvoiceTexts texts)
     {
         Model = model;
         _priceToWords = priceToWords;
+        _texts = texts;
     }
 
     private void ComposeHeader(IContainer container)
@@ -27,11 +30,9 @@ public class InvoiceDocumentSF : IDocument
         {
             row.RelativeItem().Column(column =>
             {
-                column.Item().AlignCenter().Text($"SĄSKAITA FAKTŪRA").Style(titleStyle);
-                column.Item().AlignCenter().Text($"Serija {Model.Customer!.InvoiceName} Nr. {Model.GenerateInvoiceName()}");
+                column.Item().AlignCenter().Text($"{_texts.JobDoneAct()}").Style(titleStyle);
+                column.Item().AlignCenter().Text($"{_texts.InvoiceSeries()} {Model.Customer!.InvoiceName} {_texts.NumberShort()} {Model.GenerateInvoiceName()}");
             });
-            //place for image
-            //            row.ConstantItem(100).Height(50).Placeholder();
         });
     }
 
@@ -54,21 +55,15 @@ public class InvoiceDocumentSF : IDocument
         {
             column.Item().Text(text =>
             {
-                text.Span($"Išrašymo data: ").SemiBold();
+                text.Span($"{_texts.CreationDate()}: ").SemiBold();
                 text.Span($"{Model.CreatedDate:yyyy-MM-dd}");
-            });
-
-            column.Item().Text(text =>
-            {
-                text.Span($"Apmokėjimo data: ").SemiBold();
-                text.Span($"{Model.DueDate:yyyy-MM-dd}");
             });
 
             column.Item().PaddingTop(20).Row(row =>
             {
-                row.RelativeItem().Component(new SellerComponent("Prekių / paslaugų pardavėjas", Model.Seller!));
+                row.RelativeItem().Component(new SellerComponent(Model.Seller!, _texts));
                 row.ConstantItem(50);
-                row.RelativeItem().Component(new CustomerComponent("Prekių / paslaugų pirkėjas", Model.Customer!));
+                row.RelativeItem().Component(new CustomerComponent(Model.Customer!, _texts));
             });
         });
     }
@@ -91,11 +86,11 @@ public class InvoiceDocumentSF : IDocument
             // step 2
             table.Header(header =>
             {
-                header.Cell().Element(CellStyle).Text("Nr.");
-                header.Cell().Element(CellStyle).Text("Prekės, turto ar paslaugos pavadinimas");
-                header.Cell().Element(CellStyle).AlignRight().Text("vnt. kaina, €");
-                header.Cell().Element(CellStyle).AlignRight().Text("Kiekis");
-                header.Cell().Element(CellStyle).AlignRight().Text("Suma, €");
+                header.Cell().Element(CellStyle).Text(_texts.NumberShort());
+                header.Cell().Element(CellStyle).Text(_texts.ItemName());
+                header.Cell().Element(CellStyle).AlignRight().Text(_texts.ItemPrice());
+                header.Cell().Element(CellStyle).AlignRight().Text(_texts.Amount());
+                header.Cell().Element(CellStyle).AlignRight().Text(_texts.Sum());
 
                 static IContainer CellStyle(IContainer container)
                 {
@@ -135,9 +130,9 @@ public class InvoiceDocumentSF : IDocument
     {
         container.ShowEntire().PaddingTop(5).Column(column =>
         {
-            column.Item().AlignRight().Text($"Bendra suma: {Model.CalculateTotal():0.##}€").FontSize(14);
+            column.Item().AlignRight().Text($"{_texts.SumTotal()}: {Model.CalculateTotal():0.##}{_texts.Currency()}").FontSize(14);
             column.Spacing(5);
-            column.Item().Text($"Suma žodžiais: {_priceToWords.Decode(Model.CalculateTotal())}");
+            column.Item().Text($"{_texts.SumInWords()}: {_priceToWords.Decode(Model.CalculateTotal())}");
         });
     }
 
@@ -148,7 +143,7 @@ public class InvoiceDocumentSF : IDocument
 
         container.ShowEntire().Background(Colors.Grey.Lighten3).Padding(20).Column(column =>
         {
-            column.Item().Text("Komentaras").FontSize(14);
+            column.Item().Text(_texts.Comment()).FontSize(14);
             column.Item().Text(Model.Comments);
         });
     }
@@ -159,14 +154,29 @@ public class InvoiceDocumentSF : IDocument
         {
             column.Item().Row(row =>
             {
-                row.ConstantItem(110).Text("Sąskaitą išrašė: ");
+                row.ConstantItem(110).Text($"{_texts.Prepared()}: ");
                 row.RelativeItem().BorderBottom(1).Text($"{Model.User!.Name} {Model.User.LastName}");
+                row.ConstantItem(70).BorderBottom(1).Text($"{Model.CreatedDate:yyyy-MM-dd}");
+            });
+            column.Item().Row(row =>
+            {
+                row.ConstantItem(110);
+                row.RelativeItem().AlignCenter()
+                                    .Text($"{_texts.Contractor()}: {_texts.Name()}, {_texts.Surname()}, {_texts.Signature()}, {_texts.Date()}")
+                                    .FontSize(8);
             });
 
             column.Item().Row(row =>
             {
-                row.ConstantItem(110).Text("Paslaugą gavau: ");
+                row.ConstantItem(110).Text($"{_texts.Coordinated()}: ");
                 row.RelativeItem().BorderBottom(1);
+            });
+            column.Item().Row(row =>
+            {
+                row.ConstantItem(110);
+                row.RelativeItem().AlignCenter()
+                                    .Text($"{_texts.ResponsibleWorker()}: {_texts.Position()}, {_texts.Name()}, {_texts.Surname()}, {_texts.Signature()}, {_texts.Date()}")
+                                    .FontSize(8);
             });
         });
     }

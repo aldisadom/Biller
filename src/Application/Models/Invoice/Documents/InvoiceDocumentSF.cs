@@ -1,22 +1,25 @@
-﻿using Application.Helpers.PriceToWords;
+﻿using Application.Helpers.Invoice;
+using Application.Helpers.PriceToWords;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-namespace Application.Models.InvoiceGenerationModels;
+namespace Application.Models.Invoice.Documents;
 
-public class InvoiceDocumentADA : IDocument
+public class InvoiceDocumentSF : IDocument
 {
     public InvoiceModel Model { get; }
     private readonly IPriceToWords _priceToWords;
+    private readonly IInvoiceTexts _texts;
 
     public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     public DocumentSettings GetSettings() => DocumentSettings.Default;
 
-    public InvoiceDocumentADA(InvoiceModel model, IPriceToWords priceToWords)
+    public InvoiceDocumentSF(InvoiceModel model, IPriceToWords priceToWords, IInvoiceTexts texts)
     {
         Model = model;
         _priceToWords = priceToWords;
+        _texts = texts;
     }
 
     private void ComposeHeader(IContainer container)
@@ -27,11 +30,9 @@ public class InvoiceDocumentADA : IDocument
         {
             row.RelativeItem().Column(column =>
             {
-                column.Item().AlignCenter().Text($"ATLIKTŲ DARBŲ AKTAS").Style(titleStyle);
-                column.Item().AlignCenter().Text($"Serija {Model.Customer!.InvoiceName} Nr. {Model.GenerateInvoiceName()}");
+                column.Item().AlignCenter().Text($"{_texts.Invoice()}").Style(titleStyle);
+                column.Item().AlignCenter().Text($"{_texts.InvoiceSeries()} {Model.Customer!.InvoiceName} {_texts.NumberShort()} {Model.GenerateInvoiceName()}");
             });
-            //place for image
-            //            row.ConstantItem(100).Height(50).Placeholder();
         });
     }
 
@@ -54,15 +55,21 @@ public class InvoiceDocumentADA : IDocument
         {
             column.Item().Text(text =>
             {
-                text.Span($"Išrašymo data: ").SemiBold();
+                text.Span($"{_texts.CreationDate()}: ").SemiBold();
                 text.Span($"{Model.CreatedDate:yyyy-MM-dd}");
+            });
+
+            column.Item().Text(text =>
+            {
+                text.Span($"{_texts.DueDate()}: ").SemiBold();
+                text.Span($"{Model.DueDate:yyyy-MM-dd}");
             });
 
             column.Item().PaddingTop(20).Row(row =>
             {
-                row.RelativeItem().Component(new SellerComponent("Prekių / paslaugų pardavėjas", Model.Seller!));
+                row.RelativeItem().Component(new SellerComponent(Model.Seller!, _texts));
                 row.ConstantItem(50);
-                row.RelativeItem().Component(new CustomerComponent("Prekių / paslaugų pirkėjas", Model.Customer!));
+                row.RelativeItem().Component(new CustomerComponent(Model.Customer!, _texts));
             });
         });
     }
@@ -85,11 +92,11 @@ public class InvoiceDocumentADA : IDocument
             // step 2
             table.Header(header =>
             {
-                header.Cell().Element(CellStyle).Text("Nr.");
-                header.Cell().Element(CellStyle).Text("Prekės, turto ar paslaugos pavadinimas");
-                header.Cell().Element(CellStyle).AlignRight().Text("vnt. kaina, €");
-                header.Cell().Element(CellStyle).AlignRight().Text("Kiekis");
-                header.Cell().Element(CellStyle).AlignRight().Text("Suma, €");
+                header.Cell().Element(CellStyle).Text(_texts.NumberShort());
+                header.Cell().Element(CellStyle).Text(_texts.ItemName());
+                header.Cell().Element(CellStyle).AlignRight().Text(_texts.ItemPrice());
+                header.Cell().Element(CellStyle).AlignRight().Text(_texts.Amount());
+                header.Cell().Element(CellStyle).AlignRight().Text(_texts.Sum());
 
                 static IContainer CellStyle(IContainer container)
                 {
@@ -129,9 +136,9 @@ public class InvoiceDocumentADA : IDocument
     {
         container.ShowEntire().PaddingTop(5).Column(column =>
         {
-            column.Item().AlignRight().Text($"Bendra suma: {Model.CalculateTotal():0.##}€").FontSize(14);
+            column.Item().AlignRight().Text($"{_texts.SumTotal()}: {Model.CalculateTotal():0.##}{_texts.Currency()}").FontSize(14);
             column.Spacing(5);
-            column.Item().Text($"Suma žodžiais: {_priceToWords.Decode(Model.CalculateTotal())}");
+            column.Item().Text($"{_texts.SumInWords()}: {_priceToWords.Decode(Model.CalculateTotal())}");
         });
     }
 
@@ -142,7 +149,7 @@ public class InvoiceDocumentADA : IDocument
 
         container.ShowEntire().Background(Colors.Grey.Lighten3).Padding(20).Column(column =>
         {
-            column.Item().Text("Komentaras").FontSize(14);
+            column.Item().Text(_texts.Comment()).FontSize(14);
             column.Item().Text(Model.Comments);
         });
     }
@@ -153,29 +160,14 @@ public class InvoiceDocumentADA : IDocument
         {
             column.Item().Row(row =>
             {
-                row.ConstantItem(110).Text("Parengė: ");
+                row.ConstantItem(110).Text($"{_texts.InvoicedBy()}: ");
                 row.RelativeItem().BorderBottom(1).Text($"{Model.User!.Name} {Model.User.LastName}");
-                row.ConstantItem(70).BorderBottom(1).Text($"{Model.CreatedDate:yyyy-MM-dd}");
-            });
-            column.Item().Row(row =>
-            {
-                row.ConstantItem(110);
-                row.RelativeItem().AlignCenter()
-                                    .Text($"Rangovas: Vardas, Pavardė, Parašas, Data")
-                                    .FontSize(8);
             });
 
             column.Item().Row(row =>
             {
-                row.ConstantItem(110).Text("Suderinta: ");
+                row.ConstantItem(110).Text($"{_texts.ServiceRecieved()}: ");
                 row.RelativeItem().BorderBottom(1);
-            });
-            column.Item().Row(row =>
-            {
-                row.ConstantItem(110);
-                row.RelativeItem().AlignCenter()
-                                    .Text($"Atsakingas darbuotojas: Pareigos, Vardas, Pavardė, Parašas, Data")
-                                    .FontSize(8);
             });
         });
     }

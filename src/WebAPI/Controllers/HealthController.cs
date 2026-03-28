@@ -1,14 +1,5 @@
-﻿using Application.Interfaces;
-using Application.MappingProfiles;
-using Application.Models;
-using Contracts.Requests.User;
-using Contracts.Responses;
-using Contracts.Responses.User;
-using FluentValidation;
+﻿using Contracts.Responses;
 using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.AspNetCore.Filters;
-using Validators;
-using WebAPI.SwaggerExamples.User;
 
 namespace WebAPI.Controllers;
 
@@ -37,7 +28,7 @@ public class HealthController : ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get()
+    public IActionResult Get()
     {
         return Ok();
     }
