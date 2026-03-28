@@ -1,4 +1,4 @@
-﻿using Application.Models.Invoice.Texts;
+﻿using Application.Helpers.Invoice;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 

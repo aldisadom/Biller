@@ -1,5 +1,5 @@
-﻿using Application.Helpers.PriceToWords;
-using Application.Models.Invoice.Texts;
+﻿using Application.Helpers.Invoice;
+using Application.Helpers.PriceToWords;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;

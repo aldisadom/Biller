@@ -1,7 +1,7 @@
-﻿using Application.Helpers.PriceToWords;
+﻿using Application.Helpers.Invoice;
+using Application.Helpers.PriceToWords;
 using Application.Models;
 using Application.Models.Invoice.Documents;
-using Application.Models.Invoice.Texts;
 using Contracts.Enums;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
@@ -15,7 +15,7 @@ public interface IInvoiceDocumentFactory
 
 public class InvoiceDocumentFactory : IInvoiceDocumentFactory
 {
-    IPriceToWordsFactory _priceToWordsFactory;
+    private readonly IPriceToWordsFactory _priceToWordsFactory;
 
     public InvoiceDocumentFactory(IPriceToWordsFactory priceToWordsFactory)
     {

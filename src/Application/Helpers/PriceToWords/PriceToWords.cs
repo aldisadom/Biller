@@ -2,11 +2,11 @@
 
 namespace Application.Helpers.PriceToWords;
 
-public class PriceToWordsLT : IPriceToWords
+public class PriceToWords : IPriceToWords
 {
     private readonly INumberToWords _numberToWords;
 
-    public PriceToWordsLT(INumberToWords numberToWords)
+    public PriceToWords(INumberToWords numberToWords)
     {
         _numberToWords = numberToWords;
     }

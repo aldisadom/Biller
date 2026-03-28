@@ -8,7 +8,7 @@ namespace xUnitTests.Application.Helpers.PriceToWords;
 
 public class PriceToWordsLTTest
 {
-    private readonly PriceToWordsLT _priceToWordsLT;
+    private readonly global::Application.Helpers.PriceToWords.PriceToWords _priceToWords;
     private readonly Mock<INumberToWords> _numberToWordsMock;
     private readonly PriceToWordsFactory _priceToWordsFactory;
 
@@ -18,7 +18,7 @@ public class PriceToWordsLTTest
         _numberToWordsMock.Setup(x => x.MillionsSplit(It.IsAny<int>()))
             .Returns((int number) => { return $"[MockNumber{number}]"; });
 
-        _priceToWordsLT = new PriceToWordsLT(_numberToWordsMock.Object);
+        _priceToWords = new global::Application.Helpers.PriceToWords.PriceToWords(_numberToWordsMock.Object);
         _priceToWordsFactory = new();
     }
 
@@ -31,7 +31,7 @@ public class PriceToWordsLTTest
     {
         //Arrange
         //Act
-        string result = _priceToWordsLT.Decode(number);
+        string result = _priceToWords.Decode(number);
 
         //Assert
         result.Should().BeEquivalentTo(expected);

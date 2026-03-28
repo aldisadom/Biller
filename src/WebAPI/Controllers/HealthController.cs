@@ -28,7 +28,7 @@ public class HealthController : ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get()
+    public IActionResult Get()
     {
         return Ok();
     }

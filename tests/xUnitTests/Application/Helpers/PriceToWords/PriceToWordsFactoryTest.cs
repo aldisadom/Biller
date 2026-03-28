@@ -13,15 +13,17 @@ public class PriceToWordsFactoryTest
         _priceToWordsFactory = new();
     }
 
-    [Fact]
-    public void GetConverter_LT_ReturnsLT()
+    [Theory]
+    [InlineData(Language.EN)]
+    [InlineData(Language.LT)]
+    public void GetConverter_Returns(Language language)
     {
         //Arrange
         //Act
-        IPriceToWords priceToWords = _priceToWordsFactory.GetConverter(Language.LT);
+        IPriceToWords priceToWords = _priceToWordsFactory.GetConverter(language);
 
         //Assert
-        priceToWords.GetType().Should().Be(typeof(PriceToWordsLT));
+        priceToWords.GetType().Should().Be(typeof(global::Application.Helpers.PriceToWords.PriceToWords));
     }
 
     [Fact]

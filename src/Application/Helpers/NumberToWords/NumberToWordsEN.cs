@@ -110,8 +110,11 @@ public class TensToWordsEN : ITensToWords
                 7 => "seventy",
                 8 => "eighty",
                 9 => "ninety",
-                _ => string.Empty
+                _ => throw new ArgumentException($"TensSplitEN got {number} to parse"),
             };
+
+            if (ones == 0)
+                return text;
         }
 
         text += _onesToWordsEN.OnesSplit(ones, addWhitespace);

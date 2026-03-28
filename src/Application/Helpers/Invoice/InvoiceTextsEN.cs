@@ -1,4 +1,4 @@
-﻿namespace Application.Models.Invoice.Texts;
+﻿namespace Application.Helpers.Invoice;
 
 public readonly struct InvoiceTextsEN : IInvoiceTexts
 {
