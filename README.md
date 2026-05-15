@@ -116,7 +116,6 @@ dotnet test tests/xUnitTests
 ## Configuration
 
 - Database connection and credentials are defined in `docker-compose.yml`.
-- Certificates for HTTPS are mapped from your local machine (see Docker volumes).
 - Environment variables and ASP.NET Core settings can be adjusted in Docker or via `launchSettings.json`.
 
 <p align="right">(<a href="#Biller">back to top</a>)</p>
