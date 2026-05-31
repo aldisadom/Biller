@@ -1,8 +1,0 @@
-
-  "permissions": {
-    "allow": [
-      "Bash(dotnet test *)",
-      "Bash(Select-String -Pattern \"passed|failed|error\")"
-    ]
-  }
-}
