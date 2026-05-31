@@ -30,11 +30,9 @@ public static class DependencyInjection
         services.AddScoped<IValidator<ItemAddRequest>, ItemAddValidator>();
         services.AddScoped<IValidator<ItemUpdateRequest>, ItemUpdateValidator>();
 
-        services.AddScoped<IValidator<ItemAddRequest>, ItemAddValidator>();
-        services.AddScoped<IValidator<ItemUpdateRequest>, ItemUpdateValidator>();
-
         services.AddScoped<IValidator<InvoiceAddRequest>, InvoiceAddValidator>();
         services.AddScoped<IValidator<InvoiceGenerateRequest>, InvoiceGenerateValidator>();
+        services.AddScoped<IValidator<InvoiceUpdateRequest>, InvoiceUpdateValidator>();
         services.AddScoped<IValidator<InvoiceItemRequest>, InvoiceItemValidator>();
         services.AddScoped<IValidator<InvoiceItemUpdateRequest>, InvoiceItemUpdateValidator>();
 

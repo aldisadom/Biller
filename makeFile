@@ -1,2 +1,6 @@
-dotnet test tests/xUnitTests/xUnitTests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura --collect:"XPlat Code Coverage"
-reportgenerator -reports:"tests\xUnitTests\TestResults\0dec07f2-da31-44aa-9954-27b37f058222\coverage.cobertura.xml" -targetdir:"coveragereport" -reporttypes:Html
+run:
+	docker rmi webapi --force
+	docker compose up -d
+
+test:
+	dotnet test tests/xUnitTests/xUnitTests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura --collect:"XPlat Code Coverage"
