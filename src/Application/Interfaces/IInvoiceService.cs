@@ -12,5 +12,5 @@ public interface IInvoiceService
     Task<InvoiceModel> Get(Guid id);
     Task Update(InvoiceModel invoiceDetails);
     Task UpdateStatus(InvoiceUpdateStatusRequest invoiceDetails);
-    Task<FileStream> GeneratePDF(Guid id, Language languageCode, DocumentType documentType);
+    Task<(MemoryStream, string)> GeneratePDF(Guid id, Language languageCode, DocumentType documentType);
 }

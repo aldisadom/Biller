@@ -209,41 +209,30 @@ public class InvoiceControllerTest
     public async Task GeneratePDF_GivenValidRequest_ReturnsFileStreamResult()
     {
         // Arrange
-        var tempFile = Path.GetTempFileName();
-        try
+        var memoryStream = new MemoryStream("pdf-content"u8.ToArray());
+        var fileName = "invoice.pdf";
+        var request = new InvoiceGenerateRequest
         {
-            await File.WriteAllTextAsync(tempFile, "pdf-content");
-            var fileStream = new FileStream(tempFile, FileMode.Open, FileAccess.Read);
-            var request = new InvoiceGenerateRequest
-            {
-                Id = Guid.NewGuid(),
-                LanguageCode = Language.LT,
-                DocumentType = DocumentType.Invoice
-            };
+            Id = Guid.NewGuid(),
+            LanguageCode = Language.LT,
+            DocumentType = DocumentType.Invoice
+        };
 
-            _validatorGenerateMock.Setup(v => v.Validate(request))
-                .Returns(new ValidationResult());
-            _invoiceServiceMock.Setup(s => s.GeneratePDF(request.Id, request.LanguageCode, request.DocumentType))
-                .ReturnsAsync(fileStream);
+        _validatorGenerateMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult());
+        _invoiceServiceMock.Setup(s => s.GeneratePDF(request.Id, request.LanguageCode, request.DocumentType))
+            .ReturnsAsync((memoryStream, fileName));
 
-            // Act
-            var result = await _invoiceController.GeneratePDF(request);
+        // Act
+        var result = await _invoiceController.GeneratePDF(request);
 
-            // Assert
-            result.Should().BeOfType<FileStreamResult>()
-                .Which.ContentType.Should().Be("application/pdf");
+        // Assert
+        result.Should().BeOfType<FileStreamResult>()
+            .Which.ContentType.Should().Be("application/pdf");
 
-            fileStream.Close();
-
-            _validatorGenerateMock.Verify(v => v.Validate(request), Times.Once());
-            _validatorGenerateMock.VerifyNoOtherCalls();
-            _invoiceServiceMock.Verify(s => s.GeneratePDF(request.Id, request.LanguageCode, request.DocumentType), Times.Once());
-            _invoiceServiceMock.VerifyNoOtherCalls();
-        }
-        finally
-        {
-            if (File.Exists(tempFile))
-                File.Delete(tempFile);
-        }
+        _validatorGenerateMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorGenerateMock.VerifyNoOtherCalls();
+        _invoiceServiceMock.Verify(s => s.GeneratePDF(request.Id, request.LanguageCode, request.DocumentType), Times.Once());
+        _invoiceServiceMock.VerifyNoOtherCalls();
     }
 }
