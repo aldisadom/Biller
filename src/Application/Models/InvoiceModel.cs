@@ -24,19 +24,9 @@ public record InvoiceModel
         return total;
     }
 
-    public string GenerateFolderLocation()
-    {
-        return $"./Data/Invoices";//{User!.Id}/{Seller!.Id}/{Customer!.Id}";
-    }
-
     public string GenerateFileLocation()
     {
-        return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{GenerateInvoiceName()}.pdf";
-    }
-
-    public string GenerateFileLocation(string modifier)
-    {
-        return $"{GenerateFolderLocation()}/{Customer!.InvoiceName}-{GenerateInvoiceName()}-{modifier}.pdf";
+        return $"{Customer!.InvoiceName}-{GenerateInvoiceName()}.pdf";
     }
 
     public string GenerateInvoiceName()

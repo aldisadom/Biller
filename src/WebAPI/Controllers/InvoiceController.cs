@@ -113,11 +113,9 @@ public class InvoiceController : ControllerBase
     public async Task<IActionResult> GeneratePDF([FromQuery] InvoiceGenerateRequest query)
     {
         _validatorGenerate.CheckValidation(query);
-        FileStream file = await _invoiceService.GeneratePDF(query.Id, query.LanguageCode, query.DocumentType);
-
-        string fileName = Path.GetFileName(file.Name);
-
-        return File(file, "application/pdf", fileName);
+        var (stream, fileName) = await _invoiceService.GeneratePDF(query.Id, query.LanguageCode, query.DocumentType);
+        
+        return File(stream, "application/pdf", fileName);
     }
 
     /// <summary>

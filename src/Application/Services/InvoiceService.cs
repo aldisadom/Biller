@@ -30,11 +30,6 @@ public class InvoiceService : IInvoiceService
         _invoiceDocumentFactory = invoiceDocumentFactory;
     }
 
-    private static void GenerateInvoiceFolderPath(InvoiceModel invoiceData)
-    {
-        string folderPath = invoiceData.GenerateFolderLocation();
-    }
-
     private async Task GetInvoiceData(InvoiceModel invoiceData)
     {
         invoiceData.User = await _userService.Get(invoiceData.User!.Id);
@@ -45,8 +40,6 @@ public class InvoiceService : IInvoiceService
         invoiceData.InvoiceNumber = invoiceData.Customer.InvoiceNumber;
 
         MapItemToInvoiceItem(invoiceData.Items!, items);
-
-        GenerateInvoiceFolderPath(invoiceData);
     }
 
     public static void MapInvoiceItemToItem(List<InvoiceItemModel> invoiceItems, List<ItemModel> items)
@@ -168,7 +161,7 @@ public class InvoiceService : IInvoiceService
         await _invoiceRepository.Delete(id);
     }
 
-    public async Task<FileStream> GeneratePDF(Guid id, Language languageCode, DocumentType documentType)
+    public async Task<(MemoryStream, string)> GeneratePDF(Guid id, Language languageCode, DocumentType documentType)
     {
         if (!Enum.IsDefined(typeof(Language), languageCode))
             throw new ValidationException($"Invalid language code: {languageCode}");
@@ -177,8 +170,6 @@ public class InvoiceService : IInvoiceService
             throw new ValidationException($"Invalid document type: {documentType}");
 
         InvoiceModel invoiceData = await Get(id);
-        var path = _invoiceDocumentFactory.GeneratePdf(documentType, languageCode, invoiceData);
-
-        return File.OpenRead(path);
+        return (_invoiceDocumentFactory.GeneratePdf(documentType, languageCode, invoiceData), invoiceData.GenerateFileLocation());
     }
 }
