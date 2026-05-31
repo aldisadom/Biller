@@ -515,8 +515,6 @@ public class InvoiceServiceTest
     public async Task GeneratePDF_ValidId_Generates()
     {
         //Arrange
-        string invoiceName = "invoice.pdf";
-        string invoicePath = Path.Combine(Directory.GetCurrentDirectory(), invoiceName);
         InvoiceEntity invoiceEntity = new()
         {
             Id = Guid.NewGuid(),
@@ -527,7 +525,6 @@ public class InvoiceServiceTest
                 LastName = "UserLastName",
                 Email = "user@email.com",
                 Password = "hashedPassword"
-
             }),
             SellerData = JsonConvert.SerializeObject(new SellerModel()),
             CustomerData = JsonConvert.SerializeObject(new CustomerModel()),
@@ -540,10 +537,11 @@ public class InvoiceServiceTest
         Language languageCode = Language.LT;
         DocumentType documentType = DocumentType.Invoice;
 
+        InvoiceModel invoice = invoiceEntity.ToModel();
+        var memoryStream = new MemoryStream("dummy pdf content"u8.ToArray());
+
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceEntity.Id))
                         .ReturnsAsync(invoiceEntity);
-
-        InvoiceModel invoice = invoiceEntity.ToModel();
 
         _invoiceDocumentFactory.Setup(x => x.GeneratePdf(documentType, languageCode, It.Is<InvoiceModel>(i =>
             i.Id == invoice.Id &&
@@ -555,28 +553,16 @@ public class InvoiceServiceTest
             i.Items != null &&
             i.Items.All(expectedItem => i.Items.Any(invoiceItem => invoiceItem == expectedItem)) &&
             i.InvoiceNumber == invoice.InvoiceNumber &&
-            i.Comments == invoice.Comments))).Returns(invoiceName);
+            i.Comments == invoice.Comments))).Returns(memoryStream);
 
-        invoice.Should().BeEquivalentTo(invoiceEntity.ToModel());
-        await File.WriteAllTextAsync(invoiceName, "dummy pdf content");
+        // Act
+        var (stream, fileName) = await _invoiceService.GeneratePDF(invoiceEntity.Id, languageCode, documentType);
 
-        try
-        {
-            // Act        
-            FileStream file = await _invoiceService.GeneratePDF(invoiceEntity.Id, languageCode, documentType);
-            file.Close();
-
-            // Assert
-            _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceEntity.Id), Times.Once());
-            Assert.NotNull(file);
-            Assert.Equal(invoicePath, file.Name);
-        }
-        finally
-        {
-            // Clean up the file after the test
-            if (File.Exists(invoicePath))
-                File.Delete(invoicePath);
-        }
+        // Assert
+        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceEntity.Id), Times.Once());
+        stream.Should().NotBeNull();
+        stream.Should().BeSameAs(memoryStream);
+        fileName.Should().NotBeNullOrEmpty();
     }
 
     [Theory]
