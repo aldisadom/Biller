@@ -4,10 +4,10 @@ using Application.Models;
 using Contracts.Requests.Invoice;
 using Contracts.Responses;
 using Contracts.Responses.Invoice;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using Validators;
-using Validators.Invoice;
 using WebAPI.SwaggerExamples.Invoice;
 
 namespace WebAPI.Controllers;
@@ -22,16 +22,27 @@ public class InvoiceController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
     private readonly ILogger<InvoiceController> _logger;
+    private readonly IValidator<InvoiceAddRequest> _validatorAdd;
+    private readonly IValidator<InvoiceGenerateRequest> _validatorGenerate;
+    private readonly IValidator<InvoiceUpdateRequest> _validatorUpdate;
 
     /// <summary>
     /// Constructor
     /// </summary>
     /// <param name="invoiceService"></param>
     /// <param name="logger"></param>
-    public InvoiceController(IInvoiceService invoiceService, ILogger<InvoiceController> logger)
+    /// <param name="validatorAdd"></param>
+    /// <param name="validatorGenerate"></param>
+    /// <param name="validatorUpdate"></param>
+    public InvoiceController(IInvoiceService invoiceService, ILogger<InvoiceController> logger,
+        IValidator<InvoiceAddRequest> validatorAdd, IValidator<InvoiceGenerateRequest> validatorGenerate,
+        IValidator<InvoiceUpdateRequest> validatorUpdate)
     {
         _invoiceService = invoiceService;
         _logger = logger;
+        _validatorAdd = validatorAdd;
+        _validatorGenerate = validatorGenerate;
+        _validatorUpdate = validatorUpdate;
     }
 
     /// <summary>
@@ -81,7 +92,7 @@ public class InvoiceController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Add(InvoiceAddRequest invoiceDataRequest)
     {
-        new InvoiceAddValidator().CheckValidation(invoiceDataRequest);
+        _validatorAdd.CheckValidation(invoiceDataRequest);
         InvoiceModel invoiceData = invoiceDataRequest.ToModel();
 
         AddResponse result = new()
@@ -101,7 +112,7 @@ public class InvoiceController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GeneratePDF([FromQuery] InvoiceGenerateRequest query)
     {
-        new InvoiceGenerateValidator().CheckValidation(query);
+        _validatorGenerate.CheckValidation(query);
         FileStream file = await _invoiceService.GeneratePDF(query.Id, query.LanguageCode, query.DocumentType);
 
         string fileName = Path.GetFileName(file.Name);
@@ -119,7 +130,7 @@ public class InvoiceController : ControllerBase
     [SwaggerRequestExample(typeof(InvoiceUpdateRequest), typeof(InvoiceUpdateRequestExample))]
     public async Task<IActionResult> Update(InvoiceUpdateRequest invoice)
     {
-        new InvoiceUpdateValidator().CheckValidation(invoice);
+        _validatorUpdate.CheckValidation(invoice);
         InvoiceModel invoiceData = invoice.ToModel();
 
         await _invoiceService.Update(invoiceData);
