@@ -1,4 +1,5 @@
-﻿using Contracts.Enums;
+﻿
+using BillerContracts.Enums;
 
 namespace Domain.Entities;
 

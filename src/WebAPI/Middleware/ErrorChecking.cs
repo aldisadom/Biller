@@ -1,5 +1,5 @@
-﻿using Common;
-using Contracts.Responses;
+﻿using BillerContracts;
+using BillerContracts.Responses;
 using Domain.Exceptions;
 using FluentValidation;
 using Newtonsoft.Json;

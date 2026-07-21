@@ -1,4 +1,4 @@
-﻿using Contracts.Enums;
+﻿using BillerContracts.Enums;
 using Dapper;
 using Domain.Entities;
 using Domain.Repositories;
@@ -23,35 +23,23 @@ public class InvoiceRepository : IInvoiceRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<InvoiceEntity>(sql, new { id });
     }
 
-    public async Task<IEnumerable<InvoiceEntity>> GetByUserId(Guid userId)
+    public async Task<(IEnumerable<InvoiceEntity>, int)> Get(Guid? userId, Guid? sellerId, Guid? customerId, int page, int pageSize)
     {
-        string sql = @"SELECT * FROM invoices
-                        WHERE user_id=@UserId";
+        string filter = @"WHERE (@UserId IS NULL OR user_id = @UserId)
+                          AND (@SellerId IS NULL OR seller_id = @SellerId)
+                          AND (@CustomerId IS NULL OR customer_id = @CustomerId)";
 
-        return await _dbConnection.QueryAsync<InvoiceEntity>(sql, new { userId });
-    }
+        string countSql = $"SELECT COUNT(*) FROM invoices {filter}";
+        string dataSql = $@"SELECT * FROM invoices {filter}
+                            ORDER BY created_date DESC
+                            LIMIT @PageSize OFFSET @Offset";
 
-    public async Task<IEnumerable<InvoiceEntity>> GetBySellerId(Guid sellerId)
-    {
-        string sql = @"SELECT * FROM invoices
-                        WHERE seller_id=@SellerId";
+        var parameters = new { UserId = userId, SellerId = sellerId, CustomerId = customerId, PageSize = pageSize, Offset = (page - 1) * pageSize };
 
-        return await _dbConnection.QueryAsync<InvoiceEntity>(sql, new { sellerId });
-    }
+        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters);
+        IEnumerable<InvoiceEntity> items = await _dbConnection.QueryAsync<InvoiceEntity>(dataSql, parameters);
 
-    public async Task<IEnumerable<InvoiceEntity>> GetByCustomerId(Guid customerId)
-    {
-        string sql = @"SELECT * FROM invoices
-                        WHERE customer_id=@CustomerId";
-
-        return await _dbConnection.QueryAsync<InvoiceEntity>(sql, new { customerId });
-    }
-
-    public async Task<IEnumerable<InvoiceEntity>> Get()
-    {
-        string sql = @"SELECT * FROM invoices";
-
-        return await _dbConnection.QueryAsync<InvoiceEntity>(sql);
+        return (items, totalCount);
     }
 
     public async Task<Guid> Add(InvoiceEntity invoice)

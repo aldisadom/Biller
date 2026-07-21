@@ -1,6 +1,6 @@
 ﻿using Application.Models;
-using Contracts.Requests.User;
-using Contracts.Responses.User;
+using BillerContracts.Requests.User;
+using BillerContracts.Responses.User;
 using Domain.Entities;
 
 namespace Application.MappingProfiles;

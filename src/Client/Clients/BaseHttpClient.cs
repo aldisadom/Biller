@@ -1,4 +1,4 @@
-﻿using Contracts.Responses;
+﻿using BillerContracts.Responses;
 using Domain.Exceptions;
 using Newtonsoft.Json;
 using System.Text;

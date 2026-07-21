@@ -1,6 +1,6 @@
 ﻿using Application.Models;
-using Contracts.Requests.Invoice;
-using Contracts.Responses.Invoice;
+using BillerContracts.Requests.Invoice;
+using BillerContracts.Responses.Invoice;
 using Domain.Entities;
 using Newtonsoft.Json;
 

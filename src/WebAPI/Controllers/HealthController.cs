@@ -1,4 +1,4 @@
-﻿using Contracts.Responses;
+﻿using BillerContracts.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers;

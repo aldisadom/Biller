@@ -1,5 +1,5 @@
 ﻿using Application.Helpers.NumberToWords;
-using Contracts.Enums;
+using BillerContracts.Enums;
 
 namespace Application.Helpers.PriceToWords
 {

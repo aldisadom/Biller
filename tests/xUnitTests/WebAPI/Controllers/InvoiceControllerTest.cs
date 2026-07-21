@@ -1,12 +1,12 @@
 using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using Contracts.Enums;
-using Contracts.Requests.Customer;
-using Contracts.Requests.Invoice;
-using Contracts.Requests.Seller;
-using Contracts.Responses;
-using Contracts.Responses.Invoice;
+using BillerContracts.Enums;
+using BillerContracts.Requests.Customer;
+using BillerContracts.Requests.Invoice;
+using BillerContracts.Requests.Seller;
+using BillerContracts.Responses;
+using BillerContracts.Responses.Invoice;
 using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
@@ -80,7 +80,7 @@ public class InvoiceControllerTest
         var query = new InvoiceGetRequest { UserId = _userId };
 
         _invoiceServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync(invoices);
+            .ReturnsAsync((invoices, invoices.Count));
 
         // Act
         var result = await _invoiceController.Get(query);
@@ -89,7 +89,10 @@ public class InvoiceControllerTest
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new InvoiceListResponse
             {
-                Invoices = invoices.Select(i => i.ToResponse()).ToList()
+                Invoices = invoices.Select(i => i.ToResponse()).ToList(),
+                TotalCount = invoices.Count,
+                Page = query.Page,
+                PageSize = query.PageSize
             });
 
         _invoiceServiceMock.Verify(s => s.Get(query), Times.Once());

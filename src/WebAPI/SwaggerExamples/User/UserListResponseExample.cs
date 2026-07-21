@@ -1,4 +1,4 @@
-﻿using Contracts.Responses.User;
+﻿using BillerContracts.Responses.User;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.User;

@@ -1,9 +1,9 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using Contracts.Requests.Customer;
-using Contracts.Responses;
-using Contracts.Responses.Customer;
+using BillerContracts.Requests.Customer;
+using BillerContracts.Responses;
+using BillerContracts.Responses.Customer;
 using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;

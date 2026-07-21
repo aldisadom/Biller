@@ -5,9 +5,9 @@ using Application.Models;
 using Application.Services;
 using AutoFixture;
 using AutoFixture.Xunit2;
-using Common;
-using Contracts.Enums;
-using Contracts.Requests.Invoice;
+using BillerContracts;
+using BillerContracts.Enums;
+using BillerContracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -153,22 +153,20 @@ public class InvoiceServiceTest
         //Arrange
         InvoiceGetRequest request = new();
 
-        _invoiceDataRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(invoiceDataList);
+        _invoiceDataRepositoryMock.Setup(m => m.Get(null, null, null, request.Page, (int)request.PageSize))
+                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
 
         List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
-        var result = await _invoiceService.Get(request);
+        var (result, totalCount) = await _invoiceService.Get(request);
 
         //Assert
         result.Count().Should().Be(invoiceDataList.Count);
         result.Should().BeEquivalentTo(expectedResult);
+        totalCount.Should().Be(invoiceDataList.Count);
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetBySellerId(It.IsAny<Guid>()), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(null, null, null, request.Page, (int)request.PageSize), Times.Once());
     }
 
     [Theory]
@@ -178,22 +176,20 @@ public class InvoiceServiceTest
         //Arrange
         InvoiceGetRequest? request = null;
 
-        _invoiceDataRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(invoiceDataList);
+        _invoiceDataRepositoryMock.Setup(m => m.Get(null, null, null, 1, (int)PageSize.p25))
+                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
 
         List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
-        var result = await _invoiceService.Get(request);
+        var (result, totalCount) = await _invoiceService.Get(request);
 
         //Assert
         result.Count().Should().Be(invoiceDataList.Count);
         result.Should().BeEquivalentTo(expectedResult);
+        totalCount.Should().Be(invoiceDataList.Count);
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetBySellerId(It.IsAny<Guid>()), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(null, null, null, 1, (int)PageSize.p25), Times.Once());
     }
 
     [Theory]
@@ -206,21 +202,19 @@ public class InvoiceServiceTest
             CustomerId = new Guid()
         };
 
-        _invoiceDataRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.CustomerId!))
-                        .ReturnsAsync(invoiceDataList);
+        _invoiceDataRepositoryMock.Setup(m => m.Get(null, null, request.CustomerId, request.Page, (int)request.PageSize))
+                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
 
         List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
-        var result = await _invoiceService.Get(request);
+        var (result, totalCount) = await _invoiceService.Get(request);
 
         //Assert
         result.Count().Should().Be(invoiceDataList.Count);
+        totalCount.Should().Be(invoiceDataList.Count);
 
-        _invoiceDataRepositoryMock.Verify(m => m.GetByCustomerId((Guid)request.CustomerId!), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Get(), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetBySellerId(It.IsAny<Guid>()), Times.Never());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(null, null, request.CustomerId, request.Page, (int)request.PageSize), Times.Once());
     }
 
     [Theory]
@@ -233,21 +227,19 @@ public class InvoiceServiceTest
             SellerId = new Guid()
         };
 
-        _invoiceDataRepositoryMock.Setup(m => m.GetBySellerId((Guid)request.SellerId!))
-                        .ReturnsAsync(invoiceDataList);
+        _invoiceDataRepositoryMock.Setup(m => m.Get(null, request.SellerId, null, request.Page, (int)request.PageSize))
+                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
 
         List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
-        var result = await _invoiceService.Get(request);
+        var (result, totalCount) = await _invoiceService.Get(request);
 
         //Assert
         result.Count().Should().Be(invoiceDataList.Count);
+        totalCount.Should().Be(invoiceDataList.Count);
 
-        _invoiceDataRepositoryMock.Verify(m => m.GetBySellerId((Guid)request.SellerId!), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Get(), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(null, request.SellerId, null, request.Page, (int)request.PageSize), Times.Once());
     }
 
     [Theory]
@@ -260,21 +252,19 @@ public class InvoiceServiceTest
             UserId = new Guid()
         };
 
-        _invoiceDataRepositoryMock.Setup(m => m.GetByUserId((Guid)request.UserId!))
-                        .ReturnsAsync(invoiceDataList);
+        _invoiceDataRepositoryMock.Setup(m => m.Get(request.UserId, null, null, request.Page, (int)request.PageSize))
+                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
 
         List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
 
         //Act
-        var result = await _invoiceService.Get(request);
+        var (result, totalCount) = await _invoiceService.Get(request);
 
         //Assert
         result.Count().Should().Be(invoiceDataList.Count);
+        totalCount.Should().Be(invoiceDataList.Count);
 
-        _invoiceDataRepositoryMock.Verify(m => m.GetByUserId((Guid)request.UserId!), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Get(), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
-        _invoiceDataRepositoryMock.Verify(m => m.GetBySellerId(It.IsAny<Guid>()), Times.Never());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(request.UserId, null, null, request.Page, (int)request.PageSize), Times.Once());
     }
 
     [Theory]
