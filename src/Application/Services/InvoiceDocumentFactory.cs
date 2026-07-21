@@ -2,7 +2,7 @@
 using Application.Helpers.PriceToWords;
 using Application.Models;
 using Application.Models.Invoice.Documents;
-using Contracts.Enums;
+using BillerContracts.Enums;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 

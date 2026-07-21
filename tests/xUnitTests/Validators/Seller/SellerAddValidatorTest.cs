@@ -1,4 +1,4 @@
-using Contracts.Requests.Seller;
+﻿using BillerContracts.Requests.Seller;
 using FluentAssertions;
 using Validators.Seller;
 

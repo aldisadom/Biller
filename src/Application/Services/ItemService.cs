@@ -1,8 +1,8 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using Common;
-using Contracts.Requests.Item;
+using BillerContracts;
+using BillerContracts.Requests.Item;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;

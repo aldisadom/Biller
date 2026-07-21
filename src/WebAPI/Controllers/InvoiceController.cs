@@ -1,9 +1,10 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using Contracts.Requests.Invoice;
-using Contracts.Responses;
-using Contracts.Responses.Invoice;
+using BillerContracts.Enums;
+using BillerContracts.Requests.Invoice;
+using BillerContracts.Responses;
+using BillerContracts.Responses.Invoice;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
@@ -73,11 +74,14 @@ public class InvoiceController : ControllerBase
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceListResponseExample))]
     public async Task<IActionResult> Get([FromQuery] InvoiceGetRequest? query)
     {
-        IEnumerable<InvoiceModel> invoicesData = await _invoiceService.Get(query);
+        var (invoicesData, totalCount) = await _invoiceService.Get(query);
 
         InvoiceListResponse result = new()
         {
-            Invoices = invoicesData.Select(i => i.ToResponse()).ToList()
+            Invoices = invoicesData.Select(i => i.ToResponse()).ToList(),
+            TotalCount = totalCount,
+            Page = query?.Page ?? 1,
+            PageSize = query?.PageSize ?? PageSize.p25
         };
 
         return Ok(result);

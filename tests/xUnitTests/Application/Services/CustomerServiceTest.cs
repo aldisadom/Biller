@@ -2,8 +2,8 @@
 using Application.Models;
 using Application.Services;
 using AutoFixture.Xunit2;
-using Common;
-using Contracts.Requests.Customer;
+using BillerContracts;
+using BillerContracts.Requests.Customer;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;

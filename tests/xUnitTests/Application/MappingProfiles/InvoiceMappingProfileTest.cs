@@ -1,9 +1,9 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
-using Contracts.Enums;
-using Contracts.Requests.Customer;
-using Contracts.Requests.Invoice;
-using Contracts.Requests.Seller;
+using BillerContracts.Enums;
+using BillerContracts.Requests.Customer;
+using BillerContracts.Requests.Invoice;
+using BillerContracts.Requests.Seller;
 using Domain.Entities;
 using FluentAssertions;
 using Newtonsoft.Json;

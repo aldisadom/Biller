@@ -1,6 +1,6 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
-using Contracts.Requests.User;
+using BillerContracts.Requests.User;
 using Domain.Entities;
 using static xUnitTests.Application.MappingProfiles.MappingTestHelper;
 
