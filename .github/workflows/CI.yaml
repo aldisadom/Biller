@@ -47,7 +47,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Clone BillioIntegrationTest repository
-        run: git clone https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          if git ls-remote --exit-code --heads https://github.com/aldisadom/BillioIntegrationTest.git "$BRANCH" >/dev/null 2>&1; then
+            echo "Branch '$BRANCH' found in BillioIntegrationTest, cloning it"
+            git clone --branch "$BRANCH" --single-branch https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
+          else
+            echo "Branch '$BRANCH' not found in BillioIntegrationTest, cloning default branch"
+            git clone https://github.com/aldisadom/BillioIntegrationTest.git ./BillioIntegrationTest
+          fi
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
