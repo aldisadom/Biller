@@ -1,6 +1,6 @@
-﻿using Contracts.Requests.Customer;
-using Contracts.Requests.Invoice;
-using Contracts.Requests.Seller;
+﻿using BillerContracts.Requests.Customer;
+using BillerContracts.Requests.Invoice;
+using BillerContracts.Requests.Seller;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.Invoice;

@@ -1,6 +1,6 @@
 ﻿using Application.Models;
-using Common;
-using Contracts.Requests.Seller;
+using BillerContracts;
+using BillerContracts.Requests.Seller;
 
 namespace Application.Interfaces
 {

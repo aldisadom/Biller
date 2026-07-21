@@ -1,6 +1,6 @@
 ﻿using Application.Models;
-using Contracts.Requests.Seller;
-using Contracts.Responses.Seller;
+using BillerContracts.Requests.Seller;
+using BillerContracts.Responses.Seller;
 using Domain.Entities;
 
 namespace Application.MappingProfiles;

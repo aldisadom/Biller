@@ -1,4 +1,4 @@
-﻿using Contracts.Enums;
+﻿using BillerContracts.Enums;
 using Domain.Entities;
 
 namespace Domain.Repositories
@@ -7,11 +7,8 @@ namespace Domain.Repositories
     {
         Task<Guid> Add(InvoiceEntity invoice);
         Task Delete(Guid id);
-        Task<IEnumerable<InvoiceEntity>> Get();
+        Task<(IEnumerable<InvoiceEntity>, int)> Get(Guid? userId, Guid? sellerId, Guid? customerId, int page, int pageSize);
         Task<InvoiceEntity?> Get(Guid id);
-        Task<IEnumerable<InvoiceEntity>> GetByUserId(Guid userId);
-        Task<IEnumerable<InvoiceEntity>> GetBySellerId(Guid sellerId);
-        Task<IEnumerable<InvoiceEntity>> GetByCustomerId(Guid customerId);
         Task Update(InvoiceEntity invoice);
         Task UpdateStatus(Guid id, InvoiceStatus status);
     }

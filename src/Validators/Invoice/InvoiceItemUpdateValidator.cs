@@ -1,4 +1,4 @@
-﻿using Contracts.Requests.Invoice;
+﻿using BillerContracts.Requests.Invoice;
 using FluentValidation;
 
 namespace Validators.Invoice;

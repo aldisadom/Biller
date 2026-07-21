@@ -1,8 +1,8 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using Contracts.Enums;
-using Contracts.Requests.Invoice;
+using BillerContracts.Enums;
+using BillerContracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -82,22 +82,15 @@ public class InvoiceService : IInvoiceService
         return invoiceDataEntity.ToModel();
     }
 
-    public async Task<IEnumerable<InvoiceModel>> Get(InvoiceGetRequest? query)
+    public async Task<(IEnumerable<InvoiceModel>, int)> Get(InvoiceGetRequest? query)
     {
-        IEnumerable<InvoiceEntity> invoiceDataEntities;
+        int page = query?.Page ?? 1;
+        var pageSize = query?.PageSize ?? PageSize.p25;
 
-        if (query is null)
-            invoiceDataEntities = await _invoiceRepository.Get();
-        else if (query.CustomerId is not null)
-            invoiceDataEntities = await _invoiceRepository.GetByCustomerId((Guid)query.CustomerId);
-        else if (query.SellerId is not null)
-            invoiceDataEntities = await _invoiceRepository.GetBySellerId((Guid)query.SellerId);
-        else if (query.UserId is not null)
-            invoiceDataEntities = await _invoiceRepository.GetByUserId((Guid)query.UserId);
-        else
-            invoiceDataEntities = await _invoiceRepository.Get();
+        var (entities, totalCount) = await _invoiceRepository.Get(
+            query?.UserId, query?.SellerId, query?.CustomerId, page, (int)pageSize);
 
-        return invoiceDataEntities.Select(i => i.ToModel());
+        return (entities.Select(i => i.ToModel()), totalCount);
     }
 
     public async Task<Guid> Add(InvoiceModel invoiceData)

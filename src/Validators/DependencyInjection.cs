@@ -1,8 +1,8 @@
-﻿using Contracts.Requests.Customer;
-using Contracts.Requests.Invoice;
-using Contracts.Requests.Item;
-using Contracts.Requests.Seller;
-using Contracts.Requests.User;
+﻿using BillerContracts.Requests.Customer;
+using BillerContracts.Requests.Invoice;
+using BillerContracts.Requests.Item;
+using BillerContracts.Requests.Seller;
+using BillerContracts.Requests.User;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Validators.Customer;

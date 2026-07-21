@@ -1,7 +1,7 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
-using Contracts.Requests.Seller;
-using Contracts.Responses.Seller;
+using BillerContracts.Requests.Seller;
+using BillerContracts.Responses.Seller;
 using Domain.Entities;
 using static xUnitTests.Application.MappingProfiles.MappingTestHelper;
 

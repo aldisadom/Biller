@@ -1,9 +1,9 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using Contracts.Requests.Seller;
-using Contracts.Responses;
-using Contracts.Responses.Seller;
+using BillerContracts.Requests.Seller;
+using BillerContracts.Responses;
+using BillerContracts.Responses.Seller;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
