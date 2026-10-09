@@ -38,7 +38,7 @@ public class CustomerComponent : IComponent
 
             column.Item().Text(text =>
             {
-                text.Span($"{_texts.Phone()}.: ").Bold();
+                text.Span($"{_texts.Phone()}: ").Bold();
                 text.Span($"{_customer.Phone}");
             });
 
