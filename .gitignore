@@ -33,7 +33,9 @@ bld/
 [Ll]og/
 [Ll]ogs/
 .idea/
-.claude/
+# Claude Code: keep local settings/state out, share project skills
+.claude/*
+!.claude/skills/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

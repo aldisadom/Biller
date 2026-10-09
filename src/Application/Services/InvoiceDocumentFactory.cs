@@ -28,7 +28,7 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
         var document = GetDocument(languageCode, documentType, invoiceData, texts);
 
         string path = invoiceData.GenerateFileLocation();
-        MemoryStream stream =  new MemoryStream();
+        MemoryStream stream = new();
         document.GeneratePdf(stream);
 
         return stream;
