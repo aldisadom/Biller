@@ -11,7 +11,7 @@ The repo is a .NET 8 solution (`Billio.sln`) with one unit-test project, `tests/
 
 ## Run it
 
-```bash22
+```bash
 bash .claude/skills/test-coverage/scripts/run-coverage.sh                  # full suite + report
 bash .claude/skills/test-coverage/scripts/run-coverage.sh --filter "FullyQualifiedName~ItemService"   # subset
 bash .claude/skills/test-coverage/scripts/run-coverage.sh --no-report      # tests only, faster

@@ -31,7 +31,7 @@ language is spoken in several countries, ask the user which country's code to us
 
 Before starting, confirm with the user: the language and its ISO 3166-1 alpha-2 code, whether they have
 authoritative translations for the legal labels (invoice titles and seller/buyer terms have legal
-meaning; machine translation is a draft to be checked), and the currency wording.22
+meaning; machine translation is a draft to be checked), and the currency wording.
 
 ## 1. Labels
 
