@@ -61,3 +61,6 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+# Shell scripts must keep LF endings (used from WSL/Linux, e.g. .claude/skills/*/scripts)
+*.sh text eol=lf
