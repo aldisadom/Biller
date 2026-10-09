@@ -61,4 +61,32 @@ public class UserSwaggerExampleTest
         //Assert
         nullProperties.Should().BeEmpty();
     }
+
+    [Fact]
+    public void UserLoginRequestExample_ReturnEmptyList()
+    {
+        //Arrange
+        UserLoginRequestExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
+
+        //Assert
+        nullProperties.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UserLoginResponseExample_ReturnEmptyList()
+    {
+        //Arrange
+        UserLoginResponseExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
+
+        //Assert
+        nullProperties.Should().BeEmpty();
+    }
 }

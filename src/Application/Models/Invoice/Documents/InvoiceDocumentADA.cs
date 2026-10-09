@@ -77,9 +77,9 @@ public class InvoiceDocumentADA : IDocument
             {
                 columns.ConstantColumn(25);
 
-                columns.RelativeColumn(20);
+                columns.RelativeColumn(19);
                 columns.RelativeColumn(5);
-                columns.RelativeColumn(3);
+                columns.RelativeColumn(4);
                 columns.RelativeColumn(6);
             });
 
