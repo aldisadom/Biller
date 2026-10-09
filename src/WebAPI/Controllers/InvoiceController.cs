@@ -118,7 +118,7 @@ public class InvoiceController : ControllerBase
     {
         _validatorGenerate.CheckValidation(query);
         var (stream, fileName) = await _invoiceService.GeneratePDF(query.Id, query.LanguageCode, query.DocumentType);
-        
+
         return File(stream, "application/pdf", fileName);
     }
 

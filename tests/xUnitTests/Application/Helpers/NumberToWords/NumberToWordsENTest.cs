@@ -179,7 +179,7 @@ public class NumberToWordsENTest
     [InlineData(70, false, "seventy")]
     [InlineData(80, false, "eighty")]
     [InlineData(90, false, "ninety")]
-public void TensSplit_GivenValidNumber_ReturnsResult(int number, bool hasBefore, string expectedWord)
+    public void TensSplit_GivenValidNumber_ReturnsResult(int number, bool hasBefore, string expectedWord)
     {
         //Arrange
         //Act
