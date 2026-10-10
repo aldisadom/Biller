@@ -1,5 +1,4 @@
 ﻿using Application;
-using Clients;
 using Domain.IOptions;
 using Infrastructure;
 using Microsoft.Extensions.Options;
@@ -28,7 +27,6 @@ public static class StartupInjection
         services.AddHttpClient()
                 .Configure<PasswordEncryption>(configuration.GetSection("PasswordEncryption"))
                 .AddApplication()
-                .AddClients()
                 .AddInfrastructure(dbConnectionString)
                 .Configure<FontSettings>(configuration.GetSection("FontSettings"))
                 .AddPdfGenerator(services.BuildServiceProvider().GetRequiredService<IOptions<FontSettings>>())
