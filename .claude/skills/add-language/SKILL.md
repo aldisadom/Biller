@@ -70,7 +70,8 @@ Add the case to both switches. The `_ => throw NotSupportedException` default mu
 
 ## 5. Tests: be generous
 
-Mirror `NumberToWordsLTTest` / `PriceToWordsLTTest`, with dozens of `[InlineData]` rows, not a handful.
+Follow the `write-tests` skill for test conventions. Mirror `NumberToWordsLTTest` /
+`PriceToWordsLTTest`, with dozens of `[InlineData]` rows, not a handful.
 Cover at least: 0, 1, 2, 5, 10, 11, 12, 19, 20, 21, 22, 99, 100, 101, 111, 200, 999, 1 000, 1 001, 2 000,
 5 000, 11 000, 21 000, 100 000, 999 999, 1 000 000, 1 000 001, 2 000 000, 21 000 000,
 999 999 999, out-of-range throws, and price decoding with 0, .01, .10, .99, and truncation

@@ -38,8 +38,6 @@ public class InvoiceValidator : AbstractValidator<InvoiceModel>
     public async Task<bool> IsValidItemsId(List<Guid> itemIds, Guid customer)
     {
         var items = await _item.GetByCustomerId(customer);
-        return false;
-        //return items.con(x => itemIds(y=> y == x.Id)).Count() == itemIds.Count;
-
+        return itemIds.All(id => items.Any(x => x.Id == id));
     }
 }
