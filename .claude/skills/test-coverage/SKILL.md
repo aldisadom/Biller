@@ -54,24 +54,6 @@ instead of linking.
 
 ## Writing missing tests
 
-When asked to close a gap, mirror the existing test style in the matching folder:
-
-- Services (`tests/xUnitTests/Application/Services`): `Mock<IXRepository>(MockBehavior.Strict)`,
-  `[Theory, AutoData]` for inputs (`[AutoDataWithDateOnly]` from `tests/xUnitTests/Helpers` when
-  a type has `DateOnly` properties), `//Arrange //Act //Assert` comments, FluentAssertions
-  `Should().BeEquivalentTo`, and `Verify(..., Times.Once())` on every set-up call.
-  Names: `Method_GivenCondition_ExpectedResult`.
-- Controllers (`tests/xUnitTests/WebAPI/Controllers`): strict mocks for the service and each
-  `IValidator<T>`, a loose `Mock<ILogger<XController>>`, assert the `IActionResult` type
-  (`OkObjectResult`, `CreatedAtActionResult`, `NoContentResult`) and its value against
-  `model.ToResponse()`, then `VerifyNoOtherCalls()`.
-- Validators (`tests/xUnitTests/Validators/<Entity>`): a `ValidRequest()` factory, one test proving
-  it is valid, then one test per rule that breaks a single field and asserts
-  `result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Field))`; boundary values via
-  `[Theory, InlineData]`.
-- Mapping extensions (`.../MappingProfiles`): build the source by hand with every property
-  non-default, then `MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo | UsedAllFrom)`.
-- Swagger examples (`tests/xUnitTests/WebAPI/Swagger`): `NullChecker.GetNullOrEmptyProperties`
-  must return empty.
-
+When asked to close a gap, write the tests with the `write-tests` skill, which holds the test
+conventions (no AutoFixture, strict mocks with `Verify`, `MemberData` theories, per-layer patterns).
 Re-run the script afterwards to confirm the new tests pass and the number moved.

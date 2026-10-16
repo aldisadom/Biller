@@ -1,4 +1,3 @@
-using AutoFixture.Xunit2;
 using Domain.Entities;
 using Domain.Repositories;
 using FluentAssertions;
@@ -23,28 +22,26 @@ public class InvoiceValidatorTest
         _validator = new InvoiceValidator(_customerRepositoryMock.Object, _sellerRepositoryMock.Object, _itemRepositoryMock.Object);
     }
 
-    [Theory]
-    [AutoData]
-    public async Task IsValidSellerId_GivenUsersSeller_ReturnsTrue(List<SellerEntity> sellers, Guid userId)
+    public static IEnumerable<object[]> GetSellerTestData()
     {
-        //Arrange
-        _sellerRepositoryMock.Setup(m => m.GetByUserId(userId))
-                        .ReturnsAsync(sellers);
+        SellerEntity seller = new() { Id = Guid.NewGuid() };
+        SellerEntity otherSeller = new() { Id = Guid.NewGuid() };
 
-        //Act
-        bool result = await _validator.IsValidSellerId(sellers[1].Id, userId);
-
-        //Assert
-        result.Should().BeTrue();
-
-        _sellerRepositoryMock.Verify(m => m.GetByUserId(userId), Times.Once());
+        // users seller
+        yield return new object[] { new List<SellerEntity> { otherSeller, seller }, seller.Id, true };
+        // other seller
+        yield return new object[] { new List<SellerEntity> { seller }, Guid.NewGuid(), false };
+        // no sellers
+        yield return new object[] { new List<SellerEntity>(), Guid.NewGuid(), false };
     }
 
     [Theory]
-    [AutoData]
-    public async Task IsValidSellerId_GivenOtherSeller_ReturnsFalse(List<SellerEntity> sellers, Guid userId, Guid sellerId)
+    [MemberData(nameof(GetSellerTestData))]
+    public async Task IsValidSellerId_GivenUsersSellers_ReturnsExpected(List<SellerEntity> sellers, Guid sellerId, bool expected)
     {
         //Arrange
+        Guid userId = Guid.NewGuid();
+
         _sellerRepositoryMock.Setup(m => m.GetByUserId(userId))
                         .ReturnsAsync(sellers);
 
@@ -52,50 +49,31 @@ public class InvoiceValidatorTest
         bool result = await _validator.IsValidSellerId(sellerId, userId);
 
         //Assert
-        result.Should().BeFalse();
+        result.Should().Be(expected);
 
         _sellerRepositoryMock.Verify(m => m.GetByUserId(userId), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task IsValidSellerId_GivenNoSellers_ReturnsFalse(Guid userId, Guid sellerId)
+    public static IEnumerable<object[]> GetCustomerTestData()
     {
-        //Arrange
-        _sellerRepositoryMock.Setup(m => m.GetByUserId(userId))
-                        .ReturnsAsync([]);
+        CustomerEntity customer = new() { Id = Guid.NewGuid() };
+        CustomerEntity otherCustomer = new() { Id = Guid.NewGuid() };
 
-        //Act
-        bool result = await _validator.IsValidSellerId(sellerId, userId);
-
-        //Assert
-        result.Should().BeFalse();
-
-        _sellerRepositoryMock.Verify(m => m.GetByUserId(userId), Times.Once());
+        // sellers customer
+        yield return new object[] { new List<CustomerEntity> { otherCustomer, customer }, customer.Id, true };
+        // other customer
+        yield return new object[] { new List<CustomerEntity> { customer }, Guid.NewGuid(), false };
+        // no customers
+        yield return new object[] { new List<CustomerEntity>(), Guid.NewGuid(), false };
     }
 
     [Theory]
-    [AutoData]
-    public async Task IsValidCustomerId_GivenSellersCustomer_ReturnsTrue(List<CustomerEntity> customers, Guid sellerId)
+    [MemberData(nameof(GetCustomerTestData))]
+    public async Task IsValidCustomerId_GivenSellersCustomers_ReturnsExpected(List<CustomerEntity> customers, Guid customerId, bool expected)
     {
         //Arrange
-        _customerRepositoryMock.Setup(m => m.GetBySellerId(sellerId))
-                        .ReturnsAsync(customers);
+        Guid sellerId = Guid.NewGuid();
 
-        //Act
-        bool result = await _validator.IsValidCustomerId(customers[0].Id, sellerId);
-
-        //Assert
-        result.Should().BeTrue();
-
-        _customerRepositoryMock.Verify(m => m.GetBySellerId(sellerId), Times.Once());
-    }
-
-    [Theory]
-    [AutoData]
-    public async Task IsValidCustomerId_GivenOtherCustomer_ReturnsFalse(List<CustomerEntity> customers, Guid sellerId, Guid customerId)
-    {
-        //Arrange
         _customerRepositoryMock.Setup(m => m.GetBySellerId(sellerId))
                         .ReturnsAsync(customers);
 
@@ -103,62 +81,40 @@ public class InvoiceValidatorTest
         bool result = await _validator.IsValidCustomerId(customerId, sellerId);
 
         //Assert
-        result.Should().BeFalse();
+        result.Should().Be(expected);
 
         _customerRepositoryMock.Verify(m => m.GetBySellerId(sellerId), Times.Once());
     }
 
+    public static IEnumerable<object[]> GetItemsTestData()
+    {
+        ItemEntity firstItem = new() { Id = Guid.NewGuid() };
+        ItemEntity secondItem = new() { Id = Guid.NewGuid() };
+        ItemEntity unusedItem = new() { Id = Guid.NewGuid() };
+
+        // subset of customers items
+        yield return new object[] { new List<ItemEntity> { firstItem, unusedItem, secondItem }, new List<Guid> { firstItem.Id, secondItem.Id }, true };
+        // one foreign item
+        yield return new object[] { new List<ItemEntity> { firstItem }, new List<Guid> { firstItem.Id, Guid.NewGuid() }, false };
+        // no customer items
+        yield return new object[] { new List<ItemEntity>(), new List<Guid> { Guid.NewGuid() }, false };
+    }
+
     [Theory]
-    [AutoData]
-    public async Task IsValidItemsId_GivenAllCustomersItems_ReturnsTrue(List<ItemEntity> items, Guid customerId)
+    [MemberData(nameof(GetItemsTestData))]
+    public async Task IsValidItemsId_GivenCustomersItems_ReturnsExpected(List<ItemEntity> items, List<Guid> itemIds, bool expected)
     {
         //Arrange
+        Guid customerId = Guid.NewGuid();
+
         _itemRepositoryMock.Setup(m => m.GetByCustomerId(customerId))
                         .ReturnsAsync(items);
-
-        List<Guid> itemIds = [items[0].Id, items[2].Id];
 
         //Act
         bool result = await _validator.IsValidItemsId(itemIds, customerId);
 
         //Assert
-        result.Should().BeTrue();
-
-        _itemRepositoryMock.Verify(m => m.GetByCustomerId(customerId), Times.Once());
-    }
-
-    [Theory]
-    [AutoData]
-    public async Task IsValidItemsId_GivenOneForeignItem_ReturnsFalse(List<ItemEntity> items, Guid customerId, Guid foreignItemId)
-    {
-        //Arrange
-        _itemRepositoryMock.Setup(m => m.GetByCustomerId(customerId))
-                        .ReturnsAsync(items);
-
-        List<Guid> itemIds = [items[0].Id, foreignItemId];
-
-        //Act
-        bool result = await _validator.IsValidItemsId(itemIds, customerId);
-
-        //Assert
-        result.Should().BeFalse();
-
-        _itemRepositoryMock.Verify(m => m.GetByCustomerId(customerId), Times.Once());
-    }
-
-    [Theory]
-    [AutoData]
-    public async Task IsValidItemsId_GivenNoCustomerItems_ReturnsFalse(Guid customerId, Guid itemId)
-    {
-        //Arrange
-        _itemRepositoryMock.Setup(m => m.GetByCustomerId(customerId))
-                        .ReturnsAsync([]);
-
-        //Act
-        bool result = await _validator.IsValidItemsId([itemId], customerId);
-
-        //Assert
-        result.Should().BeFalse();
+        result.Should().Be(expected);
 
         _itemRepositoryMock.Verify(m => m.GetByCustomerId(customerId), Times.Once());
     }

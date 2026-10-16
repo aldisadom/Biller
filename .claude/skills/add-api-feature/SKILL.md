@@ -107,19 +107,15 @@ Steps:
 
 ## 7. Tests (`tests/xUnitTests`)
 
-Mirror the Item tests one-for-one:
-- `Application/Services/<X>ServiceTest.cs`: strict repository mock, `[Theory, AutoData]`, verify calls,
-  plus a `NotFoundException` case for get/update/delete.
-- `Application/MappingProfiles/<X>MappingProfileTest.cs`: one test per extension method via
-  `MappingTestHelper.TestMapp` (`MappedAllTo` for model/entity/response, `UsedAllFrom` for requests).
-- `Validators/<X>/<X>AddValidatorTest.cs` etc.: a `ValidRequest()` factory, a valid case, and one
-  failing case per rule asserting on `PropertyName`.
-- `WebAPI/Controllers/<X>ControllerTest.cs`: strict service and validator mocks. Validator mocks
-  set up `Validate(request)` to return `new ValidationResult()`. Assert the result type and value,
-  then `VerifyNoOtherCalls()`.
-- `WebAPI/Swagger/<X>SwaggerExampleTest.cs`: one `NullChecker` test per example. Instantiate the
-  **right** example class; copy-paste slips here have happened before.
-- `Application/DependencyInjectionTests.cs`: add asserts for the new repository and service.
+Write them with the `write-tests` skill, which has the conventions and per-layer patterns. The Item
+tests show which files a feature needs, but don't copy their AutoData usage. A new resource needs:
+- `Application/Services/<X>ServiceTest.cs`, including a `NotFoundException` case for get/update/delete.
+- `Application/MappingProfiles/<X>MappingProfileTest.cs`: one test per extension method.
+- `Validators/<X>/<X>AddValidatorTest.cs`, `<X>UpdateValidatorTest.cs`.
+- `WebAPI/Controllers/<X>ControllerTest.cs`.
+- `WebAPI/Swagger/<X>SwaggerExampleTest.cs`: one test per example.
+- Asserts for the new registrations in `Application/DependencyInjectionTests.cs` and
+  `Validators/DependencyInjectionTests.cs`.
 
 ## 8. Verify
 
