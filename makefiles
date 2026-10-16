@@ -1,6 +1,0 @@
-run:
-	docker rmi webapi --force
-	docker compose up -d
-
-test:
-	dotnet test tests/xUnitTests/xUnitTests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura --collect:"XPlat Code Coverage"
