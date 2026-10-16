@@ -18,8 +18,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "xUnitTests", "tests\xUnitTe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "src\Infrastructure\Infrastructure.csproj", "{4ED21597-9409-4C3D-8BB8-D61F67A9EC5C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Clients", "src\Client\Clients.csproj", "{20997BC4-1976-419E-99A8-296EB335529C}"
-EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{E609DF34-75C8-4364-91B4-9B0FBA5CEAD7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validators", "src\Validators\Validators.csproj", "{A3F8A542-5DA0-4C86-A15A-F8EC905729EB}"
@@ -50,10 +48,6 @@ Global
 		{4ED21597-9409-4C3D-8BB8-D61F67A9EC5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4ED21597-9409-4C3D-8BB8-D61F67A9EC5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4ED21597-9409-4C3D-8BB8-D61F67A9EC5C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{20997BC4-1976-419E-99A8-296EB335529C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{20997BC4-1976-419E-99A8-296EB335529C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{20997BC4-1976-419E-99A8-296EB335529C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{20997BC4-1976-419E-99A8-296EB335529C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E609DF34-75C8-4364-91B4-9B0FBA5CEAD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E609DF34-75C8-4364-91B4-9B0FBA5CEAD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E609DF34-75C8-4364-91B4-9B0FBA5CEAD7}.Release|Any CPU.ActiveCfg = Release|Any CPU

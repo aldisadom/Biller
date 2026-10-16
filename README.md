@@ -55,7 +55,6 @@ Biller is a modular, multi-layered billing and invoicing platform. It features a
 ## Project Structure
 
 - `src/Application` – Business logic, use cases, and application services.
-- `src/Client` – .NET HTTP clients for external API calls.
 - `src/Common` – Shared types and utilities.
 - `src/Contracts` – Interfaces and data contracts for API and domain exchange.
 - `src/Domain` – Core domain models, aggregates, and logic.

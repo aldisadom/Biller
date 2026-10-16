@@ -61,4 +61,18 @@ public class InvoiceSwaggerExampleTest
         //Assert
         nullProperties.Should().BeEmpty();
     }
+
+    [Fact]
+    public void InvoiceUpdateStatusRequestExample_ReturnEmptyList()
+    {
+        //Arrange
+        InvoiceUpdateStatusRequestExample example = new();
+
+        //Act
+        var exampleValues = example.GetExamples();
+        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
+
+        //Assert
+        nullProperties.Should().BeEmpty();
+    }
 }

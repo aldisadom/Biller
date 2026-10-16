@@ -257,8 +257,7 @@ public class InvoiceMappingProfileTest
 
         var itemsUpdate = new List<InvoiceItemUpdateRequest>
         {
-            new InvoiceItemUpdateRequest
-            {
+            new() {
                 Id = Guid.NewGuid(),
                 Name = "ItemUpdateName",
                 Quantity = 6699,

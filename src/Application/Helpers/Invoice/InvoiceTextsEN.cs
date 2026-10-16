@@ -17,7 +17,7 @@ public readonly struct InvoiceTextsEN : IInvoiceTexts
     public string InvoiceSeries() => "Series";
     public string NumberShort() => "No.";
     public string CreationDate() => "Issue date";
-    public string DueDate() => "Payement due date";
+    public string DueDate() => "Payment due date";
     public string ItemName() => "Goods, property or service description";
     public string ItemPrice() => $"Unit price, {Currency()}";
     public string Amount() => "Quantity";

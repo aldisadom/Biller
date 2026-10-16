@@ -2,7 +2,6 @@ using Application;
 using Application.Helpers.PriceToWords;
 using Application.Interfaces;
 using Application.Services;
-using Clients;
 using Domain.IOptions;
 using Domain.Repositories;
 using Infrastructure;
@@ -92,21 +91,6 @@ public class DependencyInjectionTests
         var priceToWordsFactory = scopedServiceProvider.GetService<IPriceToWordsFactory>();
         Assert.NotNull(priceToWordsFactory);
         Assert.IsType<PriceToWordsFactory>(priceToWordsFactory);
-    }
-
-    [Fact]
-    public void AddClients_ShouldRegisterClientServices()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        var initialServiceCount = services.Count;
-
-        // Act
-        services.AddClients();
-        var finalServiceCount = services.Count;
-
-        // Assert
-        Assert.Equal(initialServiceCount, finalServiceCount);
     }
 
     [Fact]
