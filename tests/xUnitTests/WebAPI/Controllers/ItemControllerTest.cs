@@ -40,7 +40,7 @@ public class ItemControllerTest
     [Fact]
     public async Task Get_GivenValidId_ReturnsOkWithItemResponse()
     {
-        // Arrange
+        //Arrange
         var item = new ItemModel
         {
             Id = _item1Id,
@@ -50,10 +50,10 @@ public class ItemControllerTest
         _itemServiceMock.Setup(s => s.Get(item.Id))
             .ReturnsAsync(item);
 
-        // Act
+        //Act
         var result = await _itemController.Get(item.Id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(item.ToResponse());
 
@@ -64,7 +64,7 @@ public class ItemControllerTest
     [Fact]
     public async Task Get_GivenQuery_ReturnsOkWithItemListResponse()
     {
-        // Arrange
+        //Arrange
         var items = new List<ItemModel>
         {
             new() { Id = _item1Id, CustomerId = _customerId },
@@ -75,10 +75,10 @@ public class ItemControllerTest
         _itemServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync(items);
 
-        // Act
+        //Act
         var result = await _itemController.Get(query);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new ItemListResponse
             {
@@ -92,7 +92,7 @@ public class ItemControllerTest
     [Fact]
     public async Task Add_GivenValidRequest_ReturnsCreatedWithAddResponse()
     {
-        // Arrange
+        //Arrange
         var request = new ItemAddRequest
         {
             CustomerId = _customerId
@@ -103,10 +103,10 @@ public class ItemControllerTest
         _itemServiceMock.Setup(s => s.Add(It.Is<ItemModel>(m => m.CustomerId == _customerId)))
             .ReturnsAsync(_item1Id);
 
-        // Act
+        //Act
         var result = await _itemController.Add(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<CreatedAtActionResult>()
             .Which.Value.Should().BeEquivalentTo(new AddResponse { Id = _item1Id });
 
@@ -119,7 +119,7 @@ public class ItemControllerTest
     [Fact]
     public async Task Update_GivenValidRequest_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var request = new ItemUpdateRequest
         {
             Id = _item1Id
@@ -130,10 +130,10 @@ public class ItemControllerTest
         _itemServiceMock.Setup(s => s.Update(It.Is<ItemModel>(m => m.Id == _item1Id)))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _itemController.Update(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
@@ -145,19 +145,59 @@ public class ItemControllerTest
     [Fact]
     public async Task Delete_GivenValidId_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var id = Guid.NewGuid();
 
         _itemServiceMock.Setup(s => s.Delete(id))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _itemController.Delete(id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _itemServiceMock.Verify(s => s.Delete(id), Times.Once());
+        _itemServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Add_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new ItemAddRequest();
+
+        _validatorAddMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.Name), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _itemController.Add(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorAddMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorAddMock.VerifyNoOtherCalls();
+        _itemServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Update_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new ItemUpdateRequest();
+
+        _validatorUpdateMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.Id), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _itemController.Update(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorUpdateMock.VerifyNoOtherCalls();
         _itemServiceMock.VerifyNoOtherCalls();
     }
 }
