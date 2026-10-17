@@ -13,76 +13,73 @@ namespace xUnitTests.Application.MappingProfiles;
 
 public class InvoiceMappingProfileTest
 {
-    private static readonly UserModel userModel;
-    private static readonly SellerModel sellerModel;
-    private static readonly CustomerModel customerModel;
-    private static readonly List<InvoiceItemModel> invoiceItems;
-
-    static InvoiceMappingProfileTest()
+    private static UserModel NewUser() => new UserModel
     {
-        userModel = new UserModel
+        Id = Guid.NewGuid(),
+        Name = "UserName",
+        LastName = "UserLastName",
+        Email = "user@email.com"
+    };
+
+    private static SellerModel NewSeller(Guid userId) => new SellerModel
+    {
+        Id = Guid.NewGuid(),
+        UserId = userId,
+        CompanyName = "CompanyName",
+        CompanyNumber = "123456",
+        Street = "Main St",
+        City = "Vilnius",
+        State = "LT",
+        Email = "test@email.com",
+        Phone = "+37060000000",
+        BankName = "Bank",
+        BankNumber = "IBan"
+    };
+
+    private static CustomerModel NewCustomer(Guid sellerId) => new CustomerModel
+    {
+        Id = Guid.NewGuid(),
+        SellerId = sellerId,
+        CompanyName = "CompanyName",
+        CompanyNumber = "123456",
+        Street = "Main St",
+        City = "Vilnius",
+        State = "LT",
+        Email = "test@email.com",
+        Phone = "+37060000000",
+        InvoiceName = "INV",
+        InvoiceNumber = 6
+    };
+
+    private static List<InvoiceItemModel> NewItems() =>
+    [
+        new InvoiceItemModel
         {
             Id = Guid.NewGuid(),
-            Name = "UserName",
-            LastName = "UserLastName",
-            Email = "user@email.com"
-        };
-
-        sellerModel = new SellerModel
+            Name = "Item 1",
+            Quantity = 1,
+            Price = 10.5m,
+            Comments = "Item 1 comment",
+        },
+        new InvoiceItemModel
         {
             Id = Guid.NewGuid(),
-            UserId = userModel.Id,
-            CompanyName = "CompanyName",
-            CompanyNumber = "123456",
-            Street = "Main St",
-            City = "Vilnius",
-            State = "LT",
-            Email = "test@email.com",
-            Phone = "+37060000000",
-            BankName = "Bank",
-            BankNumber = "IBan"
-        };
-
-        customerModel = new CustomerModel
-        {
-            Id = Guid.NewGuid(),
-            SellerId = sellerModel.Id,
-            CompanyName = "CompanyName",
-            CompanyNumber = "123456",
-            Street = "Main St",
-            City = "Vilnius",
-            State = "LT",
-            Email = "test@email.com",
-            Phone = "+37060000000",
-            InvoiceName = "INV",
-            InvoiceNumber = 6
-        };
-
-        invoiceItems =
-        [
-            new InvoiceItemModel
-            {
-                Id = Guid.NewGuid(),
-                Name = "Item 1",
-                Quantity = 1,
-                Price = 10.5m,
-                Comments = "Item 1 comment",
-            },
-            new InvoiceItemModel
-            {
-                Id = Guid.NewGuid(),
-                Name = "Item 2",
-                Quantity = 2,
-                Price = 20.5m,
-                Comments = "Item 2 comment",
-            }
-        ];
-    }
+            Name = "Item 2",
+            Quantity = 2,
+            Price = 20.5m,
+            Comments = "Item 2 comment",
+        }
+    ];
 
     [Fact]
     public void ToEntity_GivenModel_MapsAllProperties()
     {
         // Arrange
+        UserModel userModel = NewUser();
+        SellerModel sellerModel = NewSeller(userModel.Id);
+        CustomerModel customerModel = NewCustomer(sellerModel.Id);
+        List<InvoiceItemModel> invoiceItems = NewItems();
+
         var from = new InvoiceModel
         {
             Id = Guid.NewGuid(),
@@ -137,6 +134,11 @@ public class InvoiceMappingProfileTest
     public void ToModel_GivenEntity_MapsAllProperties()
     {
         // Arrange
+        UserModel userModel = NewUser();
+        SellerModel sellerModel = NewSeller(userModel.Id);
+        CustomerModel customerModel = NewCustomer(sellerModel.Id);
+        List<InvoiceItemModel> invoiceItems = NewItems();
+
         var from = new InvoiceEntity
         {
             Id = Guid.NewGuid(),
@@ -183,6 +185,11 @@ public class InvoiceMappingProfileTest
     public void ToModel_GivenAddRequest_MapsAllProperties()
     {
         // Arrange
+        UserModel userModel = NewUser();
+        SellerModel sellerModel = NewSeller(userModel.Id);
+        CustomerModel customerModel = NewCustomer(sellerModel.Id);
+        List<InvoiceItemModel> invoiceItems = NewItems();
+
         var from = new InvoiceAddRequest
         {
             UserId = userModel.Id,
@@ -302,6 +309,11 @@ public class InvoiceMappingProfileTest
     public void ToResponse_GivenModel_MapsAllProperties()
     {
         // Arrange
+        UserModel userModel = NewUser();
+        SellerModel sellerModel = NewSeller(userModel.Id);
+        CustomerModel customerModel = NewCustomer(sellerModel.Id);
+        List<InvoiceItemModel> invoiceItems = NewItems();
+
         var from = new InvoiceModel
         {
             Id = Guid.NewGuid(),
