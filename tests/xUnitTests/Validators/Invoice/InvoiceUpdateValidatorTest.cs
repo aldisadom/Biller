@@ -113,8 +113,8 @@ public class InvoiceUpdateValidatorTest
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
+    [InlineData(0, Label = "zero invoice number is rejected")]
+    [InlineData(-1, Label = "negative invoice number is rejected")]
     public void Validate_InvoiceNumberNotGreaterThanZero_IsInvalid(int invoiceNumber)
     {
         // Arrange

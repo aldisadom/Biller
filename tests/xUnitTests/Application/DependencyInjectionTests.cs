@@ -127,10 +127,10 @@ public class DependencyInjectionTests
     }
 
     [Theory]
-    [InlineData(null, "calibri")]
-    [InlineData("", "calibri")]
-    [InlineData("some-path.ttf", null)]
-    [InlineData("some-path.ttf", "")]
+    [InlineData(null, "calibri", Label = "missing font path throws")]
+    [InlineData("", "calibri", Label = "empty font path throws")]
+    [InlineData("some-path.ttf", null, Label = "missing font name throws")]
+    [InlineData("some-path.ttf", "", Label = "empty font name throws")]
     public void AddPdfGenerator_ShouldThrow_WhenFontPathOrNameIsNullOrEmpty(string? path, string? name)
     {
         // Arrange
@@ -147,11 +147,11 @@ public class DependencyInjectionTests
         Assert.Contains("Font path or name cannot be null or empty", exception.Message);
     }
 
-    public static IEnumerable<object[]> GetFontSettingsTestData()
+    public static IEnumerable<TheoryDataRow<FontSettings>> GetFontSettingsTestData()
     {
-        yield return new object[] { null! };
-        yield return new object[] { new FontSettings { Fonts = null! } };
-        yield return new object[] { new FontSettings { Fonts = [] } };
+        yield return new(null!) { Label = "font settings are null, throws" };
+        yield return new(new FontSettings { Fonts = null! }) { Label = "font list is null, throws" };
+        yield return new(new FontSettings { Fonts = [] }) { Label = "font list is empty, throws" };
     }
 
     [Theory]

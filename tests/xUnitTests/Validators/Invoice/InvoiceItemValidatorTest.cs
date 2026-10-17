@@ -36,9 +36,9 @@ public class InvoiceItemValidatorTest
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    [InlineData(-10)]
+    [InlineData(0, Label = "zero quantity is rejected")]
+    [InlineData(-1, Label = "negative quantity is rejected")]
+    [InlineData(-10, Label = "larger negative quantity is rejected")]
     public void Validate_QuantityNotGreaterThanZero_IsInvalid(decimal quantity)
     {
         // Arrange
@@ -53,9 +53,9 @@ public class InvoiceItemValidatorTest
     }
 
     [Theory]
-    [InlineData(1)]
-    [InlineData(0.5)]
-    [InlineData(100)]
+    [InlineData(1, Label = "whole quantity is accepted")]
+    [InlineData(0.5, Label = "fractional quantity is accepted")]
+    [InlineData(100, Label = "large quantity is accepted")]
     public void Validate_ValidQuantity_IsValid(decimal quantity)
     {
         // Arrange
