@@ -22,17 +22,14 @@ public class InvoiceValidatorTest
         _validator = new InvoiceValidator(_customerRepositoryMock.Object, _sellerRepositoryMock.Object, _itemRepositoryMock.Object);
     }
 
-    public static IEnumerable<object[]> GetSellerTestData()
+    public static IEnumerable<TheoryDataRow<List<SellerEntity>, Guid, bool>> GetSellerTestData()
     {
         SellerEntity seller = new() { Id = Guid.NewGuid() };
         SellerEntity otherSeller = new() { Id = Guid.NewGuid() };
 
-        // users seller
-        yield return new object[] { new List<SellerEntity> { otherSeller, seller }, seller.Id, true };
-        // other seller
-        yield return new object[] { new List<SellerEntity> { seller }, Guid.NewGuid(), false };
-        // no sellers
-        yield return new object[] { new List<SellerEntity>(), Guid.NewGuid(), false };
+        yield return new([otherSeller, seller], seller.Id, true) { Label = "seller id is one of the user's sellers, returns true" };
+        yield return new([seller], Guid.NewGuid(), false) { Label = "seller id belongs to another user, returns false" };
+        yield return new([], Guid.NewGuid(), false) { Label = "user has no sellers, returns false" };
     }
 
     [Theory]
@@ -54,17 +51,14 @@ public class InvoiceValidatorTest
         _sellerRepositoryMock.Verify(m => m.GetByUserId(userId), Times.Once());
     }
 
-    public static IEnumerable<object[]> GetCustomerTestData()
+    public static IEnumerable<TheoryDataRow<List<CustomerEntity>, Guid, bool>> GetCustomerTestData()
     {
         CustomerEntity customer = new() { Id = Guid.NewGuid() };
         CustomerEntity otherCustomer = new() { Id = Guid.NewGuid() };
 
-        // sellers customer
-        yield return new object[] { new List<CustomerEntity> { otherCustomer, customer }, customer.Id, true };
-        // other customer
-        yield return new object[] { new List<CustomerEntity> { customer }, Guid.NewGuid(), false };
-        // no customers
-        yield return new object[] { new List<CustomerEntity>(), Guid.NewGuid(), false };
+        yield return new([otherCustomer, customer], customer.Id, true) { Label = "customer id is one of the seller's customers, returns true" };
+        yield return new([customer], Guid.NewGuid(), false) { Label = "customer id belongs to another seller, returns false" };
+        yield return new([], Guid.NewGuid(), false) { Label = "seller has no customers, returns false" };
     }
 
     [Theory]
@@ -86,18 +80,15 @@ public class InvoiceValidatorTest
         _customerRepositoryMock.Verify(m => m.GetBySellerId(sellerId), Times.Once());
     }
 
-    public static IEnumerable<object[]> GetItemsTestData()
+    public static IEnumerable<TheoryDataRow<List<ItemEntity>, List<Guid>, bool>> GetItemsTestData()
     {
         ItemEntity firstItem = new() { Id = Guid.NewGuid() };
         ItemEntity secondItem = new() { Id = Guid.NewGuid() };
         ItemEntity unusedItem = new() { Id = Guid.NewGuid() };
 
-        // subset of customers items
-        yield return new object[] { new List<ItemEntity> { firstItem, unusedItem, secondItem }, new List<Guid> { firstItem.Id, secondItem.Id }, true };
-        // one foreign item
-        yield return new object[] { new List<ItemEntity> { firstItem }, new List<Guid> { firstItem.Id, Guid.NewGuid() }, false };
-        // no customer items
-        yield return new object[] { new List<ItemEntity>(), new List<Guid> { Guid.NewGuid() }, false };
+        yield return new([firstItem, unusedItem, secondItem], [firstItem.Id, secondItem.Id], true) { Label = "all item ids are among the customer's items, returns true" };
+        yield return new([firstItem], [firstItem.Id, Guid.NewGuid()], false) { Label = "one item id is not among the customer's items, returns false" };
+        yield return new([], [Guid.NewGuid()], false) { Label = "customer has no items, returns false" };
     }
 
     [Theory]

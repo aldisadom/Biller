@@ -6,7 +6,7 @@ description: Run Biller's xUnit test suite with code coverage, generate the HTML
 # Test + coverage for Biller
 
 The repo is a .NET 8 solution (`Billio.sln`) with one unit-test project, `tests/xUnitTests`
-(xUnit + Moq + AutoFixture + FluentAssertions, coverage via `coverlet.collector`).
+(xUnit v3 + Moq + FluentAssertions, coverage via `coverlet.collector`).
 `make test` (in `makefiles`) doesn't build a report; use the bundled script instead.
 
 ## Run it
@@ -55,5 +55,5 @@ instead of linking.
 ## Writing missing tests
 
 When asked to close a gap, write the tests with the `write-tests` skill, which holds the test
-conventions (no AutoFixture, strict mocks with `Verify`, `MemberData` theories, per-layer patterns).
+conventions (no AutoFixture, strict mocks with `Verify`, labelled theory cases, per-layer patterns).
 Re-run the script afterwards to confirm the new tests pass and the number moved.

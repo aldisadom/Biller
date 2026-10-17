@@ -1,7 +1,6 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
-using AutoFixture.Xunit2;
 using BillerContracts;
 using BillerContracts.Requests.Customer;
 using Domain.Entities;
@@ -10,26 +9,28 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using System.Net;
+using xUnitTests.Helpers;
 
 namespace xUnitTests.Application.Services;
 
-public class NumberToWordsLTTest
+public class CustomerServiceTest
 {
     private readonly Mock<ICustomerRepository> _customerRepositoryMock;
     private readonly CustomerService _customerService;
 
-    public NumberToWordsLTTest()
+    public CustomerServiceTest()
     {
         _customerRepositoryMock = new Mock<ICustomerRepository>(MockBehavior.Strict);
 
         _customerService = new CustomerService(_customerRepositoryMock.Object);
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetId_GivenValidId_ReturnsDTO(CustomerEntity customer)
+    [Fact]
+    public async Task GetId_GivenValidId_ReturnsDTO()
     {
         //Arrange
+        CustomerEntity customer = TestData.NewCustomerEntity();
+
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
 
@@ -44,11 +45,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetId_GivenInvalidId_ThrowNotFoundException(Guid id)
+    [Fact]
+    public async Task GetId_GivenInvalidId_ThrowNotFoundException()
     {
         // Arrange
+        Guid id = Guid.NewGuid();
+
         _customerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((CustomerEntity)null!);
 
@@ -58,11 +60,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetIdWithValidation_GivenValidId_ReturnsDTO(CustomerEntity customer)
+    [Fact]
+    public async Task GetIdWithValidation_GivenValidId_ReturnsDTO()
     {
         //Arrange
+        CustomerEntity customer = TestData.NewCustomerEntity();
+
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
 
@@ -81,11 +84,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetIdWithValidation_GivenInvalidSellerId_ReturnsErrorModel(CustomerEntity customer)
+    [Fact]
+    public async Task GetIdWithValidation_GivenInvalidSellerId_ReturnsErrorModel()
     {
         // Arrange
+        CustomerEntity customer = TestData.NewCustomerEntity();
+
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
 
@@ -109,11 +113,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel(Guid id)
+    [Fact]
+    public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel()
     {
         // Arrange
+        Guid id = Guid.NewGuid();
+
         _customerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((CustomerEntity)null!);
 
@@ -137,11 +142,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_GivenEmptyQuery_ReturnsDTO(List<CustomerEntity> customerList)
+    [Fact]
+    public async Task Get_GivenEmptyQuery_ReturnsDTO()
     {
         //Arrange
+        List<CustomerEntity> customerList = [TestData.NewCustomerEntity(), TestData.NewCustomerEntity(), TestData.NewCustomerEntity()];
+
         CustomerGetRequest request = new();
 
         _customerRepositoryMock.Setup(m => m.Get())
@@ -159,11 +165,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_GivenNullQuery_ReturnsDTO(List<CustomerEntity> customerList)
+    [Fact]
+    public async Task Get_GivenNullQuery_ReturnsDTO()
     {
         //Arrange
+        List<CustomerEntity> customerList = [TestData.NewCustomerEntity(), TestData.NewCustomerEntity(), TestData.NewCustomerEntity()];
+
         CustomerGetRequest? request = null;
 
         _customerRepositoryMock.Setup(m => m.Get())
@@ -181,11 +188,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_GivenAddressIdQuery_ReturnsDTO(List<CustomerEntity> customerList)
+    [Fact]
+    public async Task Get_GivenAddressIdQuery_ReturnsDTO()
     {
         //Arrange
+        List<CustomerEntity> customerList = [TestData.NewCustomerEntity(), TestData.NewCustomerEntity(), TestData.NewCustomerEntity()];
+
         CustomerGetRequest? request = new()
         {
             SellerId = new Guid()
@@ -225,11 +233,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Add_GivenValidId_ReturnsGuid(CustomerModel customer)
+    [Fact]
+    public async Task Add_GivenValidId_ReturnsGuid()
     {
         //Arrange
+        CustomerModel customer = TestData.NewCustomerModel();
+
         customer.InvoiceNumber = 1;
         CustomerEntity customerEntity = customer.ToEntity();
 
@@ -246,11 +255,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Add(customerEntity), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Update_ReturnsSuccess(CustomerModel customer)
+    [Fact]
+    public async Task Update_ReturnsSuccess()
     {
         //Arrange
+        CustomerModel customer = TestData.NewCustomerModel();
+
         CustomerEntity customerEntity = customer.ToEntity();
 
         _customerRepositoryMock.Setup(m => m.Update(It.Is<CustomerEntity>(x => x == customerEntity)))
@@ -268,11 +278,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Update(customerEntity), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Update_InvalidId_NotFoundException(CustomerModel customer)
+    [Fact]
+    public async Task Update_InvalidId_NotFoundException()
     {
         //Arrange
+        CustomerModel customer = TestData.NewCustomerModel();
+
         CustomerEntity customerEntity = customer.ToEntity();
 
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
@@ -287,11 +298,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Update(It.IsAny<CustomerEntity>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task IncreaseInvoiceNumber_ReturnsSuccess(Guid id)
+    [Fact]
+    public async Task IncreaseInvoiceNumber_ReturnsSuccess()
     {
         //Arrange
+        Guid id = Guid.NewGuid();
+
         _customerRepositoryMock.Setup(m => m.IncreaseInvoiceNumber(id))
                         .Returns(Task.CompletedTask);
 
@@ -303,11 +315,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.IncreaseInvoiceNumber(id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Delete_ValidId(CustomerEntity customer)
+    [Fact]
+    public async Task Delete_ValidId()
     {
         //Arrange
+        CustomerEntity customer = TestData.NewCustomerEntity();
+
         _customerRepositoryMock.Setup(m => m.Delete(customer.Id))
                         .Returns(Task.CompletedTask);
 
@@ -323,11 +336,12 @@ public class NumberToWordsLTTest
         _customerRepositoryMock.Verify(m => m.Delete(customer.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Delete_InvalidId_ThrowNotFoundException(Guid id)
+    [Fact]
+    public async Task Delete_InvalidId_ThrowNotFoundException()
     {
         //Arrange
+        Guid id = Guid.NewGuid();
+
         _customerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((CustomerEntity)null!);
 

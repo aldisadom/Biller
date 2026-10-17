@@ -2,12 +2,12 @@
 using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
-using AutoFixture.Xunit2;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
 using Moq;
+using xUnitTests.Helpers;
 
 namespace xUnitTests.Application.Services;
 
@@ -25,11 +25,12 @@ public class UserServiceTest
         _userService = new UserService(_userRepositoryMock.Object, _passwordEncryptionServiceMock.Object);
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Login_GivenValidPassword_ReturnsToken(UserEntity user)
+    [Fact]
+    public async Task Login_GivenValidPassword_ReturnsToken()
     {
         //Arrange
+        UserEntity user = TestData.NewUserEntity();
+
         string expectedResult = "fakeToken";
 
         _userRepositoryMock.Setup(m => m.Get(user.Email))
@@ -50,11 +51,12 @@ public class UserServiceTest
         _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password, It.IsAny<string>()), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Login_GivenInvalidUser_ThrowsUnauthorizedException(UserEntity user)
+    [Fact]
+    public async Task Login_GivenInvalidUser_ThrowsUnauthorizedException()
     {
         //Arrange
+        UserEntity user = TestData.NewUserEntity();
+
         _userRepositoryMock.Setup(m => m.Get(user.Email))
                         .ReturnsAsync((UserEntity)null!);
 
@@ -68,11 +70,12 @@ public class UserServiceTest
         _passwordEncryptionServiceMock.Verify(m => m.Encrypt(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Login_GivenInvalidPassword_ThrowsUnauthorizedException(UserEntity user)
+    [Fact]
+    public async Task Login_GivenInvalidPassword_ThrowsUnauthorizedException()
     {
         //Arrange
+        UserEntity user = TestData.NewUserEntity();
+
         _userRepositoryMock.Setup(m => m.Get(user.Email))
                         .ReturnsAsync(user);
 
@@ -89,11 +92,12 @@ public class UserServiceTest
         _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password, It.IsAny<string>()), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetId_GivenValidId_ReturnsDTO(UserEntity user)
+    [Fact]
+    public async Task GetId_GivenValidId_ReturnsDTO()
     {
         //Arrange
+        UserEntity user = TestData.NewUserEntity();
+
         _userRepositoryMock.Setup(m => m.Get(user.Id))
                         .ReturnsAsync(user);
 
@@ -108,11 +112,12 @@ public class UserServiceTest
         _userRepositoryMock.Verify(m => m.Get(user.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetId_GivenInvalidId_ThrowNotFoundException(Guid id)
+    [Fact]
+    public async Task GetId_GivenInvalidId_ThrowNotFoundException()
     {
         // Arrange
+        Guid id = Guid.NewGuid();
+
         _userRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((UserEntity)null!);
 
@@ -122,11 +127,12 @@ public class UserServiceTest
         _userRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_ReturnsDTO(List<UserEntity> userList)
+    [Fact]
+    public async Task Get_ReturnsDTO()
     {
         //Arrange
+        List<UserEntity> userList = [TestData.NewUserEntity(), TestData.NewUserEntity(), TestData.NewUserEntity()];
+
         _userRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(userList);
 
@@ -162,11 +168,12 @@ public class UserServiceTest
         _userRepositoryMock.Verify(m => m.Get(), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Add_GivenValidId_ReturnsGuid(UserModel user)
+    [Fact]
+    public async Task Add_GivenValidId_ReturnsGuid()
     {
         //Arrange
+        UserModel user = TestData.NewUserModel();
+
         UserEntity userEntity = user.ToEntity();
         userEntity.Salt = " ";
         _userRepositoryMock.Setup(m => m.Add(It.Is<UserEntity>
@@ -186,11 +193,12 @@ public class UserServiceTest
         _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password, null), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Update_ReturnsSuccess(UserModel user)
+    [Fact]
+    public async Task Update_ReturnsSuccess()
     {
         //Arrange
+        UserModel user = TestData.NewUserModel();
+
         UserEntity userEntity = user.ToEntity();
 
         _userRepositoryMock.Setup(m => m.Update(It.Is<UserEntity>(x => x == userEntity)))
@@ -208,11 +216,12 @@ public class UserServiceTest
         _userRepositoryMock.Verify(m => m.Update(userEntity), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Update_InvalidId_NotFoundException(UserModel user)
+    [Fact]
+    public async Task Update_InvalidId_NotFoundException()
     {
         //Arrange
+        UserModel user = TestData.NewUserModel();
+
         UserEntity userEntity = user.ToEntity();
 
         _userRepositoryMock.Setup(m => m.Update(It.Is<UserEntity>
@@ -230,11 +239,12 @@ public class UserServiceTest
         _userRepositoryMock.Verify(m => m.Update(It.IsAny<UserEntity>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Delete_ValidId(UserEntity user)
+    [Fact]
+    public async Task Delete_ValidId()
     {
         //Arrange
+        UserEntity user = TestData.NewUserEntity();
+
         _userRepositoryMock.Setup(m => m.Delete(user.Id))
                         .Returns(Task.CompletedTask);
 
@@ -250,11 +260,12 @@ public class UserServiceTest
         _userRepositoryMock.Verify(m => m.Delete(user.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Delete_InvalidId_ThrowNotFoundException(Guid id)
+    [Fact]
+    public async Task Delete_InvalidId_ThrowNotFoundException()
     {
         //Arrange
+        Guid id = Guid.NewGuid();
+
         _userRepositoryMock.Setup(m => m.Delete(id));
 
         _userRepositoryMock.Setup(m => m.Get(id))
