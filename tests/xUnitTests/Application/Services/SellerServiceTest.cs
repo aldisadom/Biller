@@ -257,7 +257,7 @@ public class SellerServiceTest
     }
 
     [Fact]
-    public async Task Update_ReturnsSuccess()
+    public async Task Update_GivenExistingId_UpdatesRepository()
     {
         //Arrange
         SellerModel seller = new() { Id = Guid.NewGuid() };
@@ -280,7 +280,7 @@ public class SellerServiceTest
     }
 
     [Fact]
-    public async Task Update_InvalidId_NotFoundException()
+    public async Task Update_GivenInvalidId_ThrowsNotFoundException()
     {
         //Arrange
         SellerModel seller = new() { Id = Guid.NewGuid() };
@@ -303,7 +303,7 @@ public class SellerServiceTest
     }
 
     [Fact]
-    public async Task Delete_ValidId()
+    public async Task Delete_GivenValidId_DeletesFromRepository()
     {
         //Arrange
         SellerEntity seller = new() { Id = Guid.NewGuid() };
@@ -324,7 +324,7 @@ public class SellerServiceTest
     }
 
     [Fact]
-    public async Task Delete_InvalidId_ThrowNotFoundException()
+    public async Task Delete_GivenInvalidId_ThrowsNotFoundException()
     {
         //Arrange
         Guid id = Guid.NewGuid();

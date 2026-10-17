@@ -9,7 +9,7 @@ public class InvoiceGenerateValidatorTest
     private readonly InvoiceGenerateValidator _validator = new();
 
     [Fact]
-    public void Validate_ValidRequest_IsValid()
+    public void Validate_GivenValidRequest_IsValid()
     {
         // Arrange
         var request = new InvoiceGenerateRequest { Id = Guid.NewGuid() };
@@ -22,7 +22,7 @@ public class InvoiceGenerateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyId_IsInvalid()
+    public void Validate_GivenEmptyId_IsInvalid()
     {
         // Arrange
         var request = new InvoiceGenerateRequest { Id = Guid.Empty };

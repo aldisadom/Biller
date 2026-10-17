@@ -16,7 +16,7 @@ public class UserUpdateValidatorTest
     };
 
     [Fact]
-    public void Validate_ValidRequest_IsValid()
+    public void Validate_GivenValidRequest_IsValid()
     {
         // Arrange
         var request = ValidRequest();
@@ -29,7 +29,7 @@ public class UserUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyId_IsInvalid()
+    public void Validate_GivenEmptyId_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -44,7 +44,7 @@ public class UserUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyName_IsInvalid()
+    public void Validate_GivenEmptyName_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -59,7 +59,7 @@ public class UserUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyLastName_IsInvalid()
+    public void Validate_GivenEmptyLastName_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();

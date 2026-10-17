@@ -17,7 +17,7 @@ public class UserAddValidatorTest
     };
 
     [Fact]
-    public void Validate_ValidRequest_IsValid()
+    public void Validate_GivenValidRequest_IsValid()
     {
         // Arrange
         var request = ValidRequest();
@@ -30,7 +30,7 @@ public class UserAddValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyName_IsInvalid()
+    public void Validate_GivenEmptyName_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -45,7 +45,7 @@ public class UserAddValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyLastName_IsInvalid()
+    public void Validate_GivenEmptyLastName_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -64,7 +64,7 @@ public class UserAddValidatorTest
     [InlineData("@nodomain.com", Label = "address without a local part is rejected")]
     [InlineData("trailing.dot@example.com.", Label = "domain ending with a dot is rejected")]
     [InlineData("", Label = "empty email is rejected")]
-    public void Validate_InvalidEmail_IsInvalid(string email)
+    public void Validate_GivenInvalidEmail_IsInvalid(string email)
     {
         // Arrange
         var request = ValidRequest();
@@ -82,7 +82,7 @@ public class UserAddValidatorTest
     [InlineData("", Label = "empty password is rejected")]
     [InlineData("abc", Label = "three letter password is rejected")]
     [InlineData("short", Label = "five letter password is rejected")]
-    public void Validate_WeakPassword_IsInvalid(string password)
+    public void Validate_GivenWeakPassword_IsInvalid(string password)
     {
         // Arrange
         var request = ValidRequest();
@@ -100,7 +100,7 @@ public class UserAddValidatorTest
     [InlineData("password1", Label = "letters with a digit are accepted")]
     [InlineData("longenoughpassword", Label = "long lowercase password is accepted")]
     [InlineData("12345678", Label = "eight digit password is accepted")]
-    public void Validate_SufficientPassword_IsValid(string password)
+    public void Validate_GivenSufficientPassword_IsValid(string password)
     {
         // Arrange
         var request = ValidRequest();

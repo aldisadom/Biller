@@ -92,7 +92,7 @@ public class UserControllerTest
     }
 
     [Fact]
-    public async Task Get_ReturnsOkWithUserListResponse()
+    public async Task Get_GivenUsers_ReturnsOkWithUserListResponse()
     {
         // Arrange
         var users = new List<UserModel>

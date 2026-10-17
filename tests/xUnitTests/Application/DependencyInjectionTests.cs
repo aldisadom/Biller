@@ -16,7 +16,7 @@ public class DependencyInjectionTests
     const string _dbConnectionString = "Host=db;Username=postgres;Password=postgres;Database=Data";
 
     [Fact]
-    public void AddInfrastructure_ShouldRegisterInfrastructure()
+    public void AddInfrastructure_GivenConnectionString_RegistersRepositories()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -43,7 +43,7 @@ public class DependencyInjectionTests
     }
 
     [Fact]
-    public void AddApplicationServices_ShouldRegisterServices()
+    public void AddApplicationServices_GivenServiceCollection_RegistersServices()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -94,7 +94,7 @@ public class DependencyInjectionTests
     }
 
     [Fact]
-    public void AddPdfGenerator_ShouldRegisterFonts_WhenFontSettingsAreValid()
+    public void AddPdfGenerator_GivenValidFontSettings_RegistersFonts()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -115,7 +115,7 @@ public class DependencyInjectionTests
     }
 
     [Fact]
-    public void AddPdfGenerator_ShouldThrow_WhenFontSettingsAreNull()
+    public void AddPdfGenerator_GivenNullOptions_ThrowsArgumentNullException()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -131,7 +131,7 @@ public class DependencyInjectionTests
     [InlineData("", "calibri", Label = "empty font path throws")]
     [InlineData("some-path.ttf", null, Label = "missing font name throws")]
     [InlineData("some-path.ttf", "", Label = "empty font name throws")]
-    public void AddPdfGenerator_ShouldThrow_WhenFontPathOrNameIsNullOrEmpty(string? path, string? name)
+    public void AddPdfGenerator_GivenEmptyFontPathOrName_ThrowsArgumentException(string? path, string? name)
     {
         // Arrange
         var services = new ServiceCollection();
@@ -156,7 +156,7 @@ public class DependencyInjectionTests
 
     [Theory]
     [MemberData(nameof(GetFontSettingsTestData))]
-    public void AddPdfGenerator_ShouldThrow_WhenFontSettingsAreEmpty(FontSettings fontSettings)
+    public void AddPdfGenerator_GivenNoFonts_ThrowsArgumentException(FontSettings fontSettings)
     {
         // Arrange
         var services = new ServiceCollection();
@@ -168,7 +168,7 @@ public class DependencyInjectionTests
     }
 
     [Fact]
-    public void AddPdfGenerator_ShouldThrow_WhenFontIsNotFound()
+    public void AddPdfGenerator_GivenMissingFontFile_ThrowsWithFontPath()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -183,24 +183,5 @@ public class DependencyInjectionTests
         // Assert
         var exception = Assert.Throws<FileNotFoundException>(() => services.AddPdfGenerator(Options.Create(fontSettings)));
         Assert.Contains("Font calibri file not found at path: nonexistent-path.ttf", exception.Message);
-    }
-
-    [Fact]
-    public void AddPdfGenerator_ShouldThrow_WhenFontFileDoesNotExist()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        var fontSettings = Options.Create(new FontSettings
-        {
-            Fonts =
-            [
-                new FontSetting { Name = "calibri", Path = "nonexistent-path.ttf" }
-            ]
-        });
-
-        // Act
-        // Assert
-        var exception = Assert.Throws<FileNotFoundException>(() => services.AddPdfGenerator(fontSettings));
-        Assert.Contains("Font calibri file not found", exception.Message);
     }
 }

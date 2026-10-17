@@ -15,26 +15,28 @@ public class PriceToWordsLTTest
     public PriceToWordsLTTest()
     {
         _numberToWordsMock = new Mock<INumberToWords>(MockBehavior.Strict);
-        _numberToWordsMock.Setup(x => x.MillionsSplit(It.IsAny<int>()))
-            .Returns((int number) => { return $"[MockNumber{number}]"; });
 
         _priceToWords = new global::Application.Helpers.PriceToWords.PriceToWords(_numberToWordsMock.Object);
         _priceToWordsFactory = new();
     }
 
     [Theory]
-    [InlineData(1.00, "[MockNumber1] € 0 ct.", Label = "whole euro amount has zero cents")]
-    [InlineData(1.99, "[MockNumber1] € 99 ct.", Label = "fraction is written as cents")]
-    [InlineData(1.9911111, "[MockNumber1] € 99 ct.", Label = "fraction beyond two digits is truncated to cents")]
-    [InlineData(1111111.00, "[MockNumber1111111] € 0 ct.", Label = "whole euro part is passed to the number converter unchanged")]
-    public void Decode_Given_Returns(decimal number, string expected)
+    [InlineData(1.00, 1, "[MockNumber1] € 0 ct.", Label = "whole euro amount has zero cents")]
+    [InlineData(1.99, 1, "[MockNumber1] € 99 ct.", Label = "fraction is written as cents")]
+    [InlineData(1.9911111, 1, "[MockNumber1] € 99 ct.", Label = "fraction beyond two digits is truncated to cents")]
+    [InlineData(1111111.00, 1111111, "[MockNumber1111111] € 0 ct.", Label = "whole euro part is passed to the number converter unchanged")]
+    public void Decode_GivenPrice_ReturnsWords(decimal number, int euros, string expected)
     {
         //Arrange
+        _numberToWordsMock.Setup(x => x.MillionsSplit(euros))
+            .Returns($"[MockNumber{euros}]");
+
         //Act
         string result = _priceToWords.Decode(number);
 
         //Assert
         result.Should().BeEquivalentTo(expected);
+        _numberToWordsMock.Verify(x => x.MillionsSplit(euros), Times.Once());
     }
 
     [Theory]
