@@ -12,7 +12,7 @@ public class ItemMappingProfileTest
     [Fact]
     public void ToEntity_GivenModel_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new ItemModel
         {
             Id = Guid.NewGuid(),
@@ -22,17 +22,17 @@ public class ItemMappingProfileTest
             Price = 123.67M
         };
 
-        // Act
+        //Act
         var to = from.ToEntity();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
     public void ToModel_GivenEntity_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new ItemEntity
         {
             Id = Guid.NewGuid(),
@@ -43,17 +43,17 @@ public class ItemMappingProfileTest
         };
 
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
     public void ToModel_GivenAddRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new ItemAddRequest
         {
             CustomerId = Guid.NewGuid(),
@@ -62,17 +62,17 @@ public class ItemMappingProfileTest
             Price = 123.67M
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
     }
 
     [Fact]
     public void ToModel_GivenUpdateRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new ItemUpdateRequest
         {
             Id = Guid.NewGuid(),
@@ -81,17 +81,17 @@ public class ItemMappingProfileTest
             Price = 123.67M
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
     }
 
     [Fact]
     public void ToResponse_GivenModel_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new ItemModel
         {
             Id = Guid.NewGuid(),
@@ -101,17 +101,17 @@ public class ItemMappingProfileTest
             Price = 123.67M
         };
 
-        // Act
+        //Act
         var to = from.ToResponse();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
     public void ToModel_GivenResponse_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new ItemResponse
         {
             Id = Guid.NewGuid(),
@@ -121,10 +121,10 @@ public class ItemMappingProfileTest
             Price = 123.67M
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 }

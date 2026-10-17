@@ -56,13 +56,13 @@ public class InvoiceUpdateValidatorTest
     [Fact]
     public void Validate_GivenValidRequest_IsValid()
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 
@@ -76,14 +76,14 @@ public class InvoiceUpdateValidatorTest
     [MemberData(nameof(GetEmptyRequiredFieldTestData))]
     public void Validate_GivenEmptyRequiredField_IsInvalid(Action<InvoiceUpdateRequest> clearField, string propertyName)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         clearField(request);
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
@@ -91,15 +91,15 @@ public class InvoiceUpdateValidatorTest
     [Fact]
     public void Validate_GivenDueDateBeforeCreatedDate_IsInvalid()
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.CreatedDate = new DateOnly(2024, 1, 31);
         request.DueDate = new DateOnly(2024, 1, 1);
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.DueDate));
     }
@@ -109,14 +109,14 @@ public class InvoiceUpdateValidatorTest
     [InlineData(-1, Label = "negative invoice number is rejected")]
     public void Validate_GivenInvoiceNumberNotGreaterThanZero_IsInvalid(int invoiceNumber)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.InvoiceNumber = invoiceNumber;
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.InvoiceNumber));
     }
@@ -132,11 +132,12 @@ public class InvoiceUpdateValidatorTest
     [MemberData(nameof(GetInvalidNestedRequestTestData))]
     public void Validate_GivenInvalidNestedRequest_ThrowsValidationException(Action<InvoiceUpdateRequest> breakNestedRequest)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         breakNestedRequest(request);
 
-        // Act & Assert
+        //Act
+        //Assert
         Assert.Throws<ValidationException>(() => _validator.Validate(request));
     }
 }
