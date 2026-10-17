@@ -25,13 +25,13 @@ public class InvoiceAddValidatorTest
     [Fact]
     public void Validate_GivenValidRequest_IsValid()
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 
@@ -47,14 +47,14 @@ public class InvoiceAddValidatorTest
     [MemberData(nameof(GetEmptyRequiredFieldTestData))]
     public void Validate_GivenEmptyRequiredField_IsInvalid(Action<InvoiceAddRequest> clearField, string propertyName)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         clearField(request);
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
@@ -62,15 +62,15 @@ public class InvoiceAddValidatorTest
     [Fact]
     public void Validate_GivenDueDateBeforeCreatedDate_IsInvalid()
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.CreatedDate = new DateOnly(2024, 1, 31);
         request.DueDate = new DateOnly(2024, 1, 1);
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.DueDate));
     }
@@ -78,15 +78,15 @@ public class InvoiceAddValidatorTest
     [Fact]
     public void Validate_GivenDueDateEqualToCreatedDate_IsValid()
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.CreatedDate = new DateOnly(2024, 1, 1);
         request.DueDate = new DateOnly(2024, 1, 1);
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 
@@ -101,11 +101,12 @@ public class InvoiceAddValidatorTest
     [MemberData(nameof(GetInvalidItemTestData))]
     public void Validate_GivenInvalidItem_ThrowsValidationException(InvoiceItemRequest item)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.Items = [item];
 
-        // Act & Assert
+        //Act
+        //Assert
         Assert.Throws<ValidationException>(() => _validator.Validate(request));
     }
 }

@@ -24,13 +24,13 @@ public class CustomerUpdateValidatorTest
     [Fact]
     public void Validate_GivenValidRequest_IsValid()
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 
@@ -50,14 +50,14 @@ public class CustomerUpdateValidatorTest
     [MemberData(nameof(GetEmptyRequiredFieldTestData))]
     public void Validate_GivenEmptyRequiredField_IsInvalid(Action<CustomerUpdateRequest> clearField, string propertyName)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         clearField(request);
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
@@ -69,14 +69,14 @@ public class CustomerUpdateValidatorTest
     [InlineData("", Label = "empty email is rejected")]
     public void Validate_GivenInvalidEmail_IsInvalid(string email)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.Email = email;
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Email));
     }
@@ -87,14 +87,14 @@ public class CustomerUpdateValidatorTest
     [InlineData(-100, Label = "large negative invoice number is rejected")]
     public void Validate_GivenInvoiceNumberNotGreaterThanZero_IsInvalid(int invoiceNumber)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.InvoiceNumber = invoiceNumber;
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.InvoiceNumber));
     }

@@ -11,7 +11,7 @@ public class UserMappingProfileTest
     [Fact]
     public void ToEntity_GivenModel_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new UserModel
         {
             Id = Guid.NewGuid(),
@@ -21,7 +21,7 @@ public class UserMappingProfileTest
             Password = "hashedPassword"
         };
 
-        // Act
+        //Act
         var to = from.ToEntity();
 
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
@@ -30,7 +30,7 @@ public class UserMappingProfileTest
     [Fact]
     public void ToModel_GivenEntity_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new UserEntity
         {
             Id = Guid.NewGuid(),
@@ -41,17 +41,17 @@ public class UserMappingProfileTest
             Salt = "saltValue"
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
     public void ToModel_GivenAddRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new UserAddRequest
         {
             Name = "UserName",
@@ -60,17 +60,17 @@ public class UserMappingProfileTest
             Password = "hashedPassword"
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
     }
 
     [Fact]
     public void ToModel_GivenUpdateRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new UserUpdateRequest
         {
             Id = Guid.NewGuid(),
@@ -78,17 +78,17 @@ public class UserMappingProfileTest
             LastName = "UserLastName"
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
     }
 
     [Fact]
     public void ToResponse_GivenModel_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new UserModel
         {
             Id = Guid.NewGuid(),
@@ -98,27 +98,27 @@ public class UserMappingProfileTest
             Password = "hashedPassword"
         };
 
-        // Act
+        //Act
         var to = from.ToResponse();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
     public void ToModel_GivenLoginRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new UserLoginRequest
         {
             Email = "user@email.com",
             Password = "hashedPassword"
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
     }
 }

@@ -14,7 +14,7 @@ public class MappingTestHelper
     public static void TestMapp<T1, T2>(T1 from, T2 to, MapStyle style, HashSet<string>? ignoreProps = null)
     {
         to.Should().NotBeNull();
-        // Assert
+        //Assert
         var fromProps = typeof(T1).GetProperties(BindingFlags.Public | BindingFlags.Instance);
         var toProps = typeof(T2).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 

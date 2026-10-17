@@ -74,7 +74,7 @@ public class InvoiceMappingProfileTest
     [Fact]
     public void ToEntity_GivenModel_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         UserModel userModel = NewUser();
         SellerModel sellerModel = NewSeller(userModel.Id);
         CustomerModel customerModel = NewCustomer(sellerModel.Id);
@@ -94,10 +94,10 @@ public class InvoiceMappingProfileTest
             DueDate = DateOnly.FromDateTime(DateTime.Now)
         };
 
-        // Act
+        //Act
         var to = from.ToEntity();
 
-        // Assert
+        //Assert
         HashSet<string> ignoreProperties = [
             "UserData",
             "SellerData",
@@ -133,7 +133,7 @@ public class InvoiceMappingProfileTest
     [Fact]
     public void ToModel_GivenEntity_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         UserModel userModel = NewUser();
         SellerModel sellerModel = NewSeller(userModel.Id);
         CustomerModel customerModel = NewCustomer(sellerModel.Id);
@@ -156,10 +156,10 @@ public class InvoiceMappingProfileTest
             DueDate = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue)
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         HashSet<string> ignoreProperties = [
             "User",
             "Seller",
@@ -184,7 +184,7 @@ public class InvoiceMappingProfileTest
     [Fact]
     public void ToModel_GivenAddRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         UserModel userModel = NewUser();
         SellerModel sellerModel = NewSeller(userModel.Id);
         CustomerModel customerModel = NewCustomer(sellerModel.Id);
@@ -203,10 +203,10 @@ public class InvoiceMappingProfileTest
             DueDate = DateOnly.FromDateTime(DateTime.Now)
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         HashSet<string> ignoreProperties = [
             "UserId",
             "SellerId",
@@ -232,7 +232,7 @@ public class InvoiceMappingProfileTest
     [Fact]
     public void ToModel_GivenUpdateRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var sellerUpdate = new SellerUpdateRequest
         {
             Id = Guid.NewGuid(),
@@ -282,10 +282,10 @@ public class InvoiceMappingProfileTest
             DueDate = DateOnly.FromDateTime(DateTime.Now)
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         HashSet<string> ignoreProperties = [
             "Seller",
             "Customer",
@@ -308,7 +308,7 @@ public class InvoiceMappingProfileTest
     [Fact]
     public void ToResponse_GivenModel_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         UserModel userModel = NewUser();
         SellerModel sellerModel = NewSeller(userModel.Id);
         CustomerModel customerModel = NewCustomer(sellerModel.Id);
@@ -328,10 +328,10 @@ public class InvoiceMappingProfileTest
             DueDate = DateOnly.FromDateTime(DateTime.Now)
         };
 
-        // Act
+        //Act
         var to = from.ToResponse();
 
-        // Assert
+        //Assert
         HashSet<string> ignoreProperties = [
             "UserId",
             "Seller",
@@ -352,7 +352,7 @@ public class InvoiceMappingProfileTest
     [Fact]
     public void ToInvoiceItemResponse_GivenInvoiceItemModel_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new InvoiceItemModel
         {
             Id = Guid.NewGuid(),
@@ -363,17 +363,17 @@ public class InvoiceMappingProfileTest
         };
 
 
-        // Act
+        //Act
         var to = from.ToInvoiceItemResponse();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
     public void ToInvoiceItemModel_GivenInvoiceItemRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new InvoiceItemRequest
         {
             Id = Guid.NewGuid(),
@@ -381,17 +381,17 @@ public class InvoiceMappingProfileTest
             Comments = "Item comment"
         };
 
-        // Act
+        //Act
         var to = from.ToInvoiceItemModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
     }
 
     [Fact]
     public void ToInvoiceItemModel_GivenInvoiceItemUpdateRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new InvoiceItemUpdateRequest
         {
             Id = Guid.NewGuid(),
@@ -401,10 +401,10 @@ public class InvoiceMappingProfileTest
             Comments = "Item comment"
         };
 
-        // Act
+        //Act
         var to = from.ToInvoiceItemModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
     }
 }
