@@ -90,34 +90,20 @@ public class InvoiceAddValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Validate_GivenItemWithEmptyId_ThrowsValidationException()
+    public static IEnumerable<TheoryDataRow<InvoiceItemRequest>> GetInvalidItemTestData()
     {
-        // Arrange
-        var request = ValidRequest();
-        request.Items = [new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 }];
-
-        // Act & Assert
-        Assert.Throws<ValidationException>(() => _validator.Validate(request));
+        yield return new(new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 }) { Label = "item with empty id throws" };
+        yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 0 }) { Label = "item with zero quantity throws" };
+        yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = -1 }) { Label = "item with negative quantity throws" };
     }
 
-    [Fact]
-    public void Validate_GivenItemWithZeroQuantity_ThrowsValidationException()
+    [Theory]
+    [MemberData(nameof(GetInvalidItemTestData))]
+    public void Validate_GivenInvalidItem_ThrowsValidationException(InvoiceItemRequest item)
     {
         // Arrange
         var request = ValidRequest();
-        request.Items = [new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 0 }];
-
-        // Act & Assert
-        Assert.Throws<ValidationException>(() => _validator.Validate(request));
-    }
-
-    [Fact]
-    public void Validate_GivenItemWithNegativeQuantity_ThrowsValidationException()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.Items = [new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = -1 }];
+        request.Items = [item];
 
         // Act & Assert
         Assert.Throws<ValidationException>(() => _validator.Validate(request));

@@ -174,37 +174,18 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
     }
 
-    [Fact]
-    public async Task Get_GivenEmptyQuery_ReturnsDTO()
+    public static IEnumerable<TheoryDataRow<ItemGetRequest?>> GetNoFilterQueryTestData()
     {
-        //Arrange
-        List<ItemEntity> itemList = [new(), new(), new()];
-
-        ItemGetRequest request = new();
-
-        _itemRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(itemList);
-
-        var expectedResult = itemList.Select(i => i.ToModel());
-
-        //Act
-        var result = await _itemService.Get(request);
-
-        //Assert
-        result.Count().Should().Be(itemList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
-
-        _itemRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
+        yield return new((ItemGetRequest?)null) { Label = "no query returns all items" };
+        yield return new(new ItemGetRequest()) { Label = "query without filters returns all items" };
     }
 
-    [Fact]
-    public async Task Get_GivenNullQuery_ReturnsDTO()
+    [Theory]
+    [MemberData(nameof(GetNoFilterQueryTestData))]
+    public async Task Get_GivenNoFilter_ReturnsDTO(ItemGetRequest? request)
     {
         //Arrange
         List<ItemEntity> itemList = [new(), new(), new()];
-
-        ItemGetRequest? request = null;
 
         _itemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(itemList);

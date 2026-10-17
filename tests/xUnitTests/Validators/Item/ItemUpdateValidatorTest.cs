@@ -69,26 +69,12 @@ public class ItemUpdateValidatorTest
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Price));
     }
 
-    [Fact]
-    public void Validate_GivenZeroQuantity_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.Quantity = 0;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Quantity));
-    }
-
     [Theory]
+    [InlineData(0, Label = "zero quantity is rejected")]
     [InlineData(-1, Label = "minus one quantity is rejected")]
     [InlineData(-2, Label = "negative quantity below minus one is rejected")]
     [InlineData(-100, Label = "large negative quantity is rejected")]
-    public void Validate_GivenNegativeQuantity_IsInvalid(decimal quantity)
+    public void Validate_GivenNonPositiveQuantity_IsInvalid(decimal quantity)
     {
         // Arrange
         var request = ValidRequest();

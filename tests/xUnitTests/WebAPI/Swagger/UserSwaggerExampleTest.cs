@@ -6,84 +6,23 @@ namespace xUnitTests.WebAPI.Swagger;
 
 public class UserSwaggerExampleTest
 {
-
-    [Fact]
-    public void GetExamples_GivenUserAddRequestExample_HasNoNullOrEmptyProperties()
+    public static IEnumerable<TheoryDataRow<Func<object>>> GetExampleTestData()
     {
-        //Arrange
-        UserAddRequestExample example = new();
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
+        yield return new(() => new UserAddRequestExample().GetExamples()) { Label = "user add request example has no empty properties" };
+        yield return new(() => new UserUpdateRequestExample().GetExamples()) { Label = "user update request example has no empty properties" };
+        yield return new(() => new UserListResponseExample().GetExamples()) { Label = "user list response example has no empty properties" };
+        yield return new(() => new UserResponseExample().GetExamples()) { Label = "user response example has no empty properties" };
+        yield return new(() => new UserLoginRequestExample().GetExamples()) { Label = "user login request example has no empty properties" };
+        yield return new(() => new UserLoginResponseExample().GetExamples()) { Label = "user login response example has no empty properties" };
     }
 
-    [Fact]
-    public void GetExamples_GivenUserUpdateRequestExample_HasNoNullOrEmptyProperties()
+    [Theory]
+    [MemberData(nameof(GetExampleTestData))]
+    public void GetExamples_GivenExample_HasNoNullOrEmptyProperties(Func<object> getExamples)
     {
         //Arrange
-        UserUpdateRequestExample example = new();
-
         //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void GetExamples_GivenUserListResponseExample_HasNoNullOrEmptyProperties()
-    {
-        //Arrange
-        UserListResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void GetExamples_GivenUserResponseExample_HasNoNullOrEmptyProperties()
-    {
-        //Arrange
-        UserResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void GetExamples_GivenUserLoginRequestExample_HasNoNullOrEmptyProperties()
-    {
-        //Arrange
-        UserLoginRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void GetExamples_GivenUserLoginResponseExample_HasNoNullOrEmptyProperties()
-    {
-        //Arrange
-        UserLoginResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
+        var exampleValues = getExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
 
         //Assert

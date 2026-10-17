@@ -141,37 +141,18 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Fact]
-    public async Task Get_GivenNoQuery_ReturnsDTO()
+    public static IEnumerable<TheoryDataRow<SellerGetRequest?>> GetNoFilterQueryTestData()
     {
-        //Arrange
-        List<SellerEntity> sellerList = [new(), new(), new()];
-
-        SellerGetRequest? request = null;
-
-        _sellerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(sellerList);
-
-        var expectedResult = sellerList.Select(s => s.ToModel());
-
-        //Act
-        var result = await _sellerService.Get(request);
-
-        //Assert
-        result.Count().Should().Be(sellerList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
-
-        _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
+        yield return new((SellerGetRequest?)null) { Label = "no query returns all sellers" };
+        yield return new(new SellerGetRequest()) { Label = "query without filters returns all sellers" };
     }
 
-    [Fact]
-    public async Task Get_GivenEmptyQuery_ReturnsDTO()
+    [Theory]
+    [MemberData(nameof(GetNoFilterQueryTestData))]
+    public async Task Get_GivenNoFilter_ReturnsDTO(SellerGetRequest? request)
     {
         //Arrange
         List<SellerEntity> sellerList = [new(), new(), new()];
-
-        SellerGetRequest request = new();
 
         _sellerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(sellerList);

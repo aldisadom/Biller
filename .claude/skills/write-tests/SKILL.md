@@ -111,9 +111,12 @@ user/seller/customer. Flag behaviour that looks wrong to the user instead of tes
   property non-default, then `MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo)` for
   model/entity/response targets or `MapStyle.UsedAllFrom` for requests. One test per extension
   method.
-- **Swagger examples** (`WebAPI/Swagger`): one test per example asserting
-  `NullChecker.GetNullOrEmptyProperties(example.GetExamples())` is empty. Instantiate the **right** example
-  class; copy-paste slips (an `Item...` test building an `Invoice...` example) have happened.
+- **Swagger examples** (`WebAPI/Swagger`): one theory per entity file,
+  `GetExamples_GivenExample_HasNoNullOrEmptyProperties(Func<object> getExamples)`, asserting
+  `NullChecker.GetNullOrEmptyProperties(getExamples())` is empty. Add a row per example:
+  `yield return new(() => new ItemAddRequestExample().GetExamples()) { Label = "item add request example has no empty properties" };`.
+  Use the **right** example class in each row; copy-paste slips (an `Item...` row building an
+  `Invoice...` example) have happened.
 - **DI registrations** (`Application/DependencyInjectionTests.cs`,
   `Validators/DependencyInjectionTests.cs`): add an assert for every new service, repository or
   validator.

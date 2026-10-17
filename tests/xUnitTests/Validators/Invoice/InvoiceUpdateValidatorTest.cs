@@ -121,34 +121,20 @@ public class InvoiceUpdateValidatorTest
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.InvoiceNumber));
     }
 
-    [Fact]
-    public void Validate_GivenInvalidSellerEmail_ThrowsValidationException()
+    public static IEnumerable<TheoryDataRow<Action<InvoiceUpdateRequest>>> GetInvalidNestedRequestTestData()
     {
-        // Arrange
-        var request = ValidRequest();
-        request.Seller.Email = "not-an-email";
-
-        // Act & Assert
-        Assert.Throws<ValidationException>(() => _validator.Validate(request));
+        yield return new(r => r.Seller.Email = "not-an-email") { Label = "seller with invalid email throws" };
+        yield return new(r => r.Customer.InvoiceNumber = 0) { Label = "customer with zero invoice number throws" };
+        yield return new(r => r.Items = [new InvoiceItemUpdateRequest { Id = Guid.NewGuid(), Name = string.Empty, Quantity = 1, Price = 10m }]) { Label = "item with empty name throws" };
     }
 
-    [Fact]
-    public void Validate_GivenInvalidCustomerInvoiceNumber_ThrowsValidationException()
+    [Theory]
+    [MemberData(nameof(GetInvalidNestedRequestTestData))]
+    public void Validate_GivenInvalidNestedRequest_ThrowsValidationException(Action<InvoiceUpdateRequest> breakNestedRequest)
     {
         // Arrange
         var request = ValidRequest();
-        request.Customer.InvoiceNumber = 0;
-
-        // Act & Assert
-        Assert.Throws<ValidationException>(() => _validator.Validate(request));
-    }
-
-    [Fact]
-    public void Validate_GivenItemWithEmptyName_ThrowsValidationException()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.Items = [new InvoiceItemUpdateRequest { Id = Guid.NewGuid(), Name = string.Empty, Quantity = 1, Price = 10m }];
+        breakNestedRequest(request);
 
         // Act & Assert
         Assert.Throws<ValidationException>(() => _validator.Validate(request));
