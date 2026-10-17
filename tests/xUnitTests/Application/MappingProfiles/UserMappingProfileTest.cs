@@ -9,7 +9,7 @@ namespace xUnitTests.Application.MappingProfiles;
 public class UserMappingProfileTest
 {
     [Fact]
-    public void ToEntity_FromModel_ShouldMap()
+    public void ToEntity_GivenModel_MapsAllProperties()
     {
         // Arrange
         var from = new UserModel
@@ -28,7 +28,7 @@ public class UserMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromEntity_ShouldMap()
+    public void ToModel_GivenEntity_MapsAllProperties()
     {
         // Arrange
         var from = new UserEntity
@@ -49,7 +49,7 @@ public class UserMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromAddRequest_ShouldMap()
+    public void ToModel_GivenAddRequest_MapsAllProperties()
     {
         // Arrange
         var from = new UserAddRequest
@@ -68,7 +68,7 @@ public class UserMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromUpdateRequest_ShouldMap()
+    public void ToModel_GivenUpdateRequest_MapsAllProperties()
     {
         // Arrange
         var from = new UserUpdateRequest
@@ -86,7 +86,7 @@ public class UserMappingProfileTest
     }
 
     [Fact]
-    public void ToResponse_FromModel_ShouldMap()
+    public void ToResponse_GivenModel_MapsAllProperties()
     {
         // Arrange
         var from = new UserModel
@@ -106,7 +106,7 @@ public class UserMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromLoginRequest_ShouldMap()
+    public void ToModel_GivenLoginRequest_MapsAllProperties()
     {
         // Arrange
         var from = new UserLoginRequest

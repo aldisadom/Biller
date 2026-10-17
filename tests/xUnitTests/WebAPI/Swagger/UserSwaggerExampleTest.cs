@@ -8,7 +8,7 @@ public class UserSwaggerExampleTest
 {
 
     [Fact]
-    public void UserAddRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenUserAddRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         UserAddRequestExample example = new();
@@ -21,7 +21,7 @@ public class UserSwaggerExampleTest
     }
 
     [Fact]
-    public void UserUpdateRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenUserUpdateRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         UserUpdateRequestExample example = new();
@@ -35,7 +35,7 @@ public class UserSwaggerExampleTest
     }
 
     [Fact]
-    public void UserListResponseExample_ReturnEmptyList()
+    public void GetExamples_GivenUserListResponseExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         UserListResponseExample example = new();
@@ -49,7 +49,7 @@ public class UserSwaggerExampleTest
     }
 
     [Fact]
-    public void UserResponseExample_ReturnEmptyList()
+    public void GetExamples_GivenUserResponseExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         UserResponseExample example = new();
@@ -63,7 +63,7 @@ public class UserSwaggerExampleTest
     }
 
     [Fact]
-    public void UserLoginRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenUserLoginRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         UserLoginRequestExample example = new();
@@ -77,7 +77,7 @@ public class UserSwaggerExampleTest
     }
 
     [Fact]
-    public void UserLoginResponseExample_ReturnEmptyList()
+    public void GetExamples_GivenUserLoginResponseExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         UserLoginResponseExample example = new();

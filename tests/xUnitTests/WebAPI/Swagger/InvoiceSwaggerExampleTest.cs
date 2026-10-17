@@ -8,7 +8,7 @@ public class InvoiceSwaggerExampleTest
 {
 
     [Fact]
-    public void InvoiceAddRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenInvoiceAddRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         InvoiceAddRequestExample example = new();
@@ -21,7 +21,7 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceUpdateRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenInvoiceUpdateRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         InvoiceUpdateRequestExample example = new();
@@ -35,7 +35,7 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceListResponseExample_ReturnEmptyList()
+    public void GetExamples_GivenInvoiceListResponseExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         InvoiceListResponseExample example = new();
@@ -49,7 +49,7 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceResponseExample_ReturnEmptyList()
+    public void GetExamples_GivenInvoiceResponseExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         InvoiceResponseExample example = new();
@@ -63,7 +63,7 @@ public class InvoiceSwaggerExampleTest
     }
 
     [Fact]
-    public void InvoiceUpdateStatusRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenInvoiceUpdateStatusRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         InvoiceUpdateStatusRequestExample example = new();

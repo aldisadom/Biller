@@ -80,7 +80,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToEntity_FromModel_ShouldMap()
+    public void ToEntity_GivenModel_MapsAllProperties()
     {
         // Arrange
         var from = new InvoiceModel
@@ -134,7 +134,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromEntity_ShouldMap()
+    public void ToModel_GivenEntity_MapsAllProperties()
     {
         // Arrange
         var from = new InvoiceEntity
@@ -180,7 +180,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromAddRequest_ShouldMap()
+    public void ToModel_GivenAddRequest_MapsAllProperties()
     {
         // Arrange
         var from = new InvoiceAddRequest
@@ -223,7 +223,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromUpdateRequest_ShouldMap()
+    public void ToModel_GivenUpdateRequest_MapsAllProperties()
     {
         // Arrange
         var sellerUpdate = new SellerUpdateRequest
@@ -299,7 +299,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToResponse_FromModel_ShouldMap()
+    public void ToResponse_GivenModel_MapsAllProperties()
     {
         // Arrange
         var from = new InvoiceModel
@@ -338,7 +338,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToInvoiceItemResponse_FromInvoiceItemModel_ShouldMap()
+    public void ToInvoiceItemResponse_GivenInvoiceItemModel_MapsAllProperties()
     {
         // Arrange
         var from = new InvoiceItemModel
@@ -359,7 +359,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToInvoiceItemModel_FromInvoiceItemRequest_ShouldMap()
+    public void ToInvoiceItemModel_GivenInvoiceItemRequest_MapsAllProperties()
     {
         // Arrange
         var from = new InvoiceItemRequest
@@ -377,7 +377,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToInvoiceItemModel_FromInvoiceItemUpdateRequest_ShouldMap()
+    public void ToInvoiceItemModel_GivenInvoiceItemUpdateRequest_MapsAllProperties()
     {
         // Arrange
         var from = new InvoiceItemUpdateRequest

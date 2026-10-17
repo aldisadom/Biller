@@ -9,7 +9,7 @@ public class UserLoginValidatorTest
     private readonly UserLoginValidator _validator = new();
 
     [Fact]
-    public void Validate_ValidRequest_IsValid()
+    public void Validate_GivenValidRequest_IsValid()
     {
         // Arrange
         var request = new UserLoginRequest
@@ -26,7 +26,7 @@ public class UserLoginValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyEmail_IsInvalid()
+    public void Validate_GivenEmptyEmail_IsInvalid()
     {
         // Arrange
         var request = new UserLoginRequest
@@ -44,7 +44,7 @@ public class UserLoginValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyPassword_IsInvalid()
+    public void Validate_GivenEmptyPassword_IsInvalid()
     {
         // Arrange
         var request = new UserLoginRequest

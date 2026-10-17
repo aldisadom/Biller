@@ -7,7 +7,7 @@ namespace xUnitTests.WebAPI.Swagger;
 public class ItemSwaggerExampleTest
 {
     [Fact]
-    public void ItemAddRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenItemAddRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         ItemAddRequestExample example = new();
@@ -20,7 +20,7 @@ public class ItemSwaggerExampleTest
     }
 
     [Fact]
-    public void ItemUpdateRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenItemUpdateRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         ItemUpdateRequestExample example = new();
@@ -34,7 +34,7 @@ public class ItemSwaggerExampleTest
     }
 
     [Fact]
-    public void ItemListResponseExample_ReturnEmptyList()
+    public void GetExamples_GivenItemListResponseExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         ItemListResponseExample example = new();
@@ -48,7 +48,7 @@ public class ItemSwaggerExampleTest
     }
 
     [Fact]
-    public void ItemResponseExample_ReturnEmptyList()
+    public void GetExamples_GivenItemResponseExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         ItemResponseExample example = new();

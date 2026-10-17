@@ -8,7 +8,7 @@ public class SellerSwaggerExampleTest
 {
 
     [Fact]
-    public void SellerAddRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenSellerAddRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         SellerAddRequestExample example = new();
@@ -21,7 +21,7 @@ public class SellerSwaggerExampleTest
     }
 
     [Fact]
-    public void SellerUpdateRequestExample_ReturnEmptyList()
+    public void GetExamples_GivenSellerUpdateRequestExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         SellerUpdateRequestExample example = new();
@@ -35,7 +35,7 @@ public class SellerSwaggerExampleTest
     }
 
     [Fact]
-    public void SellerListResponseExample_ReturnEmptyList()
+    public void GetExamples_GivenSellerListResponseExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         SellerListResponseExample example = new();
@@ -49,7 +49,7 @@ public class SellerSwaggerExampleTest
     }
 
     [Fact]
-    public void SellerResponseExample_ReturnEmptyList()
+    public void GetExamples_GivenSellerResponseExample_HasNoNullOrEmptyProperties()
     {
         //Arrange
         SellerResponseExample example = new();

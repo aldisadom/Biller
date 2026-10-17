@@ -16,7 +16,7 @@ public class PriceToWordsFactoryTest
     [Theory]
     [InlineData(Language.EN, Label = "english returns the price to words converter")]
     [InlineData(Language.LT, Label = "lithuanian returns the price to words converter")]
-    public void GetConverter_Returns(Language language)
+    public void GetConverter_GivenSupportedLanguage_ReturnsPriceToWords(Language language)
     {
         //Arrange
         //Act
@@ -27,7 +27,7 @@ public class PriceToWordsFactoryTest
     }
 
     [Fact]
-    public void GetConverter_Invalid_Throws()
+    public void GetConverter_GivenUnsupportedLanguage_ThrowsNotSupportedException()
     {
         //Arrange
         //Act

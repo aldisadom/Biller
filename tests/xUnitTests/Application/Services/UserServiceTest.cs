@@ -127,7 +127,7 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async Task Get_ReturnsDTO()
+    public async Task Get_GivenUsers_ReturnsModels()
     {
         //Arrange
         List<UserEntity> userList = [new(), new(), new()];
@@ -193,7 +193,7 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async Task Update_ReturnsSuccess()
+    public async Task Update_GivenExistingId_UpdatesRepository()
     {
         //Arrange
         UserModel user = new() { Id = Guid.NewGuid() };
@@ -216,7 +216,7 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async Task Update_InvalidId_NotFoundException()
+    public async Task Update_GivenInvalidId_ThrowsNotFoundException()
     {
         //Arrange
         UserModel user = new() { Id = Guid.NewGuid() };
@@ -239,7 +239,7 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async Task Delete_ValidId()
+    public async Task Delete_GivenValidId_DeletesFromRepository()
     {
         //Arrange
         UserEntity user = new() { Id = Guid.NewGuid() };
@@ -260,7 +260,7 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async Task Delete_InvalidId_ThrowNotFoundException()
+    public async Task Delete_GivenInvalidId_ThrowsNotFoundException()
     {
         //Arrange
         Guid id = Guid.NewGuid();

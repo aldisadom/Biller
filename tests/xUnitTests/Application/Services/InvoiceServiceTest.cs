@@ -383,7 +383,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Delete_ValidId()
+    public async Task Delete_GivenValidId_DeletesFromRepository()
     {
         //Arrange
         Guid id = Guid.NewGuid();
@@ -404,7 +404,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Delete_InvalidId_ThrowNotFoundException()
+    public async Task Delete_GivenInvalidId_ThrowsNotFoundException()
     {
         //Arrange
         Guid id = Guid.NewGuid();
@@ -424,7 +424,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task GeneratePDF_InvalidLanguage_ThrowsValidationException()
+    public async Task GeneratePDF_GivenInvalidLanguage_ThrowsValidationException()
     {
         // Arrange
         var invoiceId = Guid.NewGuid();
@@ -439,7 +439,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task GeneratePDF_InvalidDocumentType_ThrowsValidationException()
+    public async Task GeneratePDF_GivenInvalidDocumentType_ThrowsValidationException()
     {
         // Arrange
         var invoiceId = Guid.NewGuid();
@@ -454,7 +454,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task GeneratePDF_ValidId_Generates()
+    public async Task GeneratePDF_GivenValidId_ReturnsPdfStream()
     {
         //Arrange
         InvoiceEntity invoiceEntity = new()
@@ -542,7 +542,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task UpdateStatus_ValidEnum_UpdatesStatus()
+    public async Task UpdateStatus_GivenValidStatus_UpdatesStatus()
     {
         // Arrange
         var invoiceId = Guid.NewGuid();
@@ -562,7 +562,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task UpdateStatus_InvalidEnum_ThrowsValidationException()
+    public async Task UpdateStatus_GivenInvalidStatus_ThrowsValidationException()
     {
         // Arrange
         var invoiceId = Guid.NewGuid();

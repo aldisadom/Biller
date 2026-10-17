@@ -23,7 +23,7 @@ public class SellerUpdateValidatorTest
     };
 
     [Fact]
-    public void Validate_ValidRequest_IsValid()
+    public void Validate_GivenValidRequest_IsValid()
     {
         // Arrange
         var request = ValidRequest();
@@ -36,7 +36,7 @@ public class SellerUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyId_IsInvalid()
+    public void Validate_GivenEmptyId_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -51,7 +51,7 @@ public class SellerUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyCompanyNumber_IsInvalid()
+    public void Validate_GivenEmptyCompanyNumber_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -66,7 +66,7 @@ public class SellerUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyCompanyName_IsInvalid()
+    public void Validate_GivenEmptyCompanyName_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -81,7 +81,7 @@ public class SellerUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyStreet_IsInvalid()
+    public void Validate_GivenEmptyStreet_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -96,7 +96,7 @@ public class SellerUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyCity_IsInvalid()
+    public void Validate_GivenEmptyCity_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -111,7 +111,7 @@ public class SellerUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyState_IsInvalid()
+    public void Validate_GivenEmptyState_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -130,7 +130,7 @@ public class SellerUpdateValidatorTest
     [InlineData("@nodomain.com", Label = "address without a local part is rejected")]
     [InlineData("trailing.dot@example.com.", Label = "domain ending with a dot is rejected")]
     [InlineData("", Label = "empty email is rejected")]
-    public void Validate_InvalidEmail_IsInvalid(string email)
+    public void Validate_GivenInvalidEmail_IsInvalid(string email)
     {
         // Arrange
         var request = ValidRequest();
@@ -145,7 +145,7 @@ public class SellerUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyPhone_IsInvalid()
+    public void Validate_GivenEmptyPhone_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -160,7 +160,7 @@ public class SellerUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyBankName_IsInvalid()
+    public void Validate_GivenEmptyBankName_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -175,7 +175,7 @@ public class SellerUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyBankNumber_IsInvalid()
+    public void Validate_GivenEmptyBankNumber_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();

@@ -10,7 +10,7 @@ namespace xUnitTests.Application.MappingProfiles;
 public class SellerMappingProfileTest
 {
     [Fact]
-    public void ToEntity_FromModel_ShouldMap()
+    public void ToEntity_GivenModel_MapsAllProperties()
     {
         // Arrange
         var from = new SellerModel
@@ -36,7 +36,7 @@ public class SellerMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromEntity_ShouldMap()
+    public void ToModel_GivenEntity_MapsAllProperties()
     {
         // Arrange
         var from = new SellerEntity
@@ -62,7 +62,7 @@ public class SellerMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromAddRequest_ShouldMap()
+    public void ToModel_GivenAddRequest_MapsAllProperties()
     {
         // Arrange
         var from = new SellerAddRequest
@@ -87,7 +87,7 @@ public class SellerMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromUpdateRequest_ShouldMap()
+    public void ToModel_GivenUpdateRequest_MapsAllProperties()
     {
         // Arrange
         var from = new SellerUpdateRequest
@@ -112,7 +112,7 @@ public class SellerMappingProfileTest
     }
 
     [Fact]
-    public void ToResponse_FromModel_ShouldMap()
+    public void ToResponse_GivenModel_MapsAllProperties()
     {
         // Arrange
         var from = new SellerModel
@@ -138,7 +138,7 @@ public class SellerMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_FromResponse_ShouldMap()
+    public void ToModel_GivenResponse_MapsAllProperties()
     {
         // Arrange
         var from = new SellerResponse

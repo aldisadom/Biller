@@ -54,7 +54,7 @@ public class InvoiceUpdateValidatorTest
     };
 
     [Fact]
-    public void Validate_ValidRequest_IsValid()
+    public void Validate_GivenValidRequest_IsValid()
     {
         // Arrange
         var request = ValidRequest();
@@ -67,7 +67,7 @@ public class InvoiceUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyId_IsInvalid()
+    public void Validate_GivenEmptyId_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -82,7 +82,7 @@ public class InvoiceUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyItems_IsInvalid()
+    public void Validate_GivenEmptyItems_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -97,7 +97,7 @@ public class InvoiceUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_DueDateBeforeCreatedDate_IsInvalid()
+    public void Validate_GivenDueDateBeforeCreatedDate_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -115,7 +115,7 @@ public class InvoiceUpdateValidatorTest
     [Theory]
     [InlineData(0, Label = "zero invoice number is rejected")]
     [InlineData(-1, Label = "negative invoice number is rejected")]
-    public void Validate_InvoiceNumberNotGreaterThanZero_IsInvalid(int invoiceNumber)
+    public void Validate_GivenInvoiceNumberNotGreaterThanZero_IsInvalid(int invoiceNumber)
     {
         // Arrange
         var request = ValidRequest();
@@ -130,7 +130,7 @@ public class InvoiceUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_InvalidSellerEmail_ThrowsValidationException()
+    public void Validate_GivenInvalidSellerEmail_ThrowsValidationException()
     {
         // Arrange
         var request = ValidRequest();
@@ -141,7 +141,7 @@ public class InvoiceUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_InvalidCustomerInvoiceNumber_ThrowsValidationException()
+    public void Validate_GivenInvalidCustomerInvoiceNumber_ThrowsValidationException()
     {
         // Arrange
         var request = ValidRequest();
@@ -152,7 +152,7 @@ public class InvoiceUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_ItemWithEmptyName_ThrowsValidationException()
+    public void Validate_GivenItemWithEmptyName_ThrowsValidationException()
     {
         // Arrange
         var request = ValidRequest();

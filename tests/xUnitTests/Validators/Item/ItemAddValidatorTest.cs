@@ -17,7 +17,7 @@ public class ItemAddValidatorTest
     };
 
     [Fact]
-    public void Validate_ValidRequest_IsValid()
+    public void Validate_GivenValidRequest_IsValid()
     {
         // Arrange
         var request = ValidRequest();
@@ -30,7 +30,7 @@ public class ItemAddValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyCustomerId_IsInvalid()
+    public void Validate_GivenEmptyCustomerId_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -45,7 +45,7 @@ public class ItemAddValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyName_IsInvalid()
+    public void Validate_GivenEmptyName_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -63,7 +63,7 @@ public class ItemAddValidatorTest
     [InlineData(0, Label = "zero price is rejected")]
     [InlineData(-0.01, Label = "price just below zero is rejected")]
     [InlineData(-100, Label = "large negative price is rejected")]
-    public void Validate_PriceNotGreaterThanZero_IsInvalid(double price)
+    public void Validate_GivenPriceNotGreaterThanZero_IsInvalid(double price)
     {
         // Arrange
         var request = ValidRequest();
@@ -78,7 +78,7 @@ public class ItemAddValidatorTest
     }
 
     [Fact]
-    public void Validate_ZeroQuantity_IsInvalid()
+    public void Validate_GivenZeroQuantity_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -96,7 +96,7 @@ public class ItemAddValidatorTest
     [InlineData(-1, Label = "minus one quantity is rejected")]
     [InlineData(-2, Label = "negative quantity below minus one is rejected")]
     [InlineData(-100, Label = "large negative quantity is rejected")]
-    public void Validate_NegativeQuantity_IsInvalid(decimal quantity)
+    public void Validate_GivenNegativeQuantity_IsInvalid(decimal quantity)
     {
         // Arrange
         var request = ValidRequest();
@@ -114,7 +114,7 @@ public class ItemAddValidatorTest
     [InlineData(1, Label = "whole quantity is accepted")]
     [InlineData(10, Label = "two digit quantity is accepted")]
     [InlineData(100, Label = "large quantity is accepted")]
-    public void Validate_ValidQuantity_IsValid(decimal quantity)
+    public void Validate_GivenValidQuantity_IsValid(decimal quantity)
     {
         // Arrange
         var request = ValidRequest();

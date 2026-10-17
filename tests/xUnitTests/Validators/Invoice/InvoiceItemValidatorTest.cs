@@ -9,7 +9,7 @@ public class InvoiceItemValidatorTest
     private readonly InvoiceItemValidator _validator = new();
 
     [Fact]
-    public void Validate_ValidRequest_IsValid()
+    public void Validate_GivenValidRequest_IsValid()
     {
         // Arrange
         var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 2 };
@@ -22,7 +22,7 @@ public class InvoiceItemValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyId_IsInvalid()
+    public void Validate_GivenEmptyId_IsInvalid()
     {
         // Arrange
         var request = new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 };
@@ -39,7 +39,7 @@ public class InvoiceItemValidatorTest
     [InlineData(0, Label = "zero quantity is rejected")]
     [InlineData(-1, Label = "negative quantity is rejected")]
     [InlineData(-10, Label = "larger negative quantity is rejected")]
-    public void Validate_QuantityNotGreaterThanZero_IsInvalid(decimal quantity)
+    public void Validate_GivenQuantityNotGreaterThanZero_IsInvalid(decimal quantity)
     {
         // Arrange
         var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = quantity };
@@ -56,7 +56,7 @@ public class InvoiceItemValidatorTest
     [InlineData(1, Label = "whole quantity is accepted")]
     [InlineData(0.5, Label = "fractional quantity is accepted")]
     [InlineData(100, Label = "large quantity is accepted")]
-    public void Validate_ValidQuantity_IsValid(decimal quantity)
+    public void Validate_GivenValidQuantity_IsValid(decimal quantity)
     {
         // Arrange
         var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = quantity };

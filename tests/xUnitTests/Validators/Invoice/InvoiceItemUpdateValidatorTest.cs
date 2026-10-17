@@ -17,7 +17,7 @@ public class InvoiceItemUpdateValidatorTest
     };
 
     [Fact]
-    public void Validate_ValidRequest_IsValid()
+    public void Validate_GivenValidRequest_IsValid()
     {
         // Arrange
         var request = ValidRequest();
@@ -30,7 +30,7 @@ public class InvoiceItemUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyId_IsInvalid()
+    public void Validate_GivenEmptyId_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -45,7 +45,7 @@ public class InvoiceItemUpdateValidatorTest
     }
 
     [Fact]
-    public void Validate_EmptyName_IsInvalid()
+    public void Validate_GivenEmptyName_IsInvalid()
     {
         // Arrange
         var request = ValidRequest();
@@ -63,7 +63,7 @@ public class InvoiceItemUpdateValidatorTest
     [InlineData(0, Label = "zero quantity is rejected")]
     [InlineData(-1, Label = "negative quantity is rejected")]
     [InlineData(-100, Label = "large negative quantity is rejected")]
-    public void Validate_QuantityNotGreaterThanZero_IsInvalid(decimal quantity)
+    public void Validate_GivenQuantityNotGreaterThanZero_IsInvalid(decimal quantity)
     {
         // Arrange
         var request = ValidRequest();
@@ -81,7 +81,7 @@ public class InvoiceItemUpdateValidatorTest
     [InlineData(0, Label = "zero price is rejected")]
     [InlineData(-1, Label = "negative price is rejected")]
     [InlineData(-100, Label = "large negative price is rejected")]
-    public void Validate_PriceNotGreaterThanZero_IsInvalid(decimal price)
+    public void Validate_GivenPriceNotGreaterThanZero_IsInvalid(decimal price)
     {
         // Arrange
         var request = ValidRequest();

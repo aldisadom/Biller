@@ -251,7 +251,7 @@ public class CustomerServiceTest
     }
 
     [Fact]
-    public async Task Update_ReturnsSuccess()
+    public async Task Update_GivenExistingId_UpdatesRepository()
     {
         //Arrange
         CustomerModel customer = new() { Id = Guid.NewGuid() };
@@ -274,7 +274,7 @@ public class CustomerServiceTest
     }
 
     [Fact]
-    public async Task Update_InvalidId_NotFoundException()
+    public async Task Update_GivenInvalidId_ThrowsNotFoundException()
     {
         //Arrange
         CustomerModel customer = new() { Id = Guid.NewGuid() };
@@ -292,7 +292,7 @@ public class CustomerServiceTest
     }
 
     [Fact]
-    public async Task IncreaseInvoiceNumber_ReturnsSuccess()
+    public async Task IncreaseInvoiceNumber_GivenId_IncreasesInRepository()
     {
         //Arrange
         Guid id = Guid.NewGuid();
@@ -309,7 +309,7 @@ public class CustomerServiceTest
     }
 
     [Fact]
-    public async Task Delete_ValidId()
+    public async Task Delete_GivenValidId_DeletesFromRepository()
     {
         //Arrange
         CustomerEntity customer = new() { Id = Guid.NewGuid() };
@@ -330,7 +330,7 @@ public class CustomerServiceTest
     }
 
     [Fact]
-    public async Task Delete_InvalidId_ThrowNotFoundException()
+    public async Task Delete_GivenInvalidId_ThrowsNotFoundException()
     {
         //Arrange
         Guid id = Guid.NewGuid();

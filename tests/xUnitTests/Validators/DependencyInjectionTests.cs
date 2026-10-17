@@ -37,7 +37,7 @@ public class DependencyInjectionTests
     };
 
     [Fact]
-    public void AddValidations_ShouldRegisterExactlyAllValidators()
+    public void AddValidations_GivenServiceCollection_RegistersExactlyAllValidators()
     {
         // Arrange
         var services = new ServiceCollection();
