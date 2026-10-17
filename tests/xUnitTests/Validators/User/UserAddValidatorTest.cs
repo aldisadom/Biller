@@ -29,34 +29,26 @@ public class UserAddValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Validate_GivenEmptyName_IsInvalid()
+    public static IEnumerable<TheoryDataRow<Action<UserAddRequest>, string>> GetEmptyRequiredFieldTestData()
     {
-        // Arrange
-        var request = ValidRequest();
-        request.Name = string.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Name));
+        yield return new(r => r.Name = string.Empty, nameof(UserAddRequest.Name)) { Label = "empty name is rejected" };
+        yield return new(r => r.LastName = string.Empty, nameof(UserAddRequest.LastName)) { Label = "empty last name is rejected" };
     }
 
-    [Fact]
-    public void Validate_GivenEmptyLastName_IsInvalid()
+    [Theory]
+    [MemberData(nameof(GetEmptyRequiredFieldTestData))]
+    public void Validate_GivenEmptyRequiredField_IsInvalid(Action<UserAddRequest> clearField, string propertyName)
     {
         // Arrange
         var request = ValidRequest();
-        request.LastName = string.Empty;
+        clearField(request);
 
         // Act
         var result = _validator.Validate(request);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.LastName));
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
 
     [Theory]

@@ -140,36 +140,18 @@ public class CustomerServiceTest
         _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Fact]
-    public async Task Get_GivenEmptyQuery_ReturnsDTO()
+    public static IEnumerable<TheoryDataRow<CustomerGetRequest?>> GetNoFilterQueryTestData()
     {
-        //Arrange
-        List<CustomerEntity> customerList = [new(), new(), new()];
-
-        CustomerGetRequest request = new();
-
-        _customerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(customerList);
-
-        List<CustomerModel> expectedResult = [new(), new(), new()];
-
-        //Act
-        var result = await _customerService.Get(request);
-
-        //Assert
-        result.Count().Should().Be(customerList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
-
-        _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
+        yield return new((CustomerGetRequest?)null) { Label = "no query returns all customers" };
+        yield return new(new CustomerGetRequest()) { Label = "query without filters returns all customers" };
     }
 
-    [Fact]
-    public async Task Get_GivenNullQuery_ReturnsDTO()
+    [Theory]
+    [MemberData(nameof(GetNoFilterQueryTestData))]
+    public async Task Get_GivenNoFilter_ReturnsDTO(CustomerGetRequest? request)
     {
         //Arrange
         List<CustomerEntity> customerList = [new(), new(), new()];
-
-        CustomerGetRequest? request = null;
 
         _customerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(customerList);

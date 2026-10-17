@@ -6,70 +6,22 @@ namespace xUnitTests.WebAPI.Swagger;
 
 public class InvoiceSwaggerExampleTest
 {
-
-    [Fact]
-    public void GetExamples_GivenInvoiceAddRequestExample_HasNoNullOrEmptyProperties()
+    public static IEnumerable<TheoryDataRow<Func<object>>> GetExampleTestData()
     {
-        //Arrange
-        InvoiceAddRequestExample example = new();
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
+        yield return new(() => new InvoiceAddRequestExample().GetExamples()) { Label = "invoice add request example has no empty properties" };
+        yield return new(() => new InvoiceUpdateRequestExample().GetExamples()) { Label = "invoice update request example has no empty properties" };
+        yield return new(() => new InvoiceListResponseExample().GetExamples()) { Label = "invoice list response example has no empty properties" };
+        yield return new(() => new InvoiceResponseExample().GetExamples()) { Label = "invoice response example has no empty properties" };
+        yield return new(() => new InvoiceUpdateStatusRequestExample().GetExamples()) { Label = "invoice update status request example has no empty properties" };
     }
 
-    [Fact]
-    public void GetExamples_GivenInvoiceUpdateRequestExample_HasNoNullOrEmptyProperties()
+    [Theory]
+    [MemberData(nameof(GetExampleTestData))]
+    public void GetExamples_GivenExample_HasNoNullOrEmptyProperties(Func<object> getExamples)
     {
         //Arrange
-        InvoiceUpdateRequestExample example = new();
-
         //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void GetExamples_GivenInvoiceListResponseExample_HasNoNullOrEmptyProperties()
-    {
-        //Arrange
-        InvoiceListResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void GetExamples_GivenInvoiceResponseExample_HasNoNullOrEmptyProperties()
-    {
-        //Arrange
-        InvoiceResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void GetExamples_GivenInvoiceUpdateStatusRequestExample_HasNoNullOrEmptyProperties()
-    {
-        //Arrange
-        InvoiceUpdateStatusRequestExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
+        var exampleValues = getExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
 
         //Assert

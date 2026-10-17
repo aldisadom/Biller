@@ -96,9 +96,14 @@ user/seller/customer. Flag behaviour that looks wrong to the user instead of tes
   `CreatedAtActionResult`, `NoContentResult`) and its value against `model.ToResponse()`, then
   `VerifyNoOtherCalls()`.
 - **Request validators** (`Validators/<Entity>`): no mocks. A `private static ValidRequest()`
-  factory, one test proving it is valid, then one test per rule that breaks a single field and asserts
-  `result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Field))`. Boundary values
-  via `[Theory, InlineData]`.
+  factory, one test proving it is valid, then tests that break a single field and assert
+  `result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Field))`. Fields that fail
+  the same way (required field left empty) share one theory,
+  `Validate_GivenEmptyRequiredField_IsInvalid`, fed by
+  `IEnumerable<TheoryDataRow<Action<TRequest>, string>>` with one labelled row per field:
+  `yield return new(r => r.CompanyName = string.Empty, nameof(TRequest.CompanyName)) { Label = "empty company name is rejected" };`.
+  Rules with their own logic (email format, boundaries, nested validators) keep their own test;
+  boundary values via `[Theory, InlineData]`.
 - **Validators with repositories** (e.g. `InvoiceValidator`): strict repository mocks with
   `Verify`, `MemberData` theories feeding the repository result, the ID(s) to check and the
   expected `bool`.
@@ -106,9 +111,12 @@ user/seller/customer. Flag behaviour that looks wrong to the user instead of tes
   property non-default, then `MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo)` for
   model/entity/response targets or `MapStyle.UsedAllFrom` for requests. One test per extension
   method.
-- **Swagger examples** (`WebAPI/Swagger`): one test per example asserting
-  `NullChecker.GetNullOrEmptyProperties(example.GetExamples())` is empty. Instantiate the **right** example
-  class; copy-paste slips (an `Item...` test building an `Invoice...` example) have happened.
+- **Swagger examples** (`WebAPI/Swagger`): one theory per entity file,
+  `GetExamples_GivenExample_HasNoNullOrEmptyProperties(Func<object> getExamples)`, asserting
+  `NullChecker.GetNullOrEmptyProperties(getExamples())` is empty. Add a row per example:
+  `yield return new(() => new ItemAddRequestExample().GetExamples()) { Label = "item add request example has no empty properties" };`.
+  Use the **right** example class in each row; copy-paste slips (an `Item...` row building an
+  `Invoice...` example) have happened.
 - **DI registrations** (`Application/DependencyInjectionTests.cs`,
   `Validators/DependencyInjectionTests.cs`): add an assert for every new service, repository or
   validator.

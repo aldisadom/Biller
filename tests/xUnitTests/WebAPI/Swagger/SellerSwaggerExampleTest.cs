@@ -6,56 +6,21 @@ namespace xUnitTests.WebAPI.Swagger;
 
 public class SellerSwaggerExampleTest
 {
-
-    [Fact]
-    public void GetExamples_GivenSellerAddRequestExample_HasNoNullOrEmptyProperties()
+    public static IEnumerable<TheoryDataRow<Func<object>>> GetExampleTestData()
     {
-        //Arrange
-        SellerAddRequestExample example = new();
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
+        yield return new(() => new SellerAddRequestExample().GetExamples()) { Label = "seller add request example has no empty properties" };
+        yield return new(() => new SellerUpdateRequestExample().GetExamples()) { Label = "seller update request example has no empty properties" };
+        yield return new(() => new SellerListResponseExample().GetExamples()) { Label = "seller list response example has no empty properties" };
+        yield return new(() => new SellerResponseExample().GetExamples()) { Label = "seller response example has no empty properties" };
     }
 
-    [Fact]
-    public void GetExamples_GivenSellerUpdateRequestExample_HasNoNullOrEmptyProperties()
+    [Theory]
+    [MemberData(nameof(GetExampleTestData))]
+    public void GetExamples_GivenExample_HasNoNullOrEmptyProperties(Func<object> getExamples)
     {
         //Arrange
-        SellerUpdateRequestExample example = new();
-
         //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void GetExamples_GivenSellerListResponseExample_HasNoNullOrEmptyProperties()
-    {
-        //Arrange
-        SellerListResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
-        List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
-
-        //Assert
-        nullProperties.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void GetExamples_GivenSellerResponseExample_HasNoNullOrEmptyProperties()
-    {
-        //Arrange
-        SellerResponseExample example = new();
-
-        //Act
-        var exampleValues = example.GetExamples();
+        var exampleValues = getExamples();
         List<string> nullProperties = NullChecker.GetNullOrEmptyProperties(exampleValues);
 
         //Assert

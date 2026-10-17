@@ -87,37 +87,18 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Fact]
-    public async Task Get_GivenEmptyQuery_ReturnsDTO()
+    public static IEnumerable<TheoryDataRow<InvoiceGetRequest?>> GetNoFilterQueryTestData()
     {
-        //Arrange
-        List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
-
-        InvoiceGetRequest request = new();
-
-        _invoiceDataRepositoryMock.Setup(m => m.Get(null, null, null, request.Page, (int)request.PageSize))
-                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
-
-        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
-
-        //Act
-        var (result, totalCount) = await _invoiceService.Get(request);
-
-        //Assert
-        result.Count().Should().Be(invoiceDataList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
-        totalCount.Should().Be(invoiceDataList.Count);
-
-        _invoiceDataRepositoryMock.Verify(m => m.Get(null, null, null, request.Page, (int)request.PageSize), Times.Once());
+        yield return new((InvoiceGetRequest?)null) { Label = "no query returns all invoices" };
+        yield return new(new InvoiceGetRequest()) { Label = "query without filters returns all invoices" };
     }
 
-    [Fact]
-    public async Task Get_GivenNullQuery_ReturnsDTO()
+    [Theory]
+    [MemberData(nameof(GetNoFilterQueryTestData))]
+    public async Task Get_GivenNoFilter_ReturnsDTO(InvoiceGetRequest? request)
     {
         //Arrange
         List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
-
-        InvoiceGetRequest? request = null;
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(null, null, null, 1, (int)PageSize.p25))
                         .ReturnsAsync((invoiceDataList, invoiceDataList.Count));

@@ -35,64 +35,28 @@ public class InvoiceAddValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Validate_GivenEmptyUserId_IsInvalid()
+    public static IEnumerable<TheoryDataRow<Action<InvoiceAddRequest>, string>> GetEmptyRequiredFieldTestData()
     {
-        // Arrange
-        var request = ValidRequest();
-        request.UserId = Guid.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.UserId));
+        yield return new(r => r.UserId = Guid.Empty, nameof(InvoiceAddRequest.UserId)) { Label = "empty user id is rejected" };
+        yield return new(r => r.SellerId = Guid.Empty, nameof(InvoiceAddRequest.SellerId)) { Label = "empty seller id is rejected" };
+        yield return new(r => r.CustomerId = Guid.Empty, nameof(InvoiceAddRequest.CustomerId)) { Label = "empty customer id is rejected" };
+        yield return new(r => r.Items = [], nameof(InvoiceAddRequest.Items)) { Label = "empty item list is rejected" };
     }
 
-    [Fact]
-    public void Validate_GivenEmptySellerId_IsInvalid()
+    [Theory]
+    [MemberData(nameof(GetEmptyRequiredFieldTestData))]
+    public void Validate_GivenEmptyRequiredField_IsInvalid(Action<InvoiceAddRequest> clearField, string propertyName)
     {
         // Arrange
         var request = ValidRequest();
-        request.SellerId = Guid.Empty;
+        clearField(request);
 
         // Act
         var result = _validator.Validate(request);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.SellerId));
-    }
-
-    [Fact]
-    public void Validate_GivenEmptyCustomerId_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.CustomerId = Guid.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.CustomerId));
-    }
-
-    [Fact]
-    public void Validate_GivenEmptyItems_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.Items = [];
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Items));
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
 
     [Fact]
@@ -126,34 +90,20 @@ public class InvoiceAddValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Validate_GivenItemWithEmptyId_ThrowsValidationException()
+    public static IEnumerable<TheoryDataRow<InvoiceItemRequest>> GetInvalidItemTestData()
     {
-        // Arrange
-        var request = ValidRequest();
-        request.Items = [new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 }];
-
-        // Act & Assert
-        Assert.Throws<ValidationException>(() => _validator.Validate(request));
+        yield return new(new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 }) { Label = "item with empty id throws" };
+        yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 0 }) { Label = "item with zero quantity throws" };
+        yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = -1 }) { Label = "item with negative quantity throws" };
     }
 
-    [Fact]
-    public void Validate_GivenItemWithZeroQuantity_ThrowsValidationException()
+    [Theory]
+    [MemberData(nameof(GetInvalidItemTestData))]
+    public void Validate_GivenInvalidItem_ThrowsValidationException(InvoiceItemRequest item)
     {
         // Arrange
         var request = ValidRequest();
-        request.Items = [new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 0 }];
-
-        // Act & Assert
-        Assert.Throws<ValidationException>(() => _validator.Validate(request));
-    }
-
-    [Fact]
-    public void Validate_GivenItemWithNegativeQuantity_ThrowsValidationException()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.Items = [new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = -1 }];
+        request.Items = [item];
 
         // Act & Assert
         Assert.Throws<ValidationException>(() => _validator.Validate(request));
