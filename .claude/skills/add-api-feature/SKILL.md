@@ -108,7 +108,7 @@ Steps:
 ## 7. Tests (`tests/xUnitTests`)
 
 Write them with the `write-tests` skill, which has the conventions and per-layer patterns. The Item
-tests show which files a feature needs, but don't copy their AutoData usage. A new resource needs:
+tests show which files a feature needs. A new resource needs:
 - `Application/Services/<X>ServiceTest.cs`, including a `NotFoundException` case for get/update/delete.
 - `Application/MappingProfiles/<X>MappingProfileTest.cs`: one test per extension method.
 - `Validators/<X>/<X>AddValidatorTest.cs`, `<X>UpdateValidatorTest.cs`.

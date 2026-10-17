@@ -1,7 +1,6 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
-using AutoFixture.Xunit2;
 using BillerContracts;
 using BillerContracts.Requests.Seller;
 using Domain.Entities;
@@ -25,11 +24,12 @@ public class SellerServiceTest
         _sellerService = new SellerService(_sellerRepositoryMock.Object);
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetId_GivenValidId_ReturnsDTO(SellerEntity seller)
+    [Fact]
+    public async Task GetId_GivenValidId_ReturnsDTO()
     {
         //Arrange
+        SellerEntity seller = new() { Id = Guid.NewGuid() };
+
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
 
@@ -44,11 +44,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetId_GivenInvalidId_ThrowNotFoundException(Guid id)
+    [Fact]
+    public async Task GetId_GivenInvalidId_ThrowNotFoundException()
     {
         // Arrange
+        Guid id = Guid.NewGuid();
+
         _sellerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((SellerEntity)null!);
 
@@ -58,11 +59,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetIdWithValidation_GivenValidId_ReturnsDTO(SellerEntity seller)
+    [Fact]
+    public async Task GetIdWithValidation_GivenValidId_ReturnsDTO()
     {
         //Arrange
+        SellerEntity seller = new() { Id = Guid.NewGuid(), UserId = Guid.NewGuid() };
+
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
 
@@ -81,11 +83,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetIdWithValidation_GivenInvaliduserId_ReturnsErrorModel(SellerEntity seller)
+    [Fact]
+    public async Task GetIdWithValidation_GivenInvaliduserId_ReturnsErrorModel()
     {
         // Arrange
+        SellerEntity seller = new() { Id = Guid.NewGuid() };
+
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
 
@@ -109,11 +112,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel(Guid id)
+    [Fact]
+    public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel()
     {
         // Arrange
+        Guid id = Guid.NewGuid();
+
         _sellerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((SellerEntity)null!);
 
@@ -137,11 +141,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_GivenNoQuery_ReturnsDTO(List<SellerEntity> sellerList)
+    [Fact]
+    public async Task Get_GivenNoQuery_ReturnsDTO()
     {
         //Arrange
+        List<SellerEntity> sellerList = [new(), new(), new()];
+
         SellerGetRequest? request = null;
 
         _sellerRepositoryMock.Setup(m => m.Get())
@@ -160,11 +165,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_GivenEmptyQuery_ReturnsDTO(List<SellerEntity> sellerList)
+    [Fact]
+    public async Task Get_GivenEmptyQuery_ReturnsDTO()
     {
         //Arrange
+        List<SellerEntity> sellerList = [new(), new(), new()];
+
         SellerGetRequest request = new();
 
         _sellerRepositoryMock.Setup(m => m.Get())
@@ -183,11 +189,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_GivenAddressIdQuery_ReturnsDTO(List<SellerEntity> sellerList)
+    [Fact]
+    public async Task Get_GivenAddressIdQuery_ReturnsDTO()
     {
         //Arrange
+        List<SellerEntity> sellerList = [new(), new(), new()];
+
         SellerGetRequest? request = new()
         {
             UserId = new Guid()
@@ -229,11 +236,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Add_GivenValidId_ReturnsGuid(SellerModel seller)
+    [Fact]
+    public async Task Add_GivenValidId_ReturnsGuid()
     {
         //Arrange
+        SellerModel seller = new() { Id = Guid.NewGuid() };
+
         SellerEntity sellerEntity = seller.ToEntity();
 
         _sellerRepositoryMock.Setup(m => m.Add(It.Is<SellerEntity>(x => x == sellerEntity)))
@@ -248,11 +256,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Add(sellerEntity), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Update_ReturnsSuccess(SellerModel seller)
+    [Fact]
+    public async Task Update_ReturnsSuccess()
     {
         //Arrange
+        SellerModel seller = new() { Id = Guid.NewGuid() };
+
         SellerEntity sellerEntity = seller.ToEntity();
 
         _sellerRepositoryMock.Setup(m => m.Update(It.Is<SellerEntity>(x => x == sellerEntity)))
@@ -270,11 +279,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Update(sellerEntity), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Update_InvalidId_NotFoundException(SellerModel seller)
+    [Fact]
+    public async Task Update_InvalidId_NotFoundException()
     {
         //Arrange
+        SellerModel seller = new() { Id = Guid.NewGuid() };
+
         SellerEntity sellerEntity = seller.ToEntity();
 
         _sellerRepositoryMock.Setup(m => m.Update(It.Is<SellerEntity>
@@ -292,11 +302,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Update(It.IsAny<SellerEntity>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Delete_ValidId(SellerEntity seller)
+    [Fact]
+    public async Task Delete_ValidId()
     {
         //Arrange
+        SellerEntity seller = new() { Id = Guid.NewGuid() };
+
         _sellerRepositoryMock.Setup(m => m.Delete(seller.Id))
                         .Returns(Task.CompletedTask);
 
@@ -312,11 +323,12 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Delete(seller.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Delete_InvalidId_ThrowNotFoundException(Guid id)
+    [Fact]
+    public async Task Delete_InvalidId_ThrowNotFoundException()
     {
         //Arrange
+        Guid id = Guid.NewGuid();
+
         _sellerRepositoryMock.Setup(m => m.Delete(id));
 
         _sellerRepositoryMock.Setup(m => m.Get(id))

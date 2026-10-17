@@ -1,7 +1,6 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
-using AutoFixture.Xunit2;
 using BillerContracts;
 using BillerContracts.Requests.Item;
 using Domain.Entities;
@@ -25,11 +24,12 @@ public class ItemServiceTest
         _itemService = new ItemService(_itemRepositoryMock.Object);
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetId_GivenValidId_ReturnsDTO(ItemEntity item)
+    [Fact]
+    public async Task GetId_GivenValidId_ReturnsDTO()
     {
         //Arrange
+        ItemEntity item = new() { Id = Guid.NewGuid() };
+
         _itemRepositoryMock.Setup(m => m.Get(item.Id))
                         .ReturnsAsync(item);
 
@@ -44,11 +44,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetId_GivenInvalidId_ThrowNotFoundException(Guid id)
+    [Fact]
+    public async Task GetId_GivenInvalidId_ThrowNotFoundException()
     {
         // Arrange
+        Guid id = Guid.NewGuid();
+
         _itemRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((ItemEntity)null!);
 
@@ -58,11 +59,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task GetIds_GivenValidIds_ReturnsDTOs(List<ItemEntity> itemList)
+    [Fact]
+    public async Task GetIds_GivenValidIds_ReturnsDTOs()
     {
         //Arrange
+        List<ItemEntity> itemList = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
+
         List<Guid> ids = itemList.Select(x => x.Id).ToList();
 
         _itemRepositoryMock.Setup(m => m.Get(ids))
@@ -80,11 +82,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
     }
 
-    [Theory]
-    [AutoDataConfigured]
-    public async Task GetIdsWithValidation_GivenValidId_ReturnsDTO(List<ItemEntity> itemList)
+    [Fact]
+    public async Task GetIdsWithValidation_GivenValidId_ReturnsDTO()
     {
         //Arrange
+        List<ItemEntity> itemList = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
+
         List<Guid> ids = itemList.Select(x => x.Id).ToList();
         var customerId = Guid.NewGuid();
 
@@ -110,11 +113,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
     }
 
-    [Theory]
-    [AutoDataConfigured]
-    public async Task GetIdsWithValidation_GivenInvalidcustomerId_ReturnsErrorModel(List<ItemEntity> itemList)
+    [Fact]
+    public async Task GetIdsWithValidation_GivenInvalidcustomerId_ReturnsErrorModel()
     {
         // Arrange
+        List<ItemEntity> itemList = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
+
         List<Guid> ids = itemList.Select(x => x.Id).ToList();
         var customerId = Guid.NewGuid();
 
@@ -170,11 +174,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_GivenEmptyQuery_ReturnsDTO(List<ItemEntity> itemList)
+    [Fact]
+    public async Task Get_GivenEmptyQuery_ReturnsDTO()
     {
         //Arrange
+        List<ItemEntity> itemList = [new(), new(), new()];
+
         ItemGetRequest request = new();
 
         _itemRepositoryMock.Setup(m => m.Get())
@@ -193,11 +198,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_GivenNullQuery_ReturnsDTO(List<ItemEntity> itemList)
+    [Fact]
+    public async Task Get_GivenNullQuery_ReturnsDTO()
     {
         //Arrange
+        List<ItemEntity> itemList = [new(), new(), new()];
+
         ItemGetRequest? request = null;
 
         _itemRepositoryMock.Setup(m => m.Get())
@@ -216,11 +222,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Get_GivenAddressIdQuery_ReturnsDTO(List<ItemEntity> itemList)
+    [Fact]
+    public async Task Get_GivenAddressIdQuery_ReturnsDTO()
     {
         //Arrange
+        List<ItemEntity> itemList = [new(), new(), new()];
+
         ItemGetRequest? request = new()
         {
             CustomerId = new Guid()
@@ -262,11 +269,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Add_GivenValidId_ReturnsGuid(ItemModel item)
+    [Fact]
+    public async Task Add_GivenValidId_ReturnsGuid()
     {
         //Arrange
+        ItemModel item = new() { Id = Guid.NewGuid() };
+
         ItemEntity itemEntity = item.ToEntity();
 
         _itemRepositoryMock.Setup(m => m.Add(It.Is<ItemEntity>(x => x == itemEntity)))
@@ -281,11 +289,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Add(itemEntity), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Update_ReturnsSuccess(ItemModel item)
+    [Fact]
+    public async Task Update_ReturnsSuccess()
     {
         //Arrange
+        ItemModel item = new() { Id = Guid.NewGuid() };
+
         ItemEntity itemEntity = item.ToEntity();
 
         _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>(x => x == itemEntity)))
@@ -303,11 +312,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Update(itemEntity), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Update_InvalidId_NotFoundException(ItemModel item)
+    [Fact]
+    public async Task Update_InvalidId_NotFoundException()
     {
         //Arrange
+        ItemModel item = new() { Id = Guid.NewGuid() };
+
         ItemEntity itemEntity = item.ToEntity();
 
         _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>
@@ -325,11 +335,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Update(It.IsAny<ItemEntity>()), Times.Never());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Delete_ValidId(ItemEntity item)
+    [Fact]
+    public async Task Delete_ValidId()
     {
         //Arrange
+        ItemEntity item = new() { Id = Guid.NewGuid() };
+
         _itemRepositoryMock.Setup(m => m.Delete(item.Id))
                         .Returns(Task.CompletedTask);
 
@@ -345,11 +356,12 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Delete(item.Id), Times.Once());
     }
 
-    [Theory]
-    [AutoData]
-    public async Task Delete_InvalidId_ThrowNotFoundException(Guid id)
+    [Fact]
+    public async Task Delete_InvalidId_ThrowNotFoundException()
     {
         //Arrange
+        Guid id = Guid.NewGuid();
+
         _itemRepositoryMock.Setup(m => m.Delete(id));
 
         _itemRepositoryMock.Setup(m => m.Get(id))

@@ -1,24 +1,29 @@
 ---
 name: write-tests
-description: Write or fix unit tests in Biller's xUnit project (tests/xUnitTests) following the repo's conventions — hand-built test data (no AutoFixture), strict Moq mocks with Verify, MemberData theories, and the per-layer patterns for services, controllers, validators, mapping extensions, Swagger examples and DI registrations. Use this whenever the user wants tests added, extended, converted, reviewed or cleaned up in the Biller repo ("add tests for X", "cover this method", "close the coverage gap", "review this test file", "remove AutoData"), and whenever another skill reaches its testing step.
+description: Write or fix unit tests in Biller's xUnit project (tests/xUnitTests) following the repo's conventions — hand-built test data with object initializers (no AutoFixture, no shared TestData builders), strict Moq mocks with Verify, xUnit v3 theories with a Label per case, and the per-layer patterns for services, controllers, validators, mapping extensions, Swagger examples and DI registrations. Use this whenever the user wants tests added, extended, converted, reviewed or cleaned up in the Biller repo ("add tests for X", "cover this method", "close the coverage gap", "review this test file", "remove AutoData"), and whenever another skill reaches its testing step.
 ---
 
 # Writing tests for Biller
 
 One test project, `tests/xUnitTests`, mirrors `src` folder by folder
 (`src/Validators/Invoice/X.cs` → `tests/xUnitTests/Validators/Invoice/XTest.cs`).
-Stack: xUnit, Moq, FluentAssertions. AutoFixture is still referenced, but only older tests use it.
+Stack: xUnit v3 (`xunit.v3`), Moq, FluentAssertions. AutoFixture has been removed from the project.
 
 Before writing, open the code under test **and** a neighboring test in the same folder, and
 mirror its layout. The rules below win where older tests disagree.
 
 ## Hard rules
 
-- **No AutoFixture.** Don't use `[AutoData]`, `[AutoDataWithDateOnly]`, `Fixture` or anything
-  from `AutoFixture` in new or edited tests. Build data by hand with object initializers and
-  `Guid.NewGuid()` / explicit values. Create exactly the entities the test needs, and pass the
-  matching one by reference (`seller.Id`), never by index into a generated list (`sellers[1]`).
-  When you edit a test that still uses AutoData, convert it.
+- **No AutoFixture, no shared builders.** AutoFixture was removed from the project, so don't add
+  it back, and don't add a shared `TestData` helper class. Build data inline with object
+  initializers setting only the fields the test itself references (in a setup, call or assert).
+  If `GetId` only uses `customer.Id`, write `new() { Id = Guid.NewGuid() }`, not
+  `new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() }`; a list whose ids are never read is
+  `[new(), new(), new()]`. When a test
+  class needs a larger object graph many times (e.g. a full invoice), give that class its own
+  `private static New<X>()` method. Create exactly the
+  entities the test needs, and pass the matching one by reference (`seller.Id`), never by index
+  into a generated list (`sellers[1]`).
 - **Verify mock calls.** Mocks are `new Mock<IX>(MockBehavior.Strict)`. Every `Setup` gets a
   matching `Verify(m => ..., Times.Once())` (or the exact expected count, e.g. `Times.Never()`) in
   the Assert section. Controller tests end with `VerifyNoOtherCalls()` on each mock.
@@ -42,26 +47,37 @@ mirror its layout. The rules below win where older tests disagree.
 - `[Fact]` when a case needs its own arrange logic.
 - `[Theory, InlineData(...)]` for primitive / string / enum variations (boundaries, languages).
 - `[Theory, MemberData(nameof(GetXTestData))]` when cases differ only in their inputs and those
-  inputs are collections, entities or `Guid`s, which `InlineData` can't hold. Follow the pattern
-  in `Application/DependencyInjectionTests.cs`: a `public static IEnumerable<object[]>` method
-  placed directly above the theory, one `yield return new object[] { ... }` per case, each with a
-  short `// case` comment. Pass the expected result as the last parameter.
+  inputs are collections, entities or `Guid`s, which `InlineData` can't hold. The data method is a
+  `public static IEnumerable<TheoryDataRow<T1, T2, ...>>` placed directly above the theory, with
+  one `yield return new(...)` per case. Pass the expected result as the last parameter.
+
+**Every theory case has a title**, set with `Label`. Test Explorer and the test output then show
+`Method [user has no sellers, returns false]` instead of a dump of the arguments. A title is a
+lowercase sentence that names the situation (what the input or repository state is, in domain
+terms) and the expected outcome, so a failing case is understood without opening the data method.
+`"no sellers"` or `"case 2"` are too short. Titles replace `// comments` above cases. Don't use
+`TestDisplayName`: it drops the method name and still appends every argument.
 
   ```csharp
-  public static IEnumerable<object[]> GetSellerTestData()
+  public static IEnumerable<TheoryDataRow<List<SellerEntity>, Guid, bool>> GetSellerTestData()
   {
       SellerEntity seller = new() { Id = Guid.NewGuid() };
       SellerEntity otherSeller = new() { Id = Guid.NewGuid() };
 
-      // users seller
-      yield return new object[] { new List<SellerEntity> { otherSeller, seller }, seller.Id, true };
-      // no sellers
-      yield return new object[] { new List<SellerEntity>(), Guid.NewGuid(), false };
+      yield return new([otherSeller, seller], seller.Id, true) { Label = "seller id is one of the user's sellers, returns true" };
+      yield return new([], Guid.NewGuid(), false) { Label = "user has no sellers, returns false" };
   }
 
   [Theory]
   [MemberData(nameof(GetSellerTestData))]
   public async Task IsValidSellerId_GivenUsersSellers_ReturnsExpected(List<SellerEntity> sellers, Guid sellerId, bool expected)
+  ```
+
+  ```csharp
+  [Theory]
+  [InlineData(0, "nulis", Label = "zero is spelled out as nulis")]
+  [InlineData(11, "vienuolika", Label = "teen number uses its own word")]
+  public void Convert_GivenNumber_ReturnsWords(int number, string expected)
   ```
 
 ## Cases to cover
