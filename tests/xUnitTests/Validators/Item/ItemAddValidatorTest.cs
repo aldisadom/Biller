@@ -60,9 +60,9 @@ public class ItemAddValidatorTest
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(-0.01)]
-    [InlineData(-100)]
+    [InlineData(0, Label = "zero price is rejected")]
+    [InlineData(-0.01, Label = "price just below zero is rejected")]
+    [InlineData(-100, Label = "large negative price is rejected")]
     public void Validate_PriceNotGreaterThanZero_IsInvalid(double price)
     {
         // Arrange
@@ -93,9 +93,9 @@ public class ItemAddValidatorTest
     }
 
     [Theory]
-    [InlineData(-1)]
-    [InlineData(-2)]
-    [InlineData(-100)]
+    [InlineData(-1, Label = "minus one quantity is rejected")]
+    [InlineData(-2, Label = "negative quantity below minus one is rejected")]
+    [InlineData(-100, Label = "large negative quantity is rejected")]
     public void Validate_NegativeQuantity_IsInvalid(decimal quantity)
     {
         // Arrange
@@ -111,9 +111,9 @@ public class ItemAddValidatorTest
     }
 
     [Theory]
-    [InlineData(1)]
-    [InlineData(10)]
-    [InlineData(100)]
+    [InlineData(1, Label = "whole quantity is accepted")]
+    [InlineData(10, Label = "two digit quantity is accepted")]
+    [InlineData(100, Label = "large quantity is accepted")]
     public void Validate_ValidQuantity_IsValid(decimal quantity)
     {
         // Arrange

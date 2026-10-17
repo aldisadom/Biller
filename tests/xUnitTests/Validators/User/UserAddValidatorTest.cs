@@ -60,10 +60,10 @@ public class UserAddValidatorTest
     }
 
     [Theory]
-    [InlineData("notanemail")]
-    [InlineData("@nodomain.com")]
-    [InlineData("trailing.dot@example.com.")]
-    [InlineData("")]
+    [InlineData("notanemail", Label = "text without an at sign is rejected")]
+    [InlineData("@nodomain.com", Label = "address without a local part is rejected")]
+    [InlineData("trailing.dot@example.com.", Label = "domain ending with a dot is rejected")]
+    [InlineData("", Label = "empty email is rejected")]
     public void Validate_InvalidEmail_IsInvalid(string email)
     {
         // Arrange
@@ -79,9 +79,9 @@ public class UserAddValidatorTest
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("abc")]
-    [InlineData("short")]
+    [InlineData("", Label = "empty password is rejected")]
+    [InlineData("abc", Label = "three letter password is rejected")]
+    [InlineData("short", Label = "five letter password is rejected")]
     public void Validate_WeakPassword_IsInvalid(string password)
     {
         // Arrange
@@ -97,9 +97,9 @@ public class UserAddValidatorTest
     }
 
     [Theory]
-    [InlineData("password1")]
-    [InlineData("longenoughpassword")]
-    [InlineData("12345678")]
+    [InlineData("password1", Label = "letters with a digit are accepted")]
+    [InlineData("longenoughpassword", Label = "long lowercase password is accepted")]
+    [InlineData("12345678", Label = "eight digit password is accepted")]
     public void Validate_SufficientPassword_IsValid(string password)
     {
         // Arrange

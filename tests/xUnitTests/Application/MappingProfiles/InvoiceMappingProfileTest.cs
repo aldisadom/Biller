@@ -188,11 +188,9 @@ public class InvoiceMappingProfileTest
             UserId = userModel.Id,
             SellerId = sellerModel.Id,
             CustomerId = customerModel.Id,
-            Items = new()
-            {
-                new InvoiceItemRequest(){ Id = invoiceItems[0].Id, Quantity = invoiceItems[0].Quantity, Comments = invoiceItems[0].Comments },
-                new InvoiceItemRequest(){ Id = invoiceItems[1].Id, Quantity = invoiceItems[1].Quantity, Comments = invoiceItems[1].Comments }
-            },
+            Items = invoiceItems
+                .Select(item => new InvoiceItemRequest() { Id = item.Id, Quantity = item.Quantity, Comments = item.Comments })
+                .ToList(),
             Comments = "invoice comment",
             CreatedDate = DateOnly.FromDateTime(DateTime.Now),
             DueDate = DateOnly.FromDateTime(DateTime.Now)

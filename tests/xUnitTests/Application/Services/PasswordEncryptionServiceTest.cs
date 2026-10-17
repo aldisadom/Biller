@@ -58,8 +58,8 @@ public class PasswordEncryptionServiceTest
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
+    [InlineData(null, Label = "missing pepper throws")]
+    [InlineData("", Label = "empty pepper throws")]
     public void Encrypt_GivenInValidOptions_ThrowsException(string? pepper)
     {
         //Arrange        

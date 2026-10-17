@@ -126,10 +126,10 @@ public class SellerAddValidatorTest
     }
 
     [Theory]
-    [InlineData("notanemail")]
-    [InlineData("@nodomain.com")]
-    [InlineData("trailing.dot@example.com.")]
-    [InlineData("")]
+    [InlineData("notanemail", Label = "text without an at sign is rejected")]
+    [InlineData("@nodomain.com", Label = "address without a local part is rejected")]
+    [InlineData("trailing.dot@example.com.", Label = "domain ending with a dot is rejected")]
+    [InlineData("", Label = "empty email is rejected")]
     public void Validate_InvalidEmail_IsInvalid(string email)
     {
         // Arrange

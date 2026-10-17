@@ -14,8 +14,8 @@ public class PriceToWordsFactoryTest
     }
 
     [Theory]
-    [InlineData(Language.EN)]
-    [InlineData(Language.LT)]
+    [InlineData(Language.EN, Label = "english returns the price to words converter")]
+    [InlineData(Language.LT, Label = "lithuanian returns the price to words converter")]
     public void GetConverter_Returns(Language language)
     {
         //Arrange
