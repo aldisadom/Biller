@@ -9,7 +9,6 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using System.Net;
-using xUnitTests.Helpers;
 
 namespace xUnitTests.Application.Services;
 
@@ -29,7 +28,7 @@ public class ItemServiceTest
     public async Task GetId_GivenValidId_ReturnsDTO()
     {
         //Arrange
-        ItemEntity item = TestData.NewItemEntity();
+        ItemEntity item = new() { Id = Guid.NewGuid() };
 
         _itemRepositoryMock.Setup(m => m.Get(item.Id))
                         .ReturnsAsync(item);
@@ -64,7 +63,7 @@ public class ItemServiceTest
     public async Task GetIds_GivenValidIds_ReturnsDTOs()
     {
         //Arrange
-        List<ItemEntity> itemList = [TestData.NewItemEntity(), TestData.NewItemEntity(), TestData.NewItemEntity()];
+        List<ItemEntity> itemList = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         List<Guid> ids = itemList.Select(x => x.Id).ToList();
 
@@ -87,7 +86,7 @@ public class ItemServiceTest
     public async Task GetIdsWithValidation_GivenValidId_ReturnsDTO()
     {
         //Arrange
-        List<ItemEntity> itemList = [TestData.NewItemEntity(), TestData.NewItemEntity(), TestData.NewItemEntity()];
+        List<ItemEntity> itemList = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         List<Guid> ids = itemList.Select(x => x.Id).ToList();
         var customerId = Guid.NewGuid();
@@ -118,7 +117,7 @@ public class ItemServiceTest
     public async Task GetIdsWithValidation_GivenInvalidcustomerId_ReturnsErrorModel()
     {
         // Arrange
-        List<ItemEntity> itemList = [TestData.NewItemEntity(), TestData.NewItemEntity(), TestData.NewItemEntity()];
+        List<ItemEntity> itemList = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         List<Guid> ids = itemList.Select(x => x.Id).ToList();
         var customerId = Guid.NewGuid();
@@ -179,7 +178,7 @@ public class ItemServiceTest
     public async Task Get_GivenEmptyQuery_ReturnsDTO()
     {
         //Arrange
-        List<ItemEntity> itemList = [TestData.NewItemEntity(), TestData.NewItemEntity(), TestData.NewItemEntity()];
+        List<ItemEntity> itemList = [new(), new(), new()];
 
         ItemGetRequest request = new();
 
@@ -203,7 +202,7 @@ public class ItemServiceTest
     public async Task Get_GivenNullQuery_ReturnsDTO()
     {
         //Arrange
-        List<ItemEntity> itemList = [TestData.NewItemEntity(), TestData.NewItemEntity(), TestData.NewItemEntity()];
+        List<ItemEntity> itemList = [new(), new(), new()];
 
         ItemGetRequest? request = null;
 
@@ -227,7 +226,7 @@ public class ItemServiceTest
     public async Task Get_GivenAddressIdQuery_ReturnsDTO()
     {
         //Arrange
-        List<ItemEntity> itemList = [TestData.NewItemEntity(), TestData.NewItemEntity(), TestData.NewItemEntity()];
+        List<ItemEntity> itemList = [new(), new(), new()];
 
         ItemGetRequest? request = new()
         {
@@ -274,7 +273,7 @@ public class ItemServiceTest
     public async Task Add_GivenValidId_ReturnsGuid()
     {
         //Arrange
-        ItemModel item = TestData.NewItemModel();
+        ItemModel item = new() { Id = Guid.NewGuid() };
 
         ItemEntity itemEntity = item.ToEntity();
 
@@ -294,7 +293,7 @@ public class ItemServiceTest
     public async Task Update_ReturnsSuccess()
     {
         //Arrange
-        ItemModel item = TestData.NewItemModel();
+        ItemModel item = new() { Id = Guid.NewGuid() };
 
         ItemEntity itemEntity = item.ToEntity();
 
@@ -317,7 +316,7 @@ public class ItemServiceTest
     public async Task Update_InvalidId_NotFoundException()
     {
         //Arrange
-        ItemModel item = TestData.NewItemModel();
+        ItemModel item = new() { Id = Guid.NewGuid() };
 
         ItemEntity itemEntity = item.ToEntity();
 
@@ -340,7 +339,7 @@ public class ItemServiceTest
     public async Task Delete_ValidId()
     {
         //Arrange
-        ItemEntity item = TestData.NewItemEntity();
+        ItemEntity item = new() { Id = Guid.NewGuid() };
 
         _itemRepositoryMock.Setup(m => m.Delete(item.Id))
                         .Returns(Task.CompletedTask);

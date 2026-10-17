@@ -1,5 +1,4 @@
-﻿using Application.MappingProfiles;
-using Application.Models;
+﻿using Application.Models;
 using Application.Services;
 using BillerContracts;
 using BillerContracts.Requests.Customer;
@@ -9,7 +8,6 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using System.Net;
-using xUnitTests.Helpers;
 
 namespace xUnitTests.Application.Services;
 
@@ -29,12 +27,12 @@ public class CustomerServiceTest
     public async Task GetId_GivenValidId_ReturnsDTO()
     {
         //Arrange
-        CustomerEntity customer = TestData.NewCustomerEntity();
+        CustomerEntity customer = new() { Id = Guid.NewGuid() };
 
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
 
-        CustomerModel expectedResult = customer.ToModel();
+        CustomerModel expectedResult = new() { Id = customer.Id };
 
         //Act
         CustomerModel result = await _customerService.Get(customer.Id);
@@ -64,12 +62,12 @@ public class CustomerServiceTest
     public async Task GetIdWithValidation_GivenValidId_ReturnsDTO()
     {
         //Arrange
-        CustomerEntity customer = TestData.NewCustomerEntity();
+        CustomerEntity customer = new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() };
 
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
 
-        CustomerModel expectedResult = customer.ToModel();
+        CustomerModel expectedResult = new() { Id = customer.Id, SellerId = customer.SellerId };
 
         //Act
         var resultResponse = await _customerService.GetWithValidation(customer.Id, customer.SellerId);
@@ -88,7 +86,7 @@ public class CustomerServiceTest
     public async Task GetIdWithValidation_GivenInvalidSellerId_ReturnsErrorModel()
     {
         // Arrange
-        CustomerEntity customer = TestData.NewCustomerEntity();
+        CustomerEntity customer = new() { Id = Guid.NewGuid() };
 
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
@@ -146,14 +144,14 @@ public class CustomerServiceTest
     public async Task Get_GivenEmptyQuery_ReturnsDTO()
     {
         //Arrange
-        List<CustomerEntity> customerList = [TestData.NewCustomerEntity(), TestData.NewCustomerEntity(), TestData.NewCustomerEntity()];
+        List<CustomerEntity> customerList = [new(), new(), new()];
 
         CustomerGetRequest request = new();
 
         _customerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(customerList);
 
-        List<CustomerModel> expectedResult = customerList.Select(c => c.ToModel()).ToList();
+        List<CustomerModel> expectedResult = [new(), new(), new()];
 
         //Act
         var result = await _customerService.Get(request);
@@ -169,14 +167,14 @@ public class CustomerServiceTest
     public async Task Get_GivenNullQuery_ReturnsDTO()
     {
         //Arrange
-        List<CustomerEntity> customerList = [TestData.NewCustomerEntity(), TestData.NewCustomerEntity(), TestData.NewCustomerEntity()];
+        List<CustomerEntity> customerList = [new(), new(), new()];
 
         CustomerGetRequest? request = null;
 
         _customerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(customerList);
 
-        List<CustomerModel> expectedResult = customerList.Select(c => c.ToModel()).ToList();
+        List<CustomerModel> expectedResult = [new(), new(), new()];
 
         //Act
         var result = await _customerService.Get(request);
@@ -192,7 +190,7 @@ public class CustomerServiceTest
     public async Task Get_GivenAddressIdQuery_ReturnsDTO()
     {
         //Arrange
-        List<CustomerEntity> customerList = [TestData.NewCustomerEntity(), TestData.NewCustomerEntity(), TestData.NewCustomerEntity()];
+        List<CustomerEntity> customerList = [new(), new(), new()];
 
         CustomerGetRequest? request = new()
         {
@@ -201,8 +199,6 @@ public class CustomerServiceTest
 
         _customerRepositoryMock.Setup(m => m.GetBySellerId((Guid)request.SellerId!))
                         .ReturnsAsync(customerList);
-
-        List<CustomerModel> expectedResult = customerList.Select(c => c.ToModel()).ToList();
 
         //Act
         var result = await _customerService.Get(request);
@@ -237,10 +233,9 @@ public class CustomerServiceTest
     public async Task Add_GivenValidId_ReturnsGuid()
     {
         //Arrange
-        CustomerModel customer = TestData.NewCustomerModel();
+        CustomerModel customer = new() { Id = Guid.NewGuid() };
 
-        customer.InvoiceNumber = 1;
-        CustomerEntity customerEntity = customer.ToEntity();
+        CustomerEntity customerEntity = new() { Id = customer.Id, InvoiceNumber = 1 };
 
         _customerRepositoryMock.Setup(m => m.Add(It.Is<CustomerEntity>
                                 (x => x == customerEntity)))
@@ -259,9 +254,9 @@ public class CustomerServiceTest
     public async Task Update_ReturnsSuccess()
     {
         //Arrange
-        CustomerModel customer = TestData.NewCustomerModel();
+        CustomerModel customer = new() { Id = Guid.NewGuid() };
 
-        CustomerEntity customerEntity = customer.ToEntity();
+        CustomerEntity customerEntity = new() { Id = customer.Id };
 
         _customerRepositoryMock.Setup(m => m.Update(It.Is<CustomerEntity>(x => x == customerEntity)))
                         .Returns(Task.CompletedTask);
@@ -282,9 +277,7 @@ public class CustomerServiceTest
     public async Task Update_InvalidId_NotFoundException()
     {
         //Arrange
-        CustomerModel customer = TestData.NewCustomerModel();
-
-        CustomerEntity customerEntity = customer.ToEntity();
+        CustomerModel customer = new() { Id = Guid.NewGuid() };
 
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync((CustomerEntity)null!);
@@ -319,7 +312,7 @@ public class CustomerServiceTest
     public async Task Delete_ValidId()
     {
         //Arrange
-        CustomerEntity customer = TestData.NewCustomerEntity();
+        CustomerEntity customer = new() { Id = Guid.NewGuid() };
 
         _customerRepositoryMock.Setup(m => m.Delete(customer.Id))
                         .Returns(Task.CompletedTask);

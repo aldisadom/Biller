@@ -9,7 +9,6 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using System.Net;
-using xUnitTests.Helpers;
 
 namespace xUnitTests.Application.Services;
 
@@ -29,7 +28,7 @@ public class SellerServiceTest
     public async Task GetId_GivenValidId_ReturnsDTO()
     {
         //Arrange
-        SellerEntity seller = TestData.NewSellerEntity();
+        SellerEntity seller = new() { Id = Guid.NewGuid() };
 
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
@@ -64,7 +63,7 @@ public class SellerServiceTest
     public async Task GetIdWithValidation_GivenValidId_ReturnsDTO()
     {
         //Arrange
-        SellerEntity seller = TestData.NewSellerEntity();
+        SellerEntity seller = new() { Id = Guid.NewGuid(), UserId = Guid.NewGuid() };
 
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
@@ -88,7 +87,7 @@ public class SellerServiceTest
     public async Task GetIdWithValidation_GivenInvaliduserId_ReturnsErrorModel()
     {
         // Arrange
-        SellerEntity seller = TestData.NewSellerEntity();
+        SellerEntity seller = new() { Id = Guid.NewGuid() };
 
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
@@ -146,7 +145,7 @@ public class SellerServiceTest
     public async Task Get_GivenNoQuery_ReturnsDTO()
     {
         //Arrange
-        List<SellerEntity> sellerList = [TestData.NewSellerEntity(), TestData.NewSellerEntity(), TestData.NewSellerEntity()];
+        List<SellerEntity> sellerList = [new(), new(), new()];
 
         SellerGetRequest? request = null;
 
@@ -170,7 +169,7 @@ public class SellerServiceTest
     public async Task Get_GivenEmptyQuery_ReturnsDTO()
     {
         //Arrange
-        List<SellerEntity> sellerList = [TestData.NewSellerEntity(), TestData.NewSellerEntity(), TestData.NewSellerEntity()];
+        List<SellerEntity> sellerList = [new(), new(), new()];
 
         SellerGetRequest request = new();
 
@@ -194,7 +193,7 @@ public class SellerServiceTest
     public async Task Get_GivenAddressIdQuery_ReturnsDTO()
     {
         //Arrange
-        List<SellerEntity> sellerList = [TestData.NewSellerEntity(), TestData.NewSellerEntity(), TestData.NewSellerEntity()];
+        List<SellerEntity> sellerList = [new(), new(), new()];
 
         SellerGetRequest? request = new()
         {
@@ -241,7 +240,7 @@ public class SellerServiceTest
     public async Task Add_GivenValidId_ReturnsGuid()
     {
         //Arrange
-        SellerModel seller = TestData.NewSellerModel();
+        SellerModel seller = new() { Id = Guid.NewGuid() };
 
         SellerEntity sellerEntity = seller.ToEntity();
 
@@ -261,7 +260,7 @@ public class SellerServiceTest
     public async Task Update_ReturnsSuccess()
     {
         //Arrange
-        SellerModel seller = TestData.NewSellerModel();
+        SellerModel seller = new() { Id = Guid.NewGuid() };
 
         SellerEntity sellerEntity = seller.ToEntity();
 
@@ -284,7 +283,7 @@ public class SellerServiceTest
     public async Task Update_InvalidId_NotFoundException()
     {
         //Arrange
-        SellerModel seller = TestData.NewSellerModel();
+        SellerModel seller = new() { Id = Guid.NewGuid() };
 
         SellerEntity sellerEntity = seller.ToEntity();
 
@@ -307,7 +306,7 @@ public class SellerServiceTest
     public async Task Delete_ValidId()
     {
         //Arrange
-        SellerEntity seller = TestData.NewSellerEntity();
+        SellerEntity seller = new() { Id = Guid.NewGuid() };
 
         _sellerRepositoryMock.Setup(m => m.Delete(seller.Id))
                         .Returns(Task.CompletedTask);

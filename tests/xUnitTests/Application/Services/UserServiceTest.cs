@@ -7,7 +7,6 @@ using Domain.Exceptions;
 using Domain.Repositories;
 using FluentAssertions;
 using Moq;
-using xUnitTests.Helpers;
 
 namespace xUnitTests.Application.Services;
 
@@ -29,7 +28,7 @@ public class UserServiceTest
     public async Task Login_GivenValidPassword_ReturnsToken()
     {
         //Arrange
-        UserEntity user = TestData.NewUserEntity();
+        UserEntity user = new() { Email = "jon.snow@winterfell.com", Password = "ghost" };
 
         string expectedResult = "fakeToken";
 
@@ -55,7 +54,7 @@ public class UserServiceTest
     public async Task Login_GivenInvalidUser_ThrowsUnauthorizedException()
     {
         //Arrange
-        UserEntity user = TestData.NewUserEntity();
+        UserEntity user = new() { Email = "jon.snow@winterfell.com" };
 
         _userRepositoryMock.Setup(m => m.Get(user.Email))
                         .ReturnsAsync((UserEntity)null!);
@@ -74,7 +73,7 @@ public class UserServiceTest
     public async Task Login_GivenInvalidPassword_ThrowsUnauthorizedException()
     {
         //Arrange
-        UserEntity user = TestData.NewUserEntity();
+        UserEntity user = new() { Email = "jon.snow@winterfell.com", Password = "ghost" };
 
         _userRepositoryMock.Setup(m => m.Get(user.Email))
                         .ReturnsAsync(user);
@@ -96,7 +95,7 @@ public class UserServiceTest
     public async Task GetId_GivenValidId_ReturnsDTO()
     {
         //Arrange
-        UserEntity user = TestData.NewUserEntity();
+        UserEntity user = new() { Id = Guid.NewGuid() };
 
         _userRepositoryMock.Setup(m => m.Get(user.Id))
                         .ReturnsAsync(user);
@@ -131,7 +130,7 @@ public class UserServiceTest
     public async Task Get_ReturnsDTO()
     {
         //Arrange
-        List<UserEntity> userList = [TestData.NewUserEntity(), TestData.NewUserEntity(), TestData.NewUserEntity()];
+        List<UserEntity> userList = [new(), new(), new()];
 
         _userRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(userList);
@@ -172,7 +171,7 @@ public class UserServiceTest
     public async Task Add_GivenValidId_ReturnsGuid()
     {
         //Arrange
-        UserModel user = TestData.NewUserModel();
+        UserModel user = new() { Id = Guid.NewGuid(), Password = "ghost" };
 
         UserEntity userEntity = user.ToEntity();
         userEntity.Salt = " ";
@@ -197,7 +196,7 @@ public class UserServiceTest
     public async Task Update_ReturnsSuccess()
     {
         //Arrange
-        UserModel user = TestData.NewUserModel();
+        UserModel user = new() { Id = Guid.NewGuid() };
 
         UserEntity userEntity = user.ToEntity();
 
@@ -220,7 +219,7 @@ public class UserServiceTest
     public async Task Update_InvalidId_NotFoundException()
     {
         //Arrange
-        UserModel user = TestData.NewUserModel();
+        UserModel user = new() { Id = Guid.NewGuid() };
 
         UserEntity userEntity = user.ToEntity();
 
@@ -243,7 +242,7 @@ public class UserServiceTest
     public async Task Delete_ValidId()
     {
         //Arrange
-        UserEntity user = TestData.NewUserEntity();
+        UserEntity user = new() { Id = Guid.NewGuid() };
 
         _userRepositoryMock.Setup(m => m.Delete(user.Id))
                         .Returns(Task.CompletedTask);

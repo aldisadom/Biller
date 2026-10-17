@@ -12,7 +12,6 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
-using xUnitTests.Helpers;
 
 namespace xUnitTests.Application.Services;
 
@@ -44,11 +43,20 @@ public class InvoiceServiceTest
             _itemServiceMock.Object, _sellerServiceMock.Object, _invoiceDataRepositoryMock.Object, _invoiceDocumentFactory.Object);
     }
 
+    private static InvoiceModel NewInvoiceModel() => new()
+    {
+        Id = Guid.NewGuid(),
+        User = new() { Id = Guid.NewGuid() },
+        Seller = new() { Id = Guid.NewGuid() },
+        Customer = new() { Id = Guid.NewGuid() },
+        Items = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }]
+    };
+
     [Fact]
     public async Task GetId_GivenValidId_ReturnsDTO()
     {
         //Arrange
-        InvoiceEntity invoiceData = TestData.NewInvoiceEntity();
+        InvoiceEntity invoiceData = NewInvoiceModel().ToEntity();
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
                         .ReturnsAsync(invoiceData);
@@ -83,7 +91,7 @@ public class InvoiceServiceTest
     public async Task Get_GivenEmptyQuery_ReturnsDTO()
     {
         //Arrange
-        List<InvoiceEntity> invoiceDataList = [TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity()];
+        List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
 
         InvoiceGetRequest request = new();
 
@@ -107,7 +115,7 @@ public class InvoiceServiceTest
     public async Task Get_GivenNullQuery_ReturnsDTO()
     {
         //Arrange
-        List<InvoiceEntity> invoiceDataList = [TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity()];
+        List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
 
         InvoiceGetRequest? request = null;
 
@@ -131,7 +139,7 @@ public class InvoiceServiceTest
     public async Task Get_GivenCustomerIdQuery_ReturnsDTO()
     {
         //Arrange
-        List<InvoiceEntity> invoiceDataList = [TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity()];
+        List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
 
         InvoiceGetRequest? request = new()
         {
@@ -157,7 +165,7 @@ public class InvoiceServiceTest
     public async Task Get_GivenSellerIdQuery_ReturnsDTO()
     {
         //Arrange
-        List<InvoiceEntity> invoiceDataList = [TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity()];
+        List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
 
         InvoiceGetRequest? request = new()
         {
@@ -183,7 +191,7 @@ public class InvoiceServiceTest
     public async Task Get_GivenUserIdQuery_ReturnsDTO()
     {
         //Arrange
-        List<InvoiceEntity> invoiceDataList = [TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity(), TestData.NewInvoiceEntity()];
+        List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
 
         InvoiceGetRequest? request = new()
         {
@@ -209,7 +217,7 @@ public class InvoiceServiceTest
     public async Task Add_GivenInValidSeller_Throws()
     {
         //Arrange
-        InvoiceModel invoiceData = TestData.NewInvoiceModel();
+        InvoiceModel invoiceData = NewInvoiceModel();
 
         InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
@@ -251,7 +259,7 @@ public class InvoiceServiceTest
     public async Task Add_GivenInValidCustomer_Throws()
     {
         //Arrange
-        InvoiceModel invoiceData = TestData.NewInvoiceModel();
+        InvoiceModel invoiceData = NewInvoiceModel();
 
         InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
@@ -293,7 +301,7 @@ public class InvoiceServiceTest
     public async Task Add_GivenInValidItem_Throws()
     {
         //Arrange
-        InvoiceModel invoiceData = TestData.NewInvoiceModel();
+        InvoiceModel invoiceData = NewInvoiceModel();
 
         InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
@@ -335,7 +343,7 @@ public class InvoiceServiceTest
     public async Task Add_GivenValidData_ReturnsGuid()
     {
         //Arrange
-        InvoiceModel invoiceData = TestData.NewInvoiceModel();
+        InvoiceModel invoiceData = NewInvoiceModel();
 
         InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
@@ -503,7 +511,7 @@ public class InvoiceServiceTest
     public async Task Update_GivenValidInvoice_UpdatesInvoice()
     {
         // Arrange
-        InvoiceModel invoiceData = TestData.NewInvoiceModel();
+        InvoiceModel invoiceData = NewInvoiceModel();
 
         var invoiceEntity = invoiceData.ToEntity();
 

@@ -1,6 +1,6 @@
 ---
 name: write-tests
-description: Write or fix unit tests in Biller's xUnit project (tests/xUnitTests) following the repo's conventions — hand-built test data via TestData (no AutoFixture), strict Moq mocks with Verify, xUnit v3 theories with a Label per case, and the per-layer patterns for services, controllers, validators, mapping extensions, Swagger examples and DI registrations. Use this whenever the user wants tests added, extended, converted, reviewed or cleaned up in the Biller repo ("add tests for X", "cover this method", "close the coverage gap", "review this test file", "remove AutoData"), and whenever another skill reaches its testing step.
+description: Write or fix unit tests in Biller's xUnit project (tests/xUnitTests) following the repo's conventions — hand-built test data with object initializers (no AutoFixture, no shared TestData builders), strict Moq mocks with Verify, xUnit v3 theories with a Label per case, and the per-layer patterns for services, controllers, validators, mapping extensions, Swagger examples and DI registrations. Use this whenever the user wants tests added, extended, converted, reviewed or cleaned up in the Biller repo ("add tests for X", "cover this method", "close the coverage gap", "review this test file", "remove AutoData"), and whenever another skill reaches its testing step.
 ---
 
 # Writing tests for Biller
@@ -14,11 +14,14 @@ mirror its layout. The rules below win where older tests disagree.
 
 ## Hard rules
 
-- **No AutoFixture.** It was removed from the project, so don't add it back. Build data by hand:
-  `tests/xUnitTests/Helpers/TestData.cs` has `TestData.New<X>Entity()` / `New<X>Model()` builders
-  with every property set and fresh ids. Use them when a test needs a full object, and add a
-  builder there for a new type. Use object initializers with only the relevant fields
-  (`new SellerEntity { Id = Guid.NewGuid() }`) when the rest doesn't matter. Create exactly the
+- **No AutoFixture, no shared builders.** AutoFixture was removed from the project, so don't add
+  it back, and don't add a shared `TestData` helper class. Build data inline with object
+  initializers setting only the fields the test itself references (in a setup, call or assert).
+  If `GetId` only uses `customer.Id`, write `new() { Id = Guid.NewGuid() }`, not
+  `new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() }`; a list whose ids are never read is
+  `[new(), new(), new()]`. When a test
+  class needs a larger object graph many times (e.g. a full invoice), give that class its own
+  `private static New<X>()` method. Create exactly the
   entities the test needs, and pass the matching one by reference (`seller.Id`), never by index
   into a generated list (`sellers[1]`).
 - **Verify mock calls.** Mocks are `new Mock<IX>(MockBehavior.Strict)`. Every `Setup` gets a
