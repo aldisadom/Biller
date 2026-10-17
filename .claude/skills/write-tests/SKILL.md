@@ -96,9 +96,14 @@ user/seller/customer. Flag behaviour that looks wrong to the user instead of tes
   `CreatedAtActionResult`, `NoContentResult`) and its value against `model.ToResponse()`, then
   `VerifyNoOtherCalls()`.
 - **Request validators** (`Validators/<Entity>`): no mocks. A `private static ValidRequest()`
-  factory, one test proving it is valid, then one test per rule that breaks a single field and asserts
-  `result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Field))`. Boundary values
-  via `[Theory, InlineData]`.
+  factory, one test proving it is valid, then tests that break a single field and assert
+  `result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Field))`. Fields that fail
+  the same way (required field left empty) share one theory,
+  `Validate_GivenEmptyRequiredField_IsInvalid`, fed by
+  `IEnumerable<TheoryDataRow<Action<TRequest>, string>>` with one labelled row per field:
+  `yield return new(r => r.CompanyName = string.Empty, nameof(TRequest.CompanyName)) { Label = "empty company name is rejected" };`.
+  Rules with their own logic (email format, boundaries, nested validators) keep their own test;
+  boundary values via `[Theory, InlineData]`.
 - **Validators with repositories** (e.g. `InvoiceValidator`): strict repository mocks with
   `Verify`, `MemberData` theories feeding the repository result, the ID(s) to check and the
   expected `bool`.

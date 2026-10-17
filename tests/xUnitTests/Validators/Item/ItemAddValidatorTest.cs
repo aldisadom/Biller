@@ -29,34 +29,26 @@ public class ItemAddValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Validate_GivenEmptyCustomerId_IsInvalid()
+    public static IEnumerable<TheoryDataRow<Action<ItemAddRequest>, string>> GetEmptyRequiredFieldTestData()
     {
-        // Arrange
-        var request = ValidRequest();
-        request.CustomerId = Guid.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.CustomerId));
+        yield return new(r => r.CustomerId = Guid.Empty, nameof(ItemAddRequest.CustomerId)) { Label = "empty customer id is rejected" };
+        yield return new(r => r.Name = string.Empty, nameof(ItemAddRequest.Name)) { Label = "empty name is rejected" };
     }
 
-    [Fact]
-    public void Validate_GivenEmptyName_IsInvalid()
+    [Theory]
+    [MemberData(nameof(GetEmptyRequiredFieldTestData))]
+    public void Validate_GivenEmptyRequiredField_IsInvalid(Action<ItemAddRequest> clearField, string propertyName)
     {
         // Arrange
         var request = ValidRequest();
-        request.Name = string.Empty;
+        clearField(request);
 
         // Act
         var result = _validator.Validate(request);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Name));
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
 
     [Theory]

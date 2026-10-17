@@ -28,48 +28,26 @@ public class UserUpdateValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Validate_GivenEmptyId_IsInvalid()
+    public static IEnumerable<TheoryDataRow<Action<UserUpdateRequest>, string>> GetEmptyRequiredFieldTestData()
     {
-        // Arrange
-        var request = ValidRequest();
-        request.Id = Guid.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Id));
+        yield return new(r => r.Id = Guid.Empty, nameof(UserUpdateRequest.Id)) { Label = "empty id is rejected" };
+        yield return new(r => r.Name = string.Empty, nameof(UserUpdateRequest.Name)) { Label = "empty name is rejected" };
+        yield return new(r => r.LastName = string.Empty, nameof(UserUpdateRequest.LastName)) { Label = "empty last name is rejected" };
     }
 
-    [Fact]
-    public void Validate_GivenEmptyName_IsInvalid()
+    [Theory]
+    [MemberData(nameof(GetEmptyRequiredFieldTestData))]
+    public void Validate_GivenEmptyRequiredField_IsInvalid(Action<UserUpdateRequest> clearField, string propertyName)
     {
         // Arrange
         var request = ValidRequest();
-        request.Name = string.Empty;
+        clearField(request);
 
         // Act
         var result = _validator.Validate(request);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Name));
-    }
-
-    [Fact]
-    public void Validate_GivenEmptyLastName_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.LastName = string.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.LastName));
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
 }

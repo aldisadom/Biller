@@ -34,94 +34,32 @@ public class CustomerUpdateValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Validate_GivenEmptyId_IsInvalid()
+    public static IEnumerable<TheoryDataRow<Action<CustomerUpdateRequest>, string>> GetEmptyRequiredFieldTestData()
     {
-        // Arrange
-        var request = ValidRequest();
-        request.Id = Guid.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Id));
+        yield return new(r => r.Id = Guid.Empty, nameof(CustomerUpdateRequest.Id)) { Label = "empty id is rejected" };
+        yield return new(r => r.CompanyNumber = string.Empty, nameof(CustomerUpdateRequest.CompanyNumber)) { Label = "empty company number is rejected" };
+        yield return new(r => r.CompanyName = string.Empty, nameof(CustomerUpdateRequest.CompanyName)) { Label = "empty company name is rejected" };
+        yield return new(r => r.Street = string.Empty, nameof(CustomerUpdateRequest.Street)) { Label = "empty street is rejected" };
+        yield return new(r => r.City = string.Empty, nameof(CustomerUpdateRequest.City)) { Label = "empty city is rejected" };
+        yield return new(r => r.State = string.Empty, nameof(CustomerUpdateRequest.State)) { Label = "empty state is rejected" };
+        yield return new(r => r.Phone = string.Empty, nameof(CustomerUpdateRequest.Phone)) { Label = "empty phone is rejected" };
+        yield return new(r => r.InvoiceName = string.Empty, nameof(CustomerUpdateRequest.InvoiceName)) { Label = "empty invoice name is rejected" };
     }
 
-    [Fact]
-    public void Validate_GivenEmptyCompanyNumber_IsInvalid()
+    [Theory]
+    [MemberData(nameof(GetEmptyRequiredFieldTestData))]
+    public void Validate_GivenEmptyRequiredField_IsInvalid(Action<CustomerUpdateRequest> clearField, string propertyName)
     {
         // Arrange
         var request = ValidRequest();
-        request.CompanyNumber = string.Empty;
+        clearField(request);
 
         // Act
         var result = _validator.Validate(request);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.CompanyNumber));
-    }
-
-    [Fact]
-    public void Validate_GivenEmptyCompanyName_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.CompanyName = string.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.CompanyName));
-    }
-
-    [Fact]
-    public void Validate_GivenEmptyStreet_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.Street = string.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Street));
-    }
-
-    [Fact]
-    public void Validate_GivenEmptyCity_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.City = string.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.City));
-    }
-
-    [Fact]
-    public void Validate_GivenEmptyState_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.State = string.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.State));
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
 
     [Theory]
@@ -141,36 +79,6 @@ public class CustomerUpdateValidatorTest
         // Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Email));
-    }
-
-    [Fact]
-    public void Validate_GivenEmptyPhone_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.Phone = string.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Phone));
-    }
-
-    [Fact]
-    public void Validate_GivenEmptyInvoiceName_IsInvalid()
-    {
-        // Arrange
-        var request = ValidRequest();
-        request.InvoiceName = string.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.InvoiceName));
     }
 
     [Theory]

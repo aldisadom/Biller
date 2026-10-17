@@ -66,34 +66,26 @@ public class InvoiceUpdateValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Validate_GivenEmptyId_IsInvalid()
+    public static IEnumerable<TheoryDataRow<Action<InvoiceUpdateRequest>, string>> GetEmptyRequiredFieldTestData()
     {
-        // Arrange
-        var request = ValidRequest();
-        request.Id = Guid.Empty;
-
-        // Act
-        var result = _validator.Validate(request);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Id));
+        yield return new(r => r.Id = Guid.Empty, nameof(InvoiceUpdateRequest.Id)) { Label = "empty id is rejected" };
+        yield return new(r => r.Items = [], nameof(InvoiceUpdateRequest.Items)) { Label = "empty item list is rejected" };
     }
 
-    [Fact]
-    public void Validate_GivenEmptyItems_IsInvalid()
+    [Theory]
+    [MemberData(nameof(GetEmptyRequiredFieldTestData))]
+    public void Validate_GivenEmptyRequiredField_IsInvalid(Action<InvoiceUpdateRequest> clearField, string propertyName)
     {
         // Arrange
         var request = ValidRequest();
-        request.Items = [];
+        clearField(request);
 
         // Act
         var result = _validator.Validate(request);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Items));
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
 
     [Fact]
