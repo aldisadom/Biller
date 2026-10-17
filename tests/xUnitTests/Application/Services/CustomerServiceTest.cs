@@ -46,14 +46,16 @@ public class CustomerServiceTest
     [Fact]
     public async Task GetId_GivenInvalidId_ThrowNotFoundException()
     {
-        // Arrange
+        //Arrange
         Guid id = Guid.NewGuid();
 
         _customerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((CustomerEntity)null!);
 
-        // Act Assert
-        await Assert.ThrowsAsync<NotFoundException>(async () => await _customerService.Get(id));
+        //Act
+        //Assert
+        await _customerService.Invoking(x => x.Get(id))
+                            .Should().ThrowAsync<NotFoundException>();
 
         _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
@@ -85,7 +87,7 @@ public class CustomerServiceTest
     [Fact]
     public async Task GetIdWithValidation_GivenInvalidSellerId_ReturnsErrorModel()
     {
-        // Arrange
+        //Arrange
         CustomerEntity customer = new() { Id = Guid.NewGuid() };
 
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
@@ -99,7 +101,7 @@ public class CustomerServiceTest
             ExtendedMessage = $"Customer id {customer.Id} is invalid for seller id {sellerId}"
         };
 
-        // Act
+        //Act
         var resultResponse = await _customerService.GetWithValidation(customer.Id, sellerId);
         ErrorModel result = resultResponse.Match(
             entity => { throw new Exception("Got entity not error" + entity.ToString()); },
@@ -114,7 +116,7 @@ public class CustomerServiceTest
     [Fact]
     public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel()
     {
-        // Arrange
+        //Arrange
         Guid id = Guid.NewGuid();
 
         _customerRepositoryMock.Setup(m => m.Get(id))
@@ -128,7 +130,7 @@ public class CustomerServiceTest
             ExtendedMessage = $"Customer id {id} is invalid for seller id {sellerId}"
         };
 
-        // Act
+        //Act
         var resultResponse = await _customerService.GetWithValidation(id, sellerId);
         ErrorModel result = resultResponse.Match(
             entity => { throw new Exception("Got entity not error" + entity.ToString()); },
@@ -169,24 +171,27 @@ public class CustomerServiceTest
     }
 
     [Fact]
-    public async Task Get_GivenAddressIdQuery_ReturnsDTO()
+    public async Task Get_GivenSellerIdQuery_ReturnsDTO()
     {
         //Arrange
         List<CustomerEntity> customerList = [new(), new(), new()];
 
         CustomerGetRequest? request = new()
         {
-            SellerId = new Guid()
+            SellerId = Guid.NewGuid()
         };
 
         _customerRepositoryMock.Setup(m => m.GetBySellerId((Guid)request.SellerId!))
                         .ReturnsAsync(customerList);
+
+        List<CustomerModel> expectedResult = [new(), new(), new()];
 
         //Act
         var result = await _customerService.Get(request);
 
         //Assert
         result.Count().Should().Be(customerList.Count);
+        result.Should().BeEquivalentTo(expectedResult);
 
         _customerRepositoryMock.Verify(m => m.GetBySellerId((Guid)request.SellerId!), Times.Once());
     }
@@ -194,17 +199,17 @@ public class CustomerServiceTest
     [Fact]
     public async Task Get_GivenEmpty_ShouldReturnEmpty()
     {
-        // Arrange
+        //Arrange
         CustomerGetRequest request = new();
         List<CustomerEntity> customerList = [];
 
-        //Arrange
         _customerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(customerList);
 
-        // Act Assert
+        //Act
         var result = await _customerService.Get(request);
 
+        //Assert
         result.Count().Should().Be(0);
         result.Should().BeEquivalentTo(new List<CustomerModel>());
 
@@ -219,8 +224,7 @@ public class CustomerServiceTest
 
         CustomerEntity customerEntity = new() { Id = customer.Id, InvoiceNumber = 1 };
 
-        _customerRepositoryMock.Setup(m => m.Add(It.Is<CustomerEntity>
-                                (x => x == customerEntity)))
+        _customerRepositoryMock.Setup(m => m.Add(customerEntity))
                                  .ReturnsAsync(customer.Id);
 
         //Act
@@ -240,7 +244,7 @@ public class CustomerServiceTest
 
         CustomerEntity customerEntity = new() { Id = customer.Id };
 
-        _customerRepositoryMock.Setup(m => m.Update(It.Is<CustomerEntity>(x => x == customerEntity)))
+        _customerRepositoryMock.Setup(m => m.Update(customerEntity))
                         .Returns(Task.CompletedTask);
 
         _customerRepositoryMock.Setup(m => m.Get(customerEntity.Id))
