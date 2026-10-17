@@ -40,7 +40,7 @@ public class SellerControllerTest
     [Fact]
     public async Task Get_GivenValidId_ReturnsOkWithSellerResponse()
     {
-        // Arrange
+        //Arrange
         var seller = new SellerModel
         {
             Id = _seller1Id,
@@ -50,10 +50,10 @@ public class SellerControllerTest
         _sellerServiceMock.Setup(s => s.Get(seller.Id))
             .ReturnsAsync(seller);
 
-        // Act
+        //Act
         var result = await _sellerController.Get(seller.Id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(seller.ToResponse());
 
@@ -64,7 +64,7 @@ public class SellerControllerTest
     [Fact]
     public async Task Get_GivenQuery_ReturnsOkWithSellerListResponse()
     {
-        // Arrange
+        //Arrange
         var sellers = new List<SellerModel>
         {
             new() { Id = _seller1Id, UserId = _userId },
@@ -75,10 +75,10 @@ public class SellerControllerTest
         _sellerServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync(sellers);
 
-        // Act
+        //Act
         var result = await _sellerController.Get(query);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new SellerListResponse
             {
@@ -92,7 +92,7 @@ public class SellerControllerTest
     [Fact]
     public async Task Add_GivenValidRequest_ReturnsCreatedWithAddResponse()
     {
-        // Arrange
+        //Arrange
         var request = new SellerAddRequest
         {
             UserId = _userId
@@ -103,10 +103,10 @@ public class SellerControllerTest
         _sellerServiceMock.Setup(s => s.Add(request.ToModel()))
             .ReturnsAsync(_seller1Id);
 
-        // Act
+        //Act
         var result = await _sellerController.Add(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<CreatedAtActionResult>()
             .Which.Value.Should().BeEquivalentTo(new AddResponse { Id = _seller1Id });
 
@@ -119,7 +119,7 @@ public class SellerControllerTest
     [Fact]
     public async Task Update_GivenValidRequest_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var request = new SellerUpdateRequest
         {
             Id = _seller1Id
@@ -130,10 +130,10 @@ public class SellerControllerTest
         _sellerServiceMock.Setup(s => s.Update(request.ToModel()))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _sellerController.Update(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
@@ -145,19 +145,59 @@ public class SellerControllerTest
     [Fact]
     public async Task Delete_GivenValidId_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var id = Guid.NewGuid();
 
         _sellerServiceMock.Setup(s => s.Delete(id))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _sellerController.Delete(id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _sellerServiceMock.Verify(s => s.Delete(id), Times.Once());
+        _sellerServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Add_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new SellerAddRequest();
+
+        _validatorAddMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.CompanyName), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _sellerController.Add(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorAddMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorAddMock.VerifyNoOtherCalls();
+        _sellerServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Update_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new SellerUpdateRequest();
+
+        _validatorUpdateMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.Id), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _sellerController.Update(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorUpdateMock.VerifyNoOtherCalls();
         _sellerServiceMock.VerifyNoOtherCalls();
     }
 }

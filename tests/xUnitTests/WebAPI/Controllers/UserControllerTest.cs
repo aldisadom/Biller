@@ -42,7 +42,7 @@ public class UserControllerTest
     [Fact]
     public async Task Login_GivenValidRequest_ReturnsOkWithToken()
     {
-        // Arrange
+        //Arrange
         var request = new UserLoginRequest
         {
             Email = "test@test.com",
@@ -55,10 +55,10 @@ public class UserControllerTest
         _userServiceMock.Setup(s => s.Login(request.ToModel()))
             .ReturnsAsync(token);
 
-        // Act
+        //Act
         var result = await _userController.Login(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new UserLoginResponse { Token = token });
 
@@ -71,7 +71,7 @@ public class UserControllerTest
     [Fact]
     public async Task Get_GivenValidId_ReturnsOkWithUserResponse()
     {
-        // Arrange
+        //Arrange
         var user = new UserModel
         {
             Id = _user1Id
@@ -80,10 +80,10 @@ public class UserControllerTest
         _userServiceMock.Setup(s => s.Get(user.Id))
             .ReturnsAsync(user);
 
-        // Act
+        //Act
         var result = await _userController.Get(user.Id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(user.ToResponse());
 
@@ -94,7 +94,7 @@ public class UserControllerTest
     [Fact]
     public async Task Get_GivenUsers_ReturnsOkWithUserListResponse()
     {
-        // Arrange
+        //Arrange
         var users = new List<UserModel>
         {
             new() { Id = _user1Id },
@@ -104,10 +104,10 @@ public class UserControllerTest
         _userServiceMock.Setup(s => s.Get())
             .ReturnsAsync(users);
 
-        // Act
+        //Act
         var result = await _userController.Get();
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new UserListResponse
             {
@@ -121,7 +121,7 @@ public class UserControllerTest
     [Fact]
     public async Task Add_GivenValidRequest_ReturnsCreatedWithAddResponse()
     {
-        // Arrange
+        //Arrange
         var request = new UserAddRequest
         {
             Email = "test@test.com"
@@ -132,10 +132,10 @@ public class UserControllerTest
         _userServiceMock.Setup(s => s.Add(request.ToModel()))
             .ReturnsAsync(_user1Id);
 
-        // Act
+        //Act
         var result = await _userController.Add(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<CreatedAtActionResult>()
             .Which.Value.Should().BeEquivalentTo(new AddResponse { Id = _user1Id });
 
@@ -148,7 +148,7 @@ public class UserControllerTest
     [Fact]
     public async Task Update_GivenValidRequest_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var request = new UserUpdateRequest
         {
             Id = _user1Id
@@ -159,10 +159,10 @@ public class UserControllerTest
         _userServiceMock.Setup(s => s.Update(request.ToModel()))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _userController.Update(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
@@ -174,19 +174,79 @@ public class UserControllerTest
     [Fact]
     public async Task Delete_GivenValidId_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var id = Guid.NewGuid();
 
         _userServiceMock.Setup(s => s.Delete(id))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _userController.Delete(id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _userServiceMock.Verify(s => s.Delete(id), Times.Once());
+        _userServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Login_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new UserLoginRequest();
+
+        _validatorLoginMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.Email), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _userController.Login(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorLoginMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorLoginMock.VerifyNoOtherCalls();
+        _userServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Add_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new UserAddRequest();
+
+        _validatorAddMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.Email), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _userController.Add(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorAddMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorAddMock.VerifyNoOtherCalls();
+        _userServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Update_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new UserUpdateRequest();
+
+        _validatorUpdateMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.Id), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _userController.Update(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorUpdateMock.VerifyNoOtherCalls();
         _userServiceMock.VerifyNoOtherCalls();
     }
 }

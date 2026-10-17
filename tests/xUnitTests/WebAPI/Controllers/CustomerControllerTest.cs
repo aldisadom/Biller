@@ -20,8 +20,8 @@ public class CustomerControllerTest
     private readonly Mock<IValidator<CustomerAddRequest>> _validatorAddMock;
     private readonly Mock<IValidator<CustomerUpdateRequest>> _validatorUpdateMock;
     private readonly CustomerController _customerController;
-    private readonly Guid _customerI1d = Guid.NewGuid();
-    private readonly Guid _customerI2d = Guid.NewGuid();
+    private readonly Guid _customer1Id = Guid.NewGuid();
+    private readonly Guid _customer2Id = Guid.NewGuid();
     private readonly Guid _sellerId = Guid.NewGuid();
 
     public CustomerControllerTest()
@@ -40,20 +40,20 @@ public class CustomerControllerTest
     [Fact]
     public async Task Get_GivenValidId_ReturnsOkWithCustomerResponse()
     {
-        // Arrange
+        //Arrange
         var customer = new CustomerModel
         {
-            Id = _customerI1d,
+            Id = _customer1Id,
             SellerId = _sellerId
         };
 
         _customerServiceMock.Setup(s => s.Get(customer.Id))
             .ReturnsAsync(customer);
 
-        // Act
+        //Act
         var result = await _customerController.Get(customer.Id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(customer.ToResponse());
 
@@ -64,21 +64,21 @@ public class CustomerControllerTest
     [Fact]
     public async Task Get_GivenQuery_ReturnsOkWithCustomerListResponse()
     {
-        // Arrange
+        //Arrange
         var customers = new List<CustomerModel>
         {
-            new() { Id = _customerI1d, SellerId = _sellerId },
-            new() { Id = _customerI2d, SellerId = _sellerId }
+            new() { Id = _customer1Id, SellerId = _sellerId },
+            new() { Id = _customer2Id, SellerId = _sellerId }
         };
         var query = new CustomerGetRequest { SellerId = _sellerId };
 
         _customerServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync(customers);
 
-        // Act
+        //Act
         var result = await _customerController.Get(query);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new CustomerListResponse
             {
@@ -92,7 +92,7 @@ public class CustomerControllerTest
     [Fact]
     public async Task Add_GivenValidRequest_ReturnsCreatedWithAddResponse()
     {
-        // Arrange
+        //Arrange
         var request = new CustomerAddRequest
         {
             SellerId = _sellerId
@@ -101,14 +101,14 @@ public class CustomerControllerTest
         _validatorAddMock.Setup(v => v.Validate(request))
             .Returns(new ValidationResult());
         _customerServiceMock.Setup(s => s.Add(request.ToModel()))
-            .ReturnsAsync(_customerI1d);
+            .ReturnsAsync(_customer1Id);
 
-        // Act
+        //Act
         var result = await _customerController.Add(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<CreatedAtActionResult>()
-            .Which.Value.Should().BeEquivalentTo(new AddResponse { Id = _customerI1d });
+            .Which.Value.Should().BeEquivalentTo(new AddResponse { Id = _customer1Id });
 
         _validatorAddMock.Verify(v => v.Validate(request), Times.Once());
         _validatorAddMock.VerifyNoOtherCalls();
@@ -119,7 +119,7 @@ public class CustomerControllerTest
     [Fact]
     public async Task Update_GivenValidRequest_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var request = new CustomerUpdateRequest
         {
             Id = Guid.NewGuid()
@@ -130,10 +130,10 @@ public class CustomerControllerTest
         _customerServiceMock.Setup(s => s.Update(request.ToModel()))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _customerController.Update(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
@@ -145,19 +145,59 @@ public class CustomerControllerTest
     [Fact]
     public async Task Delete_GivenValidId_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var id = Guid.NewGuid();
 
         _customerServiceMock.Setup(s => s.Delete(id))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _customerController.Delete(id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _customerServiceMock.Verify(s => s.Delete(id), Times.Once());
+        _customerServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Add_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new CustomerAddRequest();
+
+        _validatorAddMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.CompanyName), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _customerController.Add(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorAddMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorAddMock.VerifyNoOtherCalls();
+        _customerServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Update_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new CustomerUpdateRequest();
+
+        _validatorUpdateMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.Id), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _customerController.Update(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorUpdateMock.VerifyNoOtherCalls();
         _customerServiceMock.VerifyNoOtherCalls();
     }
 }
