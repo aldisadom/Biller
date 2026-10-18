@@ -5,8 +5,9 @@ description: Write or fix unit tests in Biller's xUnit project (tests/xUnitTests
 
 # Writing tests for Biller
 
-One test project, `tests/xUnitTests`, mirrors `src` folder by folder
-(`src/Validators/Invoice/X.cs` → `tests/xUnitTests/Validators/Invoice/XTest.cs`).
+One test project, `tests/xUnitTests`, mirrors `src` folder by folder and file by file
+(`src/Validators/Invoice/X.cs` → `tests/xUnitTests/Validators/Invoice/XTest.cs`): one test file
+per source file, never one per class.
 Stack: xUnit v3 (`xunit.v3`), Moq, FluentAssertions. AutoFixture has been removed from the project.
 
 Before writing, open the code under test **and** a neighboring test in the same folder, and
@@ -35,6 +36,12 @@ mirror its layout. The rules below win where older tests disagree.
 ## Shape of a test
 
 - One flat test class per class under test, named `<Class>Test`. No nested classes or `#region`s.
+- When a source file holds several classes, its single test file holds one top-level test class
+  per class, in the same order as the source. For example,
+  `src/Application/Helpers/NumberToWords/NumberToWordsEN.cs` defines `NumberToWordsEN`,
+  `OnesToWordsEN`, … `MillionsToWordsEN`, so `NumberToWordsENTest.cs` holds `NumberToWordsENTest`,
+  `OnesToWordsENTest`, … `MillionsToWordsENTest`. Each class has its own mocks and constructor.
+  Don't merge classes under test into one test class, and don't split them into extra files.
 - Shared mocks and the system under test are `private readonly` fields created in the constructor.
 - Names: `Method_GivenCondition_ExpectedResult`, e.g. `IsValidSellerId_GivenOtherSeller_ReturnsFalse`.
   A theory that covers several conditions uses `Method_GivenX_ReturnsExpected`.

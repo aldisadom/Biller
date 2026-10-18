@@ -6,19 +6,12 @@ namespace xUnitTests.Application.Helpers.NumberToWords;
 
 public class NumberToWordsLTTest
 {
-    private readonly NumberToWordsLT _numberToWordsLT;
     private readonly Mock<IOnesToWords> _onesToWordsMock;
     private readonly Mock<ITensToWords> _tensToWordsMock;
     private readonly Mock<IHundredsToWords> _hundredsToWordsMock;
     private readonly Mock<IThousandsToWords> _thousandsToWordsMock;
     private readonly Mock<IMillionsToWords> _millionsToWordsMock;
-
-    private readonly OnesToWordsLT _onesToWords;
-    private readonly TensToWordsLT _tensToWords;
-    private readonly HundredsToWordsLT _hundredsToWords;
-    private readonly ThousandsToWordsLT _thousandsToWords;
-    private readonly MillionsToWordsLT _millionsToWords;
-
+    private readonly NumberToWordsLT _numberToWordsLT;
 
     public NumberToWordsLTTest()
     {
@@ -28,98 +21,102 @@ public class NumberToWordsLTTest
         _thousandsToWordsMock = new Mock<IThousandsToWords>(MockBehavior.Strict);
         _millionsToWordsMock = new Mock<IMillionsToWords>(MockBehavior.Strict);
 
-        _onesToWordsMock.Setup(x => x.OnesSplit(It.IsAny<int>(), It.IsAny<bool>()))
-            .Returns((int number, bool hasBefore) => { return $"{(hasBefore ? " " : "")}[MockOne{number}]"; });
-        _tensToWordsMock.Setup(x => x.TensSplit(It.IsAny<int>(), It.IsAny<bool>()))
-           .Returns((int number, bool hasBefore) => { return $"{(hasBefore ? " " : "")}[MockTen{number}]"; });
-        _hundredsToWordsMock.Setup(x => x.HundredsSplit(It.IsAny<int>(), It.IsAny<bool>()))
-           .Returns((int number, bool hasBefore) => { return $"{(hasBefore ? " " : "")}[MockHundred{number}]"; });
-        _thousandsToWordsMock.Setup(x => x.ThousandsSplit(It.IsAny<int>(), It.IsAny<bool>()))
-           .Returns((int number, bool hasBefore) => { return $"{(hasBefore ? " " : "")}[MockThousand{number}]"; });
-
         _numberToWordsLT = new NumberToWordsLT(_onesToWordsMock.Object, _tensToWordsMock.Object, _hundredsToWordsMock.Object, _thousandsToWordsMock.Object, _millionsToWordsMock.Object);
-
-        _onesToWords = new OnesToWordsLT();
-        _tensToWords = new TensToWordsLT(_onesToWordsMock.Object);
-        _hundredsToWords = new HundredsToWordsLT(_onesToWordsMock.Object, _tensToWordsMock.Object);
-        _thousandsToWords = new ThousandsToWordsLT(_hundredsToWordsMock.Object);
-        _millionsToWords = new MillionsToWordsLT(_hundredsToWordsMock.Object, _thousandsToWordsMock.Object);
-
     }
 
     [Fact]
-    public void NumberToWordsOnesSplit_GivenValid_ReturnsResult()
+    public void OnesSplit_GivenNumber_ReturnsResultOfOnesConverter()
     {
         //Arrange
         int number = 1;
         _onesToWordsMock.Setup(x => x.OnesSplit(number, false))
-            .Returns("");
+            .Returns("[ones]");
 
         //Act
         string result = _numberToWordsLT.OnesSplit(number, false);
 
         //Assert
+        result.Should().Be("[ones]");
+
         _onesToWordsMock.Verify(x => x.OnesSplit(number, false), Times.Once());
     }
 
     [Fact]
-    public void NumberToWordsTensSplit_GivenValid_ReturnsResult()
+    public void TensSplit_GivenNumber_ReturnsResultOfTensConverter()
     {
         //Arrange
         int number = 10;
         _tensToWordsMock.Setup(x => x.TensSplit(number, false))
-            .Returns("");
+            .Returns("[tens]");
 
         //Act
         string result = _numberToWordsLT.TensSplit(number, false);
 
         //Assert
+        result.Should().Be("[tens]");
+
         _tensToWordsMock.Verify(x => x.TensSplit(number, false), Times.Once());
     }
 
     [Fact]
-    public void NumberToWordsHundredsSplit_GivenValid_ReturnsResult()
+    public void HundredsSplit_GivenNumber_ReturnsResultOfHundredsConverter()
     {
         //Arrange
         int number = 100;
         _hundredsToWordsMock.Setup(x => x.HundredsSplit(number, false))
-            .Returns("");
+            .Returns("[hundreds]");
 
         //Act
         string result = _numberToWordsLT.HundredsSplit(number, false);
 
         //Assert
+        result.Should().Be("[hundreds]");
+
         _hundredsToWordsMock.Verify(x => x.HundredsSplit(number, false), Times.Once());
     }
 
     [Fact]
-    public void NumberToWordsThousandsSplit_GivenValid_ReturnsResult()
+    public void ThousandsSplit_GivenNumber_ReturnsResultOfThousandsConverter()
     {
         //Arrange
         int number = 1000;
         _thousandsToWordsMock.Setup(x => x.ThousandsSplit(number, false))
-            .Returns("");
+            .Returns("[thousands]");
 
         //Act
         string result = _numberToWordsLT.ThousandsSplit(number, false);
 
         //Assert
+        result.Should().Be("[thousands]");
+
         _thousandsToWordsMock.Verify(x => x.ThousandsSplit(number, false), Times.Once());
     }
 
     [Fact]
-    public void NumberToWordsMillionsSplit_GivenValid_ReturnsResult()
+    public void MillionsSplit_GivenNumber_ReturnsResultOfMillionsConverter()
     {
         //Arrange
         int number = 1000000;
         _millionsToWordsMock.Setup(x => x.MillionsSplit(number))
-            .Returns("");
+            .Returns("[millions]");
 
         //Act
         string result = _numberToWordsLT.MillionsSplit(number);
 
         //Assert
+        result.Should().Be("[millions]");
+
         _millionsToWordsMock.Verify(x => x.MillionsSplit(number), Times.Once());
+    }
+}
+
+public class OnesToWordsLTTest
+{
+    private readonly OnesToWordsLT _onesToWords;
+
+    public OnesToWordsLTTest()
+    {
+        _onesToWords = new OnesToWordsLT();
     }
 
     [Theory]
@@ -141,7 +138,7 @@ public class NumberToWordsLTTest
         string result = _onesToWords.OnesSplit(number, hasBefore);
 
         //Assert
-        result.Should().BeEquivalentTo(expectedWord);
+        result.Should().Be(expectedWord);
     }
 
     [Theory]
@@ -149,13 +146,30 @@ public class NumberToWordsLTTest
     [InlineData(-1, Label = "negative number throws")]
     public void OnesSplit_GivenInvalidNumber_ThrowsException(int number)
     {
-        //Arrange        
+        //Arrange
         //Act
-        //Assert
-        _onesToWords.Invoking(x => x.OnesSplit(number, false))
-            .Should().Throw<ArgumentException>();
-    }
+        Action act = () => _onesToWords.OnesSplit(number, false);
 
+        //Assert
+        act.Should().Throw<ArgumentException>();
+    }
+}
+
+public class TensToWordsLTTest
+{
+    private readonly Mock<IOnesToWords> _onesToWordsMock;
+    private readonly TensToWordsLT _tensToWords;
+
+    public TensToWordsLTTest()
+    {
+        // The stubs write their arguments into the text they return (" [MockOne5]" is OnesSplit(5, true)),
+        // so each expected string also checks which calls were made and with what arguments.
+        _onesToWordsMock = new Mock<IOnesToWords>(MockBehavior.Strict);
+        _onesToWordsMock.Setup(x => x.OnesSplit(It.IsAny<int>(), It.IsAny<bool>()))
+            .Returns((int number, bool hasBefore) => $"{(hasBefore ? " " : "")}[MockOne{number}]");
+
+        _tensToWords = new TensToWordsLT(_onesToWordsMock.Object);
+    }
 
     [Theory]
     [InlineData(9, false, "[MockOne9]", Label = "single digit is delegated to the ones converter")]
@@ -180,7 +194,7 @@ public class NumberToWordsLTTest
         string result = _tensToWords.TensSplit(number, hasBefore);
 
         //Assert
-        result.Should().BeEquivalentTo(expectedWord);
+        result.Should().Be(expectedWord);
     }
 
     [Theory]
@@ -190,9 +204,31 @@ public class NumberToWordsLTTest
     {
         //Arrange
         //Act
+        Action act = () => _tensToWords.TensSplit(number, false);
+
         //Assert
-        _tensToWords.Invoking(x => x.TensSplit(number, false))
-            .Should().Throw<ArgumentException>();
+        act.Should().Throw<ArgumentException>();
+    }
+}
+
+public class HundredsToWordsLTTest
+{
+    private readonly Mock<IOnesToWords> _onesToWordsMock;
+    private readonly Mock<ITensToWords> _tensToWordsMock;
+    private readonly HundredsToWordsLT _hundredsToWords;
+
+    public HundredsToWordsLTTest()
+    {
+        // The stubs write their arguments into the text they return (" [MockOne5]" is OnesSplit(5, true)),
+        // so each expected string also checks which calls were made and with what arguments.
+        _onesToWordsMock = new Mock<IOnesToWords>(MockBehavior.Strict);
+        _onesToWordsMock.Setup(x => x.OnesSplit(It.IsAny<int>(), It.IsAny<bool>()))
+            .Returns((int number, bool hasBefore) => $"{(hasBefore ? " " : "")}[MockOne{number}]");
+        _tensToWordsMock = new Mock<ITensToWords>(MockBehavior.Strict);
+        _tensToWordsMock.Setup(x => x.TensSplit(It.IsAny<int>(), It.IsAny<bool>()))
+            .Returns((int number, bool hasBefore) => $"{(hasBefore ? " " : "")}[MockTen{number}]");
+
+        _hundredsToWords = new HundredsToWordsLT(_onesToWordsMock.Object, _tensToWordsMock.Object);
     }
 
     [Theory]
@@ -207,7 +243,7 @@ public class NumberToWordsLTTest
         string result = _hundredsToWords.HundredsSplit(number, hasBefore);
 
         //Assert
-        result.Should().BeEquivalentTo(expectedWord);
+        result.Should().Be(expectedWord);
     }
 
     [Theory]
@@ -217,9 +253,27 @@ public class NumberToWordsLTTest
     {
         //Arrange
         //Act
+        Action act = () => _hundredsToWords.HundredsSplit(number, false);
+
         //Assert
-        _hundredsToWords.Invoking(x => x.HundredsSplit(number, false))
-            .Should().Throw<ArgumentException>();
+        act.Should().Throw<ArgumentException>();
+    }
+}
+
+public class ThousandsToWordsLTTest
+{
+    private readonly Mock<IHundredsToWords> _hundredsToWordsMock;
+    private readonly ThousandsToWordsLT _thousandsToWords;
+
+    public ThousandsToWordsLTTest()
+    {
+        // The stubs write their arguments into the text they return (" [MockOne5]" is OnesSplit(5, true)),
+        // so each expected string also checks which calls were made and with what arguments.
+        _hundredsToWordsMock = new Mock<IHundredsToWords>(MockBehavior.Strict);
+        _hundredsToWordsMock.Setup(x => x.HundredsSplit(It.IsAny<int>(), It.IsAny<bool>()))
+            .Returns((int number, bool hasBefore) => $"{(hasBefore ? " " : "")}[MockHundred{number}]");
+
+        _thousandsToWords = new ThousandsToWordsLT(_hundredsToWordsMock.Object);
     }
 
     [Theory]
@@ -250,7 +304,7 @@ public class NumberToWordsLTTest
         string result = _thousandsToWords.ThousandsSplit(number, hasBefore);
 
         //Assert
-        result.Should().BeEquivalentTo(expectedWord);
+        result.Should().Be(expectedWord);
     }
 
     [Theory]
@@ -260,9 +314,31 @@ public class NumberToWordsLTTest
     {
         //Arrange
         //Act
+        Action act = () => _thousandsToWords.ThousandsSplit(number, false);
+
         //Assert
-        _thousandsToWords.Invoking(x => x.ThousandsSplit(number, false))
-            .Should().Throw<ArgumentException>();
+        act.Should().Throw<ArgumentException>();
+    }
+}
+
+public class MillionsToWordsLTTest
+{
+    private readonly Mock<IHundredsToWords> _hundredsToWordsMock;
+    private readonly Mock<IThousandsToWords> _thousandsToWordsMock;
+    private readonly MillionsToWordsLT _millionsToWords;
+
+    public MillionsToWordsLTTest()
+    {
+        // The stubs write their arguments into the text they return (" [MockOne5]" is OnesSplit(5, true)),
+        // so each expected string also checks which calls were made and with what arguments.
+        _hundredsToWordsMock = new Mock<IHundredsToWords>(MockBehavior.Strict);
+        _hundredsToWordsMock.Setup(x => x.HundredsSplit(It.IsAny<int>(), It.IsAny<bool>()))
+            .Returns((int number, bool hasBefore) => $"{(hasBefore ? " " : "")}[MockHundred{number}]");
+        _thousandsToWordsMock = new Mock<IThousandsToWords>(MockBehavior.Strict);
+        _thousandsToWordsMock.Setup(x => x.ThousandsSplit(It.IsAny<int>(), It.IsAny<bool>()))
+            .Returns((int number, bool hasBefore) => $"{(hasBefore ? " " : "")}[MockThousand{number}]");
+
+        _millionsToWords = new MillionsToWordsLT(_hundredsToWordsMock.Object, _thousandsToWordsMock.Object);
     }
 
     [Theory]
@@ -292,7 +368,7 @@ public class NumberToWordsLTTest
         string result = _millionsToWords.MillionsSplit(number);
 
         //Assert
-        result.Should().BeEquivalentTo(expectedWord);
+        result.Should().Be(expectedWord);
     }
 
     [Theory]
@@ -302,8 +378,9 @@ public class NumberToWordsLTTest
     {
         //Arrange
         //Act
+        Action act = () => _millionsToWords.MillionsSplit(number);
+
         //Assert
-        _millionsToWords.Invoking(x => x.MillionsSplit(number))
-            .Should().Throw<ArgumentException>();
+        act.Should().Throw<ArgumentException>();
     }
 }
