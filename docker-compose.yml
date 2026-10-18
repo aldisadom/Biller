@@ -46,6 +46,7 @@ services:
   webapi:
     image: ${DOCKER_REGISTRY-}webapi    
     container_name: "billio-webapi"  
+    restart: unless-stopped
     depends_on: 
       - db
     environment:
