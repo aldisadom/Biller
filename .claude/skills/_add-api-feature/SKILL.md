@@ -1,5 +1,5 @@
 ---
-name: add-api-feature
+name: _add-api-feature
 description: Add or extend a Biller REST API feature end-to-end across every layer — BillerContracts request/response records, FluentValidation validator, Swagger examples, controller, application service + model + mapping extensions, domain entity + repository interface, Dapper repository, Liquibase migration, DI registrations, and unit tests. Use this whenever the user wants a new entity/resource (e.g. "add payments", "CRUD for products"), a new endpoint, or a new field exposed through the API in the Biller repo, even if they only mention one layer ("add a Currency field to invoices", "new GET by seller endpoint") — fields and endpoints almost always ripple through several layers.
 ---
 
@@ -57,7 +57,7 @@ Steps:
   the snake_case columns, because Dapper runs with `MatchNamesWithUnderscores = true`.
 - `src/Domain/Repositories/I<X>Repository.cs`: `Get(Guid)` returning `<X>Entity?`, `Get()`,
   filter queries, `Add` returning `Guid`, `Update`, `Delete`.
-- **Migration**: use the `add-db-migration` skill (next number in `migrations/sql/`, rollback line,
+- **Migration**: use the `_add-db-migration` skill (next number in `migrations/sql/`, rollback line,
   snake_case plural table, `uuid DEFAULT gen_random_uuid()` PK).
 
 ## 3. Infrastructure
@@ -107,7 +107,7 @@ Steps:
 
 ## 7. Tests (`tests/xUnitTests`)
 
-Write them with the `write-tests` skill, which has the conventions and per-layer patterns. The Item
+Write them with the `_write-tests` skill, which has the conventions and per-layer patterns. The Item
 tests show which files a feature needs. A new resource needs:
 - `Application/Services/<X>ServiceTest.cs`, including a `NotFoundException` case for get/update/delete.
 - `Application/MappingProfiles/<X>MappingProfileTest.cs`: one test per extension method.
@@ -119,7 +119,7 @@ tests show which files a feature needs. A new resource needs:
 
 ## 8. Verify
 
-1. Run the `test-coverage` skill. Everything should pass, and the new classes should show coverage.
+1. Run the `_test-coverage` skill. Everything should pass, and the new classes should show coverage.
 2. Optionally (ask first) see it live with the `run-local-stack` skill (create the entity via
    curl/Swagger), and run the `integration-tests` skill. Note that it wipes the local DB, and new
    endpoints need integration tests on a same-named branch in BillioIntegrationTest.

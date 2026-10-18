@@ -1,5 +1,5 @@
 ---
-name: test-coverage
+name: _test-coverage
 description: Run Biller's xUnit test suite with code coverage, generate the HTML/text coverage report, and summarise failures and coverage gaps. Use this whenever the user wants to run tests, check that a change didn't break anything, see coverage numbers, find untested code, or asks "do the tests pass?" in the Biller repo — including after finishing a feature, migration, or invoice layout change, even if they don't say "coverage".
 ---
 
@@ -12,9 +12,9 @@ The repo is a .NET 8 solution (`Billio.sln`) with one unit-test project, `tests/
 ## Run it
 
 ```bash
-bash .claude/skills/test-coverage/scripts/run-coverage.sh                  # full suite + report
-bash .claude/skills/test-coverage/scripts/run-coverage.sh --filter "FullyQualifiedName~ItemService"   # subset
-bash .claude/skills/test-coverage/scripts/run-coverage.sh --no-report      # tests only, faster
+bash .claude/skills/_test-coverage/scripts/run-coverage.sh                  # full suite + report
+bash .claude/skills/_test-coverage/scripts/run-coverage.sh --filter "FullyQualifiedName~ItemService"   # subset
+bash .claude/skills/_test-coverage/scripts/run-coverage.sh --no-report      # tests only, faster
 ```
 
 The script picks `dotnet` or, from WSL, Windows `dotnet.exe` / `reportgenerator.exe`
@@ -54,6 +54,6 @@ instead of linking.
 
 ## Writing missing tests
 
-When asked to close a gap, write the tests with the `write-tests` skill, which holds the test
+When asked to close a gap, write the tests with the `_write-tests` skill, which holds the test
 conventions (no AutoFixture, strict mocks with `Verify`, labelled theory cases, per-layer patterns).
 Re-run the script afterwards to confirm the new tests pass and the number moved.

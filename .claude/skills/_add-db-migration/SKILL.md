@@ -1,5 +1,5 @@
 ---
-name: add-db-migration
+name: _add-db-migration
 description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQL database — new tables, new/renamed/altered columns, indexes, constraints — following the repo's numbering, naming, and rollback conventions, and optionally apply it locally via docker compose. Use this whenever a change in the Biller repo needs a schema change, e.g. "add a column", "new table for X", "make email unique", "store invoice currency", or when an entity/repository change implies the DB must change, even if the user doesn't say "migration" or "Liquibase". Not for seeding initial, sample, or test data.
 ---
 
@@ -66,7 +66,7 @@ description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQ
    the `*Entity` record in `src/Domain/Entities`, SQL strings in
    `src/Infrastructure/Repository/*Repository.cs` (INSERT column lists, UPDATE SET lists),
    models + mapping extensions in `src/Application`. If the field must be exposed through the API,
-   use the `add-api-feature` skill — request/response types live in the separate BillerContracts
+   use the `_add-api-feature` skill — request/response types live in the separate BillerContracts
    NuGet package.
 5. **Apply locally (optional — ask first, it changes the user's local DB)**:
    `bash .claude/skills/run-local-stack/scripts/stack.sh migrate` starts the db and runs `liquibase update`,

@@ -1,5 +1,5 @@
 ---
-name: write-tests
+name: _write-tests
 description: Write or fix unit tests in Biller's xUnit project (tests/xUnitTests) following the repo's conventions — hand-built test data with object initializers (no AutoFixture, no shared TestData builders), strict Moq mocks with Verify, xUnit v3 theories with a Label per case, and the per-layer patterns for services, controllers, validators, mapping extensions, Swagger examples and DI registrations. Use this whenever the user wants tests added, extended, converted, reviewed or cleaned up in the Biller repo ("add tests for X", "cover this method", "close the coverage gap", "review this test file", "remove AutoData"), and whenever another skill reaches its testing step.
 ---
 
@@ -128,10 +128,10 @@ user/seller/customer. Flag behaviour that looks wrong to the user instead of tes
   `Validators/DependencyInjectionTests.cs`): add an assert for every new service, repository or
   validator.
 - **Number-to-words / price-to-words** (`Application/Helpers`): many `[InlineData]` rows; the
-  `add-language` skill lists the values to cover.
+  `_add-language` skill lists the values to cover.
 
 ## Finish
 
-Run the new tests with the `test-coverage` skill (use `--filter "FullyQualifiedName~<Class>Test"`
+Run the new tests with the `_test-coverage` skill (use `--filter "FullyQualifiedName~<Class>Test"`
 for a quick run, then the full suite). Report the pass count, and any behaviour you flagged
 instead of testing.
