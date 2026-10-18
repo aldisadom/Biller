@@ -18,13 +18,13 @@ public class UserUpdateValidatorTest
     [Fact]
     public void Validate_GivenValidRequest_IsValid()
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 
@@ -39,14 +39,14 @@ public class UserUpdateValidatorTest
     [MemberData(nameof(GetEmptyRequiredFieldTestData))]
     public void Validate_GivenEmptyRequiredField_IsInvalid(Action<UserUpdateRequest> clearField, string propertyName)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         clearField(request);
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }

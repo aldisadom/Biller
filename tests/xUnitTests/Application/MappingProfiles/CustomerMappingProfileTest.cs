@@ -12,7 +12,7 @@ public class CustomerMappingProfileTest
     [Fact]
     public void ToEntity_GivenModel_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new CustomerModel
         {
             Id = Guid.NewGuid(),
@@ -28,17 +28,17 @@ public class CustomerMappingProfileTest
             InvoiceNumber = 6
         };
 
-        // Act
+        //Act
         var to = from.ToEntity();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
     public void ToModel_GivenEntity_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new CustomerEntity
         {
             Id = Guid.NewGuid(),
@@ -54,17 +54,17 @@ public class CustomerMappingProfileTest
             InvoiceNumber = 6
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
     public void ToModel_GivenAddRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new CustomerAddRequest
         {
             SellerId = Guid.NewGuid(),
@@ -78,17 +78,17 @@ public class CustomerMappingProfileTest
             InvoiceName = "INV"
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
     }
 
     [Fact]
     public void ToModel_GivenUpdateRequest_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new CustomerUpdateRequest
         {
             Id = Guid.NewGuid(),
@@ -103,17 +103,17 @@ public class CustomerMappingProfileTest
             InvoiceNumber = 6
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
     }
 
     [Fact]
     public void ToResponse_GivenModel_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new CustomerModel
         {
             Id = Guid.NewGuid(),
@@ -129,17 +129,17 @@ public class CustomerMappingProfileTest
             InvoiceNumber = 6
         };
 
-        // Act
+        //Act
         var to = from.ToResponse();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
     public void ToModel_GivenResponse_MapsAllProperties()
     {
-        // Arrange
+        //Arrange
         var from = new CustomerResponse
         {
             Id = Guid.NewGuid(),
@@ -155,10 +155,10 @@ public class CustomerMappingProfileTest
             InvoiceNumber = 6
         };
 
-        // Act
+        //Act
         var to = from.ToModel();
 
-        // Assert
+        //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 }

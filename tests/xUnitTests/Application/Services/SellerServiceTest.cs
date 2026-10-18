@@ -47,14 +47,16 @@ public class SellerServiceTest
     [Fact]
     public async Task GetId_GivenInvalidId_ThrowNotFoundException()
     {
-        // Arrange
+        //Arrange
         Guid id = Guid.NewGuid();
 
         _sellerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((SellerEntity)null!);
 
-        // Act Assert
-        await Assert.ThrowsAsync<NotFoundException>(async () => await _sellerService.Get(id));
+        //Act
+        //Assert
+        await _sellerService.Invoking(x => x.Get(id))
+                            .Should().ThrowAsync<NotFoundException>();
 
         _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
@@ -86,7 +88,7 @@ public class SellerServiceTest
     [Fact]
     public async Task GetIdWithValidation_GivenInvaliduserId_ReturnsErrorModel()
     {
-        // Arrange
+        //Arrange
         SellerEntity seller = new() { Id = Guid.NewGuid() };
 
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
@@ -100,7 +102,7 @@ public class SellerServiceTest
             ExtendedMessage = $"Seller id {seller.Id} is invalid for user id {userId}"
         };
 
-        // Act
+        //Act
         var resultResponse = await _sellerService.GetWithValidation(seller.Id, userId);
         ErrorModel result = resultResponse.Match(
             entity => { throw new Exception("Got entity not error" + entity.ToString()); },
@@ -115,7 +117,7 @@ public class SellerServiceTest
     [Fact]
     public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel()
     {
-        // Arrange
+        //Arrange
         Guid id = Guid.NewGuid();
 
         _sellerRepositoryMock.Setup(m => m.Get(id))
@@ -129,7 +131,7 @@ public class SellerServiceTest
             ExtendedMessage = $"Seller id {id} is invalid for user id {userId}"
         };
 
-        // Act
+        //Act
         var resultResponse = await _sellerService.GetWithValidation(id, userId);
         ErrorModel result = resultResponse.Match(
             entity => { throw new Exception("Got entity not error" + entity.ToString()); },
@@ -171,14 +173,14 @@ public class SellerServiceTest
     }
 
     [Fact]
-    public async Task Get_GivenAddressIdQuery_ReturnsDTO()
+    public async Task Get_GivenUserIdQuery_ReturnsDTO()
     {
         //Arrange
         List<SellerEntity> sellerList = [new(), new(), new()];
 
         SellerGetRequest? request = new()
         {
-            UserId = new Guid()
+            UserId = Guid.NewGuid()
         };
 
         _sellerRepositoryMock.Setup(m => m.GetByUserId((Guid)request.UserId!))
@@ -191,25 +193,26 @@ public class SellerServiceTest
 
         //Assert
         result.Count().Should().Be(sellerList.Count);
+        result.Should().BeEquivalentTo(expectedResult);
 
         _sellerRepositoryMock.Verify(m => m.GetByUserId((Guid)request.UserId!), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Never());
+        _sellerRepositoryMock.Verify(m => m.Get(), Times.Never());
     }
 
     [Fact]
     public async Task Get_GivenEmpty_ShouldReturnEmpty()
     {
-        // Arrange
+        //Arrange
         SellerGetRequest request = new();
         List<SellerEntity> sellerList = [];
 
-        //Arrange
         _sellerRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(sellerList);
 
-        // Act Assert
+        //Act
         var result = await _sellerService.Get(request);
 
+        //Assert
         result.Count().Should().Be(0);
         result.Should().BeEquivalentTo(new List<SellerModel>());
 
@@ -225,7 +228,7 @@ public class SellerServiceTest
 
         SellerEntity sellerEntity = seller.ToEntity();
 
-        _sellerRepositoryMock.Setup(m => m.Add(It.Is<SellerEntity>(x => x == sellerEntity)))
+        _sellerRepositoryMock.Setup(m => m.Add(sellerEntity))
                                  .ReturnsAsync(seller.Id);
 
         //Act
@@ -245,7 +248,7 @@ public class SellerServiceTest
 
         SellerEntity sellerEntity = seller.ToEntity();
 
-        _sellerRepositoryMock.Setup(m => m.Update(It.Is<SellerEntity>(x => x == sellerEntity)))
+        _sellerRepositoryMock.Setup(m => m.Update(sellerEntity))
                         .Returns(Task.CompletedTask);
 
         _sellerRepositoryMock.Setup(m => m.Get(sellerEntity.Id))
@@ -265,11 +268,6 @@ public class SellerServiceTest
     {
         //Arrange
         SellerModel seller = new() { Id = Guid.NewGuid() };
-
-        SellerEntity sellerEntity = seller.ToEntity();
-
-        _sellerRepositoryMock.Setup(m => m.Update(It.Is<SellerEntity>
-                                (x => x == sellerEntity)));
 
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync((SellerEntity)null!);
@@ -309,8 +307,6 @@ public class SellerServiceTest
     {
         //Arrange
         Guid id = Guid.NewGuid();
-
-        _sellerRepositoryMock.Setup(m => m.Delete(id));
 
         _sellerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((SellerEntity)null!);

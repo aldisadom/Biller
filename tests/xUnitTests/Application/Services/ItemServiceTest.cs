@@ -47,14 +47,16 @@ public class ItemServiceTest
     [Fact]
     public async Task GetId_GivenInvalidId_ThrowNotFoundException()
     {
-        // Arrange
+        //Arrange
         Guid id = Guid.NewGuid();
 
         _itemRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((ItemEntity)null!);
 
-        // Act Assert
-        await Assert.ThrowsAsync<NotFoundException>(async () => await _itemService.Get(id));
+        //Act
+        //Assert
+        await _itemService.Invoking(x => x.Get(id))
+                            .Should().ThrowAsync<NotFoundException>();
 
         _itemRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
@@ -116,7 +118,7 @@ public class ItemServiceTest
     [Fact]
     public async Task GetIdsWithValidation_GivenInvalidcustomerId_ReturnsErrorModel()
     {
-        // Arrange
+        //Arrange
         List<ItemEntity> itemList = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         List<Guid> ids = itemList.Select(x => x.Id).ToList();
@@ -133,7 +135,7 @@ public class ItemServiceTest
             ExtendedMessage = $"Items id {itemsIds} is invalid for customer id {customerId}"
         };
 
-        // Act
+        //Act
         var resultResponse = await _itemService.GetWithValidation(ids, customerId);
         ErrorModel result = resultResponse.Match(
             entity => { throw new Exception("Got entity not error" + entity.ToString()); },
@@ -148,7 +150,7 @@ public class ItemServiceTest
     [Fact]
     public async Task GetIdsWithValidation_GivenInvalidId_ReturnsErrorModel()
     {
-        // Arrange
+        //Arrange
         List<Guid> ids = new() { Guid.NewGuid() };
         var customerId = Guid.NewGuid();
 
@@ -162,7 +164,7 @@ public class ItemServiceTest
             ExtendedMessage = $"Items id {ids[0]} is invalid for customer id {customerId}"
         };
 
-        // Act
+        //Act
         var resultResponse = await _itemService.GetWithValidation(ids, customerId);
         ErrorModel result = resultResponse.Match(
             entity => { throw new Exception("Got entity not error" + entity.ToString()); },
@@ -204,14 +206,14 @@ public class ItemServiceTest
     }
 
     [Fact]
-    public async Task Get_GivenAddressIdQuery_ReturnsDTO()
+    public async Task Get_GivenCustomerIdQuery_ReturnsDTO()
     {
         //Arrange
         List<ItemEntity> itemList = [new(), new(), new()];
 
         ItemGetRequest? request = new()
         {
-            CustomerId = new Guid()
+            CustomerId = Guid.NewGuid()
         };
 
         _itemRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.CustomerId!))
@@ -224,25 +226,26 @@ public class ItemServiceTest
 
         //Assert
         result.Count().Should().Be(itemList.Count);
+        result.Should().BeEquivalentTo(expectedResult);
 
         _itemRepositoryMock.Verify(m => m.GetByCustomerId((Guid)request.CustomerId!), Times.Once());
-        _itemRepositoryMock.Verify(m => m.Get(It.IsAny<Guid>()), Times.Never());
+        _itemRepositoryMock.Verify(m => m.Get(), Times.Never());
     }
 
     [Fact]
     public async Task Get_GivenEmpty_ShouldReturnEmpty()
     {
-        // Arrange
+        //Arrange
         ItemGetRequest request = new();
         List<ItemEntity> itemList = [];
 
-        //Arrange
         _itemRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(itemList);
 
-        // Act Assert
+        //Act
         var result = await _itemService.Get(request);
 
+        //Assert
         result.Count().Should().Be(0);
         result.Should().BeEquivalentTo(new List<ItemModel>());
 
@@ -258,7 +261,7 @@ public class ItemServiceTest
 
         ItemEntity itemEntity = item.ToEntity();
 
-        _itemRepositoryMock.Setup(m => m.Add(It.Is<ItemEntity>(x => x == itemEntity)))
+        _itemRepositoryMock.Setup(m => m.Add(itemEntity))
                                  .ReturnsAsync(item.Id);
 
         //Act
@@ -278,7 +281,7 @@ public class ItemServiceTest
 
         ItemEntity itemEntity = item.ToEntity();
 
-        _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>(x => x == itemEntity)))
+        _itemRepositoryMock.Setup(m => m.Update(itemEntity))
                         .Returns(Task.CompletedTask);
 
         _itemRepositoryMock.Setup(m => m.Get(itemEntity.Id))
@@ -298,11 +301,6 @@ public class ItemServiceTest
     {
         //Arrange
         ItemModel item = new() { Id = Guid.NewGuid() };
-
-        ItemEntity itemEntity = item.ToEntity();
-
-        _itemRepositoryMock.Setup(m => m.Update(It.Is<ItemEntity>
-                                (x => x == itemEntity)));
 
         _itemRepositoryMock.Setup(m => m.Get(item.Id))
                         .ReturnsAsync((ItemEntity)null!);
@@ -342,8 +340,6 @@ public class ItemServiceTest
     {
         //Arrange
         Guid id = Guid.NewGuid();
-
-        _itemRepositoryMock.Setup(m => m.Delete(id));
 
         _itemRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((ItemEntity)null!);

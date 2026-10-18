@@ -19,13 +19,13 @@ public class UserAddValidatorTest
     [Fact]
     public void Validate_GivenValidRequest_IsValid()
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 
@@ -39,14 +39,14 @@ public class UserAddValidatorTest
     [MemberData(nameof(GetEmptyRequiredFieldTestData))]
     public void Validate_GivenEmptyRequiredField_IsInvalid(Action<UserAddRequest> clearField, string propertyName)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         clearField(request);
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
@@ -58,14 +58,14 @@ public class UserAddValidatorTest
     [InlineData("", Label = "empty email is rejected")]
     public void Validate_GivenInvalidEmail_IsInvalid(string email)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.Email = email;
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Email));
     }
@@ -76,14 +76,14 @@ public class UserAddValidatorTest
     [InlineData("short", Label = "five letter password is rejected")]
     public void Validate_GivenWeakPassword_IsInvalid(string password)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.Password = password;
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Password));
     }
@@ -94,14 +94,14 @@ public class UserAddValidatorTest
     [InlineData("12345678", Label = "eight digit password is accepted")]
     public void Validate_GivenSufficientPassword_IsValid(string password)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.Password = password;
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 }

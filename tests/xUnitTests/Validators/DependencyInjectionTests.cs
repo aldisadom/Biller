@@ -39,15 +39,15 @@ public class DependencyInjectionTests
     [Fact]
     public void AddValidations_GivenServiceCollection_RegistersExactlyAllValidators()
     {
-        // Arrange
+        //Arrange
         var services = new ServiceCollection();
 
-        // Act
+        //Act
         var result = services.AddValidations();
         using var serviceProvider = services.BuildServiceProvider();
         using var scope = serviceProvider.CreateScope();
 
-        // Assert
+        //Assert
         using var _ = new AssertionScope();
 
         result.Should().BeSameAs(services);
