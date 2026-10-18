@@ -10,27 +10,30 @@ public class PasswordEncryptionServiceTest
 {
     private const string _pepper = "random pepper";
 
+    private static Mock<IOptions<PasswordEncryption>> NewOptionsMock(string pepper)
+    {
+        Mock<IOptions<PasswordEncryption>> optionsMock = new(MockBehavior.Strict);
+        optionsMock.Setup(x => x.Value)
+            .Returns(new PasswordEncryption() { Pepper = pepper });
+
+        return optionsMock;
+    }
+
     [Fact]
     public void Encrypt_GivenWithoutSalt_ReturnsEncryptedAndRandomSalt()
     {
-        //Arrange        
-        Mock<IOptions<PasswordEncryption>> _passwordEncryption = new();
-        _passwordEncryption.Setup(x => x.Value)
-            .Returns(new PasswordEncryption()
-            {
-                Pepper = _pepper
-            });
-
-        PasswordEncryptionService _passwordEncryptionService = new(_passwordEncryption.Object);
+        //Arrange
+        Mock<IOptions<PasswordEncryption>> optionsMock = NewOptionsMock(_pepper);
+        PasswordEncryptionService passwordEncryptionService = new(optionsMock.Object);
 
         //Act
-        (string hashed, string salt) = _passwordEncryptionService.Encrypt("MyPassword");
+        (string hashed, string salt) = passwordEncryptionService.Encrypt("MyPassword");
 
         //Assert
         hashed.Should().StartWith("$2a$13$");
         salt.Should().StartWith("$2a$13$");
 
-        _passwordEncryption.Verify(m => m.Value, Times.Once());
+        optionsMock.Verify(m => m.Value, Times.Once());
     }
 
     [Fact]
@@ -38,23 +41,17 @@ public class PasswordEncryptionServiceTest
     {
         //Arrange
         string salt = "$2a$10$TaqaG43aDC1Ai75moe.ENO";
-        Mock<IOptions<PasswordEncryption>> _passwordEncryption = new();
-        _passwordEncryption.Setup(x => x.Value)
-            .Returns(new PasswordEncryption()
-            {
-                Pepper = _pepper
-            });
-
-        PasswordEncryptionService _passwordEncryptionService = new(_passwordEncryption.Object);
+        Mock<IOptions<PasswordEncryption>> optionsMock = NewOptionsMock(_pepper);
+        PasswordEncryptionService passwordEncryptionService = new(optionsMock.Object);
 
         //Act
-        (string hashed, string encryptionSalt) = _passwordEncryptionService.Encrypt("MyPassword", salt);
+        (string hashed, string encryptionSalt) = passwordEncryptionService.Encrypt("MyPassword", salt);
 
         //Assert
-        hashed.Should().BeEquivalentTo("$2a$10$TaqaG43aDC1Ai75moe.ENOnhvzNttzNShq1XnlVCEFnqcWgI7IN72");
-        encryptionSalt.Should().BeEquivalentTo(salt);
+        hashed.Should().Be("$2a$10$TaqaG43aDC1Ai75moe.ENOnhvzNttzNShq1XnlVCEFnqcWgI7IN72");
+        encryptionSalt.Should().Be(salt);
 
-        _passwordEncryption.Verify(m => m.Value, Times.Once());
+        optionsMock.Verify(m => m.Value, Times.Once());
     }
 
     [Theory]
@@ -62,27 +59,15 @@ public class PasswordEncryptionServiceTest
     [InlineData("", Label = "empty pepper throws")]
     public void Encrypt_GivenInValidOptions_ThrowsException(string? pepper)
     {
-        //Arrange        
-        Mock<IOptions<PasswordEncryption>> _passwordEncryption = new();
-        _passwordEncryption.Setup(x => x.Value)
-            .Returns(new PasswordEncryption()
-            {
-                Pepper = pepper!
-            });
-        bool pass = false;
+        //Arrange
+        Mock<IOptions<PasswordEncryption>> optionsMock = NewOptionsMock(pepper!);
 
         //Act
-        try
-        {
-            PasswordEncryptionService _passwordEncryptionService = new(_passwordEncryption.Object);
-        }
-        catch (ArgumentNullException)
-        {
-            pass = true;
-        }
+        Action act = () => new PasswordEncryptionService(optionsMock.Object);
 
         //Assert
-        pass.Should().BeTrue();
-        _passwordEncryption.Verify(m => m.Value, Times.Once());
+        act.Should().Throw<ArgumentNullException>();
+
+        optionsMock.Verify(m => m.Value, Times.Once());
     }
 }
