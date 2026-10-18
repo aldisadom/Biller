@@ -19,13 +19,13 @@ public class ItemAddValidatorTest
     [Fact]
     public void Validate_GivenValidRequest_IsValid()
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 
@@ -39,14 +39,14 @@ public class ItemAddValidatorTest
     [MemberData(nameof(GetEmptyRequiredFieldTestData))]
     public void Validate_GivenEmptyRequiredField_IsInvalid(Action<ItemAddRequest> clearField, string propertyName)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         clearField(request);
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == propertyName);
     }
@@ -57,14 +57,14 @@ public class ItemAddValidatorTest
     [InlineData(-100, Label = "large negative price is rejected")]
     public void Validate_GivenPriceNotGreaterThanZero_IsInvalid(double price)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.Price = (decimal)price;
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Price));
     }
@@ -76,14 +76,14 @@ public class ItemAddValidatorTest
     [InlineData(-100, Label = "large negative quantity is rejected")]
     public void Validate_GivenNonPositiveQuantity_IsInvalid(decimal quantity)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.Quantity = quantity;
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Quantity));
     }
@@ -94,14 +94,14 @@ public class ItemAddValidatorTest
     [InlineData(100, Label = "large quantity is accepted")]
     public void Validate_GivenValidQuantity_IsValid(decimal quantity)
     {
-        // Arrange
+        //Arrange
         var request = ValidRequest();
         request.Quantity = quantity;
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 }
