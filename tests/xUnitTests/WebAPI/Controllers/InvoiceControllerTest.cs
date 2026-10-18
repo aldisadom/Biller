@@ -55,16 +55,16 @@ public class InvoiceControllerTest
     [Fact]
     public async Task Get_GivenValidId_ReturnsOkWithInvoiceResponse()
     {
-        // Arrange
+        //Arrange
         var invoice = CreateInvoice();
 
         _invoiceServiceMock.Setup(s => s.Get(invoice.Id))
             .ReturnsAsync(invoice);
 
-        // Act
+        //Act
         var result = await _invoiceController.Get(invoice.Id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(invoice.ToResponse());
 
@@ -75,17 +75,17 @@ public class InvoiceControllerTest
     [Fact]
     public async Task Get_GivenQuery_ReturnsOkWithInvoiceListResponse()
     {
-        // Arrange
+        //Arrange
         var invoices = new List<InvoiceModel> { CreateInvoice(), CreateInvoice() };
         var query = new InvoiceGetRequest { UserId = _userId };
 
         _invoiceServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync((invoices, invoices.Count));
 
-        // Act
+        //Act
         var result = await _invoiceController.Get(query);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new InvoiceListResponse
             {
@@ -102,7 +102,7 @@ public class InvoiceControllerTest
     [Fact]
     public async Task Add_GivenValidRequest_ReturnsCreatedWithAddResponse()
     {
-        // Arrange
+        //Arrange
         var newId = Guid.NewGuid();
         var request = new InvoiceAddRequest
         {
@@ -117,10 +117,10 @@ public class InvoiceControllerTest
                 m.Customer!.Id == request.CustomerId)))
             .ReturnsAsync(newId);
 
-        // Act
+        //Act
         var result = await _invoiceController.Add(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<CreatedAtActionResult>()
             .Which.Value.Should().BeEquivalentTo(new AddResponse { Id = newId });
 
@@ -135,7 +135,7 @@ public class InvoiceControllerTest
     [Fact]
     public async Task Update_GivenValidRequest_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var request = new InvoiceUpdateRequest
         {
             Id = Guid.NewGuid(),
@@ -151,10 +151,10 @@ public class InvoiceControllerTest
                 m.Customer!.Id == request.Customer.Id)))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _invoiceController.Update(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
@@ -169,7 +169,7 @@ public class InvoiceControllerTest
     [Fact]
     public async Task UpdateStatus_GivenRequest_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var request = new InvoiceUpdateStatusRequest
         {
             Id = Guid.NewGuid(),
@@ -179,10 +179,10 @@ public class InvoiceControllerTest
         _invoiceServiceMock.Setup(s => s.UpdateStatus(request))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _invoiceController.UpdateStatus(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _invoiceServiceMock.Verify(s => s.UpdateStatus(request), Times.Once());
@@ -192,16 +192,16 @@ public class InvoiceControllerTest
     [Fact]
     public async Task Delete_GivenValidId_ReturnsNoContent()
     {
-        // Arrange
+        //Arrange
         var id = Guid.NewGuid();
 
         _invoiceServiceMock.Setup(s => s.Delete(id))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         var result = await _invoiceController.Delete(id);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<NoContentResult>();
 
         _invoiceServiceMock.Verify(s => s.Delete(id), Times.Once());
@@ -211,7 +211,7 @@ public class InvoiceControllerTest
     [Fact]
     public async Task GeneratePDF_GivenValidRequest_ReturnsFileStreamResult()
     {
-        // Arrange
+        //Arrange
         var memoryStream = new MemoryStream("pdf-content"u8.ToArray());
         var fileName = "invoice.pdf";
         var request = new InvoiceGenerateRequest
@@ -226,16 +226,76 @@ public class InvoiceControllerTest
         _invoiceServiceMock.Setup(s => s.GeneratePDF(request.Id, request.LanguageCode, request.DocumentType))
             .ReturnsAsync((memoryStream, fileName));
 
-        // Act
+        //Act
         var result = await _invoiceController.GeneratePDF(request);
 
-        // Assert
+        //Assert
         result.Should().BeOfType<FileStreamResult>()
             .Which.ContentType.Should().Be("application/pdf");
 
         _validatorGenerateMock.Verify(v => v.Validate(request), Times.Once());
         _validatorGenerateMock.VerifyNoOtherCalls();
         _invoiceServiceMock.Verify(s => s.GeneratePDF(request.Id, request.LanguageCode, request.DocumentType), Times.Once());
+        _invoiceServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Add_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new InvoiceAddRequest();
+
+        _validatorAddMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.CustomerId), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _invoiceController.Add(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorAddMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorAddMock.VerifyNoOtherCalls();
+        _invoiceServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Update_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new InvoiceUpdateRequest { Seller = new(), Customer = new() };
+
+        _validatorUpdateMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.Id), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _invoiceController.Update(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorUpdateMock.VerifyNoOtherCalls();
+        _invoiceServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task GeneratePDF_GivenInvalidRequest_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new InvoiceGenerateRequest();
+
+        _validatorGenerateMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(request.Id), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _invoiceController.GeneratePDF(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorGenerateMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorGenerateMock.VerifyNoOtherCalls();
         _invoiceServiceMock.VerifyNoOtherCalls();
     }
 }

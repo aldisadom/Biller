@@ -4,10 +4,14 @@ using Application.Interfaces;
 using Application.Services;
 using Domain.IOptions;
 using Domain.Repositories;
+using FluentAssertions;
+using FluentAssertions.Execution;
 using Infrastructure;
 using Infrastructure.Repository;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Npgsql;
+using System.Data;
 
 namespace xUnitTests.Application;
 
@@ -15,88 +19,92 @@ public class DependencyInjectionTests
 {
     const string _dbConnectionString = "Host=db;Username=postgres;Password=postgres;Database=Data";
 
-    [Fact]
-    public void AddInfrastructure_GivenConnectionString_RegistersRepositories()
+    private static readonly Dictionary<Type, (Type Implementation, ServiceLifetime Lifetime)> _expectedInfrastructureRegistrations = new()
     {
-        // Arrange
-        var services = new ServiceCollection();
+        [typeof(IDbConnection)] = (typeof(NpgsqlConnection), ServiceLifetime.Scoped),
+        [typeof(IItemRepository)] = (typeof(ItemRepository), ServiceLifetime.Scoped),
+        [typeof(ICustomerRepository)] = (typeof(CustomerRepository), ServiceLifetime.Scoped),
+        [typeof(ISellerRepository)] = (typeof(SellerRepository), ServiceLifetime.Scoped),
+        [typeof(IInvoiceRepository)] = (typeof(InvoiceRepository), ServiceLifetime.Scoped),
+        [typeof(IUserRepository)] = (typeof(UserRepository), ServiceLifetime.Scoped),
+    };
 
-        // Act
-        services.AddInfrastructure(_dbConnectionString);
-        var serviceProvider = services.BuildServiceProvider();
+    private static readonly Dictionary<Type, (Type Implementation, ServiceLifetime Lifetime)> _expectedApplicationRegistrations = new()
+    {
+        [typeof(IItemService)] = (typeof(ItemService), ServiceLifetime.Scoped),
+        [typeof(ICustomerService)] = (typeof(CustomerService), ServiceLifetime.Scoped),
+        [typeof(ISellerService)] = (typeof(SellerService), ServiceLifetime.Scoped),
+        [typeof(IUserService)] = (typeof(UserService), ServiceLifetime.Scoped),
+        [typeof(IPasswordEncryptionService)] = (typeof(PasswordEncryptionService), ServiceLifetime.Scoped),
+        [typeof(IInvoiceService)] = (typeof(InvoiceService), ServiceLifetime.Scoped),
+        [typeof(IInvoiceDocumentFactory)] = (typeof(InvoiceDocumentFactory), ServiceLifetime.Singleton),
+        [typeof(IPriceToWordsFactory)] = (typeof(PriceToWordsFactory), ServiceLifetime.Singleton),
+    };
 
-        // Assert
-        using var scope = serviceProvider.CreateScope();
-        var scopedServiceProvider = scope.ServiceProvider;
+    private static void AssertRegistrations(IServiceCollection registered, IServiceProvider resolver,
+        Dictionary<Type, (Type Implementation, ServiceLifetime Lifetime)> expected)
+    {
+        registered.Select(d => d.ServiceType).Should().BeEquivalentTo(expected.Keys,
+            "only the expected services should be registered, each once");
 
-        var itemRepository = scopedServiceProvider.GetService<IItemRepository>();
-        Assert.NotNull(itemRepository);
-        Assert.IsType<ItemRepository>(itemRepository);
+        foreach (var (serviceType, (implementationType, lifetime)) in expected)
+        {
+            registered.Where(d => d.ServiceType == serviceType)
+                .Should().AllSatisfy(d => d.Lifetime.Should().Be(lifetime, "{0} should be {1}", serviceType.Name, lifetime));
 
-        var customerRepository = scopedServiceProvider.GetService<ICustomerRepository>();
-        Assert.NotNull(customerRepository);
-        Assert.IsType<CustomerRepository>(customerRepository);
-
-        var sellerRepository = scopedServiceProvider.GetService<ISellerRepository>();
-        Assert.NotNull(sellerRepository);
-        Assert.IsType<SellerRepository>(sellerRepository);
+            resolver.GetService(serviceType)
+                .Should().BeOfType(implementationType, "{0} should resolve to {1}", serviceType.Name, implementationType.Name);
+        }
     }
 
     [Fact]
-    public void AddApplicationServices_GivenServiceCollection_RegistersServices()
+    public void AddInfrastructure_GivenConnectionString_RegistersExactlyAllRepositories()
     {
-        // Arrange
+        //Arrange
         var services = new ServiceCollection();
 
-        services.Configure<Domain.IOptions.PasswordEncryption>(options => { options.Pepper = "your-salt-value"; });
-
-        // Act
-        services.AddApplication();
-        services.AddInfrastructure(_dbConnectionString);
-
-        var serviceProvider = services.BuildServiceProvider();
-
-        // Assert
+        //Act
+        var result = services.AddInfrastructure(_dbConnectionString);
+        using var serviceProvider = services.BuildServiceProvider();
         using var scope = serviceProvider.CreateScope();
-        var scopedServiceProvider = scope.ServiceProvider;
 
-        var itemService = scopedServiceProvider.GetRequiredService<IItemService>();
-        Assert.NotNull(itemService);
-        Assert.IsType<ItemService>(itemService);
+        //Assert
+        using var _ = new AssertionScope();
 
-        var customerService = scopedServiceProvider.GetService<ICustomerService>();
-        Assert.NotNull(customerService);
-        Assert.IsType<CustomerService>(customerService);
+        result.Should().BeSameAs(services);
+        AssertRegistrations(services, scope.ServiceProvider, _expectedInfrastructureRegistrations);
+    }
 
-        var sellerService = scopedServiceProvider.GetService<ISellerService>();
-        Assert.NotNull(sellerService);
-        Assert.IsType<SellerService>(sellerService);
+    [Fact]
+    public void AddApplication_GivenServiceCollection_RegistersExactlyAllServices()
+    {
+        //Arrange
+        var services = new ServiceCollection();
 
-        var userService = scopedServiceProvider.GetService<IUserService>();
-        Assert.NotNull(userService);
-        Assert.IsType<UserService>(userService);
+        //Act
+        var result = services.AddApplication();
 
-        var passwordEncryptionService = scopedServiceProvider.GetService<IPasswordEncryptionService>();
-        Assert.NotNull(passwordEncryptionService);
-        Assert.IsType<PasswordEncryptionService>(passwordEncryptionService);
+        // the services need the password options and the repositories to be resolved
+        IServiceCollection resolvable = new ServiceCollection();
+        resolvable.Configure<PasswordEncryption>(options => { options.Pepper = "pepper"; });
+        resolvable.AddInfrastructure(_dbConnectionString);
+        foreach (var descriptor in services)
+            resolvable.Add(descriptor);
 
-        var invoiceService = scopedServiceProvider.GetService<IInvoiceService>();
-        Assert.NotNull(invoiceService);
-        Assert.IsType<InvoiceService>(invoiceService);
+        using var serviceProvider = resolvable.BuildServiceProvider();
+        using var scope = serviceProvider.CreateScope();
 
-        var invoiceDocumentFactory = scopedServiceProvider.GetService<IInvoiceDocumentFactory>();
-        Assert.NotNull(invoiceDocumentFactory);
-        Assert.IsType<InvoiceDocumentFactory>(invoiceDocumentFactory);
+        //Assert
+        using var _ = new AssertionScope();
 
-        var priceToWordsFactory = scopedServiceProvider.GetService<IPriceToWordsFactory>();
-        Assert.NotNull(priceToWordsFactory);
-        Assert.IsType<PriceToWordsFactory>(priceToWordsFactory);
+        result.Should().BeSameAs(services);
+        AssertRegistrations(services, scope.ServiceProvider, _expectedApplicationRegistrations);
     }
 
     [Fact]
     public void AddPdfGenerator_GivenValidFontSettings_RegistersFonts()
     {
-        // Arrange
+        //Arrange
         var services = new ServiceCollection();
 
         var fontPath = Path.Combine("..", "..", "..", "..", "..", "Fonts", "calibri.ttf");
@@ -107,23 +115,25 @@ public class DependencyInjectionTests
                 ]
         });
 
-        // Act
-        var exception = Record.Exception(() => services.AddPdfGenerator(fontSettings));
+        //Act
+        var result = services.AddPdfGenerator(fontSettings);
 
-        // Assert
-        Assert.Null(exception); // Ensure no exception is thrown
+        //Assert
+        result.Should().BeSameAs(services);
     }
 
     [Fact]
     public void AddPdfGenerator_GivenNullOptions_ThrowsArgumentNullException()
     {
-        // Arrange
+        //Arrange
         var services = new ServiceCollection();
 
-        // Act
-        // Assert
-        var exception = Assert.Throws<ArgumentNullException>(() => services.AddPdfGenerator(null!));
-        Assert.Contains("Font settings cannot be null", exception.Message);
+        //Act
+        Action act = () => services.AddPdfGenerator(null!);
+
+        //Assert
+        act.Should().Throw<ArgumentNullException>()
+            .WithMessage("*Font settings cannot be null*");
     }
 
     [Theory]
@@ -133,7 +143,7 @@ public class DependencyInjectionTests
     [InlineData("some-path.ttf", "", Label = "empty font name throws")]
     public void AddPdfGenerator_GivenEmptyFontPathOrName_ThrowsArgumentException(string? path, string? name)
     {
-        // Arrange
+        //Arrange
         var services = new ServiceCollection();
         var fontSettings = Options.Create(new FontSettings
         {
@@ -142,9 +152,12 @@ public class DependencyInjectionTests
             ]
         });
 
-        // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() => services.AddPdfGenerator(fontSettings));
-        Assert.Contains("Font path or name cannot be null or empty", exception.Message);
+        //Act
+        Action act = () => services.AddPdfGenerator(fontSettings);
+
+        //Assert
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Font path or name cannot be null or empty*");
     }
 
     public static IEnumerable<TheoryDataRow<FontSettings>> GetFontSettingsTestData()
@@ -158,19 +171,21 @@ public class DependencyInjectionTests
     [MemberData(nameof(GetFontSettingsTestData))]
     public void AddPdfGenerator_GivenNoFonts_ThrowsArgumentException(FontSettings fontSettings)
     {
-        // Arrange
+        //Arrange
         var services = new ServiceCollection();
 
-        // Act
-        // Assert
-        var exception = Assert.Throws<ArgumentException>(() => services.AddPdfGenerator(Options.Create(fontSettings)));
-        Assert.Contains("Font settings must contain at least one font", exception.Message);
+        //Act
+        Action act = () => services.AddPdfGenerator(Options.Create(fontSettings));
+
+        //Assert
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Font settings must contain at least one font*");
     }
 
     [Fact]
     public void AddPdfGenerator_GivenMissingFontFile_ThrowsWithFontPath()
     {
-        // Arrange
+        //Arrange
         var services = new ServiceCollection();
         var fontSettings = new FontSettings
         {
@@ -179,9 +194,11 @@ public class DependencyInjectionTests
                 ]
         };
 
-        // Act
-        // Assert
-        var exception = Assert.Throws<FileNotFoundException>(() => services.AddPdfGenerator(Options.Create(fontSettings)));
-        Assert.Contains("Font calibri file not found at path: nonexistent-path.ttf", exception.Message);
+        //Act
+        Action act = () => services.AddPdfGenerator(Options.Create(fontSettings));
+
+        //Assert
+        act.Should().Throw<FileNotFoundException>()
+            .WithMessage("*Font calibri file not found at path: nonexistent-path.ttf*");
     }
 }
