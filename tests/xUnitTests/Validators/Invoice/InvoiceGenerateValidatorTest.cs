@@ -11,26 +11,26 @@ public class InvoiceGenerateValidatorTest
     [Fact]
     public void Validate_GivenValidRequest_IsValid()
     {
-        // Arrange
+        //Arrange
         var request = new InvoiceGenerateRequest { Id = Guid.NewGuid() };
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 
     [Fact]
     public void Validate_GivenEmptyId_IsInvalid()
     {
-        // Arrange
+        //Arrange
         var request = new InvoiceGenerateRequest { Id = Guid.Empty };
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Id));
     }

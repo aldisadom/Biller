@@ -1,5 +1,4 @@
-﻿using Application.Helpers.PriceToWords;
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
@@ -12,6 +11,7 @@ using Domain.Repositories;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
+using System.Linq.Expressions;
 
 namespace xUnitTests.Application.Services;
 
@@ -23,7 +23,6 @@ public class InvoiceServiceTest
     private readonly Mock<IUserService> _userServiceMock;
     private readonly Mock<ICustomerService> _customerServiceMock;
     private readonly Mock<ISellerService> _sellerServiceMock;
-    private readonly Mock<IPriceToWords> _priceToWords;
     private readonly Mock<IInvoiceDocumentFactory> _invoiceDocumentFactory;
 
     private readonly InvoiceService _invoiceService;
@@ -36,7 +35,6 @@ public class InvoiceServiceTest
         _userServiceMock = new Mock<IUserService>(MockBehavior.Strict);
         _customerServiceMock = new Mock<ICustomerService>(MockBehavior.Strict);
         _sellerServiceMock = new Mock<ISellerService>(MockBehavior.Strict);
-        _priceToWords = new Mock<IPriceToWords>(MockBehavior.Strict);
         _invoiceDocumentFactory = new Mock<IInvoiceDocumentFactory>(MockBehavior.Strict);
 
         _invoiceService = new InvoiceService(_userServiceMock.Object, _customerServiceMock.Object,
@@ -75,14 +73,16 @@ public class InvoiceServiceTest
     [Fact]
     public async Task GetId_GivenInvalidId_ThrowNotFoundException()
     {
-        // Arrange
+        //Arrange
         Guid id = Guid.NewGuid();
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((InvoiceEntity)null!);
 
-        // Act Assert
-        await Assert.ThrowsAsync<NotFoundException>(async () => await _invoiceService.Get(id));
+        //Act
+        //Assert
+        await _invoiceService.Invoking(x => x.Get(id))
+                            .Should().ThrowAsync<NotFoundException>();
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
@@ -116,44 +116,25 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Verify(m => m.Get(null, null, null, 1, (int)PageSize.p25), Times.Once());
     }
 
-    [Fact]
-    public async Task Get_GivenCustomerIdQuery_ReturnsDTO()
+    public static IEnumerable<TheoryDataRow<InvoiceGetRequest, Guid?, Guid?, Guid?>> GetFilterQueryTestData()
     {
-        //Arrange
-        List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
+        Guid userId = Guid.NewGuid();
+        Guid sellerId = Guid.NewGuid();
+        Guid customerId = Guid.NewGuid();
 
-        InvoiceGetRequest? request = new()
-        {
-            CustomerId = new Guid()
-        };
-
-        _invoiceDataRepositoryMock.Setup(m => m.Get(null, null, request.CustomerId, request.Page, (int)request.PageSize))
-                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
-
-        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
-
-        //Act
-        var (result, totalCount) = await _invoiceService.Get(request);
-
-        //Assert
-        result.Count().Should().Be(invoiceDataList.Count);
-        totalCount.Should().Be(invoiceDataList.Count);
-
-        _invoiceDataRepositoryMock.Verify(m => m.Get(null, null, request.CustomerId, request.Page, (int)request.PageSize), Times.Once());
+        yield return new(new InvoiceGetRequest { UserId = userId }, userId, null, null) { Label = "user id filter is passed as the user id" };
+        yield return new(new InvoiceGetRequest { SellerId = sellerId }, null, sellerId, null) { Label = "seller id filter is passed as the seller id" };
+        yield return new(new InvoiceGetRequest { CustomerId = customerId }, null, null, customerId) { Label = "customer id filter is passed as the customer id" };
     }
 
-    [Fact]
-    public async Task Get_GivenSellerIdQuery_ReturnsDTO()
+    [Theory]
+    [MemberData(nameof(GetFilterQueryTestData))]
+    public async Task Get_GivenFilterQuery_PassesFilterToRepository(InvoiceGetRequest request, Guid? userId, Guid? sellerId, Guid? customerId)
     {
         //Arrange
         List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
 
-        InvoiceGetRequest? request = new()
-        {
-            SellerId = new Guid()
-        };
-
-        _invoiceDataRepositoryMock.Setup(m => m.Get(null, request.SellerId, null, request.Page, (int)request.PageSize))
+        _invoiceDataRepositoryMock.Setup(m => m.Get(userId, sellerId, customerId, request.Page, (int)request.PageSize))
                         .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
 
         List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
@@ -162,36 +143,10 @@ public class InvoiceServiceTest
         var (result, totalCount) = await _invoiceService.Get(request);
 
         //Assert
-        result.Count().Should().Be(invoiceDataList.Count);
+        result.Should().BeEquivalentTo(expectedResult);
         totalCount.Should().Be(invoiceDataList.Count);
 
-        _invoiceDataRepositoryMock.Verify(m => m.Get(null, request.SellerId, null, request.Page, (int)request.PageSize), Times.Once());
-    }
-
-    [Fact]
-    public async Task Get_GivenUserIdQuery_ReturnsDTO()
-    {
-        //Arrange
-        List<InvoiceEntity> invoiceDataList = [NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity(), NewInvoiceModel().ToEntity()];
-
-        InvoiceGetRequest? request = new()
-        {
-            UserId = new Guid()
-        };
-
-        _invoiceDataRepositoryMock.Setup(m => m.Get(request.UserId, null, null, request.Page, (int)request.PageSize))
-                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
-
-        List<InvoiceModel> expectedResult = invoiceDataList.Select(i => i.ToModel()).ToList();
-
-        //Act
-        var (result, totalCount) = await _invoiceService.Get(request);
-
-        //Assert
-        result.Count().Should().Be(invoiceDataList.Count);
-        totalCount.Should().Be(invoiceDataList.Count);
-
-        _invoiceDataRepositoryMock.Verify(m => m.Get(request.UserId, null, null, request.Page, (int)request.PageSize), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Get(userId, sellerId, customerId, request.Page, (int)request.PageSize), Times.Once());
     }
 
     [Fact]
@@ -200,28 +155,11 @@ public class InvoiceServiceTest
         //Arrange
         InvoiceModel invoiceData = NewInvoiceModel();
 
-        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
-        List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
-
-        InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
-
-        _invoiceDataRepositoryMock.Setup(m => m.Add(It.Is<InvoiceEntity>(x => x == invoiceDataEntity)))
-                                 .ReturnsAsync(invoiceDataEntity.Id);
-
         _userServiceMock.Setup(m => m.Get(invoiceData.User!.Id))
                 .ReturnsAsync(invoiceData.User!);
 
         _sellerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id))
                 .ReturnsAsync(new ErrorModel());
-
-        _customerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id))
-                .ReturnsAsync(invoiceData.Customer!);
-
-        _customerServiceMock.Setup(m => m.IncreaseInvoiceNumber(invoiceData.Customer!.Id))
-                .Returns(Task.CompletedTask);
-
-        _itemServiceMock.Setup(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id))
-            .ReturnsAsync(itemModels);
 
         //Act
         //Assert
@@ -230,9 +168,8 @@ public class InvoiceServiceTest
 
         _userServiceMock.Verify(m => m.Get(invoiceData.User!.Id), Times.Once());
         _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id), Times.Once());
-        _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id), Times.Never());
-        _customerServiceMock.Verify(m => m.IncreaseInvoiceNumber(invoiceData.Customer!.Id), Times.Never());
-        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id), Times.Never());
+        _customerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), It.IsAny<Guid>()), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -242,14 +179,6 @@ public class InvoiceServiceTest
         //Arrange
         InvoiceModel invoiceData = NewInvoiceModel();
 
-        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
-        List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
-
-        InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
-
-        _invoiceDataRepositoryMock.Setup(m => m.Add(It.Is<InvoiceEntity>(x => x == invoiceDataEntity)))
-                                 .ReturnsAsync(invoiceDataEntity.Id);
-
         _userServiceMock.Setup(m => m.Get(invoiceData.User!.Id))
                 .ReturnsAsync(invoiceData.User!);
 
@@ -259,12 +188,6 @@ public class InvoiceServiceTest
         _customerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id))
                 .ReturnsAsync(new ErrorModel());
 
-        _customerServiceMock.Setup(m => m.IncreaseInvoiceNumber(invoiceData.Customer!.Id))
-                .Returns(Task.CompletedTask);
-
-        _itemServiceMock.Setup(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id))
-            .ReturnsAsync(itemModels);
-
         //Act
         //Assert
         await _invoiceService.Invoking(x => x.Add(invoiceData))
@@ -273,8 +196,7 @@ public class InvoiceServiceTest
         _userServiceMock.Verify(m => m.Get(invoiceData.User!.Id), Times.Once());
         _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id), Times.Once());
         _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id), Times.Once());
-        _customerServiceMock.Verify(m => m.IncreaseInvoiceNumber(invoiceData.Customer!.Id), Times.Never());
-        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id), Times.Never());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), It.IsAny<Guid>()), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -283,14 +205,7 @@ public class InvoiceServiceTest
     {
         //Arrange
         InvoiceModel invoiceData = NewInvoiceModel();
-
-        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
-        List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
-
-        InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
-
-        _invoiceDataRepositoryMock.Setup(m => m.Add(It.Is<InvoiceEntity>(x => x == invoiceDataEntity)))
-                                 .ReturnsAsync(invoiceDataEntity.Id);
+        List<Guid> itemIds = invoiceData.Items!.Select(i => i.Id).ToList();
 
         _userServiceMock.Setup(m => m.Get(invoiceData.User!.Id))
                 .ReturnsAsync(invoiceData.User!);
@@ -301,10 +216,7 @@ public class InvoiceServiceTest
         _customerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id))
                 .ReturnsAsync(invoiceData.Customer!);
 
-        _customerServiceMock.Setup(m => m.IncreaseInvoiceNumber(invoiceData.Customer!.Id))
-                .Returns(Task.CompletedTask);
-
-        _itemServiceMock.Setup(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id))
+        _itemServiceMock.Setup(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), invoiceData.Customer!.Id))
             .ReturnsAsync(new ErrorModel());
 
         //Act
@@ -315,8 +227,8 @@ public class InvoiceServiceTest
         _userServiceMock.Verify(m => m.Get(invoiceData.User!.Id), Times.Once());
         _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id), Times.Once());
         _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id), Times.Once());
-        _customerServiceMock.Verify(m => m.IncreaseInvoiceNumber(invoiceData.Customer!.Id), Times.Never());
-        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id), Times.Once());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), invoiceData.Customer!.Id), Times.Once());
+        _customerServiceMock.Verify(m => m.IncreaseInvoiceNumber(It.IsAny<Guid>()), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -325,13 +237,14 @@ public class InvoiceServiceTest
     {
         //Arrange
         InvoiceModel invoiceData = NewInvoiceModel();
+        List<Guid> itemIds = invoiceData.Items!.Select(i => i.Id).ToList();
 
         InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
 
         InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
 
-        _invoiceDataRepositoryMock.Setup(m => m.Add(It.Is<InvoiceEntity>(x => x == invoiceDataEntity)))
+        _invoiceDataRepositoryMock.Setup(m => m.Add(invoiceDataEntity))
                                  .ReturnsAsync(invoiceDataEntity.Id);
 
         _userServiceMock.Setup(m => m.Get(invoiceData.User!.Id))
@@ -346,7 +259,7 @@ public class InvoiceServiceTest
         _customerServiceMock.Setup(m => m.IncreaseInvoiceNumber(invoiceData.Customer!.Id))
                 .Returns(Task.CompletedTask);
 
-        _itemServiceMock.Setup(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id))
+        _itemServiceMock.Setup(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), invoiceData.Customer!.Id))
             .ReturnsAsync(itemModels);
 
         //Act
@@ -359,8 +272,8 @@ public class InvoiceServiceTest
         _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id), Times.Once());
         _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id), Times.Once());
         _customerServiceMock.Verify(m => m.IncreaseInvoiceNumber(invoiceData.Customer!.Id), Times.Once());
-        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Once());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), invoiceData.Customer!.Id), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Add(invoiceDataEntity), Times.Once());
     }
 
     [Fact]
@@ -390,8 +303,6 @@ public class InvoiceServiceTest
         //Arrange
         Guid id = Guid.NewGuid();
 
-        _invoiceDataRepositoryMock.Setup(m => m.Delete(id));
-
         _invoiceDataRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((InvoiceEntity)null!);
 
@@ -407,13 +318,13 @@ public class InvoiceServiceTest
     [Fact]
     public async Task GeneratePDF_GivenInvalidLanguage_ThrowsValidationException()
     {
-        // Arrange
+        //Arrange
         var invoiceId = Guid.NewGuid();
         var invalidLanguage = (Language)999;
         var validDocumentType = DocumentType.Invoice;
 
-        // Act
-        // Assert
+        //Act
+        //Assert
         await _invoiceService.Invoking(x => x.GeneratePDF(invoiceId, invalidLanguage, validDocumentType))
             .Should().ThrowAsync<FluentValidation.ValidationException>()
             .WithMessage($"Invalid language code: {invalidLanguage}");
@@ -422,13 +333,13 @@ public class InvoiceServiceTest
     [Fact]
     public async Task GeneratePDF_GivenInvalidDocumentType_ThrowsValidationException()
     {
-        // Arrange
+        //Arrange
         var invoiceId = Guid.NewGuid();
         var validLanguage = Language.LT;
         var invalidDocumentType = (DocumentType)999;
 
-        // Act
-        // Assert
+        //Act
+        //Assert
         await _invoiceService.Invoking(x => x.GeneratePDF(invoiceId, validLanguage, invalidDocumentType))
             .Should().ThrowAsync<FluentValidation.ValidationException>()
             .WithMessage($"Invalid document type: {invalidDocumentType}");
@@ -466,7 +377,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceEntity.Id))
                         .ReturnsAsync(invoiceEntity);
 
-        _invoiceDocumentFactory.Setup(x => x.GeneratePdf(documentType, languageCode, It.Is<InvoiceModel>(i =>
+        Expression<Func<InvoiceModel, bool>> matchesInvoice = i =>
             i.Id == invoice.Id &&
             i.User == invoice.User &&
             i.CreatedDate == invoice.CreatedDate &&
@@ -476,23 +387,28 @@ public class InvoiceServiceTest
             i.Items != null &&
             i.Items.All(expectedItem => i.Items.Any(invoiceItem => invoiceItem == expectedItem)) &&
             i.InvoiceNumber == invoice.InvoiceNumber &&
-            i.Comments == invoice.Comments))).Returns(memoryStream);
+            i.Comments == invoice.Comments;
 
-        // Act
+        _invoiceDocumentFactory.Setup(x => x.GeneratePdf(documentType, languageCode, It.Is(matchesInvoice)))
+            .Returns(memoryStream);
+
+        //Act
         var (stream, fileName) = await _invoiceService.GeneratePDF(invoiceEntity.Id, languageCode, documentType);
 
-        // Assert
-        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceEntity.Id), Times.Once());
-        stream.Should().NotBeNull();
+        //Assert
         stream.Should().BeSameAs(memoryStream);
-        fileName.Should().NotBeNullOrEmpty();
+        fileName.Should().Be(invoice.GenerateFileLocation());
+
+        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceEntity.Id), Times.Once());
+        _invoiceDocumentFactory.Verify(x => x.GeneratePdf(documentType, languageCode, It.Is(matchesInvoice)), Times.Once());
     }
 
     [Fact]
     public async Task Update_GivenValidInvoice_UpdatesInvoice()
     {
-        // Arrange
+        //Arrange
         InvoiceModel invoiceData = NewInvoiceModel();
+        List<Guid> itemIds = invoiceData.Items!.Select(i => i.Id).ToList();
 
         var invoiceEntity = invoiceData.ToEntity();
 
@@ -505,27 +421,45 @@ public class InvoiceServiceTest
         _customerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id))
             .ReturnsAsync(invoiceData.Customer!);
 
-        _itemServiceMock.Setup(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id))
+        _itemServiceMock.Setup(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), invoiceData.Customer!.Id))
             .ReturnsAsync(invoiceData.Items!.Select(i => new ItemModel { Id = i.Id, Name = i.Name, Price = i.Price }).ToList());
 
-        _invoiceDataRepositoryMock.Setup(m => m.Update(It.IsAny<InvoiceEntity>()))
+        _invoiceDataRepositoryMock.Setup(m => m.Update(invoiceEntity))
             .Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         await _invoiceService.Update(invoiceData);
 
-        // Assert
+        //Assert
         _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Update(invoiceEntity), Times.Once());
         _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id), Times.Once());
         _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id), Times.Once());
-        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), invoiceData.Customer!.Id), Times.Once());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), invoiceData.Customer!.Id), Times.Once());
+    }
+
+    [Fact]
+    public async Task Update_GivenInvalidId_ThrowsNotFoundException()
+    {
+        //Arrange
+        InvoiceModel invoiceData = NewInvoiceModel();
+
+        _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
+            .ReturnsAsync((InvoiceEntity)null!);
+
+        //Act
+        //Assert
+        await _invoiceService.Invoking(x => x.Update(invoiceData))
+                            .Should().ThrowAsync<NotFoundException>();
+
+        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
     [Fact]
     public async Task UpdateStatus_GivenValidStatus_UpdatesStatus()
     {
-        // Arrange
+        //Arrange
         var invoiceId = Guid.NewGuid();
         var validStatus = InvoiceStatus.Payed;
         var request = new InvoiceUpdateStatusRequest { Id = invoiceId, Status = validStatus };
@@ -534,24 +468,42 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceId)).ReturnsAsync(invoiceEntity);
         _invoiceDataRepositoryMock.Setup(m => m.UpdateStatus(invoiceId, validStatus)).Returns(Task.CompletedTask);
 
-        // Act
+        //Act
         await _invoiceService.UpdateStatus(request);
 
-        // Assert
+        //Assert
         _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceId), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.UpdateStatus(invoiceId, validStatus), Times.Once());
     }
 
     [Fact]
+    public async Task UpdateStatus_GivenInvalidId_ThrowsNotFoundException()
+    {
+        //Arrange
+        var request = new InvoiceUpdateStatusRequest { Id = Guid.NewGuid(), Status = InvoiceStatus.Payed };
+
+        _invoiceDataRepositoryMock.Setup(m => m.Get(request.Id))
+            .ReturnsAsync((InvoiceEntity)null!);
+
+        //Act
+        //Assert
+        await _invoiceService.Invoking(x => x.UpdateStatus(request))
+                            .Should().ThrowAsync<NotFoundException>();
+
+        _invoiceDataRepositoryMock.Verify(m => m.Get(request.Id), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.UpdateStatus(It.IsAny<Guid>(), It.IsAny<InvoiceStatus>()), Times.Never());
+    }
+
+    [Fact]
     public async Task UpdateStatus_GivenInvalidStatus_ThrowsValidationException()
     {
-        // Arrange
+        //Arrange
         var invoiceId = Guid.NewGuid();
         var invalidStatus = (InvoiceStatus)999;
         var request = new InvoiceUpdateStatusRequest { Id = invoiceId, Status = invalidStatus };
 
-        // Act
-        // Assert
+        //Act
+        //Assert
         await _invoiceService.Invoking(x => x.UpdateStatus(request))
                             .Should().ThrowAsync<FluentValidation.ValidationException>()
                             .WithMessage($"Invalid invoice status: {invalidStatus}");

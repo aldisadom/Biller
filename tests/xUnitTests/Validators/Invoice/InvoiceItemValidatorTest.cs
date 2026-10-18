@@ -11,26 +11,26 @@ public class InvoiceItemValidatorTest
     [Fact]
     public void Validate_GivenValidRequest_IsValid()
     {
-        // Arrange
+        //Arrange
         var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 2 };
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 
     [Fact]
     public void Validate_GivenEmptyId_IsInvalid()
     {
-        // Arrange
+        //Arrange
         var request = new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 };
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Id));
     }
@@ -41,13 +41,13 @@ public class InvoiceItemValidatorTest
     [InlineData(-10, Label = "larger negative quantity is rejected")]
     public void Validate_GivenQuantityNotGreaterThanZero_IsInvalid(decimal quantity)
     {
-        // Arrange
+        //Arrange
         var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = quantity };
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Quantity));
     }
@@ -58,13 +58,13 @@ public class InvoiceItemValidatorTest
     [InlineData(100, Label = "large quantity is accepted")]
     public void Validate_GivenValidQuantity_IsValid(decimal quantity)
     {
-        // Arrange
+        //Arrange
         var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = quantity };
 
-        // Act
+        //Act
         var result = _validator.Validate(request);
 
-        // Assert
+        //Assert
         result.IsValid.Should().BeTrue();
     }
 }

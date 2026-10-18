@@ -28,14 +28,14 @@ public class UserServiceTest
     public async Task Login_GivenValidPassword_ReturnsToken()
     {
         //Arrange
-        UserEntity user = new() { Email = "jon.snow@winterfell.com", Password = "ghost" };
+        UserEntity user = new() { Email = "jon.snow@winterfell.com", Password = "ghost", Salt = "salt" };
 
         string expectedResult = "fakeToken";
 
         _userRepositoryMock.Setup(m => m.Get(user.Email))
                         .ReturnsAsync(user);
 
-        _passwordEncryptionServiceMock.Setup(m => m.Encrypt(user.Password, It.IsAny<string>()))
+        _passwordEncryptionServiceMock.Setup(m => m.Encrypt(user.Password, user.Salt))
                         .Returns((user.Password, " "));
 
         UserModel userModel = user.ToModel();
@@ -47,7 +47,7 @@ public class UserServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _userRepositoryMock.Verify(m => m.Get(user.Email), Times.Once());
-        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password, It.IsAny<string>()), Times.Once());
+        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password, user.Salt), Times.Once());
     }
 
     [Fact]
@@ -63,7 +63,8 @@ public class UserServiceTest
 
         //Act
         //Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await _userService.Login(userModel));
+        await _userService.Invoking(x => x.Login(userModel))
+                            .Should().ThrowAsync<UnauthorizedAccessException>();
 
         _userRepositoryMock.Verify(m => m.Get(user.Email), Times.Once());
         _passwordEncryptionServiceMock.Verify(m => m.Encrypt(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
@@ -73,22 +74,23 @@ public class UserServiceTest
     public async Task Login_GivenInvalidPassword_ThrowsUnauthorizedException()
     {
         //Arrange
-        UserEntity user = new() { Email = "jon.snow@winterfell.com", Password = "ghost" };
+        UserEntity user = new() { Email = "jon.snow@winterfell.com", Password = "ghost", Salt = "salt" };
 
         _userRepositoryMock.Setup(m => m.Get(user.Email))
                         .ReturnsAsync(user);
 
-        _passwordEncryptionServiceMock.Setup(m => m.Encrypt(user.Password, It.IsAny<string>()))
+        _passwordEncryptionServiceMock.Setup(m => m.Encrypt(user.Password, user.Salt))
                         .Returns(("a", " "));
 
         UserModel userModel = user.ToModel();
 
         //Act
         //Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await _userService.Login(userModel));
+        await _userService.Invoking(x => x.Login(userModel))
+                            .Should().ThrowAsync<UnauthorizedAccessException>();
 
         _userRepositoryMock.Verify(m => m.Get(user.Email), Times.Once());
-        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password, It.IsAny<string>()), Times.Once());
+        _passwordEncryptionServiceMock.Verify(m => m.Encrypt(user.Password, user.Salt), Times.Once());
     }
 
     [Fact]
@@ -114,14 +116,16 @@ public class UserServiceTest
     [Fact]
     public async Task GetId_GivenInvalidId_ThrowNotFoundException()
     {
-        // Arrange
+        //Arrange
         Guid id = Guid.NewGuid();
 
         _userRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((UserEntity)null!);
 
-        // Act Assert
-        await Assert.ThrowsAsync<NotFoundException>(async () => await _userService.Get(id));
+        //Act
+        //Assert
+        await _userService.Invoking(x => x.Get(id))
+                            .Should().ThrowAsync<NotFoundException>();
 
         _userRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
@@ -151,16 +155,16 @@ public class UserServiceTest
     [Fact]
     public async Task Get_GivenEmpty_ShouldReturnEmpty()
     {
-        // Arrange
+        //Arrange
         List<UserEntity> userList = [];
 
-        //Arrange
         _userRepositoryMock.Setup(m => m.Get())
                         .ReturnsAsync(userList);
 
-        // Act Assert
+        //Act
         var result = await _userService.Get();
 
+        //Assert
         result.Count().Should().Be(0);
         result.Should().BeEquivalentTo(new List<UserModel>());
 
@@ -175,8 +179,7 @@ public class UserServiceTest
 
         UserEntity userEntity = user.ToEntity();
         userEntity.Salt = " ";
-        _userRepositoryMock.Setup(m => m.Add(It.Is<UserEntity>
-                                (x => x == userEntity)))
+        _userRepositoryMock.Setup(m => m.Add(userEntity))
                                  .ReturnsAsync(user.Id);
 
         _passwordEncryptionServiceMock.Setup(m => m.Encrypt(user.Password, null))
@@ -200,7 +203,7 @@ public class UserServiceTest
 
         UserEntity userEntity = user.ToEntity();
 
-        _userRepositoryMock.Setup(m => m.Update(It.Is<UserEntity>(x => x == userEntity)))
+        _userRepositoryMock.Setup(m => m.Update(userEntity))
                         .Returns(Task.CompletedTask);
 
         _userRepositoryMock.Setup(m => m.Get(userEntity.Id))
@@ -220,11 +223,6 @@ public class UserServiceTest
     {
         //Arrange
         UserModel user = new() { Id = Guid.NewGuid() };
-
-        UserEntity userEntity = user.ToEntity();
-
-        _userRepositoryMock.Setup(m => m.Update(It.Is<UserEntity>
-                                (x => x == userEntity)));
 
         _userRepositoryMock.Setup(m => m.Get(user.Id))
                         .ReturnsAsync((UserEntity)null!);
@@ -264,8 +262,6 @@ public class UserServiceTest
     {
         //Arrange
         Guid id = Guid.NewGuid();
-
-        _userRepositoryMock.Setup(m => m.Delete(id));
 
         _userRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((UserEntity)null!);
