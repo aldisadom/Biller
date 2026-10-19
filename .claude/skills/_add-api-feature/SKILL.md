@@ -5,7 +5,7 @@ description: Add or extend a Biller REST API feature end-to-end across every lay
 
 # Add an API feature end-to-end
 
-Biller is layered. A request flows:2
+Biller is layered. A request flows:
 
 `Controller` (WebAPI) → validator (`IValidator<TRequest>.CheckValidation`) → `request.ToModel()` →
 `I<X>Service` (Application) → `model.ToEntity()` → `I<X>Repository` (Domain interface) →
@@ -48,8 +48,11 @@ Steps:
    `<ProjectReference Include="..\..\..\BillerContracts\Contracts\Contracts.csproj" />`.
    Tell the user you did this. It **must be reverted** to a PackageReference with the new version
    before committing, because CI clones only Biller.
-3. Publishing, version choice, and rolling the new version into Biller and BillioIntegrationTest
-   are covered by the `release-contracts` skill. Follow it, since the publish is the user's action.
+3. **Publishing is the user's action.** Once the contracts PR is merged, they run the `Publish`
+   workflow in BillerContracts (GitHub Actions, input `package_version`, e.g. `1.0.6` after `1.0.5`).
+   Then bump `BillerContracts` to the new version in `src/Domain/Domain.csproj`,
+   `../BillioIntegrationTest/src/IntegrationTests/IntegrationTests.csproj`, and
+   `../BillerFrontEnd/src/Client/Clients.csproj` if the front end uses the new types.
 
 ## 2. Domain + database
 
@@ -120,9 +123,15 @@ tests show which files a feature needs. A new resource needs:
 ## 8. Verify
 
 1. Run the `_test-coverage` skill. Everything should pass, and the new classes should show coverage.
-2. Optionally (ask first) see it live with the `run-local-stack` skill (create the entity via
-   curl/Swagger), and run the `integration-tests` skill. Note that it wipes the local DB, and new
-   endpoints need integration tests on a same-named branch in BillioIntegrationTest.
+2. Optionally (ask first, it changes the local DB) see it live. `docker compose up -d --build`
+   runs the migrations and starts the API. `docker compose logs liquibase` shows the changesets
+   that ran. Create the entity through Swagger at http://localhost:8090/swagger.
+   Integration tests run against that stack: `dotnet test ../BillioIntegrationTest/BillioIntegrationTest.sln`.
+   They delete all data through the API first. New endpoints need integration tests on a branch
+   with the same name in BillioIntegrationTest; CI uses that branch.
 3. Summarize for the user: the files touched per layer, the migration name, and any pending
    BillerContracts publish/version bump, including a reminder if the temporary ProjectReference is
    still in place.
+
+Paste each command and the lines of its output that show the result (the `Passed!/Failed!` line,
+the changesets Liquibase ran). Don't say it passed without the output.

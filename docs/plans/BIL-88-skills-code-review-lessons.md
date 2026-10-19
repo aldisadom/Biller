@@ -39,7 +39,7 @@ Biller is a one-person repo, so the risk-tier and approval machinery doesn't app
 | Short `CLAUDE.md` with conventions and non-goals | **No `CLAUDE.md`** | Add one (Step 1) |
 | `REVIEW.md` with repo failure modes | None | Add one (Step 2) |
 | Show verification output | Skills have "Verify" steps, but they don't require pasting the evidence | Add an evidence rule to every skill (Step 3) |
-| Fresh-context review before the PR, severity tags, round cap | Nothing | New `pre-pr` skill (Step 4) |
+| Fresh-context review before the PR, severity tags, round cap | Nothing | New `_pre-pr` skill (Step 4) |
 | PR template: Testing / Risk / How to revert | None (BIL-56) | Add it (Step 5) |
 | Repeated findings go to the source | Skills exist, no loop | "Lessons" rule in `REVIEW.md` (Step 2) |
 | Incidents become evals | Nothing | Small known-bugs list (Step 6) |
@@ -80,9 +80,9 @@ When a finding repeats across reviews, propose a rule for CLAUDE.md, a skill, or
 - `add-db-migration`: add the "copy, then drop in a later release" rule for destructive changes and the backup step (from [BIL-84-db-backup-restore.md](BIL-84-db-backup-restore.md)).
 - `write-tests`: add "the test fails if the bug is reintroduced" as a check for bug-fix tests.
 
-## Step 4: New skill `pre-pr`
+## Step 4: New skill `_pre-pr`
 
-`.claude/skills/pre-pr/SKILL.md`, used before opening a PR:
+`.claude/skills/_pre-pr/SKILL.md` (underscore prefix like the other repo skills), used before opening a PR:
 1. Build and run the tests (`test-coverage` script). Paste the output. Stop if red.
 2. Run `/code-review` on the branch diff (fresh context, reads `REVIEW.md`).
 3. Fix Important findings. Answer the others with a reason. Leave Pre-existing ones alone and list them.
@@ -104,7 +104,7 @@ Copy it to `BillerFrontEnd` and `BillioIntegrationTest`.
 
 ## Step 6: Known-bugs list (small eval set)
 
-`docs/review-evals.md`: past real bugs with the commit that introduced them and the fix, e.g. `GenerateInvoiceName` using the customer's number instead of the invoice's, and the number-to-words grammar bugs. When changing `REVIEW.md` or the `pre-pr` skill, run `/code-review` on a couple of those introducing commits and check the bug is still caught.
+`docs/review-evals.md`: past real bugs with the commit that introduced them and the fix, e.g. `GenerateInvoiceName` using the customer's number instead of the invoice's, and the number-to-words grammar bugs. When changing `REVIEW.md` or the `_pre-pr` skill, run `/code-review` on a couple of those introducing commits and check the bug is still caught.
 
 ## Out of scope
 
@@ -115,5 +115,5 @@ Copy it to `BillerFrontEnd` and `BillioIntegrationTest`.
 1. `CLAUDE.md` and `REVIEW.md`.
 2. PR template.
 3. Skill edits and the missing-skill references.
-4. `pre-pr` skill.
+4. `_pre-pr` skill.
 5. Known-bugs list. Grow it as bugs are found.

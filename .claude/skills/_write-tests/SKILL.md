@@ -93,6 +93,10 @@ For each public method: the happy path, each way it can fail, and the edges — 
 not found (`null` from the repository), duplicates, and IDs that belong to another
 user/seller/customer. Flag behaviour that looks wrong to the user instead of testing around it.
 
+**A test for a bug fix must fail when the bug comes back.** Check it: undo the fix in the source
+(keep the test), run the test and see it fail, then restore the fix. If it still passes, the test
+doesn't cover the bug. Every fixed bug also gets a row in `docs/review-evals.md`.
+
 ## Per-layer patterns
 
 - **Services** (`Application/Services`): strict repository mocks; `Get`/`Update`/`Delete` each
@@ -135,3 +139,6 @@ user/seller/customer. Flag behaviour that looks wrong to the user instead of tes
 Run the new tests with the `_test-coverage` skill (use `--filter "FullyQualifiedName~<Class>Test"`
 for a quick run, then the full suite). Report the pass count, and any behaviour you flagged
 instead of testing.
+
+Paste the `Passed!/Failed!` line of each run, and for a bug fix the failing run with the fix
+undone. Don't say the tests passed without that output.
