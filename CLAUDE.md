@@ -40,6 +40,7 @@ on a small Linux PC.
 - Local stack: `docker compose up -d --build` (Swagger at http://localhost:8090/swagger, DB on port 5437).
 
 ## More
-- Plans: `docs/plans/BIL-<n>-<slug>.md` (Jira project BIL).
+- Plans: `docs/plans/BIL-<n>-<slug>.md` (Jira project BIL), in the repo the work is in. Only plans
+  that change several repos, or Biller itself, live here.
 - Review rules: `REVIEW.md`. Past bugs to test reviews against: `docs/review-evals.md`.
 - Before opening a PR, use the `_pre-pr` skill.
