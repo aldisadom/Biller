@@ -1,5 +1,5 @@
 ---
-name: add-language
+name: _add-language
 description: Add a new document language to Biller's PDF generation (e.g. Latvian, Polish, German) — the Language enum value, invoice label translations (IInvoiceTexts), the number/amount-to-words converter with correct grammar, factory registrations, currency wording, and thorough tests — then render sample PDFs. Use this whenever the user wants invoices or acts in another language, asks to translate invoice texts, fix how amounts are spelled out in words ("suma žodžiais", "amount in words"), or fix number-to-words grammar in LT/EN, even if they don't say "language".
 ---
 
@@ -70,7 +70,7 @@ Add the case to both switches. The `_ => throw NotSupportedException` default mu
 
 ## 5. Tests: be generous
 
-Follow the `write-tests` skill for test conventions. Mirror `NumberToWordsLTTest` /
+Follow the `_write-tests` skill for test conventions. Mirror `NumberToWordsLTTest` /
 `PriceToWordsLTTest`, with dozens of `[InlineData]` rows, not a handful.
 Cover at least: 0, 1, 2, 5, 10, 11, 12, 19, 20, 21, 22, 99, 100, 101, 111, 200, 999, 1 000, 1 001, 2 000,
 5 000, 11 000, 21 000, 100 000, 999 999, 1 000 000, 1 000 001, 2 000 000, 21 000 000,
@@ -80,7 +80,7 @@ your own implementation's output.
 
 ## 6. Verify
 
-1. `test-coverage` skill: everything green, new classes covered.
+1. `_test-coverage` skill: everything green, new classes covered.
 2. `new-invoice-layout` skill's render script. `render-samples.sh Invoice <LANG>` and
    `render-samples.sh JobDoneAct <LANG>` render every document type in the new language. Open the
    PDFs and check that labels fit their columns (translations are often longer), that diacritics
