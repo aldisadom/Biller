@@ -6,17 +6,17 @@ Jira: [BIL-87](https://aldisadom.atlassian.net/browse/BIL-87). Epic: BIL-89 (Bil
 
 - The front end has automated tests that run in CI on every PR.
 - Page logic (loading, mapping, button actions, navigation, errors) is tested without a running API.
-- The HTTP clients and AutoMapper profiles are tested.
+- The HTTP clients and the mapping extension methods are tested. AutoMapper is removed first (see [BIL-91-frontend-remove-automapper.md](BIL-91-frontend-remove-automapper.md)); it is not allowed in any Biller repo.
 - Later, a few end-to-end tests cover the main flows against the real stack.
 
 ## Current state (BillerFrontEnd master @ e9a6e89)
 
 | Where | What |
 |---|---|
-| `src/FrontEnd` | Blazor Server (.NET 8, `InteractiveServer`), FluentUI 3.7.8, QuickGrid, AutoMapper 13 |
+| `src/FrontEnd` | Blazor Server (.NET 8, `InteractiveServer`), FluentUI 3.7.8, QuickGrid, AutoMapper 13 (to be removed) |
 | Pages | 25 `.razor` pages under `Components/Pages/{Customer,Invoice,Items,Seller,Users}`. Largest: `Invoices_update` (288 lines), `Invoices_add` (272) |
 | `src/Client` | `BaseHttpClient` (229 lines) plus one client per entity behind `I*Client` interfaces. Pages inject the interfaces, so they're easy to mock |
-| `MappingProfiles` | One AutoMapper profile per entity |
+| `MappingProfiles` | One AutoMapper profile per entity, to be replaced by hand-written extension methods |
 | Tests | None |
 | CI (`.github/workflows/build.yml`) | Restore and build only |
 | Claude skills | None in this repo |
@@ -33,12 +33,12 @@ Jira: [BIL-87](https://aldisadom.atlassian.net/browse/BIL-87). Epic: BIL-89 (Bil
 
 - `tests/FrontEnd.Tests/FrontEnd.Tests.csproj`: xUnit, `bunit`, `Moq`, `coverlet.collector`. References `FrontEnd` and `Clients`.
 - Add it to `BillerFrontEnd.sln`.
-- A small base class that registers mocks for every `I*Client`, the real AutoMapper configuration, and the FluentUI services, so each test only sets up what it uses.
+- A small base class that registers mocks for every `I*Client` and the FluentUI services, so each test only sets up what it uses.
 
-## Step 2: Mapping profiles (quick win)
+## Step 2: Mapping methods (quick win)
 
-- `MapperConfiguration.AssertConfigurationIsValid()` over all profiles.
-- One test per profile for the maps pages use (`ItemResponse` → `ItemUpdateRequest`, etc.).
+- Done together with [BIL-91-frontend-remove-automapper.md](BIL-91-frontend-remove-automapper.md): one test per `ToUpdateRequest()` method, checking every property, like Biller's `MappingTestHelper`.
+- No AutoMapper configuration tests: AutoMapper is not allowed.
 
 ## Step 3: Clients
 
@@ -83,7 +83,7 @@ Add to `build.yml` after Build:
 
 ## Order of work
 
-1. Test project, mapping tests, CI step (one PR, so CI runs tests from the start).
+1. Test project, AutoMapper removal with its mapping tests ([BIL-91-frontend-remove-automapper.md](BIL-91-frontend-remove-automapper.md)), CI step (one PR, so CI runs tests from the start).
 2. Client tests.
 3. `Invoices_add` and `Invoices_update`.
 4. The other pages.

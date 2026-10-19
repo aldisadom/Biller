@@ -9,6 +9,7 @@ Failure here looks like:
 - A request for one user's data returns another user's data.
 - A validator or ownership check always passes or always fails.
 - A test passes whatever the code does (wrong class under test, missing `Verify`, expected value copied from the output).
+- A mapping library (AutoMapper or similar) is added, or a mapping method misses a property.
 
 Skip: `bin/`, `obj/`, `coveragereport/`, `TestResults/`, `*.Designer.cs`, migrations already on master (flag edits to them instead).
 

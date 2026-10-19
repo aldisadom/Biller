@@ -121,7 +121,8 @@ doesn't cover the bug. Every fixed bug also gets a row in `docs/review-evals.md`
 - **Mapping extensions** (`Application/MappingProfiles`): build the source by hand with every
   property non-default, then `MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo)` for
   model/entity/response targets or `MapStyle.UsedAllFrom` for requests. One test per extension
-  method.
+  method. AutoMapper isn't allowed in any Biller repo, so there are no profiles or
+  `AssertConfigurationIsValid` tests to write.
 - **Swagger examples** (`WebAPI/Swagger`): one theory per entity file,
   `GetExamples_GivenExample_HasNoNullOrEmptyProperties(Func<object> getExamples)`, asserting
   `NullChecker.GetNullOrEmptyProperties(getExamples())` is empty. Add a row per example:

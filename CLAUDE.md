@@ -7,9 +7,10 @@ on a small Linux PC.
 - .NET 8 Web API, Dapper with raw SQL on PostgreSQL 16, Liquibase SQL changesets in `migrations/sql/`.
 - QuestPDF, FluentValidation, Serilog, Swagger with examples.
 - Tests: xUnit v3, strict Moq mocks, FluentAssertions in `tests/xUnitTests`.
-- Sibling repos: `BillerContracts` (request/response records and enums, used as a NuGet package),
-  `BillerFrontEnd` (Blazor), `BillioIntegrationTest` (API tests; CI uses its branch with the same
-  name as the Biller branch, else master).
+- Sibling repos, each with its own `CLAUDE.md`: `BillerContracts` (request/response records, enums
+  and typed HTTP clients, published as the `BillerContracts` and `BillerContracts.Clients` NuGet
+  packages), `BillerFrontEnd` (Blazor), `BillioIntegrationTest` (API tests; CI uses its branch with
+  the same name as the Biller branch, else master).
 
 ## Where things go
 - `src/WebAPI`: controllers, Swagger examples, middleware.
@@ -25,9 +26,12 @@ on a small Linux PC.
 - Invoices keep their own copy of seller, customer, item and user data. Editing those must not
   change an existing invoice or its PDF.
 - Mirror the Item feature when adding a layer. Map every property by hand.
+- Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be
+  on the branch with Biller's branch name, else on up-to-date master.
 
 ## Non-goals
-- No ORM, no AutoMapper or other mapping library.
+- No ORM.
+- No AutoMapper or any other mapping library, in any Biller repo. Map with hand-written extension methods.
 - No AutoFixture or shared test-data builders.
 - No seed data in migrations.
 

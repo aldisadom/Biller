@@ -15,8 +15,12 @@ Don't say a step passed without that output.
 - `git diff master...HEAD --stat`. Note whether it touches `migrations/sql/`,
   `src/Domain/Domain.csproj` (BillerContracts version), invoice numbering, or PDF documents. These
   decide the Risk section.
+- If the change touches contracts, endpoints or SQL, run the `_sync-repos` skill and paste its output
+  before you look at or run anything in a sibling repo.
 - A `ProjectReference` to BillerContracts in `src/Domain/Domain.csproj` blocks the PR, because CI
-  clones only Biller. Stop and tell the user (see `_add-api-feature`, section 1).
+  clones only Biller. Stop and tell the user (see `_add-api-feature`, section 1). A `-preview`
+  BillerContracts version is fine on the branch, but put it under Risk: it must be replaced by a
+  released version before merging.
 
 ## 2. Build and test
 
