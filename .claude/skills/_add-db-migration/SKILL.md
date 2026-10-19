@@ -13,7 +13,8 @@ description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQ
 - **Migrations are schema-only. Don't seed data in them.** No `INSERT`s of initial, sample, demo,
   or test rows. The old seed folder was removed on purpose: the integration tests create their own
   data through the API and wipe the tables. If the user asks for seed data, say this and suggest
-  creating it through the API instead (see the `run-local-stack` skill). The one exception is an
+  creating it through the API instead (Swagger at http://localhost:8090/swagger once
+  `docker compose up -d --build` is running). The one exception is an
   `UPDATE` of existing rows needed to complete a schema change, such as the backfill before
   `SET NOT NULL` below.
 - Liquibase stores a checksum of each applied changeset. **Never edit a migration file that has
@@ -62,6 +63,10 @@ description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQ
    - Always include a `-- rollback` line that truly reverses the change (multiple statements are
      fine on one line, separated by `;`).
    - Prefer one logical change per file.
+   - **Destructive changes (drop or rename a column or table, narrow a type) go in two releases.**
+     First release: add the new shape, copy the data, and switch the code to it. A later release
+     drops the old column or table, once production has run on the new code. A rollback can't
+     bring dropped data back, so the drop must never ship together with the code change.
 4. **Update the code that depends on the schema** (if the user wants the full change):
    the `*Entity` record in `src/Domain/Entities`, SQL strings in
    `src/Infrastructure/Repository/*Repository.cs` (INSERT column lists, UPDATE SET lists),
@@ -69,15 +74,24 @@ description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQ
    use the `_add-api-feature` skill — request/response types live in the separate BillerContracts
    NuGet package.
 5. **Apply locally (optional — ask first, it changes the user's local DB)**:
-   `bash .claude/skills/run-local-stack/scripts/stack.sh migrate` starts the db and runs `liquibase update`,
-   printing each changeset it runs (see the `run-local-stack` skill for container-name conflicts).
+   `docker compose run --rm liquibase` starts the db and runs `liquibase update`, printing each
+   changeset it runs. The compose file uses fixed container names (`billio-db`, ...), so if the
+   start fails with a name conflict, another checkout's stack is running: ask before stopping it.
    To verify: `docker compose exec db psql -U postgres -d Data -c '\d <table>'`.
    To test the rollback: `docker compose run --rm liquibase --changeLogFile=/migrations/dbChangeLog.yaml --url=jdbc:postgresql://db:5432/Data --username=postgres --password=postgres rollback-count 1`
-   then re-run `migrate`.
+   then run `docker compose run --rm liquibase` again.
 
 ## Before finishing
+
+Paste each command you ran and the lines of its output that show the result (the changesets
+Liquibase ran, the `\d` output, the rollback). Don't say it worked without the output.
 
 Tell the user the file name, what it does, how it rolls back, and any data implications
 (backfill values chosen, rows that could violate a new constraint). If the change could fail on
 production data (unique constraint, NOT NULL, type narrowing), say so explicitly and suggest a
 pre-check query such as `SELECT email, count(*) FROM users GROUP BY email HAVING count(*) > 1;`.
+
+If the migration changes or deletes existing data, remind the user to back up the production
+database before deploying. Backups are manual: `make backup` once BIL-84 is merged, until then
+`docker exec billio-db pg_dump -U postgres -d Data -Fc -f /tmp/billio.dump` and
+`docker cp billio-db:/tmp/billio.dump .`.

@@ -9,7 +9,7 @@ A language touches five places, all keyed by `BillerContracts.Enums.Language`:
 
 | # | What | Where |
 |---|---|---|
-| 1 | Enum value: ISO 3166-1 alpha-2 code (e.g. `LV`) | BillerContracts package: use the `release-contracts` skill. Append at the end |
+| 1 | Enum value: ISO 3166-1 alpha-2 code (e.g. `LV`) | BillerContracts package (`Contracts/Enums/Language.cs`); release it as in `_add-api-feature` section 1. Append at the end |
 | 2 | Labels | `src/Application/Helpers/Invoice/InvoiceTexts<LANG>.cs`: `readonly struct` implementing `IInvoiceTexts` |
 | 3 | Number → words | `src/Application/Helpers/NumberToWords/NumberToWords<LANG>.cs`: `OnesToWords`, `TensToWords`, `HundredsToWords`, `ThousandsToWords`, `MillionsToWords` + `NumberToWords<LANG>` façade |
 | 4 | Wiring | `PriceToWordsFactory.GetConverter` (builds the chain) and `InvoiceDocumentFactory.GetTexts` |
@@ -81,9 +81,13 @@ your own implementation's output.
 ## 6. Verify
 
 1. `_test-coverage` skill: everything green, new classes covered.
-2. `new-invoice-layout` skill's render script. `render-samples.sh Invoice <LANG>` and
-   `render-samples.sh JobDoneAct <LANG>` render every document type in the new language. Open the
-   PDFs and check that labels fit their columns (translations are often longer), that diacritics
-   render with the calibri font, and that amount-in-words matches the total.
+2. Render sample PDFs (ask first, it adds data to the local DB). Start the stack with
+   `docker compose up -d --build`, create an invoice in Swagger (http://localhost:8090/swagger),
+   then call `POST /invoices/generate` with its `Id`, `LanguageCode=<LANG>`, and `DocumentType`
+   set to `Invoice`, then `JobDoneAct`. Open the PDFs and check that labels fit their columns
+   (translations are often longer), that diacritics render with the calibri font, and that
+   amount-in-words matches the total.
 3. Remind the user about the BillerContracts release (the enum) and any `// TODO verify`
    translations.
+
+Paste the `Passed!/Failed!` line from the test run. Don't say the tests passed without it.

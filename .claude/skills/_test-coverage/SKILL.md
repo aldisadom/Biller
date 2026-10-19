@@ -7,7 +7,7 @@ description: Run Biller's xUnit test suite with code coverage, generate the HTML
 
 The repo is a .NET 8 solution (`Billio.sln`) with one unit-test project, `tests/xUnitTests`
 (xUnit v3 + Moq + FluentAssertions, coverage via `coverlet.collector`).
-`make test` (in `makefiles`) doesn't build a report; use the bundled script instead.
+There is no `make test` target; use the bundled script.
 
 ## Run it
 
@@ -30,7 +30,8 @@ If `reportgenerator` is missing, tell the user to install it with
 
 Keep it short and useful:
 
-1. **Result line**: total / passed / failed / skipped, and the overall line + branch coverage.
+1. **Result line**: paste the `Passed!/Failed!` line exactly as the script printed it, and the
+   overall line + branch coverage from the summary. Don't say the tests passed without that line.
 2. **Failures** (if any): test name, the assertion message, and the likely cause in the source
    (open the test and the code under test — don't just paste the stack trace).
    A build error is not a test failure; report the compiler error with `file:line`.
