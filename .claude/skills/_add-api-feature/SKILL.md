@@ -35,24 +35,32 @@ and flows to every other project.
 
 Steps:
 1. Work in a clone at `../BillerContracts` (a sibling of this repo). If it doesn't exist, ask before
-   cloning it (`git clone https://github.com/aldisadom/BillerContracts ../BillerContracts`). If it
-   does, check it's on an up-to-date `master` and branch from there. Check that the contracts on
-   `master` match the version pinned in Biller, because `master` may contain unreleased changes.
+   cloning it (`git clone https://github.com/aldisadom/BillerContracts ../BillerContracts`).
+   Run the `_sync-repos` skill first, so it is on the branch with Biller's branch name or on
+   up-to-date `master`. If it's on `master`, create a branch with Biller's branch name. Check that
+   the contracts on `master` match the version pinned in Biller, because `master` may contain
+   unreleased changes.
    Then add the records, mirroring `Contracts/Requests/Item/*` and `Contracts/Responses/Item/*`:
    `<X>AddRequest`, `<X>UpdateRequest` (has `Id`), `<X>GetRequest` (nullable filter props),
-   `<X>Response`, `<X>ListResponse` (`List<<X>Response> <X>s { get; set; } = [];`).
-   All are `public record` with `{ get; set; }` and `= string.Empty` / `= []` defaults.
-   Create returns the shared `AddResponse { Guid Id }`.
-2. **To build Biller against the unpublished contracts**, temporarily swap the PackageReference in
-   `src/Domain/Domain.csproj` for
+   `<X>Response`, `<X>ListResponse` (`List<<X>Response> <X>s { get; set; } = [];` plus
+   `TotalCount`, `Page`, `PageSize`). All are `public record` with `{ get; set; }` and
+   `= string.Empty` / `= []` defaults. Create returns the shared `AddResponse { Guid Id }`.
+   For a new endpoint, also add the method to `Clients/Clients/<X>Client.cs` and
+   `Clients/Interfaces/I<X>Client.cs`, with a test in `Clients.Tests/<X>ClientTest.cs`. The front
+   end calls the API only through these clients. Follow `../BillerContracts/CLAUDE.md`.
+2. **To build Biller against the unpublished contracts**, the user can run the `Publish` workflow
+   on the contracts branch. From a branch other than master it publishes `<version>-preview.<run>`,
+   which Biller can reference on its branch, and CI can restore it. For a quick local try before
+   that, temporarily swap the PackageReference in `src/Domain/Domain.csproj` for
    `<ProjectReference Include="..\..\..\BillerContracts\Contracts\Contracts.csproj" />`.
-   Tell the user you did this. It **must be reverted** to a PackageReference with the new version
-   before committing, because CI clones only Biller.
+   Tell the user you did this. It **must be reverted** before committing, because CI clones only Biller.
 3. **Publishing is the user's action.** Once the contracts PR is merged, they run the `Publish`
-   workflow in BillerContracts (GitHub Actions, input `package_version`, e.g. `1.0.6` after `1.0.5`).
-   Then bump `BillerContracts` to the new version in `src/Domain/Domain.csproj`,
-   `../BillioIntegrationTest/src/IntegrationTests/IntegrationTests.csproj`, and
-   `../BillerFrontEnd/src/Client/Clients.csproj` if the front end uses the new types.
+   workflow on master (input `package_version`, the next version after the latest one on nuget.org;
+   Biller may pin an older one). Both packages get that version. Run `_sync-repos`, then bump it in
+   `src/Domain/Domain.csproj` (`BillerContracts`),
+   `../BillioIntegrationTest/src/IntegrationTests/IntegrationTests.csproj` (`BillerContracts`), and
+   `../BillerFrontEnd/src/FrontEnd/FrontEnd.csproj` (`BillerContracts.Clients`) when the front end
+   needs the change. Replace any preview version.
 
 ## 2. Domain + database
 
@@ -76,7 +84,8 @@ Steps:
 
 - `src/Application/Models/<X>Model.cs`: plain class mirroring the entity.
 - `src/Application/MappingProfiles/<X>MappingProfile.cs`: `public static class <X>ModelExtensions`
-  with hand-written extension methods (AutoMapper was removed on purpose; don't reintroduce a mapper):
+  with hand-written extension methods (AutoMapper and other mapping libraries are not allowed in
+  any Biller repo; don't add one):
   `ToEntity(this <X>Model)`, `ToModel(this <X>Entity)`, `ToModel(this <X>AddRequest)` (no Id),
   `ToModel(this <X>UpdateRequest)`, `ToResponse(this <X>Model)`, `ToModel(this <X>Response)`.
   Map **every** property, because the mapping tests check for missing ones.
@@ -126,7 +135,9 @@ tests show which files a feature needs. A new resource needs:
 2. Optionally (ask first, it changes the local DB) see it live. `docker compose up -d --build`
    runs the migrations and starts the API. `docker compose logs liquibase` shows the changesets
    that ran. Create the entity through Swagger at http://localhost:8090/swagger.
-   Integration tests run against that stack: `dotnet test ../BillioIntegrationTest/BillioIntegrationTest.sln`.
+   Integration tests run against that stack. Run `_sync-repos` first, so `../BillioIntegrationTest`
+   is on the branch with Biller's branch name or up-to-date master, then
+   `dotnet test ../BillioIntegrationTest/BillioIntegrationTest.sln`.
    They delete all data through the API first. New endpoints need integration tests on a branch
    with the same name in BillioIntegrationTest; CI uses that branch.
 3. Summarize for the user: the files touched per layer, the migration name, and any pending
