@@ -1,6 +1,6 @@
 ---
 name: _add-api-feature
-description: Add or extend a Biller REST API feature end-to-end across every layer — BillerContracts request/response records, FluentValidation validator, Swagger examples, controller, application service + model + mapping extensions, domain entity + repository interface, Dapper repository, Liquibase migration, DI registrations, and unit tests. Use this whenever the user wants a new entity/resource (e.g. "add payments", "CRUD for products"), a new endpoint, or a new field exposed through the API in the Biller repo, even if they only mention one layer ("add a Currency field to invoices", "new GET by seller endpoint") — fields and endpoints almost always ripple through several layers.
+description: Add or extend a Biller REST API feature end-to-end across every layer — BillerContracts request/response records, FluentValidation validator, Swagger examples, controller, application service + model + mapping extensions, domain entity + repository interface, Dapper repository, Liquibase migration, DI registrations, and unit tests. Use this whenever the user wants a new entity/resource (e.g. "add payments", "CRUD for products"), a new endpoint, or a new field exposed through the API in the Biller repo, even if they only mention one layer ("add a Currency field to invoices", "new GET by seller endpoint") — fields and endpoints almost always ripple through several layers. Also use it when the user gives a Jira issue (BIL-<n> key or link) for API work: it reviews the issue, then works from its plan in docs/plans or writes one first. With no issue, it asks for the details and creates the BIL issue in Jira before starting.
 ---
 
 # Add an API feature end-to-end
@@ -15,9 +15,68 @@ Biller is layered. A request flows:
 for that layer and mirror it, including XML doc comments, constructor style, naming, and blank lines.
 That beats any template here, because it stays current with the code.
 
-## 0. Pin down scope first
+## 0. Start from the Jira issue and its plan
 
-Work out which of these the user wants, and ask if it isn't clear:
+When the user gives a Jira link or key (`https://aldisadom.atlassian.net/browse/BIL-<n>`, `BIL-<n>`),
+the issue and its plan are the spec. Without one, ask whether an issue exists. If it does, take its
+key and go to step 1. If not, create it first:
+
+- **Ask for the details** an issue needs: the goal (what the user can do afterwards), the
+  resource, fields or endpoints, the rules and error cases, which repos it touches (front end?
+  integration tests?), what it depends on, what is out of scope, and the parent epic. Ask the open
+  points together, not one by one, and use "Pin down scope" below to see what is missing.
+- **Draft it** in the style of the existing BIL issues (e.g. BIL-90, BIL-92): a summary, then
+  **Goal**, **Found while planning** (what the code shows today), **Plan in short** (numbered
+  steps), **Depends on** and **Risk**. Fill "Found" from the code, not from memory.
+- **Show the draft and create it once the user agrees:** `createJiraIssue` in project `BIL`, type
+  `Task`, `parent` = the epic, plus any priority the user gives. Link each blocker with
+  `createJiraIssueLink` (`linkType: "Blocks"`, the blocker as `inwardIssue`).
+- Then start again at step 1 with the new key. It has no plan yet, so step 5 writes one.
+
+1. **Read the issue** with the Atlassian MCP tools (`getAccessibleAtlassianResources` once for the
+   cloudId, then `getJiraIssue` with `view: "evidence"` for links and parent). Read the comments too
+   (`discover` "list jira issue comments"). Note the summary, description, status, parent epic and
+   every linked issue.
+2. **Review it before writing anything.** Tell the user:
+   - **Blockers:** each "is blocked by" issue and its status. If one isn't Done, ask before going on.
+   - **Gaps:** what the issue doesn't say that the code needs (field types, required fields,
+     relationships, status codes, error messages, which documents or languages are affected).
+   - **Conflicts:** anything that breaks `CLAUDE.md` or `REVIEW.md` (invoices keep their own copy of
+     data, one SQL statement per write, no mapping library), or that clashes with another open
+     issue or plan touching the same tables or requests.
+3. **Find the plan.** Look, in order, for: a `Plan:` line in the description, then
+   `docs/plans/BIL-<n>-*.md` in Biller. A plan that lives in a sibling repo needs `_sync-repos` first.
+4. **There is a plan: work with it.**
+   - Read all of it. Compare its "Current state" with the code now (it names the master commit it
+     was written at; `git log <commit>..master` shows what changed since). Report the differences.
+   - Follow its design decisions and step order. Don't re-decide them. If the code makes a decision
+     wrong or a step impossible, stop, tell the user, and update the plan once they agree.
+   - Migration numbers in a plan are guesses; take the next free one (`_add-db-migration`).
+   - When the plan names other repos (BillerContracts, BillerFrontEnd, BillioIntegrationTest),
+     those steps go on branches with Biller's branch name there.
+5. **There is no plan: write one, then stop for approval.**
+   - Path: `docs/plans/BIL-<n>-<slug>.md` in Biller (an API feature always changes Biller).
+   - Mirror an existing plan, e.g. `docs/plans/BIL-90-seller-invoice-summary.md`: title with the key,
+     `Jira:` link and epic, **Goal**, **Current state (master @ <short hash>)** as a table of the
+     files, tables and endpoints involved, **Design decisions** (numbered, each with its reason),
+     **Dependencies**, one **Step** per layer in the order of this skill (contracts, migration with
+     its SQL and rollback, domain and infrastructure with the SQL, application, validators, WebAPI,
+     tests, integration tests, front end), **Out of scope**, **Order of work**.
+   - Fill "Current state" from the code, not from the issue. Put open questions at the top and ask
+     them; don't guess the answers into decisions.
+   - Show the user the plan and wait for approval before writing code.
+   - Offer to add `Plan: docs/plans/BIL-<n>-<slug>.md in the Biller repo.` to the top of the issue
+     description. Edit Jira only after the user agrees.
+6. **Branch:** if on master, create `BIL-<n>-<slug>` (same slug as the plan) before changing files.
+   Commit the plan on that branch, so the PR carries it.
+
+As you work, tick off finished steps in the plan, or note what was done differently and why, so the
+plan matches what is merged.
+
+## Pin down scope
+
+With a plan, the scope comes from it. Otherwise work out which of these the user wants, and ask if
+it isn't clear:
 - **New resource** (full CRUD): every step below.
 - **New field on an existing resource**: contracts → migration → entity → repository SQL → model →
   mapping → validator → Swagger examples → tests. The controller and service usually don't change.
@@ -140,7 +199,8 @@ tests show which files a feature needs. A new resource needs:
    `dotnet test ../BillioIntegrationTest/BillioIntegrationTest.sln`.
    They delete all data through the API first. New endpoints need integration tests on a branch
    with the same name in BillioIntegrationTest; CI uses that branch.
-3. Summarize for the user: the files touched per layer, the migration name, and any pending
+3. Summarize for the user: the files touched per layer, the migration name, the plan steps that are
+   done and any that are left, and any pending
    BillerContracts publish/version bump, including a reminder if the temporary ProjectReference is
    still in place.
 
