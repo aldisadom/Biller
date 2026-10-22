@@ -125,6 +125,62 @@ Database schema is managed by Liquibase. Migration scripts are located in the `m
 
 <p align="right">(<a href="#Biller">back to top</a>)</p>
 
+## Backup and restore
+
+`make update` takes a backup first and stops if it fails. Run `make backup` yourself before any
+other change that touches data, such as deploying a migration by hand.
+
+```sh
+make backup     # saves backup/billio-YYYYMMDD-HHMMSS.dump (UTC), keeps the newest 14
+make restore    # lists the backups in backup/, asks which one, then restores it into Data
+```
+
+A restore goes into a temp database first, so a broken backup leaves `Data` as it was. Only when
+that succeeds does it stop `webapi`, back up the current `Data` to
+`backup/billio-YYYYMMDD-HHMMSS-before-restore.dump` (so picking the wrong file can be undone), swap
+the restored database in, run Liquibase and start `webapi` again. If Liquibase fails, `webapi` is
+left stopped. The backup includes
+Liquibase's `databasechangelog` table, so after restoring an older backup only the newer migrations
+are applied.
+
+**Check a backup** without touching the live database: restore it into a scratch database, compare
+its row counts with the live ones, then drop it:
+
+```sh
+docker exec billio-db psql -U postgres -d postgres -c "CREATE DATABASE \"Data_restore_test\" TEMPLATE template0;"
+docker exec -i billio-db pg_restore -U postgres -d Data_restore_test --no-owner --exit-on-error < backup/billio-....dump
+docker exec billio-db psql -U postgres -d Data_restore_test -c "SELECT count(*) FROM invoices;"
+docker exec billio-db psql -U postgres -d Data -c "SELECT count(*) FROM invoices;"
+docker exec billio-db psql -U postgres -d postgres -c "DROP DATABASE \"Data_restore_test\";"
+```
+
+**Without the scripts:**
+
+```sh
+# backup
+docker exec billio-db pg_dump -U postgres -d Data -Fc > backup/billio.dump
+
+# restore: into a temp database first; go on only if pg_restore succeeds
+docker exec billio-db psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS \"Data_restore_tmp\" WITH (FORCE);"
+docker exec billio-db psql -U postgres -d postgres -c "CREATE DATABASE \"Data_restore_tmp\" TEMPLATE template0;"
+docker exec -i billio-db pg_restore -U postgres -d Data_restore_tmp --no-owner --exit-on-error < backup/billio.dump
+docker stop billio-webapi
+# back up the current Data; go on only if both commands succeed
+undo=backup/billio-$(date -u +%Y%m%d-%H%M%S)-before-restore.dump
+docker exec billio-db pg_dump -U postgres -d Data -Fc > "$undo"
+docker exec -i billio-db pg_restore --list < "$undo" | grep -m1 "TABLE DATA"
+# swap, migrate, and drop the old database only once Liquibase succeeded
+docker exec billio-db psql -U postgres -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'Data'; ALTER DATABASE \"Data\" RENAME TO \"Data_restore_old\"; ALTER DATABASE \"Data_restore_tmp\" RENAME TO \"Data\";"
+docker start -a billio-liquibase
+docker exec billio-db psql -U postgres -d postgres -c "DROP DATABASE \"Data_restore_old\" WITH (FORCE);"
+docker start billio-webapi
+```
+
+Keep a copy of the backups off the PC (USB drive or cloud folder). A backup on the same disk does
+not survive a disk failure.
+
+<p align="right">(<a href="#Biller">back to top</a>)</p>
+
 ## Contributing
 
 Issues and pull requests are welcome! Please see the [LICENSE.txt](LICENSE.txt) for license information.
