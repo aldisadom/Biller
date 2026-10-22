@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 /src/WebAPI/Data/Invoices
 /coveragereport
+
+# Database backups (make backup)
+backup/

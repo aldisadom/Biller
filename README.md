@@ -125,6 +125,52 @@ Database schema is managed by Liquibase. Migration scripts are located in the `m
 
 <p align="right">(<a href="#Biller">back to top</a>)</p>
 
+## Backup and restore
+
+`make update` takes a backup first and stops if it fails. Run `make backup` yourself before any
+other change that touches data, such as deploying a migration by hand.
+
+```sh
+make backup     # saves backup/billio-YYYYMMDD-HHMMSS.dump, keeps the newest 14
+make restore    # lists the backups in backup/, asks which one, then restores it into Data
+```
+
+A full restore goes into a temp database first. Only when that succeeds are `webapi` stopped,
+`Data` replaced and `webapi` started again, so a broken backup leaves `Data` as it was.
+
+**Check a backup** without touching the live database: restore it into a scratch database, compare
+its row counts with the live ones, then drop it:
+
+```sh
+docker exec billio-db psql -U postgres -d postgres -c "CREATE DATABASE \"Data_restore_test\" TEMPLATE template0;"
+docker exec -i billio-db pg_restore -U postgres -d Data_restore_test --no-owner --exit-on-error < backup/billio-....dump
+docker exec billio-db psql -U postgres -d Data_restore_test -c "SELECT count(*) FROM invoices;"
+docker exec billio-db psql -U postgres -d Data -c "SELECT count(*) FROM invoices;"
+docker exec billio-db psql -U postgres -d postgres -c "DROP DATABASE \"Data_restore_test\";"
+```
+
+**After restoring an older backup**, run `docker compose up liquibase`. The backup includes
+Liquibase's `databasechangelog` table, so only the newer migrations are applied.
+
+**Without the scripts:**
+
+```sh
+# backup
+docker exec billio-db pg_dump -U postgres -d Data -Fc > backup/billio.dump
+
+# restore
+docker stop billio-webapi
+docker exec billio-db psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS \"Data\" WITH (FORCE);"
+docker exec billio-db psql -U postgres -d postgres -c "CREATE DATABASE \"Data\" TEMPLATE template0;"
+docker exec -i billio-db pg_restore -U postgres -d Data --no-owner --exit-on-error < backup/billio.dump
+docker start billio-webapi
+```
+
+Keep a copy of the backups off the PC (USB drive or cloud folder). A backup on the same disk does
+not survive a disk failure.
+
+<p align="right">(<a href="#Biller">back to top</a>)</p>
+
 ## Contributing
 
 Issues and pull requests are welcome! Please see the [LICENSE.txt](LICENSE.txt) for license information.
