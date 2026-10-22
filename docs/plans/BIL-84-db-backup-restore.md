@@ -22,34 +22,20 @@ Jira: [BIL-84](https://aldisadom.atlassian.net/browse/BIL-84). Related: BIL-82 (
 
 1. **`pg_dump -Fc` (custom format).** It is compressed, and `pg_restore` can restore it selectively and list its contents for checking.
 2. **Stream the dump through `docker exec`** (`pg_dump -Fc > file`, `pg_restore < file`). The scripts only run on Linux (the production PC, and WSL for development), so there's no PowerShell to break binary output, and no temp file inside the container is needed. *(Changed during work: the first version dumped to `/tmp` in the container and used `docker cp`, for PowerShell.)*
-3. **Restore into a fresh database, then swap it in.** This is cleaner than `--clean` on a live database, which leaves anything not in the dump behind. The dump goes into `Data_restore_tmp` first. Only when that succeeds is `webapi` stopped, `Data` dropped and the temp database renamed to `Data`, so a broken or wrong dump leaves `Data` as it was. *(Changed during work: the first version dropped `Data` before restoring. The local test showed why that's risky: `CREATE DATABASE` failed, see decision 8, and that version would have left no database.)*
-4. **Restoring an older backup is fine.** The dump carries `databasechangelog`, so `docker compose up liquibase` afterwards applies only the newer migrations.
-5. **Backups go to `./backup/` in the current folder (git-ignored)** as `billio-YYYYMMDD-HHMMSS.dump`, and restore reads from there: a bare file name is looked up in `backup/`, and with no file it lists every backup in `backup/` (newest first, numbered, with size) and asks which one to restore; `--yes` takes the newest. The script keeps the newest 14 by default (`KEEP=n` to change it). *(Changed during work: was `backups/`, and restore needed a full path.)*
+3. **Restore into a fresh database, then swap it in.** This is cleaner than `--clean` on a live database, which leaves anything not in the dump behind. The dump goes into `Data_restore_tmp` first. Only when that succeeds is `webapi` stopped, the current `Data` backed up (so picking the wrong file can be undone), and the databases swapped: `Data` → `Data_restore_old` and the temp database → `Data` in one transaction, so there is always a `Data`, then `Data_restore_old` is dropped. A broken dump leaves `Data` as it was. *(Review round 1 added the backup before the swap and the single-transaction rename.)* *(Changed during work: the first version dropped `Data` before restoring. The local test showed why that's risky: `CREATE DATABASE` failed, see decision 8, and that version would have left no database.)*
+4. **Restoring an older backup is fine.** The dump carries `databasechangelog`, so Liquibase applies only the newer migrations. The restore runs `docker start -a billio-liquibase` itself before starting `webapi` again, so the API never runs against an old schema; if Liquibase fails, the script says so and exits 1. *(Review round 1. By container name, not `docker compose run`, because the compose project name depends on who started the stack: Visual Studio locally, `make` on production.)*
+5. **Backups go to `./backup/` in the current folder (git-ignored)** as `billio-YYYYMMDD-HHMMSS.dump` in UTC, so names stay in time order across DST changes. "Newest" and rotation sort by file name, not file time, because a backup copied back from a USB drive gets a fresh file time. Restore reads from there: a bare file name is looked up in `backup/`, and with no file it lists every backup in `backup/` (newest first, numbered, with size) and asks which one to restore; `--yes` takes the newest. The script keeps the newest 14 by default (`KEEP=n` to change it). *(Changed during work: was `backups/`, and restore needed a full path.)*
 6. **`make update` runs `make backup` first.** The backup is timestamped and needs no input, and `update` is the step that deploys new migrations, so it always has one to fall back on. If the backup fails, `update` stops. There is no scheduling; any other data change needs a `make backup` by hand. *(Changed during work: the first version only printed a reminder.)*
 7. **Restore asks for confirmation** (type the database name). `--yes` skips the prompt for scripted use.
 8. **New databases use `TEMPLATE template0`.** The `postgres:16` image moved from glibc 2.36 to 2.41, and Postgres 16 refuses `CREATE DATABASE` from `template1` when its recorded collation version doesn't match (`template database "template1" has a collation version mismatch`). `template0` records no version, and the Postgres docs recommend it for `pg_restore` targets anyway.
 
 ## Step 1: Scripts (`scripts/`) ✅
 
-`scripts/db-backup.sh`
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-CONTAINER=${CONTAINER:-billio-db}; DB=${DB:-Data}; KEEP=${KEEP:-14}
-BACKUP_DIR=${BACKUP_DIR:-backup}; NAME="billio-$(date +%Y%m%d-%H%M%S).dump"
-mkdir -p "$BACKUP_DIR"
-docker exec "$CONTAINER" pg_dump -U postgres -d "$DB" -Fc > "$BACKUP_DIR/$NAME" \
-  || { rm -f "$BACKUP_DIR/$NAME"; echo "Backup failed" >&2; exit 1; }
-# check: the archive must be readable and list at least one table
-docker exec -i "$CONTAINER" pg_restore --list < "$BACKUP_DIR/$NAME" | grep -q "TABLE DATA" \
-  || { echo "Backup check failed: $BACKUP_DIR/$NAME"; exit 1; }
-ls -1t "$BACKUP_DIR"/billio-*.dump | tail -n +$((KEEP + 1)) | xargs -r rm --
-echo "Saved $BACKUP_DIR/$NAME ($(du -h "$BACKUP_DIR/$NAME" | cut -f1))"
-```
+`scripts/db-backup.sh`: `pg_dump -Fc` streamed to `backup/billio-<UTC ts>.dump.partial`, checked with `pg_restore --list` (must hold `TABLE DATA`), then renamed to `.dump`; a failed dump or check deletes the partial file. Rotation keeps the newest `KEEP` (14) regular backups by name; `KEEP=0` keeps all and `-before-restore` files never rotate. *(The first draft of the script lived here; it was replaced by this summary during review, so the plan can't drift from `scripts/db-backup.sh`.)*
 
 `scripts/db-restore.sh <file> [--yes] [--target <db>]`
-- Without `--target`, restores into `Data`: asks for confirmation, restores into `Data_restore_tmp`, then (only on success) `docker stop billio-webapi` if it is running, drops `Data`, renames the temp database, and starts `webapi` again (also from an `EXIT` trap). *(Uses `docker stop`/`start` with the container name instead of `docker compose`, so it works from any directory, like the `docker exec` calls.)*
-- With `--target Data_restore_test`, restores into a scratch database and leaves `Data` and `webapi` alone. Use this to check a backup.
+- Without `--target`, restores into `Data`: asks for confirmation, restores into `Data_restore_tmp`, then (only on success) `docker stop billio-webapi` if it is running, backs up `Data` unless it is known to be empty (`billio-<ts>-before-restore.dump`, no rotation, so the file being restored can't be rotated out), swaps the databases in one transaction, runs Liquibase, drops `Data_restore_old`, and starts `webapi` again from an `EXIT` trap. If Liquibase fails, `webapi` stays stopped, `Data_restore_old` is kept so it can be renamed back, and the script says how to finish. `webapi` and Liquibase are only touched when `DB` is `Data`. *(Review rounds 1 to 3.)* *(Uses `docker stop`/`start` with the container name instead of `docker compose`, so it works from any directory, like the `docker exec` calls.)*
+- With `--target Data_restore_test`, restores into a scratch database and leaves `Data` and `webapi` alone. Use this to check a backup. If that database already exists it asks first, and it refuses the names the restore uses itself (`Data_restore_tmp`, `Data_restore_old`). *(Review round 1.)*
 - Prints row counts for `users`, `sellers`, `customers`, `items`, `invoices` after the restore.
 
 Core commands:
