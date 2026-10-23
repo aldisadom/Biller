@@ -237,9 +237,10 @@ public class InvoiceServiceTest
     {
         //Arrange
         InvoiceModel invoiceData = NewInvoiceModel();
+        invoiceData.Status = InvoiceStatus.Payed;
         List<Guid> itemIds = invoiceData.Items!.Select(i => i.Id).ToList();
 
-        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
+        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity() with { Status = InvoiceStatus.Created };
         List<ItemModel> itemModels = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
 
         InvoiceService.MapInvoiceItemToItem(invoiceData.Items!, itemModels);
@@ -404,18 +405,30 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Update_GivenValidInvoice_UpdatesInvoice()
+    public async Task Update_GivenValidInvoice_UpdatesInvoiceAndKeepsStatusAndOwners()
     {
         //Arrange
-        InvoiceModel invoiceData = NewInvoiceModel();
+        InvoiceModel storedInvoice = NewInvoiceModel();
+        storedInvoice.Status = InvoiceStatus.Send;
+        storedInvoice.Seller!.UserId = storedInvoice.User!.Id;
+        storedInvoice.Customer!.SellerId = storedInvoice.Seller.Id;
+
+        InvoiceModel invoiceData = new()
+        {
+            Id = storedInvoice.Id,
+            Status = InvoiceStatus.Payed,
+            Seller = new() { Id = storedInvoice.Seller.Id },
+            Customer = new() { Id = storedInvoice.Customer.Id },
+            Items = storedInvoice.Items
+        };
         List<Guid> itemIds = invoiceData.Items!.Select(i => i.Id).ToList();
 
-        var invoiceEntity = invoiceData.ToEntity();
+        var invoiceEntity = storedInvoice.ToEntity();
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
             .ReturnsAsync(invoiceEntity);
 
-        _sellerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id))
+        _sellerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Seller!.Id, storedInvoice.User.Id))
             .ReturnsAsync(invoiceData.Seller!);
 
         _customerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id))
@@ -433,7 +446,7 @@ public class InvoiceServiceTest
         //Assert
         _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Update(invoiceEntity), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, storedInvoice.User.Id), Times.Once());
         _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id), Times.Once());
         _itemServiceMock.Verify(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), invoiceData.Customer!.Id), Times.Once());
     }
@@ -456,12 +469,14 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
-    [Fact]
-    public async Task UpdateStatus_GivenValidStatus_UpdatesStatus()
+    [Theory]
+    [InlineData(InvoiceStatus.Created, Label = "created status is accepted and saved")]
+    [InlineData(InvoiceStatus.Send, Label = "sent status is accepted and saved")]
+    [InlineData(InvoiceStatus.Payed, Label = "paid status is accepted and saved")]
+    public async Task UpdateStatus_GivenValidStatus_UpdatesStatus(InvoiceStatus validStatus)
     {
         //Arrange
         var invoiceId = Guid.NewGuid();
-        var validStatus = InvoiceStatus.Payed;
         var request = new InvoiceUpdateStatusRequest { Id = invoiceId, Status = validStatus };
 
         var invoiceEntity = new InvoiceEntity { Id = invoiceId, Status = validStatus };
@@ -494,19 +509,20 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Verify(m => m.UpdateStatus(It.IsAny<Guid>(), It.IsAny<InvoiceStatus>()), Times.Never());
     }
 
-    [Fact]
-    public async Task UpdateStatus_GivenInvalidStatus_ThrowsValidationException()
+    [Theory]
+    [InlineData(InvoiceStatus.OverDue, "Overdue status cannot be set manually", Label = "overdue cannot be set by hand, so it is rejected")]
+    [InlineData((InvoiceStatus)99, "Invalid invoice status: 99", Label = "status outside the enum is rejected")]
+    public async Task UpdateStatus_GivenInvalidStatus_ThrowsValidationException(InvoiceStatus invalidStatus, string expectedMessage)
     {
         //Arrange
         var invoiceId = Guid.NewGuid();
-        var invalidStatus = (InvoiceStatus)999;
         var request = new InvoiceUpdateStatusRequest { Id = invoiceId, Status = invalidStatus };
 
         //Act
         //Assert
         await _invoiceService.Invoking(x => x.UpdateStatus(request))
                             .Should().ThrowAsync<FluentValidation.ValidationException>()
-                            .WithMessage($"Invalid invoice status: {invalidStatus}");
+                            .WithMessage(expectedMessage);
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceId), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.UpdateStatus(invoiceId, invalidStatus), Times.Never());
