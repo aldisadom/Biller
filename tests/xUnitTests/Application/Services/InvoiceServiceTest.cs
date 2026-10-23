@@ -499,7 +499,7 @@ public class InvoiceServiceTest
     }
 
     [Theory]
-    [InlineData(InvoiceStatus.OverDue, "Overdue status cannot be set manually", Label = "overdue is set only by the daily job, so setting it by hand is rejected")]
+    [InlineData(InvoiceStatus.OverDue, "Overdue status cannot be set manually", Label = "overdue cannot be set by hand, so it is rejected")]
     [InlineData((InvoiceStatus)99, "Invalid invoice status: 99", Label = "status outside the enum is rejected")]
     public async Task UpdateStatus_GivenInvalidStatus_ThrowsValidationException(InvoiceStatus invalidStatus, string expectedMessage)
     {
