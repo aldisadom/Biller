@@ -28,11 +28,11 @@ Jira: [BIL-73](https://aldisadom.atlassian.net/browse/BIL-73). Epic: BIL-89 (Bil
 2. **The database default backs it up:** `status INT NOT NULL DEFAULT 10`. A row inserted without a status (e.g. by hand) is `Created`, never `Payed`.
 3. **Leave the enum numbers as they are for now.** Making `Created = 0` would be safer in the long run, but it needs a BillerContracts release and a migration that remaps stored values in step with it. Steps 1 and 2 already remove the actual bug. Revisit together with the next contracts release (see "Later").
 4. **Existing invoices stay as they are** unless the data says otherwise. Migration 031 marked them all `Payed`. Most old invoices are likely paid, but invoices created after 031 were also saved as `Payed` by the bug. The pre-check query below lists them so they can be fixed by hand.
-5. **`OverDue` is shown, not stored.** `Created`/`Send` with `due_date < today` is displayed as overdue in the front end. Storing it would need a scheduled job to keep it correct. The enum value stays (removing it is a contracts change). The API rejects setting it by hand, so nothing new gets stored as `OverDue`.
+5. **`OverDue` is stored, but only a daily job sets it** ([BIL-95](https://aldisadom.atlassian.net/browse/BIL-95), changed 2026-10-23; first planned as computed in the front end). The API rejects setting it by hand. Until BIL-95 ships, nothing becomes `OverDue`.
 
 ## Prerequisites
 
-- [ ] Backup ([BIL-84-db-backup-restore.md](BIL-84-db-backup-restore.md)).
+- [ ] Backup ([BIL-84-db-backup-restore.md](BIL-84-db-backup-restore.md)). The scripts are merged (`make backup`); run it on production before deploying.
 - [ ] Run the pre-check queries on production and decide which invoices to fix.
 
 ### Pre-check queries
@@ -51,12 +51,12 @@ FROM invoices WHERE status = 0 ORDER BY created_date DESC;
 
 Fix the wrong ones by hand (pgAdmin or `PUT` status) before or after the migration.
 
-## Step 1: Application
+## Step 1: Application (done)
 
-- `InvoiceService.Add`: `invoiceData.Status = InvoiceStatus.Created;` before `ToEntity()`.
-- `InvoiceService.UpdateStatus`: also reject `OverDue` with a `ValidationException` ("Overdue is calculated from the due date").
+- [x] `InvoiceService.Add`: `invoiceData.Status = InvoiceStatus.Created;` before `ToEntity()`.
+- [x] `InvoiceService.UpdateStatus`: also reject `OverDue` with a `ValidationException` ("Overdue is calculated from the due date").
 
-## Step 2: Migration (next free number)
+## Step 2: Migration (done: `032-Alter-table-invoices_status_default.sql`)
 
 ```sql
 --liquibase formatted sql
@@ -68,19 +68,19 @@ ALTER TABLE invoices ALTER COLUMN status SET NOT NULL;
 -- rollback ALTER TABLE invoices ALTER COLUMN status DROP NOT NULL; ALTER TABLE invoices ALTER COLUMN status DROP DEFAULT;
 ```
 
-This task is small and has no dependencies besides the backup, so it can go before BIL-65. In that case it takes number 032, and the numbers in the other plans move up by one.
+This task went before BIL-65, so it took number 032. The numbers in the other plans move up by one.
 
 ## Step 3: Tests (`write-tests` skill)
 
-- `InvoiceServiceTest.Add_GivenValidData_ReturnsGuid`: verify the repository gets an entity with `Status == InvoiceStatus.Created` (`It.Is<InvoiceEntity>(e => e.Status == InvoiceStatus.Created)`).
-- `InvoiceServiceTest.UpdateStatus`: theory over `Created`, `Send`, `Payed` (accepted) and `OverDue`, `(InvoiceStatus)99` (rejected), each with a `Label`.
-- `InvoiceServiceTest.Update`: the entity passed on update keeps the existing status. The repository `Update` doesn't write `status`, so this only documents it.
-- Integration test (BillioIntegrationTest, same branch name): create → `Created`; `PUT` status `Send` → `Send`; `Payed` → `Payed`; `OverDue` → 400; unknown value → 400.
+- [x] `InvoiceServiceTest.Add_GivenValidData_ReturnsGuid`: the model comes in as `Payed`, and the repository must get the same entity with `Status = Created` (record equality on the strict mock, rather than `It.Is`).
+- [x] `InvoiceServiceTest.UpdateStatus`: theory over `Created`, `Send`, `Payed` (accepted) and `OverDue`, `(InvoiceStatus)99` (rejected), each with a `Label`.
+- ~~`InvoiceServiceTest.Update`: the entity passed on update keeps the existing status.~~ Dropped: `InvoiceService.Update` passes the request's model (status `0`) to the repository, not the stored status. The status is kept only because `InvoiceRepository.Update` doesn't write `status`, and a unit test can't check SQL. The integration test covers it instead.
+- [x] Integration test (BillioIntegrationTest, same branch name): create → `Created`; `PUT` status `Send` → `Send`; `Payed` → `Payed`; `OverDue` → 400; unknown value → 400; editing a `Send` invoice (`PUT /invoices`) keeps it `Send`. Done as: `InvoiceAdd_Valid_Success` checks `Created`; `InvoiceStatusUpdate_Valid_Success` (Send, Payed, Created, each on its own invoice, also edits it and checks the status stays, then deletes it; runs after the `GetAll` count tests); `InvoiceStatusUpdate_Invalid_Fail` (OverDue, 99); `InvoiceStatusUpdate_NotFound_Fail` (404).
 
-## Step 4: Front end (BillerFrontEnd, separate PR)
+## Step 4: Front end (BillerFrontEnd, branch `BIL-73-invoice-status`, deployed together with this PR)
 
-- `Invoices_id.razor`: remove the "Status over due" button.
-- Show "Overdue" (e.g. red) when status is `Created` or `Send` and `DueDate` < today, on both the list and the detail page.
+- [x] `Invoices_id.razor`: remove the "Status over due" button. The API now rejects `OverDue`, so the button would only return 400.
+- [x] Highlight the stored `OverDue` status (e.g. red) on the list and the detail page. No date logic in the front end: BIL-95 sets the status.
 - Optional: a status filter on the invoice list.
 
 ## Later (with the next BillerContracts release)
@@ -98,4 +98,5 @@ This task is small and has no dependencies besides the backup, so it can go befo
 1. Pre-check queries and backup.
 2. Service fix, migration and tests in one PR. It's small, so it can go before BIL-65.
 3. Integration tests.
-4. Front end.
+4. Front end, deployed together with step 2.
+5. BIL-95: the daily overdue job.

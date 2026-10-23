@@ -96,6 +96,7 @@ public class InvoiceService : IInvoiceService
     public async Task<Guid> Add(InvoiceModel invoiceData)
     {
         await GetInvoiceData(invoiceData);
+        invoiceData.Status = InvoiceStatus.Created;
 
         InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
 
@@ -120,6 +121,9 @@ public class InvoiceService : IInvoiceService
     {
         if (!Enum.IsDefined(typeof(InvoiceStatus), invoiceData.Status))
             throw new ValidationException($"Invalid invoice status: {invoiceData.Status}");
+
+        if (invoiceData.Status == InvoiceStatus.OverDue)
+            throw new ValidationException("Overdue is calculated from the due date");
 
         await Get(invoiceData.Id);
 
