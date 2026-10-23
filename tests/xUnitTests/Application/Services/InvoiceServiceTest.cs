@@ -405,13 +405,14 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Update_GivenValidInvoice_UpdatesInvoice()
+    public async Task Update_GivenValidInvoice_UpdatesInvoiceAndKeepsStatus()
     {
         //Arrange
         InvoiceModel invoiceData = NewInvoiceModel();
+        invoiceData.Status = InvoiceStatus.Payed;
         List<Guid> itemIds = invoiceData.Items!.Select(i => i.Id).ToList();
 
-        var invoiceEntity = invoiceData.ToEntity();
+        var invoiceEntity = invoiceData.ToEntity() with { Status = InvoiceStatus.Send };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
             .ReturnsAsync(invoiceEntity);
@@ -498,7 +499,7 @@ public class InvoiceServiceTest
     }
 
     [Theory]
-    [InlineData(InvoiceStatus.OverDue, "Overdue is calculated from the due date", Label = "overdue is calculated from the due date, so setting it is rejected")]
+    [InlineData(InvoiceStatus.OverDue, "Overdue status cannot be set manually", Label = "overdue is set only by the daily job, so setting it by hand is rejected")]
     [InlineData((InvoiceStatus)99, "Invalid invoice status: 99", Label = "status outside the enum is rejected")]
     public async Task UpdateStatus_GivenInvalidStatus_ThrowsValidationException(InvoiceStatus invalidStatus, string expectedMessage)
     {

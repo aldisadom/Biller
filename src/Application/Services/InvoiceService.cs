@@ -110,6 +110,7 @@ public class InvoiceService : IInvoiceService
     {
         var invoice = await Get(invoiceData.Id);
         invoiceData.User = invoice.User;
+        invoiceData.Status = invoice.Status;
         await Validate(invoiceData);
 
         InvoiceEntity invoiceEntity = invoiceData.ToEntity();
@@ -123,7 +124,7 @@ public class InvoiceService : IInvoiceService
             throw new ValidationException($"Invalid invoice status: {invoiceData.Status}");
 
         if (invoiceData.Status == InvoiceStatus.OverDue)
-            throw new ValidationException("Overdue is calculated from the due date");
+            throw new ValidationException("Overdue status cannot be set manually");
 
         await Get(invoiceData.Id);
 

@@ -54,7 +54,7 @@ Fix the wrong ones by hand (pgAdmin or `PUT` status) before or after the migrati
 ## Step 1: Application (done)
 
 - [x] `InvoiceService.Add`: `invoiceData.Status = InvoiceStatus.Created;` before `ToEntity()`.
-- [x] `InvoiceService.UpdateStatus`: also reject `OverDue` with a `ValidationException` ("Overdue is calculated from the due date").
+- [x] `InvoiceService.UpdateStatus`: also reject `OverDue` with a `ValidationException` ("Overdue status cannot be set manually").
 
 ## Step 2: Migration (done: `032-Alter-table-invoices_status_default.sql`)
 
@@ -74,7 +74,7 @@ This task went before BIL-65, so it took number 032. The numbers in the other pl
 
 - [x] `InvoiceServiceTest.Add_GivenValidData_ReturnsGuid`: the model comes in as `Payed`, and the repository must get the same entity with `Status = Created` (record equality on the strict mock, rather than `It.Is`).
 - [x] `InvoiceServiceTest.UpdateStatus`: theory over `Created`, `Send`, `Payed` (accepted) and `OverDue`, `(InvoiceStatus)99` (rejected), each with a `Label`.
-- ~~`InvoiceServiceTest.Update`: the entity passed on update keeps the existing status.~~ Dropped: `InvoiceService.Update` passes the request's model (status `0`) to the repository, not the stored status. The status is kept only because `InvoiceRepository.Update` doesn't write `status`, and a unit test can't check SQL. The integration test covers it instead.
+- [x] `InvoiceServiceTest.Update_GivenValidInvoice_UpdatesInvoiceAndKeepsStatus`: the stored invoice is `Send`, the request model is `Payed`, and the repository gets `Send`. `InvoiceService.Update` now copies the stored status onto the model (found in review), so keeping the status no longer rests only on `InvoiceRepository.Update` leaving `status` out of its SQL.
 - [x] Integration test (BillioIntegrationTest, same branch name): create → `Created`; `PUT` status `Send` → `Send`; `Payed` → `Payed`; `OverDue` → 400; unknown value → 400; editing a `Send` invoice (`PUT /invoices`) keeps it `Send`. Done as: `InvoiceAdd_Valid_Success` checks `Created`; `InvoiceStatusUpdate_Valid_Success` (Send, Payed, Created, each on its own invoice, also edits it and checks the status stays, then deletes it; runs after the `GetAll` count tests); `InvoiceStatusUpdate_Invalid_Fail` (OverDue, 99); `InvoiceStatusUpdate_NotFound_Fail` (404).
 
 ## Step 4: Front end (BillerFrontEnd, branch `BIL-73-invoice-status`, deployed together with this PR)
