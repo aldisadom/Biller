@@ -405,19 +405,30 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Update_GivenValidInvoice_UpdatesInvoiceAndKeepsStatus()
+    public async Task Update_GivenValidInvoice_UpdatesInvoiceAndKeepsStatusAndOwners()
     {
         //Arrange
-        InvoiceModel invoiceData = NewInvoiceModel();
-        invoiceData.Status = InvoiceStatus.Payed;
+        InvoiceModel storedInvoice = NewInvoiceModel();
+        storedInvoice.Status = InvoiceStatus.Send;
+        storedInvoice.Seller!.UserId = storedInvoice.User!.Id;
+        storedInvoice.Customer!.SellerId = storedInvoice.Seller.Id;
+
+        InvoiceModel invoiceData = new()
+        {
+            Id = storedInvoice.Id,
+            Status = InvoiceStatus.Payed,
+            Seller = new() { Id = storedInvoice.Seller.Id },
+            Customer = new() { Id = storedInvoice.Customer.Id },
+            Items = storedInvoice.Items
+        };
         List<Guid> itemIds = invoiceData.Items!.Select(i => i.Id).ToList();
 
-        var invoiceEntity = invoiceData.ToEntity() with { Status = InvoiceStatus.Send };
+        var invoiceEntity = storedInvoice.ToEntity();
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
             .ReturnsAsync(invoiceEntity);
 
-        _sellerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id))
+        _sellerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Seller!.Id, storedInvoice.User.Id))
             .ReturnsAsync(invoiceData.Seller!);
 
         _customerServiceMock.Setup(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id))
@@ -435,7 +446,7 @@ public class InvoiceServiceTest
         //Assert
         _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Update(invoiceEntity), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, storedInvoice.User.Id), Times.Once());
         _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id), Times.Once());
         _itemServiceMock.Verify(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), invoiceData.Customer!.Id), Times.Once());
     }

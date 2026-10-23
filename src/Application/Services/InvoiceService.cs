@@ -111,6 +111,8 @@ public class InvoiceService : IInvoiceService
         var invoice = await Get(invoiceData.Id);
         invoiceData.User = invoice.User;
         invoiceData.Status = invoice.Status;
+        invoiceData.Seller!.UserId = invoice.User!.Id;
+        invoiceData.Customer!.SellerId = invoiceData.Seller.Id;
         await Validate(invoiceData);
 
         InvoiceEntity invoiceEntity = invoiceData.ToEntity();
