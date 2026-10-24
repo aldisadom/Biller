@@ -78,7 +78,7 @@ It changes several repos, so it lives in Biller.
   line per page, so conflicts are trivial; whichever lands second rebases.
 - BIL-94 (package updates) also releases contracts. If it goes first, this release is that one.
 
-## Step 1: BillerContracts (own PR, then the owner publishes 2.0.0)
+## Step 1: BillerContracts (own PR, then the owner publishes 2.0.0) — [x] code, 68 tests pass; not pushed, not published
 
 - `Clients/ClientAPIException.cs`: `public ErrorModel? Error { get; }` and a constructor
   `(string message, ErrorModel error)`.
@@ -89,24 +89,24 @@ It changes several repos, so it lives in Biller.
   exact-text tests for the extended message.
 - Pull request template: **breaking** (namespace move), so 2.0.0.
 
-## Step 2: Biller
+## Step 2: Biller — [ ] waits for 2.0.0
 
 - `src/Domain/Domain.csproj`: `BillerContracts` 1.1.1 → 2.0.0. Unit tests pass.
 
-## Step 3: BillerFrontEnd, render mode
+## Step 3: BillerFrontEnd, render mode — [x] (package bump waits for 2.0.0)
 
 - `Components/App.razor`: design decision 3.
 - Remove `@rendermode InteractiveServer` from the 25 pages.
 - `FrontEnd.csproj`: `BillerContracts.Clients` 2.0.0.
 
-## Step 4: BillerFrontEnd, error boundary
+## Step 4: BillerFrontEnd, error boundary — [x]
 
 - `Capabilities/ErrorMessages.cs` (design decision 5).
 - `Components/Layout/AppErrorBoundary.razor` (design decision 4), used in `MainLayout.razor`
   around `@Body`. Keep `#blazor-error-ui` for errors outside the boundary (layout, nav menu).
 - Delete `src/Domain/Models/ErrorModel.cs`.
 
-## Step 5: BillioIntegrationTest
+## Step 5: BillioIntegrationTest — [x] (package bump waits for 2.0.0)
 
 - `BillerContracts.Clients` 2.0.0; error tests as design decision 7; delete `ApiErrorHandler.cs`,
   its line in `TestClients.cs`, and update `CLAUDE.md`.
@@ -118,7 +118,12 @@ It changes several repos, so it lives in Biller.
   (seller without company number), `/invoices/not-a-guid`, `/invoices/<random guid>`, and Biller
   stopped. Each shows the message, "Try again" and navigation work, and the circuit stays alive.
 - Each case above also on a fresh page load (F5), so the error happens during prerender.
+  Checked 2026-10-25 with the local contracts project: `AppErrorBoundary` logs the error during
+  prerender too, no unhandled error. A bad id format fails before streaming and the prerendered
+  HTML already holds the alert; an unknown id prerenders "Loading..." and the alert comes from the
+  interactive render. Interactive behaviour still to check in a browser.
 - Integration tests: same 172 cases pass; one wrong expected extended message fails.
+  Done with the local contracts project: 172 passed twice; the wrong extended message failed.
 
 ## Out of scope
 
