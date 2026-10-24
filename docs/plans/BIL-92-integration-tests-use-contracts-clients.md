@@ -44,11 +44,12 @@ nothing breaks.
 
 1. **The tests read the error body themselves.** `ClientAPIException` in 1.1.1 has only a text
    message (status code and message, no extended message). The owner chose 1.1.1 over a new release.
-   So `ErrorResponseRecorder`, a `DelegatingHandler` added to every client's `HttpClient`
-   (`ConfigureHttpClientDefaults`), turns a non-success response into an `ErrorModel`.
-   `ApiError.Capture(() => call)` asserts that the call throws `ClientAPIException` and returns that
-   `ErrorModel`. It hands it over through an `AsyncLocal`, so parallel tests don't mix errors. The
-   error tests still compare the status code, message and extended message.
+   So `ApiErrorHandler`, a `DelegatingHandler` added to every client's `HttpClient`
+   (`ConfigureHttpClientDefaults`), throws `ApiErrorException` for a non-success response: a
+   `ClientAPIException` whose `Error` is the decoded `ErrorModel`. Error tests use
+   `(await Assert.ThrowsAsync<ApiErrorException>(() => call))!.Error`. The error tests still compare
+   the status code, message and extended message. (First built as an `ApiError.Capture` helper with an
+   `AsyncLocal`; replaced after review because it was more code for the same check.)
    *Planned first:* `ClientAPIException.Error` in BillerContracts. Dropped, because it needs a 2.0.0 release.
 2. **Reference only `BillerContracts.Clients` 1.1.1.** It depends on `BillerContracts` at the same
    version, so the two can't drift. BillerFrontEnd uses the same version, and Biller moves from 1.0.5 to 1.1.1.
@@ -60,7 +61,7 @@ nothing breaks.
    `ISellerClient`, `ICustomerClient`, `IItemClient` and `IInvoiceClient`. Tests keep their
    `private static readonly` client fields, typed as the interfaces.
 5. **Same checks, new shape.** Success: await the call and use the value. Error:
-   `ApiError.Capture` (design decision 1), then `CheckErrors`. Update and delete success: the
+   `Assert.ThrowsAsync<ApiErrorException>` (design decision 1), then `CheckErrors` on its `Error`. Update and delete success: the
    call doesn't throw (instead of `IsTrue()` on a `bool`).
 6. **Delete-all deletes everything.** Each `*_Delete_All` calls `Get()` and deletes that page until
    the list comes back empty.
@@ -74,7 +75,7 @@ Run the `_sync-repos` skill before starting each repo.
 2. [x] **BillioIntegrationTest packages.** Replace `BillerContracts` 1.0.5 with `BillerContracts.Clients`
    1.1.1. Add `Microsoft.Extensions.Configuration.Json` and `.EnvironmentVariables` (DI comes in through
    the package). Remove `LanguageExt.Core`, `FluentValidation` and the `Serilog` packages.
-3. [x] `appsettings.json`, `TestClients`, `ErrorResponseRecorder` and `ApiError` in `ApiClients/`
+3. [x] `appsettings.json`, `TestClients`, `ApiErrorHandler` and `DeleteAll` in `ApiClients/`
    (design decisions 1, 3 and 4).
 4. [x] Convert the tests (design decision 5): all 118 `.Match(...)` calls, including the BIL-73 status
    tests. Then the delete-all helpers (design decision 6).
@@ -96,7 +97,7 @@ Run the `_sync-repos` skill before starting each repo.
 - No publish is needed: 1.1.1 is on nuget.org. Biller's branch (the version bump) and the test branch
   have the same name, so each CI runs against the other.
 - A later 2.0.0 release (the `UserGetRequest` namespace move) can add `ClientAPIException.Error`; then
-  `ErrorResponseRecorder` can go.
+  `ApiErrorHandler` can go.
 - BIL-65 removes `InvoiceNumber` from `InvoiceUpdateRequest`, which `InvoiceTest` sets. Whichever lands
   second adapts the invoice tests.
 - The package makes a new test possible: `GeneratePDF`, which `REVIEW.md` in BillioIntegrationTest
