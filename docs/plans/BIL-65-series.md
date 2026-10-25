@@ -10,7 +10,7 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
 - Any invoice can be deleted. Only deleting the **latest** invoice of a series lowers the series' next number.
 - Reserving a number on create and releasing it on delete must be atomic, so two requests at the same time can't get the same number.
 
-## Current state (master @ 125ae5e)
+## Current state (master @ 6bb2079)
 
 | Where | What |
 |---|---|
@@ -21,6 +21,10 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
 | `InvoiceModel.GenerateInvoiceName()` / `GenerateFileLocation()` | **Bug:** they use `Customer.InvoiceNumber` / `Customer.InvoiceName` from the customer snapshot instead of the invoice's own number |
 | `invoices.file_path` | Written on insert/update but never read. PDFs are streamed since #37 |
 | DB constraints | Nothing prevents duplicate `(customer, invoice_number)` |
+| `InvoiceDocumentSF.cs`, `InvoiceDocumentADA.cs` | The PDF header prints `Model.Customer!.InvoiceName` as the series |
+| Foreign keys | None has `ON DELETE`. Deleting a seller that still has customers fails; the same will hold for series |
+| `migrations/sql/` | Last changeset is `032-Alter-table-invoices_status_default.sql` (BIL-73) |
+| BillerContracts | Biller pins 2.0.0. BillioIntegrationTest uses `BillerContracts.Clients` 2.0.0 (BIL-96) |
 
 ## Design decisions
 
@@ -46,11 +50,11 @@ Series `ABC`, invoices 1–5 exist, `next_number = 6`.
 
 ## Prerequisites
 
-- [ ] **Sync the local BillerContracts checkout.** It is 2 commits ahead of `origin/master`, has uncommitted changes (`.gitignore`, `Contracts/Enums/DocumentType.cs`), and still uses the old `Contracts.*` namespace. `origin/master` uses `BillerContracts.*` (what Biller references in 1.0.5) and contains the `Clients` project. Decide what to keep from the local changes, then reset to `origin/master` before starting.
-- [ ] **Back up the production database** (the small PC, BIL-82) before deploying migration 033.
+- [x] **Sync the sibling repos.** All four repos are on `BIL-65-series`, with master merged in (2026-10-25).
+- [ ] **Back up the production database** (the small PC, BIL-82) before deploying migration 034.
 - [ ] **Run the pre-check queries** below against a copy of the real data.
 
-### Pre-check queries (run before migration 033)
+### Pre-check queries (run before migration 034)
 
 ```sql
 -- Customers with an empty series name. The migration needs a name; fix these first.
@@ -65,7 +69,7 @@ SELECT customer_id, invoice_number, COUNT(*)
 FROM invoices GROUP BY customer_id, invoice_number HAVING COUNT(*) > 1;
 ```
 
-## Step 1: BillerContracts (new version 1.0.6)
+## Step 1: BillerContracts (new version 2.1.0)
 
 Repo: `BillerContracts`. Namespaces below are `BillerContracts.*` as on `origin/master`.
 
@@ -119,19 +123,19 @@ public record SeriesUpdateRequest
 
 ### 1.4 Release
 
-- PR in BillerContracts, merge, run the `Publish` workflow with version `1.0.6`.
-- If Plan B (units, BIL-75) is done at the same time, put both contract changes into 1.0.6.
+- PR in BillerContracts, merge, run the `Publish` workflow with version `2.1.0`.
+- If Plan B (units, BIL-75) is done at the same time, put both contract changes into 2.1.0.
 
 ## Step 2: Database migrations (Biller)
 
 Use the `add-db-migration` skill. Files go in `migrations/sql/` (picked up by `includeAll` in `migrations/dbChangeLog.yaml`).
 
-### 2.1 `032-Create-table-series.sql`
+### 2.1 `033-Create-table-series.sql`
 
 ```sql
 --liquibase formatted sql
 
--- changeset Aldis:32
+-- changeset Aldis:33
 -- comment: Create series table (invoice series per seller)
 CREATE TABLE series (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -152,14 +156,14 @@ CREATE INDEX idx_series_seller_id ON series (seller_id);
 -- rollback DROP TABLE series;
 ```
 
-### 2.2 `033-Migrate-customers_invoices_to_series.sql`
+### 2.2 `034-Migrate-customers_invoices_to_series.sql`
 
 One changeset. PostgreSQL DDL is transactional, so it either runs completely or not at all.
 
 ```sql
 --liquibase formatted sql
 
--- changeset Aldis:33
+-- changeset Aldis:34
 -- comment: Move invoice series from customers to series table, link customers and invoices to series
 
 -- 1. One series per (seller, invoice_name). next_number = highest "next number" of those customers.
@@ -228,7 +232,7 @@ Notes:
 
 ```bash
 docker compose up -d --build db liquibase
-docker logs billio-liquibase      # changesets 32 and 33 ran
+docker logs billio-liquibase      # changesets 33 and 34 ran
 ```
 Then compare row counts and spot-check: every customer has a series, every invoice has `series_id` and `series_name`, and `next_number` = max invoice number + 1 per series. Test the rollback once on a copy (`liquibase rollback-count 2`).
 
@@ -333,7 +337,7 @@ Add `services.AddScoped<ISeriesRepository, SeriesRepository>();`
 | `MappingProfiles/CustomerMappingProfile.cs` | Map `SeriesId`/`SeriesName` instead of the old fields |
 | `MappingProfiles/InvoiceMappingProfile.cs` | Map `SeriesId`/`SeriesName` in `ToModel`/`ToEntity`/`ToResponse`. Remove `FilePath`. `InvoiceUpdateRequest.ToModel` no longer sets `InvoiceNumber` |
 
-Old invoices: the `customer_data` JSON still contains `InvoiceName`/`InvoiceNumber`. Newtonsoft ignores unknown properties, so deserialization keeps working. The PDF reads the series name from `InvoiceModel.SeriesName` (the column), not from the customer snapshot.
+Old invoices: the `customer_data` JSON still contains `InvoiceName`/`InvoiceNumber`. Newtonsoft ignores unknown properties, so deserialization keeps working. The PDF reads the series name from `InvoiceModel.SeriesName` (the column), not from the customer snapshot: change the header line in `Models/Invoice/Documents/InvoiceDocumentSF.cs` and `InvoiceDocumentADA.cs` to `Model.SeriesName`.
 
 ### 5.2 `Interfaces/ISeriesService.cs` + `Services/SeriesService.cs` (new)
 
@@ -423,13 +427,17 @@ On the local Docker stack with a copy of the real data:
 7. `DELETE /series/{id}` for a series in use → 400.
 8. Generate the PDF for an old invoice (from before the migration) → same series and number as before.
 
-Update the BillioIntegrationTest repo for the new contracts and add a series flow, if that repo covers customers and invoices.
+BillioIntegrationTest (branch `BIL-65-series`) covers customers and invoices, so it must change in the same PR round, or CI fails:
+- Bump `BillerContracts.Clients` to the 2.1.0 preview, then to 2.1.0.
+- Customer tests create a series first and send `SeriesId`. Invoice tests check `SeriesId`, `SeriesName` and the numbering rules above.
+- Add `SeriesTests` (CRUD, duplicate name, delete in use → 400).
+- The clean-up that deletes all data first must delete series after customers and before sellers, since there's no `ON DELETE CASCADE`.
 
 ## Step 10: Rollout
 
-1. Merge and publish BillerContracts 1.0.6.
-2. Biller PR: bump `BillerContracts` to 1.0.6 in `src/Domain/Domain.csproj`, plus all the changes above.
-3. Update BillerFrontEnd: customer forms pick a series instead of typing a name; add series management; drop the invoice number field from invoice editing.
+1. Merge and publish BillerContracts 2.1.0.
+2. Biller PR: bump `BillerContracts` to 2.1.0 in `src/Domain/Domain.csproj`, plus all the changes above.
+3. Update BillerFrontEnd in this task (branch `BIL-65-series`), and deploy it together with the API, because the 2.0.0 front end can't create customers against the new API: bump `BillerContracts.Clients` to 2.1.0, customer forms pick a series instead of typing a name, add series pages per seller, show `SeriesName` on customers and invoices, drop the invoice number field from invoice editing.
 4. On the small PC: back up the database, run the pre-check queries, then `make update`.
 
 ## Out of scope
@@ -440,10 +448,12 @@ Update the BillioIntegrationTest repo for the new contracts and add a series flo
 
 ## Order of work
 
-1. BillerContracts 1.0.6 (+ clients)
-2. Migrations 032, 033 (verify on a data copy)
+1. BillerContracts 2.1.0 (+ clients)
+2. Migrations 033, 034 (verify on a data copy)
 3. Domain + Infrastructure
 4. Application (series, then customer, then invoice)
 5. Validators + WebAPI
 6. Tests + coverage
-7. Manual checks, then deploy
+7. BillioIntegrationTest on `BIL-65-series`
+8. BillerFrontEnd on `BIL-65-series`
+9. Manual checks, then deploy the API and front end together
