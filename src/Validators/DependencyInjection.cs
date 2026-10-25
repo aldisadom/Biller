@@ -2,6 +2,7 @@
 using BillerContracts.Requests.Invoice;
 using BillerContracts.Requests.Item;
 using BillerContracts.Requests.Seller;
+using BillerContracts.Requests.Series;
 using BillerContracts.Requests.User;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,7 @@ using Validators.Customer;
 using Validators.Invoice;
 using Validators.Item;
 using Validators.Seller;
+using Validators.Series;
 using Validators.User;
 
 namespace Validators;
@@ -23,6 +25,9 @@ public static class DependencyInjection
 
         services.AddScoped<IValidator<SellerAddRequest>, SellerAddValidator>();
         services.AddScoped<IValidator<SellerUpdateRequest>, SellerUpdateValidator>();
+
+        services.AddScoped<IValidator<SeriesAddRequest>, SeriesAddValidator>();
+        services.AddScoped<IValidator<SeriesUpdateRequest>, SeriesUpdateValidator>();
 
         services.AddScoped<IValidator<CustomerAddRequest>, CustomerAddValidator>();
         services.AddScoped<IValidator<CustomerUpdateRequest>, CustomerUpdateValidator>();

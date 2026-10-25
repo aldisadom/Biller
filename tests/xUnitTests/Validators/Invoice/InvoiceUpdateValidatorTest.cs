@@ -35,14 +35,12 @@ public class InvoiceUpdateValidatorTest
         State = "Customer State",
         Email = "customer@example.com",
         Phone = "0987654321",
-        InvoiceName = "Customer Invoice",
-        InvoiceNumber = 1
+        SeriesId = Guid.NewGuid()
     };
 
     private static InvoiceUpdateRequest ValidRequest() => new()
     {
         Id = Guid.NewGuid(),
-        InvoiceNumber = 1,
         Seller = ValidSeller(),
         Customer = ValidCustomer(),
         Items =
@@ -104,27 +102,10 @@ public class InvoiceUpdateValidatorTest
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.DueDate));
     }
 
-    [Theory]
-    [InlineData(0, Label = "zero invoice number is rejected")]
-    [InlineData(-1, Label = "negative invoice number is rejected")]
-    public void Validate_GivenInvoiceNumberNotGreaterThanZero_IsInvalid(int invoiceNumber)
-    {
-        //Arrange
-        var request = ValidRequest();
-        request.InvoiceNumber = invoiceNumber;
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.InvoiceNumber));
-    }
-
     public static IEnumerable<TheoryDataRow<Action<InvoiceUpdateRequest>>> GetInvalidNestedRequestTestData()
     {
         yield return new(r => r.Seller.Email = "not-an-email") { Label = "seller with invalid email throws" };
-        yield return new(r => r.Customer.InvoiceNumber = 0) { Label = "customer with zero invoice number throws" };
+        yield return new(r => r.Customer.SeriesId = Guid.Empty) { Label = "customer with empty series id throws" };
         yield return new(r => r.Items = [new InvoiceItemUpdateRequest { Id = Guid.NewGuid(), Name = string.Empty, Quantity = 1, Price = 10m }]) { Label = "item with empty name throws" };
     }
 

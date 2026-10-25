@@ -9,7 +9,8 @@ public record InvoiceEntity
     public Guid CustomerId { get; set; }
     public Guid SellerId { get; set; }
     public Guid UserId { get; set; }
-    public string FilePath { get; set; } = string.Empty;
+    public Guid SeriesId { get; set; }
+    public string SeriesName { get; set; } = string.Empty;
     public int InvoiceNumber { get; set; }
     public string UserData { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; }

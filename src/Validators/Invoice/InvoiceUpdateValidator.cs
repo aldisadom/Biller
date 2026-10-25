@@ -22,7 +22,6 @@ public class InvoiceUpdateValidator : AbstractValidator<InvoiceUpdateRequest>
         RuleFor(x => x.Items).Must(x => x.Count != 0).WithMessage("Please provide at least one item");
         RuleFor(x => x.CreatedDate).NotEmpty().WithMessage("Please specify create date");
         RuleFor(x => x.DueDate).GreaterThanOrEqualTo(x => x.CreatedDate).WithMessage("Please specify due date >= create date");
-        RuleFor(x => x.InvoiceNumber).GreaterThan(0).WithMessage("Please specify invoice number >= 0");
 
         RuleFor(x => x.Items).Must(ValidateInvoiceItems);
         RuleFor(x => x.Seller).Must(ValidateInvoiceSeller);

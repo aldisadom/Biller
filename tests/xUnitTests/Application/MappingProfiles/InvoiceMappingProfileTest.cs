@@ -47,8 +47,8 @@ public class InvoiceMappingProfileTest
         State = "LT",
         Email = "test@email.com",
         Phone = "+37060000000",
-        InvoiceName = "INV",
-        InvoiceNumber = 6
+        SeriesId = Guid.NewGuid(),
+        SeriesName = "INV"
     };
 
     private static List<InvoiceItemModel> NewItems() =>
@@ -83,7 +83,9 @@ public class InvoiceMappingProfileTest
         var from = new InvoiceModel
         {
             Id = Guid.NewGuid(),
-            InvoiceNumber = customerModel.InvoiceNumber,
+            SeriesId = customerModel.SeriesId,
+            SeriesName = customerModel.SeriesName,
+            InvoiceNumber = 6,
             User = userModel,
             Seller = sellerModel,
             Customer = customerModel,
@@ -110,7 +112,6 @@ public class InvoiceMappingProfileTest
 
             "CreatedDate",
             "DueDate",
-            "FilePath",
             "TotalPrice"
         ];
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
@@ -126,7 +127,6 @@ public class InvoiceMappingProfileTest
 
         to.CreatedDate.Should().Be(from.CreatedDate.ToDateTime(TimeOnly.MinValue));
         to.DueDate.Should().Be(from.DueDate.ToDateTime(TimeOnly.MinValue));
-        to.FilePath.Should().Be(from.GenerateFileLocation());
         to.TotalPrice.Should().Be(from.CalculateTotal());
     }
 
@@ -142,7 +142,9 @@ public class InvoiceMappingProfileTest
         var from = new InvoiceEntity
         {
             Id = Guid.NewGuid(),
-            InvoiceNumber = customerModel.InvoiceNumber,
+            SeriesId = customerModel.SeriesId,
+            SeriesName = customerModel.SeriesName,
+            InvoiceNumber = 6,
             UserId = userModel.Id,
             SellerId = sellerModel.Id,
             CustomerId = customerModel.Id,
@@ -179,6 +181,29 @@ public class InvoiceMappingProfileTest
 
         to.CreatedDate.Should().Be(DateOnly.FromDateTime(from.CreatedDate));
         to.DueDate.Should().Be(DateOnly.FromDateTime(from.DueDate));
+    }
+
+    [Fact]
+    public void ToModel_GivenEntityWithCustomerDataFromBeforeSeries_TakesSeriesFromInvoice()
+    {
+        //Arrange
+        var from = new InvoiceEntity
+        {
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "NEW",
+            UserData = "{}",
+            SellerData = "{}",
+            CustomerData = "{\"CompanyName\":\"CompanyName\",\"InvoiceName\":\"OLD\",\"InvoiceNumber\":6}",
+            ItemsData = "[]"
+        };
+
+        //Act
+        var to = from.ToModel();
+
+        //Assert
+        to.Customer!.CompanyName.Should().Be("CompanyName");
+        to.Customer.SeriesId.Should().Be(from.SeriesId);
+        to.Customer.SeriesName.Should().Be("NEW");
     }
 
     [Fact]
@@ -256,8 +281,7 @@ public class InvoiceMappingProfileTest
             State = "LT",
             Email = "test@email.com",
             Phone = "+37060000000",
-            InvoiceName = "INV",
-            InvoiceNumber = 6
+            SeriesId = Guid.NewGuid()
         };
 
         var itemsUpdate = new List<InvoiceItemUpdateRequest>
@@ -273,7 +297,6 @@ public class InvoiceMappingProfileTest
         var from = new InvoiceUpdateRequest
         {
             Id = Guid.NewGuid(),
-            InvoiceNumber = 963,
             Seller = sellerUpdate,
             Customer = customerUpdate,
             Items = itemsUpdate,
@@ -317,7 +340,9 @@ public class InvoiceMappingProfileTest
         var from = new InvoiceModel
         {
             Id = Guid.NewGuid(),
-            InvoiceNumber = customerModel.InvoiceNumber,
+            SeriesId = customerModel.SeriesId,
+            SeriesName = customerModel.SeriesName,
+            InvoiceNumber = 6,
             User = userModel,
             Seller = sellerModel,
             Customer = customerModel,

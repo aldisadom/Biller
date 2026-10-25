@@ -17,7 +17,7 @@ public class CustomerUpdateRequestExample : IExamplesProvider<CustomerUpdateRequ
         return new CustomerUpdateRequest()
         {
             Id = Guid.NewGuid(),
-            InvoiceName = "TT",
+            SeriesId = Guid.NewGuid(),
             CompanyName = "Throne Takers",
             CompanyNumber = "TT896552",
             Street = "Ocean road 1",

@@ -11,6 +11,8 @@ public record InvoiceModel
     public SellerModel? Seller { get; set; }
     public CustomerModel? Customer { get; set; }
     public List<InvoiceItemModel>? Items { get; set; }
+    public Guid SeriesId { get; set; }
+    public string SeriesName { get; set; } = string.Empty;
     public int InvoiceNumber { get; set; }
     public string? Comments { get; set; }
     public InvoiceStatus Status { get; set; }
@@ -26,24 +28,11 @@ public record InvoiceModel
 
     public string GenerateFileLocation()
     {
-        return $"{Customer!.InvoiceName}-{GenerateInvoiceName()}.pdf";
+        return $"{SeriesName}-{GenerateInvoiceName()}.pdf";
     }
 
     public string GenerateInvoiceName()
     {
-        string name = string.Empty;
-        if (Customer!.InvoiceNumber < 10)
-            name = "00000";
-        else if (Customer.InvoiceNumber < 100)
-            name = "0000";
-        else if (Customer.InvoiceNumber < 1000)
-            name = "000";
-        else if (Customer.InvoiceNumber < 10000)
-            name = "00";
-        else if (Customer.InvoiceNumber < 100000)
-            name = "0";
-
-        name += Customer.InvoiceNumber.ToString();
-        return name;
+        return InvoiceNumber.ToString("D6");
     }
 }

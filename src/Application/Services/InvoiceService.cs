@@ -37,7 +37,7 @@ public class InvoiceService : IInvoiceService
         var (seller, customer, items) = await Validate(invoiceData);
         invoiceData.Seller = seller;
         invoiceData.Customer = customer;
-        invoiceData.InvoiceNumber = invoiceData.Customer.InvoiceNumber;
+        invoiceData.SeriesId = customer.SeriesId;
 
         MapItemToInvoiceItem(invoiceData.Items!, items);
     }
@@ -101,7 +101,8 @@ public class InvoiceService : IInvoiceService
         InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
 
         Guid id = await _invoiceRepository.Add(invoiceDataEntity);
-        await _customerService.IncreaseInvoiceNumber(invoiceData.Customer!.Id);
+        if (id == Guid.Empty)
+            throw new ValidationException($"Series id {invoiceData.SeriesId} not found, invoice was not created");
 
         return id;
     }
@@ -111,6 +112,11 @@ public class InvoiceService : IInvoiceService
         var invoice = await Get(invoiceData.Id);
         invoiceData.User = invoice.User;
         invoiceData.Status = invoice.Status;
+        invoiceData.SeriesId = invoice.SeriesId;
+        invoiceData.SeriesName = invoice.SeriesName;
+        invoiceData.InvoiceNumber = invoice.InvoiceNumber;
+        invoiceData.Customer!.SeriesId = invoice.SeriesId;
+        invoiceData.Customer.SeriesName = invoice.SeriesName;
         invoiceData.Seller!.UserId = invoice.User!.Id;
         invoiceData.Customer!.SellerId = invoiceData.Seller.Id;
         await Validate(invoiceData);

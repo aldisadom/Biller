@@ -1,7 +1,8 @@
-using BillerContracts.Requests.Customer;
+﻿using BillerContracts.Requests.Customer;
 using BillerContracts.Requests.Invoice;
 using BillerContracts.Requests.Item;
 using BillerContracts.Requests.Seller;
+using BillerContracts.Requests.Series;
 using BillerContracts.Requests.User;
 using FluentAssertions;
 using FluentAssertions.Execution;
@@ -12,6 +13,7 @@ using Validators.Customer;
 using Validators.Invoice;
 using Validators.Item;
 using Validators.Seller;
+using Validators.Series;
 using Validators.User;
 
 namespace xUnitTests.Validators;
@@ -25,6 +27,8 @@ public class DependencyInjectionTests
         [typeof(IValidator<UserLoginRequest>)] = typeof(UserLoginValidator),
         [typeof(IValidator<SellerAddRequest>)] = typeof(SellerAddValidator),
         [typeof(IValidator<SellerUpdateRequest>)] = typeof(SellerUpdateValidator),
+        [typeof(IValidator<SeriesAddRequest>)] = typeof(SeriesAddValidator),
+        [typeof(IValidator<SeriesUpdateRequest>)] = typeof(SeriesUpdateValidator),
         [typeof(IValidator<CustomerAddRequest>)] = typeof(CustomerAddValidator),
         [typeof(IValidator<CustomerUpdateRequest>)] = typeof(CustomerUpdateValidator),
         [typeof(IValidator<ItemAddRequest>)] = typeof(ItemAddValidator),

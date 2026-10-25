@@ -20,6 +20,8 @@ public class InvoiceResponseExample : IExamplesProvider<InvoiceResponse>
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "WF",
             InvoiceNumber = 1,
             CreatedDate = DateOnly.FromDateTime(DateTime.Now),
             DueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(10)),

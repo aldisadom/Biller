@@ -18,7 +18,7 @@ public class CustomerAddValidatorTest
         State = "Test State",
         Email = "test@example.com",
         Phone = "1234567890",
-        InvoiceName = "Test Invoice Name"
+        SeriesId = Guid.NewGuid()
     };
 
     [Fact]
@@ -43,7 +43,7 @@ public class CustomerAddValidatorTest
         yield return new(r => r.City = string.Empty, nameof(CustomerAddRequest.City)) { Label = "empty city is rejected" };
         yield return new(r => r.State = string.Empty, nameof(CustomerAddRequest.State)) { Label = "empty state is rejected" };
         yield return new(r => r.Phone = string.Empty, nameof(CustomerAddRequest.Phone)) { Label = "empty phone is rejected" };
-        yield return new(r => r.InvoiceName = string.Empty, nameof(CustomerAddRequest.InvoiceName)) { Label = "empty invoice name is rejected" };
+        yield return new(r => r.SeriesId = Guid.Empty, nameof(CustomerAddRequest.SeriesId)) { Label = "empty series id is rejected" };
     }
 
     [Theory]

@@ -10,9 +10,11 @@ public static class InvoiceModelExtensions
 {
     public static InvoiceModel ToModel(this InvoiceEntity from)
     {
-        return new InvoiceModel
+        InvoiceModel invoice = new()
         {
             Id = from.Id,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
             User = JsonConvert.DeserializeObject<UserModel>(from.UserData),
             Seller = JsonConvert.DeserializeObject<SellerModel>(from.SellerData),
@@ -23,6 +25,15 @@ public static class InvoiceModelExtensions
             CreatedDate = DateOnly.FromDateTime(from.CreatedDate),
             DueDate = DateOnly.FromDateTime(from.DueDate)
         };
+
+        // The invoice's own series wins over the customer snapshot, which has no series before BIL-65.
+        if (invoice.Customer is not null)
+        {
+            invoice.Customer.SeriesId = from.SeriesId;
+            invoice.Customer.SeriesName = from.SeriesName;
+        }
+
+        return invoice;
     }
 
     public static InvoiceEntity ToEntity(this InvoiceModel from)
@@ -30,6 +41,8 @@ public static class InvoiceModelExtensions
         return new InvoiceEntity
         {
             Id = from.Id,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
             UserId = from.User!.Id,
             UserData = JsonConvert.SerializeObject(from.User),
@@ -42,8 +55,7 @@ public static class InvoiceModelExtensions
             Status = from.Status,
             CreatedDate = from.CreatedDate.ToDateTime(TimeOnly.MinValue),
             DueDate = from.DueDate.ToDateTime(TimeOnly.MinValue),
-            TotalPrice = from.CalculateTotal(),
-            FilePath = from.GenerateFileLocation()
+            TotalPrice = from.CalculateTotal()
         };
     }
 
@@ -52,6 +64,8 @@ public static class InvoiceModelExtensions
         return new InvoiceResponse
         {
             Id = from.Id,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
             UserId = from.User!.Id,
             Seller = from.Seller!.ToResponse(),
@@ -106,7 +120,6 @@ public static class InvoiceModelExtensions
         return new InvoiceModel
         {
             Id = from.Id,
-            InvoiceNumber = from.InvoiceNumber,
             Seller = from.Seller.ToModel(),
             Customer = from.Customer.ToModel(),
             Comments = from.Comments,

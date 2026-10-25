@@ -44,11 +44,18 @@ public class InvoiceRepository : IInvoiceRepository
 
     public async Task<Guid> Add(InvoiceEntity invoice)
     {
-        string sql = @"INSERT INTO invoices
-                        (customer_id, seller_id, user_id, file_path, invoice_number, user_data, created_date, due_date,
+        string sql = @"WITH reserved AS (
+                            UPDATE series
+                            SET next_number = next_number + 1
+                            WHERE id = @SeriesId
+                            RETURNING next_number - 1 AS invoice_number, name
+                        )
+                        INSERT INTO invoices
+                        (customer_id, seller_id, user_id, series_id, series_name, invoice_number, user_data, created_date, due_date,
                         seller_data, customer_data, items_data, comments, total_price, status)
-                        VALUES (@CustomerId, @SellerId, @UserId, @FilePath, @InvoiceNumber, @UserData, @CreatedDate, @DueDate,
-                        @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice, @Status)
+                        SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.name, reserved.invoice_number, @UserData, @CreatedDate, @DueDate,
+                        @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice, @Status
+                        FROM reserved
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, invoice);
@@ -57,7 +64,7 @@ public class InvoiceRepository : IInvoiceRepository
     public async Task Update(InvoiceEntity invoice)
     {
         string sql = @"UPDATE invoices
-                        SET customer_id=@CustomerId, seller_id=@SellerId, file_path=@FilePath, invoice_number=@InvoiceNumber, user_data=@UserData,
+                        SET customer_id=@CustomerId, seller_id=@SellerId, user_data=@UserData,
                         created_date=@CreatedDate, due_date=@DueDate, seller_data=@SellerData, customer_data=@CustomerData,
                         items_data=@ItemsData, comments=@Comments, total_price=@TotalPrice
                         WHERE id=@Id";
@@ -76,8 +83,16 @@ public class InvoiceRepository : IInvoiceRepository
 
     public async Task Delete(Guid id)
     {
-        string sql = @"DELETE FROM invoices
-                        WHERE id=@Id";
+        string sql = @"WITH deleted AS (
+                            DELETE FROM invoices
+                            WHERE id = @Id
+                            RETURNING series_id, invoice_number
+                        )
+                        UPDATE series s
+                        SET next_number = s.next_number - 1
+                        FROM deleted d
+                        WHERE s.id = d.series_id
+                          AND s.next_number = d.invoice_number + 1";
 
         await _dbConnection.ExecuteAsync(sql, new { id });
     }

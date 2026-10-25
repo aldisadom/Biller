@@ -24,8 +24,8 @@ public class CustomerMappingProfileTest
             State = "LT",
             Email = "test@email.com",
             Phone = "+37060000000",
-            InvoiceName = "INV",
-            InvoiceNumber = 6
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "INV"
         };
 
         //Act
@@ -50,8 +50,8 @@ public class CustomerMappingProfileTest
             State = "LT",
             Email = "test@email.com",
             Phone = "+37060000000",
-            InvoiceName = "INV",
-            InvoiceNumber = 6
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "INV"
         };
 
         //Act
@@ -75,7 +75,7 @@ public class CustomerMappingProfileTest
             State = "LT",
             Email = "test@email.com",
             Phone = "+37060000000",
-            InvoiceName = "INV"
+            SeriesId = Guid.NewGuid()
         };
 
         //Act
@@ -99,8 +99,7 @@ public class CustomerMappingProfileTest
             State = "LT",
             Email = "test@email.com",
             Phone = "+37060000000",
-            InvoiceName = "INV",
-            InvoiceNumber = 6
+            SeriesId = Guid.NewGuid()
         };
 
         //Act
@@ -125,8 +124,8 @@ public class CustomerMappingProfileTest
             State = "LT",
             Email = "test@email.com",
             Phone = "+37060000000",
-            InvoiceName = "INV",
-            InvoiceNumber = 6
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "INV"
         };
 
         //Act
@@ -151,8 +150,8 @@ public class CustomerMappingProfileTest
             State = "LT",
             Email = "test@email.com",
             Phone = "+37060000000",
-            InvoiceName = "INV",
-            InvoiceNumber = 6
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "INV"
         };
 
         //Act

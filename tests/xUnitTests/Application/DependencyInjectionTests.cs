@@ -1,4 +1,4 @@
-using Application;
+﻿using Application;
 using Application.Helpers.PriceToWords;
 using Application.Interfaces;
 using Application.Services;
@@ -25,6 +25,7 @@ public class DependencyInjectionTests
         [typeof(IItemRepository)] = (typeof(ItemRepository), ServiceLifetime.Scoped),
         [typeof(ICustomerRepository)] = (typeof(CustomerRepository), ServiceLifetime.Scoped),
         [typeof(ISellerRepository)] = (typeof(SellerRepository), ServiceLifetime.Scoped),
+        [typeof(ISeriesRepository)] = (typeof(SeriesRepository), ServiceLifetime.Scoped),
         [typeof(IInvoiceRepository)] = (typeof(InvoiceRepository), ServiceLifetime.Scoped),
         [typeof(IUserRepository)] = (typeof(UserRepository), ServiceLifetime.Scoped),
     };
@@ -34,6 +35,7 @@ public class DependencyInjectionTests
         [typeof(IItemService)] = (typeof(ItemService), ServiceLifetime.Scoped),
         [typeof(ICustomerService)] = (typeof(CustomerService), ServiceLifetime.Scoped),
         [typeof(ISellerService)] = (typeof(SellerService), ServiceLifetime.Scoped),
+        [typeof(ISeriesService)] = (typeof(SeriesService), ServiceLifetime.Scoped),
         [typeof(IUserService)] = (typeof(UserService), ServiceLifetime.Scoped),
         [typeof(IPasswordEncryptionService)] = (typeof(PasswordEncryptionService), ServiceLifetime.Scoped),
         [typeof(IInvoiceService)] = (typeof(InvoiceService), ServiceLifetime.Scoped),

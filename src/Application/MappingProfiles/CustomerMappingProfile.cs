@@ -13,8 +13,8 @@ public static class CustomerModelExtensions
         {
             Id = from.Id,
             SellerId = from.SellerId,
-            InvoiceName = from.InvoiceName,
-            InvoiceNumber = from.InvoiceNumber,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             CompanyName = from.CompanyName,
             CompanyNumber = from.CompanyNumber,
             Street = from.Street,
@@ -31,8 +31,8 @@ public static class CustomerModelExtensions
         {
             Id = from.Id,
             SellerId = from.SellerId,
-            InvoiceName = from.InvoiceName,
-            InvoiceNumber = from.InvoiceNumber,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             CompanyName = from.CompanyName,
             CompanyNumber = from.CompanyNumber,
             Street = from.Street,
@@ -48,7 +48,7 @@ public static class CustomerModelExtensions
         return new CustomerModel
         {
             SellerId = from.SellerId,
-            InvoiceName = from.InvoiceName,
+            SeriesId = from.SeriesId,
             CompanyName = from.CompanyName,
             CompanyNumber = from.CompanyNumber,
             Street = from.Street,
@@ -64,8 +64,7 @@ public static class CustomerModelExtensions
         return new CustomerModel
         {
             Id = from.Id,
-            InvoiceName = from.InvoiceName,
-            InvoiceNumber = from.InvoiceNumber,
+            SeriesId = from.SeriesId,
             CompanyName = from.CompanyName,
             CompanyNumber = from.CompanyNumber,
             Street = from.Street,
@@ -82,8 +81,8 @@ public static class CustomerModelExtensions
         {
             Id = from.Id,
             SellerId = from.SellerId,
-            InvoiceName = from.InvoiceName,
-            InvoiceNumber = from.InvoiceNumber,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             CompanyName = from.CompanyName,
             CompanyNumber = from.CompanyNumber,
             Street = from.Street,
@@ -100,8 +99,8 @@ public static class CustomerModelExtensions
         {
             Id = from.Id,
             SellerId = from.SellerId,
-            InvoiceName = from.InvoiceName,
-            InvoiceNumber = from.InvoiceNumber,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             CompanyName = from.CompanyName,
             CompanyNumber = from.CompanyNumber,
             Street = from.Street,

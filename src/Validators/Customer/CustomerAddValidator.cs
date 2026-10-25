@@ -21,6 +21,6 @@ public class CustomerAddValidator : AbstractValidator<CustomerAddRequest>
         RuleFor(x => x.State).NotEmpty().WithMessage("Please specify state");
         RuleFor(x => x.Email).Must(EmailValidator.IsValidEmail).WithMessage("Please provide valid email address");
         RuleFor(x => x.Phone).NotEmpty().WithMessage("Please provide phone number");
-        RuleFor(x => x.InvoiceName).NotEmpty().WithMessage("Please provide invoice name");
+        RuleFor(x => x.SeriesId).NotEmpty().WithMessage("Please specify series Id");
     }
 }

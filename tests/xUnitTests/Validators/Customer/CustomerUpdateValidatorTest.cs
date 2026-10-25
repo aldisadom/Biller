@@ -17,8 +17,7 @@ public class CustomerUpdateValidatorTest
         State = "Test State",
         Email = "test@example.com",
         Phone = "1234567890",
-        InvoiceName = "Test Invoice Name",
-        InvoiceNumber = 1
+        SeriesId = Guid.NewGuid()
     };
 
     [Fact]
@@ -43,7 +42,7 @@ public class CustomerUpdateValidatorTest
         yield return new(r => r.City = string.Empty, nameof(CustomerUpdateRequest.City)) { Label = "empty city is rejected" };
         yield return new(r => r.State = string.Empty, nameof(CustomerUpdateRequest.State)) { Label = "empty state is rejected" };
         yield return new(r => r.Phone = string.Empty, nameof(CustomerUpdateRequest.Phone)) { Label = "empty phone is rejected" };
-        yield return new(r => r.InvoiceName = string.Empty, nameof(CustomerUpdateRequest.InvoiceName)) { Label = "empty invoice name is rejected" };
+        yield return new(r => r.SeriesId = Guid.Empty, nameof(CustomerUpdateRequest.SeriesId)) { Label = "empty series id is rejected" };
     }
 
     [Theory]
@@ -79,23 +78,5 @@ public class CustomerUpdateValidatorTest
         //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Email));
-    }
-
-    [Theory]
-    [InlineData(0, Label = "zero invoice number is rejected")]
-    [InlineData(-1, Label = "negative invoice number is rejected")]
-    [InlineData(-100, Label = "large negative invoice number is rejected")]
-    public void Validate_GivenInvoiceNumberNotGreaterThanZero_IsInvalid(int invoiceNumber)
-    {
-        //Arrange
-        var request = ValidRequest();
-        request.InvoiceNumber = invoiceNumber;
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.InvoiceNumber));
     }
 }
