@@ -1,13 +1,23 @@
 # Plan: integration tests use the BillerContracts clients
 
-Jira: [BIL-92](https://aldisadom.atlassian.net/browse/BIL-92). Epic: BIL-89 (Billeris). Repos: BillerContracts (step 1) and
+Jira: [BIL-92](https://aldisadom.atlassian.net/browse/BIL-92). Epic: BIL-89 (Billeris). Repos: Biller (step 1) and
 BillioIntegrationTest (steps 2–6). It changes two repos, so it lives in Biller.
+
+**Status (2026-10-25): Won't Do.** Biller's step 1 (BillerContracts 1.1.1, PR #64) is merged and stays.
+The BillioIntegrationTest change (PR #16) was merged and then reverted at the owner's request
+(PR #17): the tests keep their own local clients and BillerContracts 1.0.5. Their package clean-up
+moved to BIL-94. The rest of this plan is kept as a record.
+
+**Changed while building (2026-10-24):** no new BillerContracts release. Biller and the tests use the
+published 1.1.1, the version BillerFrontEnd already uses. `ClientAPIException` in 1.1.1 has no
+structured error, so the tests read the error body themselves (design decision 1). The BillerContracts
+step was dropped.
 
 ## Goal
 
-- BillioIntegrationTest uses the newest BillerContracts and the `BillerContracts.Clients` package
+- BillioIntegrationTest uses `BillerContracts.Clients` 1.1.1, the same version as BillerFrontEnd,
   instead of its own copies of the HTTP clients.
-- The 62 tests keep checking the same things, including the status code, message and extended
+- The 65 tests keep checking the same things, including the status code, message and extended
   message of every error case.
 - Deleting all data before and after a run really deletes everything.
 
@@ -17,8 +27,10 @@ BillioIntegrationTest (steps 2–6). It changes two repos, so it lives in Biller
 |---|---|
 | `IntegrationTests.csproj` | `BillerContracts` 1.0.5. Newest on nuget.org: `BillerContracts` and `BillerContracts.Clients` 1.1.1 (2026-10-15) |
 | `Clients/` (6 files), `Interfaces/` (5) | Local copies of the clients with `http://localhost:8090` hard-coded. They return `Result<T>` (from BillerContracts) and turn an error response into an `ErrorModel` (status code, message, extended message). `IInvoiceItemClient` is the item client's interface under the wrong name |
-| Tests | 62 TUnit tests, 111 `.Match(...)` calls on results, 27 error checks through `CheckErrors(ErrorModel)` |
-| `*_Delete_All` (5 helpers) | Call `Get()` once and delete what comes back. Biller returns only the first page (25 by default), so with more rows data is left behind |
+| Tests | 65 TUnit tests (62 when planned, BIL-73 added status tests), 118 `.Match(...)` calls on results, 29 error checks through `CheckErrors(ErrorModel)` |
+| Biller `src/Domain/Domain.csproj` | `BillerContracts` 1.0.5 |
+| BillerContracts master | Has the `UserGetRequest` namespace move (PR #8, after 1.1.1), so its next release is 2.0.0. 1.1.1 was published from 196fdcc, before the move |
+| `*_Delete_All` (5 helpers) | Call `Get()` once and delete what comes back. `GET /invoices` returns only the first page (25 by default), so with more invoices data is left behind. The other four lists aren't paged (checked while building) |
 | Packages | `LanguageExt.Core` (only two unused `using` lines), `FluentValidation` (unused), `Serilog*` (only the local `BaseHttpClient` logs) |
 
 The contracts changed very little from 1.0.5 to 1.1.1: only `FileDownloadResponse` was added, so
@@ -35,13 +47,17 @@ nothing breaks.
 
 ## Design decisions
 
-1. **`ClientAPIException` carries the error (BillerContracts).** Add `public ErrorModel? Error { get; }`,
-   filled for every non-success response: the status code always, the message and extended message
-   from the `ErrorResponse` body when it parses. The existing constructors and message text stay, so
-   this isn't a breaking change. Without it the error tests could only check the status code, which
-   `REVIEW.md` counts as a failure. The front end can use the same property to show API errors.
-2. **Reference only `BillerContracts.Clients`.** It depends on `BillerContracts` at the same version,
-   so the two can't drift. BillerFrontEnd does the same.
+1. **The tests read the error body themselves.** `ClientAPIException` in 1.1.1 has only a text
+   message (status code and message, no extended message). The owner chose 1.1.1 over a new release.
+   So `ApiErrorHandler`, a `DelegatingHandler` added to every client's `HttpClient`
+   (`ConfigureHttpClientDefaults`), throws `ApiErrorException` for a non-success response: a
+   `ClientAPIException` whose `Error` is the decoded `ErrorModel`. Error tests use
+   `(await Assert.ThrowsAsync<ApiErrorException>(() => call))!.Error`. The error tests still compare
+   the status code, message and extended message. (First built as an `ApiError.Capture` helper with an
+   `AsyncLocal`; replaced after review because it was more code for the same check.)
+   *Planned first:* `ClientAPIException.Error` in BillerContracts. Dropped, because it needs a 2.0.0 release.
+2. **Reference only `BillerContracts.Clients` 1.1.1.** It depends on `BillerContracts` at the same
+   version, so the two can't drift. BillerFrontEnd uses the same version, and Biller moves from 1.0.5 to 1.1.1.
 3. **URLs from configuration.** `appsettings.json` in the test project with a `ClientsOptions` section
    (`http://localhost:8090/users`, …), copied to the output. Environment variables such as
    `ClientsOptions__UserUrl` can override it.
@@ -49,8 +65,8 @@ nothing breaks.
    `AddBillerClients(configuration.GetSection("ClientsOptions"))` and exposes `IUserClient`,
    `ISellerClient`, `ICustomerClient`, `IItemClient` and `IInvoiceClient`. Tests keep their
    `private static readonly` client fields, typed as the interfaces.
-5. **Same checks, new shape.** Success: await the call and use the value. Error: assert that the call
-   throws `ClientAPIException` and pass its `Error` to `CheckErrors`. Update and delete success: the
+5. **Same checks, new shape.** Success: await the call and use the value. Error:
+   `Assert.ThrowsAsync<ApiErrorException>` (design decision 1), then `CheckErrors` on its `Error`. Update and delete success: the
    call doesn't throw (instead of `IsTrue()` on a `bool`).
 6. **Delete-all deletes everything.** Each `*_Delete_All` calls `Get()` and deletes that page until
    the list comes back empty.
@@ -59,54 +75,51 @@ nothing breaks.
 
 Run the `_sync-repos` skill before starting each repo.
 
-1. **BillerContracts, own PR.** Design decision 1 in `Clients/ClientAPIException.cs` and
-   `BaseHttpClient.DecodeResponseError`, with tests in `Clients.Tests/BaseHttpClientTest.cs`:
-   - 400 with an `ErrorResponse` body: `Error` has the status code, message and extended message;
-   - 404 with a body that isn't JSON: `Error` has the status code;
-   - success: no exception.
-
-   Then the owner publishes the next version: 1.2.0, or 2.0.0 if the `UserGetRequest` namespace
-   move (BillerContracts PR #8) is in the same release. Biller's rule treats that move as breaking.
-2. **BillioIntegrationTest packages.** Replace `BillerContracts` 1.0.5 with `BillerContracts.Clients`
-   at step 1's version. Add `Microsoft.Extensions.Configuration.Json` (and
-   `Microsoft.Extensions.DependencyInjection` if it doesn't come in through the package). Remove
-   `LanguageExt.Core`, `FluentValidation` and the `Serilog` packages once nothing uses them.
-3. `appsettings.json` and `TestClients` (design decisions 3 and 4).
-4. Convert the tests file by file in chain order: users, sellers, customers, items, invoices
-   (design decision 5). Then the delete-all helpers (design decision 6).
-5. Delete `Clients/` and `Interfaces/`, and the unused `using LanguageExt` lines.
-6. Check:
-   - Before step 2, run the suite against Biller master and keep the summary line. After step 5, the
-     same 62 tests pass, with the same names.
-   - Change one expected error message on purpose and see that test fail, then undo it. This shows the
-     error checks still compare the messages.
+1. [x] **Biller:** `BillerContracts` 1.0.5 → 1.1.1 in `src/Domain/Domain.csproj`. It adds only
+   `FileDownloadResponse`; the 668 unit tests pass.
+2. [x] **BillioIntegrationTest packages.** Replace `BillerContracts` 1.0.5 with `BillerContracts.Clients`
+   1.1.1. Add `Microsoft.Extensions.Configuration.Json` and `.EnvironmentVariables` (DI comes in through
+   the package). Remove `LanguageExt.Core`, `FluentValidation` and the `Serilog` packages.
+3. [x] `appsettings.json`, `TestClients`, `ApiErrorHandler` and `DeleteAll` in `ApiClients/`
+   (design decisions 1, 3 and 4).
+4. [x] Convert the tests (design decision 5): all 118 `.Match(...)` calls, including the BIL-73 status
+   tests. Then the delete-all helpers (design decision 6).
+5. [x] Delete `Clients/` and `Interfaces/`, and the unused `using LanguageExt` lines.
+   Also removed a second `_invoiceClient.Add` in `InvoiceAdd_InValid_Fail` whose result master
+   ignored. With throwing clients it failed all 11 cases.
+6. [x] Check (2026-10-24, local stack from this Biller branch):
+   - Master suite: `Passed! - Failed: 0, Passed: 172` (65 tests, 172 cases). Branch: the same 172
+     names (`--list-tests`), `Passed! - Failed: 0, Passed: 172`.
+   - Changing one expected message ("Unauthorized") and one extended message ("Please specify last
+     name") on purpose failed those cases with "Expected inputError.Message/ExtendedMessage to be
+     equal to …". Undone.
    - `grep -rn "localhost:8090" src` finds it only in `appsettings.json`.
-   - Run the suite twice in a row. The second run starts from an empty database.
+   - Two runs in a row both pass 172. Afterwards every list is empty, counted by rows.
+   - With 30 invoices created beforehand (first page 25), the run passes and leaves no invoices.
 
 ## Order and other plans
 
-- Step 1 has to be published before step 2 can merge. Until then the test branch can use a preview
-  package from the contracts branch (`<version>-preview.<run>`), replaced before merging.
-- Biller doesn't change. Its CI keeps running these tests from the test branch with the same name,
-  else master.
+- No publish is needed: 1.1.1 is on nuget.org. Biller's branch (the version bump) and the test branch
+  have the same name, so each CI runs against the other.
+- A later 2.0.0 release (the `UserGetRequest` namespace move) can add `ClientAPIException.Error`; then
+  `ApiErrorHandler` can go.
 - BIL-65 removes `InvoiceNumber` from `InvoiceUpdateRequest`, which `InvoiceTest` sets. Whichever lands
   second adapts the invoice tests.
-- The package makes new tests possible: `UpdateStatus` (BIL-73) and `GeneratePDF`, which
-  `REVIEW.md` in BillioIntegrationTest lists as missing coverage. They are follow-ups, not part of
-  this plan.
+- The package makes a new test possible: `GeneratePDF`, which `REVIEW.md` in BillioIntegrationTest
+  lists as missing coverage. It is a follow-up, not part of this plan.
 
 ## Risk
 
-Test code only, plus an additive change to `BillerContracts.Clients`. The risk is weaker tests: a
+Test code, plus a package bump in Biller that only adds a type. The risk is weaker tests: a
 converted error test that no longer compares the messages, or a success test that swallows an
 exception. The checks in step 6 cover both.
 
 ## How to revert
 
-Revert the BillioIntegrationTest PR, which brings back its own clients and 1.0.5. The contracts
-change can stay, since it only adds a property.
+Revert the BillioIntegrationTest PR, which brings back its own clients and 1.0.5, and the Biller PR
+(back to 1.0.5).
 
 ## Out of scope
 
-- New tests (status, PDF, pagination, cross-user access).
+- New tests (PDF, pagination, cross-user access).
 - Changing Biller's error responses.
