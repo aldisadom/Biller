@@ -49,34 +49,20 @@ public class SeriesMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_GivenAddRequest_MapsAllProperties()
+    public void ToModel_GivenAddRequest_MapsAllPropertiesAndStartsAtOne()
     {
         //Arrange
         var from = new SeriesAddRequest
         {
             SellerId = Guid.NewGuid(),
-            Name = "WF",
-            NextNumber = 12
+            Name = "WF"
         };
 
         //Act
         var to = from.ToModel();
 
         //Assert
-        MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom, ["NextNumber"]);
-        to.NextNumber.Should().Be(12);
-    }
-
-    [Fact]
-    public void ToModel_GivenAddRequestWithoutNextNumber_StartsAtOne()
-    {
-        //Arrange
-        var from = new SeriesAddRequest { NextNumber = null };
-
-        //Act
-        var to = from.ToModel();
-
-        //Assert
+        MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
         to.NextNumber.Should().Be(1);
     }
 

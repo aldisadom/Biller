@@ -35,7 +35,7 @@ public static class SeriesModelExtensions
         {
             SellerId = from.SellerId,
             Name = from.Name,
-            NextNumber = from.NextNumber ?? 1
+            NextNumber = 1
         };
     }
 

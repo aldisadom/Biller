@@ -23,6 +23,7 @@ Done differently from the plan:
 - `ISeriesRepository` also has `GetByName(sellerId, name)` for the duplicate-name check.
 - `InvoiceEntity.ToModel()` copies the invoice's `SeriesId`/`SeriesName` into the customer snapshot. Snapshots from before BIL-65 have no `SeriesId`, and `InvoiceUpdateValidator` runs `CustomerUpdateValidator`, which now requires one.
 - Adding a series for a missing seller returns 404 (via `ISellerService.Get`).
+- `SeriesAddRequest` has no `NextNumber`: a new series always starts at 1 (decided 2026-10-25, after PR BillerContracts#10 was opened). The number can be changed afterwards with `PUT /series`.
 - 20 parallel inserts into one series on the test DB got 20 unique, consecutive numbers.
 
 ## Current state (master @ 6bb2079)
@@ -96,7 +97,6 @@ public record SeriesAddRequest
 {
     public Guid SellerId { get; set; }
     public string Name { get; set; } = string.Empty;
-    public int? NextNumber { get; set; }   // defaults to 1
 }
 ```
 
@@ -360,7 +360,7 @@ Old invoices: the `customer_data` JSON still contains `InvoiceName`/`InvoiceNumb
 Task<SeriesModel> Get(Guid id);                                         // NotFoundException if missing
 Task<(IEnumerable<SeriesModel>, int)> Get(SeriesGetRequest? query);
 Task<Result<SeriesModel>> GetWithValidation(Guid id, Guid sellerId);    // error if missing or other seller
-Task<Guid> Add(SeriesModel series);                                     // seller must exist; NextNumber ?? 1
+Task<Guid> Add(SeriesModel series);                                     // seller must exist; NextNumber is always 1
 Task Update(SeriesModel series);                                        // keeps SellerId from DB
 Task Delete(Guid id);                                                   // ValidationException if IsInUse
 ```
@@ -390,7 +390,7 @@ Add `services.AddScoped<ISeriesService, SeriesService>();`
 
 | File | Rules |
 |---|---|
-| `Series/SeriesAddValidator.cs` (new) | `SellerId` not empty. `Name` not empty, max 10. `NextNumber` ≥ 1 when set |
+| `Series/SeriesAddValidator.cs` (new) | `SellerId` not empty. `Name` not empty, max 10 |
 | `Series/SeriesUpdateValidator.cs` (new) | `Id` not empty. `Name` not empty, max 10. `NextNumber` ≥ 1 |
 | `Customer/CustomerAddValidator.cs` | Replace the `InvoiceName` rule with `SeriesId` not empty |
 | `Customer/CustomerUpdateValidator.cs` | Same; remove any `InvoiceNumber` rule |
@@ -414,7 +414,7 @@ Use the `write-tests` skill: hand-built data, strict Moq with `Verify`, a theory
 
 | Test file | Cases |
 |---|---|
-| `Application/Services/SeriesServiceTest.cs` (new) | Get found / not found. List with and without `SellerId`. `GetWithValidation`: OK / missing / other seller. Add: default `NextNumber` 1 / given value / duplicate name. Update: OK / not found / duplicate name / `NextNumber` ≤ max invoice number. Delete: OK / not found / in use |
+| `Application/Services/SeriesServiceTest.cs` (new) | Get found / not found. List with and without `SellerId`. `GetWithValidation`: OK / missing / other seller. Add: `NextNumber` 1 / duplicate name. Update: OK / not found / duplicate name / `NextNumber` ≤ max invoice number. Delete: OK / not found / in use |
 | `Application/Services/CustomerServiceTest.cs` | Add/Update with valid series / missing series / series of another seller. Remove the `IncreaseInvoiceNumber` tests |
 | `Application/Services/InvoiceServiceTest.cs` | Add sets `SeriesId` from customer and doesn't call `IncreaseInvoiceNumber`. Add throws when the repository returns `Guid.Empty`. Update keeps the stored number, `SeriesId` and `SeriesName` even if the request differs. Delete calls the repository once |
 | `Application/MappingProfiles/SeriesMappingProfileTest.cs` (new) | All mappings, including `NullChecker` for every property |

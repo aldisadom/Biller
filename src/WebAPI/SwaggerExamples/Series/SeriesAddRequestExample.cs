@@ -17,8 +17,7 @@ public class SeriesAddRequestExample : IExamplesProvider<SeriesAddRequest>
         return new SeriesAddRequest()
         {
             SellerId = Guid.NewGuid(),
-            Name = "WF",
-            NextNumber = 1
+            Name = "WF"
         };
     }
 }
