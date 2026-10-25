@@ -3,6 +3,11 @@
 Jira: [BIL-92](https://aldisadom.atlassian.net/browse/BIL-92). Epic: BIL-89 (Billeris). Repos: Biller (step 1) and
 BillioIntegrationTest (steps 2–6). It changes two repos, so it lives in Biller.
 
+**Status (2026-10-25): Won't Do.** Biller's step 1 (BillerContracts 1.1.1, PR #64) is merged and stays.
+The BillioIntegrationTest change (PR #16) was merged and then reverted at the owner's request
+(PR #17): the tests keep their own local clients and BillerContracts 1.0.5. Their package clean-up
+moved to BIL-94. The rest of this plan is kept as a record.
+
 **Changed while building (2026-10-24):** no new BillerContracts release. Biller and the tests use the
 published 1.1.1, the version BillerFrontEnd already uses. `ClientAPIException` in 1.1.1 has no
 structured error, so the tests read the error body themselves (design decision 1). The BillerContracts
