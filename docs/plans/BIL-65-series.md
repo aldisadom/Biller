@@ -15,8 +15,9 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
 - [x] Step 1: BillerContracts on `BIL-65-series` (82f867a). Not published yet.
 - [x] Step 2: migrations 033, 034 (cc845e2). Tested on a throwaway Postgres 16 with old-shape data: update, `rollback-count 2`, update again.
 - [x] Steps 3–8: Biller code and unit tests (e5ff9b8). 729 tests pass when built against the local contracts.
-- [ ] Step 9: BillioIntegrationTest.
-- [ ] Step 10: publish 2.1.0, bump the versions, BillerFrontEnd, deploy.
+- [x] Step 9: BillioIntegrationTest (c21be3f). 190 passed, 0 failed, twice in a row, against this branch's API on a throwaway DB, built against the local contracts.
+- [x] Step 10.3: BillerFrontEnd pages (0763dc0). Release build succeeds against the local clients. Not checked in a browser yet.
+- [ ] Step 10: publish 2.1.0 (a preview first), bump `BillerContracts` / `BillerContracts.Clients` in Biller, BillioIntegrationTest and BillerFrontEnd, check the front end in a browser, deploy.
 
 Done differently from the plan:
 - `ISeriesRepository` also has `GetByName(sellerId, name)` for the duplicate-name check.
