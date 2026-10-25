@@ -53,6 +53,7 @@ ALTER TABLE invoices DROP COLUMN file_path;
 -- rollback ALTER TABLE customers ADD COLUMN invoice_name character varying(10);
 -- rollback ALTER TABLE customers ADD COLUMN invoice_number INT DEFAULT 0;
 -- rollback UPDATE customers c SET invoice_name = s.name, invoice_number = s.next_number FROM series s WHERE s.id = c.series_id;
+-- rollback ALTER TABLE customers ALTER COLUMN invoice_name SET NOT NULL;
 -- rollback DROP INDEX uq_invoices_series_id_invoice_number;
 -- rollback ALTER TABLE invoices DROP COLUMN series_name;
 -- rollback ALTER TABLE invoices DROP COLUMN series_id;

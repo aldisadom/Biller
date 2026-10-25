@@ -34,6 +34,9 @@ public class SeriesService : ISeriesService
     public async Task<(IEnumerable<SeriesModel>, int)> Get(SeriesGetRequest? query)
     {
         int page = query?.Page ?? 1;
+        if (page < 1)
+            throw new ValidationException("Please specify page >= 1");
+
         var pageSize = query?.PageSize ?? PageSize.p25;
 
         var (entities, totalCount) = await _seriesRepository.Get(query?.SellerId, page, (int)pageSize);
@@ -67,13 +70,16 @@ public class SeriesService : ISeriesService
         series.SellerId = stored.SellerId;
         await CheckNameIsFree(series);
 
+        SeriesEntity seriesEntity = series.ToEntity();
+
+        if (await _seriesRepository.Update(seriesEntity))
+            return;
+
         int maxInvoiceNumber = await _seriesRepository.GetMaxInvoiceNumber(series.Id);
         if (series.NextNumber <= maxInvoiceNumber)
             throw new ValidationException($"Next number must be greater than {maxInvoiceNumber}, the highest invoice number in series {stored.Name}");
 
-        SeriesEntity seriesEntity = series.ToEntity();
-
-        await _seriesRepository.Update(seriesEntity);
+        throw new ValidationException($"Series {stored.Name} got a new or deleted invoice while it was updated, please try again");
     }
 
     public async Task Delete(Guid id)

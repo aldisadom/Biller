@@ -10,7 +10,7 @@ public static class InvoiceModelExtensions
 {
     public static InvoiceModel ToModel(this InvoiceEntity from)
     {
-        InvoiceModel invoice = new()
+        return new InvoiceModel
         {
             Id = from.Id,
             SeriesId = from.SeriesId,
@@ -25,15 +25,6 @@ public static class InvoiceModelExtensions
             CreatedDate = DateOnly.FromDateTime(from.CreatedDate),
             DueDate = DateOnly.FromDateTime(from.DueDate)
         };
-
-        // The invoice's own series wins over the customer snapshot, which has no series before BIL-65.
-        if (invoice.Customer is not null)
-        {
-            invoice.Customer.SeriesId = from.SeriesId;
-            invoice.Customer.SeriesName = from.SeriesName;
-        }
-
-        return invoice;
     }
 
     public static InvoiceEntity ToEntity(this InvoiceModel from)

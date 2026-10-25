@@ -82,9 +82,13 @@ SELECT id, company_name FROM customers WHERE COALESCE(TRIM(invoice_name), '') = 
 SELECT seller_id, invoice_name, COUNT(*), ARRAY_AGG(invoice_number)
 FROM customers GROUP BY seller_id, invoice_name HAVING COUNT(*) > 1;
 
--- Duplicate invoice numbers per customer. The unique index will fail if any exist.
-SELECT customer_id, invoice_number, COUNT(*)
-FROM invoices GROUP BY customer_id, invoice_number HAVING COUNT(*) > 1;
+-- Invoice numbers that will collide in one series: customers of the same seller with the same
+-- invoice_name each had their own counter, and the migration puts them into one series.
+-- Any row here makes migration 034 fail on its unique index (it runs in one transaction, so the
+-- database stays as it was). Rename one customer's invoice_name first.
+SELECT c.seller_id, c.invoice_name, i.invoice_number, COUNT(*), ARRAY_AGG(c.company_name)
+FROM invoices i JOIN customers c ON c.id = i.customer_id
+GROUP BY c.seller_id, c.invoice_name, i.invoice_number HAVING COUNT(*) > 1;
 ```
 
 ## Step 1: BillerContracts (new version 3.0.0)

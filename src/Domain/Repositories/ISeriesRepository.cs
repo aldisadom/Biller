@@ -10,6 +10,6 @@ public interface ISeriesRepository
     Task<int> GetMaxInvoiceNumber(Guid id);
     Task<bool> IsInUse(Guid id);
     Task<Guid> Add(SeriesEntity series);
-    Task Update(SeriesEntity series);
+    Task<bool> Update(SeriesEntity series);
     Task Delete(Guid id);
 }

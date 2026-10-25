@@ -47,7 +47,7 @@ public class InvoiceUpdateValidator : AbstractValidator<InvoiceUpdateRequest>
 
     private bool ValidateInvoiceCustomer(CustomerUpdateRequest customer)
     {
-        new CustomerUpdateValidator().CheckValidation(customer);
+        CustomerUpdateValidator.ForInvoiceUpdate().CheckValidation(customer);
 
         return true;
     }

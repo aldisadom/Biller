@@ -34,7 +34,7 @@ public static class SeriesModelExtensions
         return new SeriesModel
         {
             SellerId = from.SellerId,
-            Name = from.Name,
+            Name = from.Name.Trim(),
             NextNumber = 1
         };
     }
@@ -44,7 +44,7 @@ public static class SeriesModelExtensions
         return new SeriesModel
         {
             Id = from.Id,
-            Name = from.Name,
+            Name = from.Name.Trim(),
             NextNumber = from.NextNumber
         };
     }

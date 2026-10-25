@@ -66,6 +66,36 @@ public class SeriesMappingProfileTest
         to.NextNumber.Should().Be(1);
     }
 
+    [Theory]
+    [InlineData(" WF", Label = "leading space is removed")]
+    [InlineData("WF  ", Label = "trailing spaces are removed")]
+    public void ToModel_GivenAddRequestNameWithSpaces_TrimsName(string name)
+    {
+        //Arrange
+        var from = new SeriesAddRequest { Name = name };
+
+        //Act
+        var to = from.ToModel();
+
+        //Assert
+        to.Name.Should().Be("WF");
+    }
+
+    [Theory]
+    [InlineData(" WF", Label = "leading space is removed")]
+    [InlineData("WF  ", Label = "trailing spaces are removed")]
+    public void ToModel_GivenUpdateRequestNameWithSpaces_TrimsName(string name)
+    {
+        //Arrange
+        var from = new SeriesUpdateRequest { Name = name };
+
+        //Act
+        var to = from.ToModel();
+
+        //Assert
+        to.Name.Should().Be("WF");
+    }
+
     [Fact]
     public void ToModel_GivenUpdateRequest_MapsAllProperties()
     {

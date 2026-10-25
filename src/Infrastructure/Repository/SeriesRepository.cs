@@ -73,13 +73,18 @@ public class SeriesRepository : ISeriesRepository
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, series);
     }
 
-    public async Task Update(SeriesEntity series)
+    // Returns false when an invoice already has NextNumber or higher, or when an invoice was
+    // added or deleted in the series while this statement waited for the row lock.
+    public async Task<bool> Update(SeriesEntity series)
     {
-        string sql = @"UPDATE series
+        string sql = @"UPDATE series s
                         SET name=@Name, next_number=@NextNumber
-                        WHERE id=@Id";
+                        WHERE s.id=@Id
+                          AND @NextNumber > (SELECT COALESCE(MAX(invoice_number), 0) FROM invoices WHERE series_id=@Id)
+                          AND (@NextNumber >= s.next_number
+                               OR s.next_number = (SELECT next_number FROM series WHERE id=@Id))";
 
-        await _dbConnection.ExecuteAsync(sql, series);
+        return await _dbConnection.ExecuteAsync(sql, series) == 1;
     }
 
     public async Task Delete(Guid id)

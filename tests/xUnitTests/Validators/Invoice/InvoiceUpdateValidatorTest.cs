@@ -105,8 +105,22 @@ public class InvoiceUpdateValidatorTest
     public static IEnumerable<TheoryDataRow<Action<InvoiceUpdateRequest>>> GetInvalidNestedRequestTestData()
     {
         yield return new(r => r.Seller.Email = "not-an-email") { Label = "seller with invalid email throws" };
-        yield return new(r => r.Customer.SeriesId = Guid.Empty) { Label = "customer with empty series id throws" };
+        yield return new(r => r.Customer.CompanyName = string.Empty) { Label = "customer with empty company name throws" };
         yield return new(r => r.Items = [new InvoiceItemUpdateRequest { Id = Guid.NewGuid(), Name = string.Empty, Quantity = 1, Price = 10m }]) { Label = "item with empty name throws" };
+    }
+
+    [Fact]
+    public void Validate_GivenCustomerWithoutSeries_IsValid()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.Customer.SeriesId = Guid.Empty;
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeTrue();
     }
 
     [Theory]

@@ -184,7 +184,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_GivenEntityWithCustomerDataFromBeforeSeries_TakesSeriesFromInvoice()
+    public void ToModel_GivenEntityWithCustomerDataFromBeforeSeries_KeepsSnapshotAndInvoiceSeries()
     {
         //Arrange
         var from = new InvoiceEntity
@@ -201,9 +201,10 @@ public class InvoiceMappingProfileTest
         var to = from.ToModel();
 
         //Assert
+        to.SeriesId.Should().Be(from.SeriesId);
+        to.SeriesName.Should().Be("NEW");
         to.Customer!.CompanyName.Should().Be("CompanyName");
-        to.Customer.SeriesId.Should().Be(from.SeriesId);
-        to.Customer.SeriesName.Should().Be("NEW");
+        to.Customer.SeriesId.Should().Be(Guid.Empty);
     }
 
     [Fact]
