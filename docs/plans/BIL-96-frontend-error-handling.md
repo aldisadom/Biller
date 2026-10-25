@@ -60,9 +60,10 @@ tests keep their own local clients, which already read the whole error, so the f
    - `OnErrorAsync` logs the exception (`ILogger<AppErrorBoundary>`, full exception).
    - `ErrorContent` shows the message in a Bootstrap alert, with "Try again" (`Recover()`) and "Back"
      buttons. The page is replaced, so no half-rendered state stays on screen.
-   - Navigation calls `Recover()` **before** the new page renders (`RegisterLocationChangingHandler`,
-     registered after the first interactive render), so an error the new page throws isn't wiped and
-     re-thrown (review finding).
+   - Navigation clears the error in `OnParametersSet`, which runs when `MainLayout` passes the new
+     `@Body`, so the new page renders and an error it throws stays. (Review: recovering in
+     `LocationChanged` wiped the new page's error; recovering in `LocationChanging` re-mounted the old
+     failing page and repeated its call.)
    - No automatic `Recover()` and no toast (owner decision 1), so a page that fails while loading
      can't loop.
 5. **One place turns an exception into text:** `ErrorMessages.For(Exception)` (static, in
