@@ -36,7 +36,7 @@ tests keep their own local clients, which already read the whole error, so the f
 | Versions | Biller `BillerContracts` 1.1.1 (BIL-92). BillerFrontEnd `BillerContracts.Clients` 1.1.1. BillioIntegrationTest `BillerContracts` 1.0.5 with its own local clients (PR #16 reverted by PR #17) |
 | FE `Components/App.razor` | `<Routes />` and `<HeadOutlet />` without a render mode, so router and `MainLayout` are static |
 | FE pages | 25 pages set `@rendermode InteractiveServer`; 24 also `[StreamRendering]`. 24 load data in `OnInitializedAsync`, 55 `@onclick`/submit handlers |
-| FE error handling | No try/catch, no `async void`, no `ErrorBoundary`. Pages throw `Domain.Exceptions.NotFoundException("Invalid id format")` for bad ids (4 pages). `MainLayout` has only `#blazor-error-ui` |
+| FE error handling | No try/catch, no `async void`, no `ErrorBoundary`. Pages throw `Domain.Exceptions.NotFoundException("Invalid id format")` for bad ids (13 pages). `MainLayout` has only `#blazor-error-ui` |
 | FE `Domain/Models/ErrorModel.cs` | Unused, and clashes by name with `BillerContracts.ErrorModel` |
 | FE Fluent UI | Only `Microsoft.Fast.Components.FluentUI` 3.7.8 (the old FAST package), imported in `Invoices_add.razor` but no component used. Not registered in `Program.cs`. No toast component available |
 | FE `Program.cs` | `UseExceptionHandler("/Error")` runs when `DetailedErrors` is **true** (inverted). Pre-existing, affects only non-Blazor HTTP errors |
@@ -54,19 +54,27 @@ tests keep their own local clients, which already read the whole error, so the f
 3. **Global interactivity, with prerender:** `<Routes @rendermode="InteractiveServer" />` and
    `<HeadOutlet @rendermode="InteractiveServer" />`; the 25 per-page `@rendermode` lines go,
    `[StreamRendering]` stays. Then `MainLayout` is interactive and an `ErrorBoundary` in it sees errors
-   from pages.
+   from pages. `/Error` stays static (render mode chosen per request in `App.razor`): it reads
+   `HttpContext`, and a failed request shouldn't open a circuit (review finding).
 4. **`AppErrorBoundary : ErrorBoundary`** in `Components/Layout/`, around `@Body` in `MainLayout`:
    - `OnErrorAsync` logs the exception (`ILogger<AppErrorBoundary>`, full exception).
    - `ErrorContent` shows the message in a Bootstrap alert, with "Try again" (`Recover()`) and "Back"
      buttons. The page is replaced, so no half-rendered state stays on screen.
-   - Navigation (`NavigationManager.LocationChanged`) calls `Recover()`.
+   - Navigation calls `Recover()` **before** the new page renders (`RegisterLocationChangingHandler`,
+     registered after the first interactive render), so an error the new page throws isn't wiped and
+     re-thrown (review finding).
    - No automatic `Recover()` and no toast (owner decision 1), so a page that fails while loading
      can't loop.
 5. **One place turns an exception into text:** `ErrorMessages.For(Exception)` (static, in
    `src/FrontEnd/Capabilities/`):
-   - `ClientAPIException` with `Error`: `Message`, plus `": " + ExtendedMessage` when there is one.
+   - `ClientAPIException` with `Error`: `Message`, plus `": " + ExtendedMessage` when there is one;
+     only the extended message when the message is empty; the status code when both are empty.
      A 404 reads "Entity not found: Invoice:… not found".
-   - `ClientAPIException` without `Error`, or `HttpRequestException`: "The server could not be reached".
+   - `AggregateException` with one inner exception (the invoice pages' `Task.Run(...).Wait()`): the
+     text for the inner one.
+   - `ClientAPIException` without `Error`, `HttpRequestException`, `TaskCanceledException` (timeout) or
+     Newtonsoft `JsonException` (unreadable answer): "The server could not be reached or sent an
+     unexpected answer".
    - `NotFoundException`: its message.
    - Anything else: "Something went wrong". Details only in the log.
    Static and free of Blazor types, so BIL-87 can unit test it.
