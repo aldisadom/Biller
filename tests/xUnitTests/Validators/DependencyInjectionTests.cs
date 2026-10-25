@@ -29,6 +29,7 @@ public class DependencyInjectionTests
         [typeof(IValidator<SellerUpdateRequest>)] = typeof(SellerUpdateValidator),
         [typeof(IValidator<SeriesAddRequest>)] = typeof(SeriesAddValidator),
         [typeof(IValidator<SeriesUpdateRequest>)] = typeof(SeriesUpdateValidator),
+        [typeof(IValidator<SeriesGetRequest>)] = typeof(SeriesGetValidator),
         [typeof(IValidator<CustomerAddRequest>)] = typeof(CustomerAddValidator),
         [typeof(IValidator<CustomerUpdateRequest>)] = typeof(CustomerUpdateValidator),
         [typeof(IValidator<ItemAddRequest>)] = typeof(ItemAddValidator),

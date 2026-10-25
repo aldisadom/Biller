@@ -25,6 +25,7 @@ public class SeriesController : ControllerBase
     private readonly ILogger<SeriesController> _logger;
     private readonly IValidator<SeriesAddRequest> _validatorAdd;
     private readonly IValidator<SeriesUpdateRequest> _validatorUpdate;
+    private readonly IValidator<SeriesGetRequest> _validatorGet;
 
     /// <summary>
     /// Constructor
@@ -33,14 +34,17 @@ public class SeriesController : ControllerBase
     /// <param name="logger"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
+    /// <param name="validatorGet"></param>
     public SeriesController(ISeriesService seriesService, ILogger<SeriesController> logger,
-        IValidator<SeriesAddRequest> validatorAdd, IValidator<SeriesUpdateRequest> validatorUpdate)
+        IValidator<SeriesAddRequest> validatorAdd, IValidator<SeriesUpdateRequest> validatorUpdate,
+        IValidator<SeriesGetRequest> validatorGet)
     {
         _seriesService = seriesService;
         _logger = logger;
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
+        _validatorGet = validatorGet;
     }
 
     /// <summary>
@@ -69,8 +73,12 @@ public class SeriesController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(SeriesListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(SeriesListResponseExample))]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get([FromQuery] SeriesGetRequest? query)
     {
+        if (query is not null)
+            _validatorGet.CheckValidation(query);
+
         var (series, totalCount) = await _seriesService.Get(query);
 
         SeriesListResponse result = new()

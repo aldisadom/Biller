@@ -11,6 +11,8 @@ namespace Validators.Invoice;
 /// </summary>
 public class InvoiceUpdateValidator : AbstractValidator<InvoiceUpdateRequest>
 {
+    private static readonly CustomerUpdateValidator _customerValidator = CustomerUpdateValidator.ForInvoiceUpdate();
+
     /// <summary>
     /// Validation
     /// </summary>
@@ -47,7 +49,7 @@ public class InvoiceUpdateValidator : AbstractValidator<InvoiceUpdateRequest>
 
     private bool ValidateInvoiceCustomer(CustomerUpdateRequest customer)
     {
-        CustomerUpdateValidator.ForInvoiceUpdate().CheckValidation(customer);
+        _customerValidator.CheckValidation(customer);
 
         return true;
     }

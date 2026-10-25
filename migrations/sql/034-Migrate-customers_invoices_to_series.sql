@@ -3,11 +3,11 @@
 -- changeset Aldis:34
 -- comment: Move invoice series from customers to series table, link customers and invoices to series
 
--- 1. One series per (seller, invoice_name). next_number = highest "next number" of those customers.
+-- 1. One series per (seller, trimmed invoice_name). next_number = highest "next number" of those customers.
 INSERT INTO series (seller_id, name, next_number)
-SELECT seller_id, invoice_name, MAX(GREATEST(COALESCE(invoice_number, 1), 1))
+SELECT seller_id, TRIM(invoice_name), MAX(GREATEST(COALESCE(invoice_number, 1), 1))
 FROM customers
-GROUP BY seller_id, invoice_name;
+GROUP BY seller_id, TRIM(invoice_name);
 
 -- 2. Link customers to their series.
 ALTER TABLE customers ADD COLUMN series_id uuid;
@@ -15,7 +15,7 @@ ALTER TABLE customers ADD COLUMN series_id uuid;
 UPDATE customers c
 SET series_id = s.id
 FROM series s
-WHERE s.seller_id = c.seller_id AND s.name = c.invoice_name;
+WHERE s.seller_id = c.seller_id AND s.name = TRIM(c.invoice_name);
 
 ALTER TABLE customers ALTER COLUMN series_id SET NOT NULL;
 ALTER TABLE customers ADD CONSTRAINT fk_customers_series_id

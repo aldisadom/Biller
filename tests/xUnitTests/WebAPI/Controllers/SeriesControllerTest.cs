@@ -20,6 +20,7 @@ public class SeriesControllerTest
     private readonly Mock<ISeriesService> _seriesServiceMock;
     private readonly Mock<IValidator<SeriesAddRequest>> _validatorAddMock;
     private readonly Mock<IValidator<SeriesUpdateRequest>> _validatorUpdateMock;
+    private readonly Mock<IValidator<SeriesGetRequest>> _validatorGetMock;
     private readonly SeriesController _seriesController;
     private readonly Guid _series1Id = Guid.NewGuid();
     private readonly Guid _series2Id = Guid.NewGuid();
@@ -30,12 +31,14 @@ public class SeriesControllerTest
         _seriesServiceMock = new Mock<ISeriesService>(MockBehavior.Strict);
         _validatorAddMock = new Mock<IValidator<SeriesAddRequest>>(MockBehavior.Strict);
         _validatorUpdateMock = new Mock<IValidator<SeriesUpdateRequest>>(MockBehavior.Strict);
+        _validatorGetMock = new Mock<IValidator<SeriesGetRequest>>(MockBehavior.Strict);
 
         _seriesController = new SeriesController(
             _seriesServiceMock.Object,
             new Mock<ILogger<SeriesController>>().Object,
             _validatorAddMock.Object,
-            _validatorUpdateMock.Object);
+            _validatorUpdateMock.Object,
+            _validatorGetMock.Object);
     }
 
     [Fact]
@@ -79,6 +82,9 @@ public class SeriesControllerTest
             new() { Id = _series2Id, SellerId = _sellerId }
         };
 
+        if (query is not null)
+            _validatorGetMock.Setup(v => v.Validate(query))
+                .Returns(new ValidationResult());
         _seriesServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync((series, 7));
 
@@ -95,7 +101,29 @@ public class SeriesControllerTest
                 PageSize = expectedPageSize
             });
 
+        _validatorGetMock.Verify(v => v.Validate(query!), query is null ? Times.Never() : Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _seriesServiceMock.Verify(s => s.Get(query), Times.Once());
+        _seriesServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Get_GivenInvalidQuery_ThrowsValidationException()
+    {
+        //Arrange
+        var query = new SeriesGetRequest { Page = 0 };
+
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _seriesController.Get(query);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _seriesServiceMock.VerifyNoOtherCalls();
     }
 

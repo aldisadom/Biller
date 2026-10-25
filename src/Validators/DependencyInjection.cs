@@ -28,6 +28,7 @@ public static class DependencyInjection
 
         services.AddScoped<IValidator<SeriesAddRequest>, SeriesAddValidator>();
         services.AddScoped<IValidator<SeriesUpdateRequest>, SeriesUpdateValidator>();
+        services.AddScoped<IValidator<SeriesGetRequest>, SeriesGetValidator>();
 
         services.AddScoped<IValidator<CustomerAddRequest>, CustomerAddValidator>();
         services.AddScoped<IValidator<CustomerUpdateRequest>, CustomerUpdateValidator>();

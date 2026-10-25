@@ -79,16 +79,16 @@ Series `ABC`, invoices 1–5 exist, `next_number = 6`.
 SELECT id, company_name FROM customers WHERE COALESCE(TRIM(invoice_name), '') = '';
 
 -- Customers of the same seller that share a series name. They will share one series.
-SELECT seller_id, invoice_name, COUNT(*), ARRAY_AGG(invoice_number)
-FROM customers GROUP BY seller_id, invoice_name HAVING COUNT(*) > 1;
+SELECT seller_id, TRIM(invoice_name), COUNT(*), ARRAY_AGG(invoice_number)
+FROM customers GROUP BY seller_id, TRIM(invoice_name) HAVING COUNT(*) > 1;
 
 -- Invoice numbers that will collide in one series: customers of the same seller with the same
 -- invoice_name each had their own counter, and the migration puts them into one series.
 -- Any row here makes migration 034 fail on its unique index (it runs in one transaction, so the
 -- database stays as it was). Rename one customer's invoice_name first.
-SELECT c.seller_id, c.invoice_name, i.invoice_number, COUNT(*), ARRAY_AGG(c.company_name)
+SELECT c.seller_id, TRIM(c.invoice_name), i.invoice_number, COUNT(*), ARRAY_AGG(c.company_name)
 FROM invoices i JOIN customers c ON c.id = i.customer_id
-GROUP BY c.seller_id, c.invoice_name, i.invoice_number HAVING COUNT(*) > 1;
+GROUP BY c.seller_id, TRIM(c.invoice_name), i.invoice_number HAVING COUNT(*) > 1;
 ```
 
 ## Step 1: BillerContracts (new version 3.0.0)

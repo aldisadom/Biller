@@ -53,6 +53,7 @@ public class SeriesUpdateValidatorTest
     [Theory]
     [InlineData("ABCDEFGHIJ", true, Label = "name of 10 characters is accepted")]
     [InlineData("ABCDEFGHIJK", false, Label = "name of 11 characters is rejected")]
+    [InlineData(" ABCDEFGHIJ ", true, Label = "name of 10 characters with surrounding spaces is accepted, it is trimmed")]
     public void Validate_GivenNameLength_ReturnsExpected(string name, bool expected)
     {
         //Arrange
