@@ -120,7 +120,7 @@ BIL-94 (package updates) runs after this task.
   around `@Body`. Keep `#blazor-error-ui` for errors outside the boundary (layout, nav menu).
 - Delete `src/Domain/Models/ErrorModel.cs`.
 
-## Step 5: BillioIntegrationTest — [x]
+## Step 5: BillioIntegrationTest — [x] PR #18 (BillioIntegrationTest)
 
 - Re-apply #16 (revert of the revert): `BillerContracts.Clients` instead of the local `Clients/` and
   `Interfaces/`, URLs from `appsettings.json`, clients built once in `ApiClients/TestClients.cs`,
