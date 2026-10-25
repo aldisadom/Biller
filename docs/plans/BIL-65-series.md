@@ -10,6 +10,20 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
 - Any invoice can be deleted. Only deleting the **latest** invoice of a series lowers the series' next number.
 - Reserving a number on create and releasing it on delete must be atomic, so two requests at the same time can't get the same number.
 
+## Progress
+
+- [x] Step 1: BillerContracts on `BIL-65-series` (82f867a). Not published yet.
+- [x] Step 2: migrations 033, 034 (cc845e2). Tested on a throwaway Postgres 16 with old-shape data: update, `rollback-count 2`, update again.
+- [x] Steps 3–8: Biller code and unit tests (e5ff9b8). 729 tests pass when built against the local contracts.
+- [ ] Step 9: BillioIntegrationTest.
+- [ ] Step 10: publish 2.1.0, bump the versions, BillerFrontEnd, deploy.
+
+Done differently from the plan:
+- `ISeriesRepository` also has `GetByName(sellerId, name)` for the duplicate-name check.
+- `InvoiceEntity.ToModel()` copies the invoice's `SeriesId`/`SeriesName` into the customer snapshot. Snapshots from before BIL-65 have no `SeriesId`, and `InvoiceUpdateValidator` runs `CustomerUpdateValidator`, which now requires one.
+- Adding a series for a missing seller returns 404 (via `ISellerService.Get`).
+- 20 parallel inserts into one series on the test DB got 20 unique, consecutive numbers.
+
 ## Current state (master @ 6bb2079)
 
 | Where | What |
