@@ -80,7 +80,7 @@ tests keep their own local clients, which already read the whole error, so the f
   line per page, so conflicts are trivial; whichever lands second rebases.
 - BIL-94 (package updates) is blocked by this task: it starts from 2.0.0.
 
-## Step 1: BillerContracts (own PR, then the owner publishes 2.0.0) — [x] PR #9, 70 tests pass; not published yet
+## Step 1: BillerContracts (own PR, then the owner publishes 2.0.0) — [x] PR #9 merged, 74 tests pass, 2.0.0 published
 
 - `Clients/ClientAPIException.cs`: `public ErrorModel? Error { get; }` and a constructor
   `(string message, ErrorModel error)`.
@@ -89,14 +89,15 @@ tests keep their own local clients, which already read the whole error, so the f
 - `Clients.Tests/BaseHttpClientTest.cs`: 400 with an `ErrorResponse` body → `Error` has all three;
   404 with a non-JSON body → status code only; deserialization failure → `Error` is null; update the
   exact-text tests for the extended message; JSON that isn't an `ErrorResponse` (ProblemDetails, `{}`)
-  keeps its body in the text and gives `Error` the status code only (review finding).
+  keeps its body in the text and gives `Error` the status code only (review finding). The text is
+  built from `ErrorModel.ToString()`, whose bug (it checked `Message` twice) is fixed, with its own test.
 - Pull request template: **breaking** (namespace move), so 2.0.0.
 
-## Step 2: Biller — [ ] waits for 2.0.0
+## Step 2: Biller — [x] 2.0.0, 668 tests pass
 
 - `src/Domain/Domain.csproj`: `BillerContracts` 1.1.1 → 2.0.0. Unit tests pass.
 
-## Step 3: BillerFrontEnd, render mode — [x] (package bump waits for 2.0.0)
+## Step 3: BillerFrontEnd, render mode — [x] (on the 2.0.0 package)
 
 - `Components/App.razor`: design decision 3.
 - Remove `@rendermode InteractiveServer` from the 25 pages.
@@ -121,6 +122,8 @@ tests keep their own local clients, which already read the whole error, so the f
   HTML already holds the alert; an unknown id prerenders "Loading..." and the alert comes from the
   interactive render. Interactive behaviour still to check in a browser.
 - Integration tests (BillioIntegrationTest master, local clients) against Biller on 2.0.0: 172 pass.
+  Done 2026-10-25: `Passed! - Failed: 0, Passed: 172`. Prerender check repeated on the 2.0.0 package:
+  same result.
 
 ## Out of scope
 
