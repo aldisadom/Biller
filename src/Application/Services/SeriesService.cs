@@ -78,7 +78,7 @@ public class SeriesService : ISeriesService
         if (series.NextNumber <= maxInvoiceNumber)
             throw new ValidationException($"Next number must be greater than {maxInvoiceNumber}, the highest invoice number in series {stored.Name}");
 
-        throw new ValidationException($"Series {stored.Name} got a new or deleted invoice while it was updated, please try again");
+        throw new ValidationException($"Series {stored.Name} was changed while it was updated, please try again");
     }
 
     public async Task Delete(Guid id)

@@ -15,6 +15,6 @@ public class SeriesAddValidator : AbstractValidator<SeriesAddRequest>
     {
         RuleFor(x => x.SellerId).NotEmpty().WithMessage("Please specify seller Id");
         RuleFor(x => x.Name).NotEmpty().WithMessage("Please specify name")
-            .Must(name => name.Trim().Length <= 10).WithMessage("Please specify name of at most 10 characters");
+            .Must(name => name is null || name.Trim().Length <= 10).WithMessage("Please specify name of at most 10 characters");
     }
 }

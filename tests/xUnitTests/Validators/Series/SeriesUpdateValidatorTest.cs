@@ -83,4 +83,19 @@ public class SeriesUpdateValidatorTest
         //Assert
         result.IsValid.Should().Be(expected);
     }
+
+    [Fact]
+    public void Validate_GivenNullName_IsInvalidWithoutThrowing()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.Name = null!;
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(SeriesUpdateRequest.Name));
+    }
 }

@@ -11,6 +11,8 @@ namespace Validators.Invoice;
 /// </summary>
 public class InvoiceUpdateValidator : AbstractValidator<InvoiceUpdateRequest>
 {
+    private static readonly InvoiceItemUpdateValidator _itemValidator = new();
+    private static readonly SellerUpdateValidator _sellerValidator = new();
     private static readonly CustomerUpdateValidator _customerValidator = CustomerUpdateValidator.ForInvoiceUpdate();
 
     /// <summary>
@@ -32,17 +34,15 @@ public class InvoiceUpdateValidator : AbstractValidator<InvoiceUpdateRequest>
 
     private bool ValidateInvoiceItems(List<InvoiceItemUpdateRequest> items)
     {
-        InvoiceItemUpdateValidator validator = new();
-
         foreach (var item in items)
-            validator.CheckValidation(item);
+            _itemValidator.CheckValidation(item);
 
         return true;
     }
 
     private bool ValidateInvoiceSeller(SellerUpdateRequest seller)
     {
-        new SellerUpdateValidator().CheckValidation(seller);
+        _sellerValidator.CheckValidation(seller);
 
         return true;
     }

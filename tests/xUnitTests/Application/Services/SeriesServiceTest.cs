@@ -322,7 +322,7 @@ public class SeriesServiceTest
         //Assert
         await _seriesService.Invoking(x => x.Update(series))
                             .Should().ThrowAsync<ValidationException>()
-                            .WithMessage("Series WF got a new or deleted invoice while it was updated, please try again");
+                            .WithMessage("Series WF was changed while it was updated, please try again");
 
         _seriesRepositoryMock.Verify(m => m.Get(stored.Id), Times.Exactly(2));
         _seriesRepositoryMock.Verify(m => m.GetByName(stored.SellerId, "WF"), Times.Once());
