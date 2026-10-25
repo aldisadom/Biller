@@ -17,7 +17,9 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
 - [x] Steps 3–8: Biller code and unit tests (e5ff9b8). 729 tests pass when built against the local contracts.
 - [x] Step 9: BillioIntegrationTest (c21be3f). 190 passed, 0 failed, twice in a row, against this branch's API on a throwaway DB, built against the local contracts.
 - [x] Step 10.3: BillerFrontEnd pages (0763dc0). Release build succeeds against the local clients. Not checked in a browser yet.
-- [ ] Step 10: publish 2.1.0 (a preview first), bump `BillerContracts` / `BillerContracts.Clients` in Biller, BillioIntegrationTest and BillerFrontEnd, check the front end in a browser, deploy.
+- [x] Step 1.4: BillerContracts PR #10 merged, published as **3.0.0** (major, because properties were removed). The plan first said 2.1.0.
+- [x] Step 10.1–10.2: `BillerContracts` / `BillerContracts.Clients` bumped to 3.0.0 in Biller, BillioIntegrationTest and BillerFrontEnd.
+- [ ] Step 10: check the front end in a browser, merge the three PRs, deploy.
 
 Done differently from the plan:
 - `ISeriesRepository` also has `GetByName(sellerId, name)` for the duplicate-name check.
@@ -85,7 +87,7 @@ SELECT customer_id, invoice_number, COUNT(*)
 FROM invoices GROUP BY customer_id, invoice_number HAVING COUNT(*) > 1;
 ```
 
-## Step 1: BillerContracts (new version 2.1.0)
+## Step 1: BillerContracts (new version 3.0.0)
 
 Repo: `BillerContracts`. Namespaces below are `BillerContracts.*` as on `origin/master`.
 
@@ -138,8 +140,8 @@ public record SeriesUpdateRequest
 
 ### 1.4 Release
 
-- PR in BillerContracts, merge, run the `Publish` workflow with version `2.1.0`.
-- If Plan B (units, BIL-75) is done at the same time, put both contract changes into 2.1.0.
+- PR in BillerContracts, merge, run the `Publish` workflow with version `3.0.0`.
+- If Plan B (units, BIL-75) is done at the same time, put both contract changes into 3.0.0.
 
 ## Step 2: Database migrations (Biller)
 
@@ -443,16 +445,16 @@ On the local Docker stack with a copy of the real data:
 8. Generate the PDF for an old invoice (from before the migration) → same series and number as before.
 
 BillioIntegrationTest (branch `BIL-65-series`) covers customers and invoices, so it must change in the same PR round, or CI fails:
-- Bump `BillerContracts.Clients` to the 2.1.0 preview, then to 2.1.0.
+- Bump `BillerContracts.Clients` to 3.0.0.
 - Customer tests create a series first and send `SeriesId`. Invoice tests check `SeriesId`, `SeriesName` and the numbering rules above.
 - Add `SeriesTests` (CRUD, duplicate name, delete in use → 400).
 - The clean-up that deletes all data first must delete series after customers and before sellers, since there's no `ON DELETE CASCADE`.
 
 ## Step 10: Rollout
 
-1. Merge and publish BillerContracts 2.1.0.
-2. Biller PR: bump `BillerContracts` to 2.1.0 in `src/Domain/Domain.csproj`, plus all the changes above.
-3. Update BillerFrontEnd in this task (branch `BIL-65-series`), and deploy it together with the API, because the 2.0.0 front end can't create customers against the new API: bump `BillerContracts.Clients` to 2.1.0, customer forms pick a series instead of typing a name, add series pages per seller, show `SeriesName` on customers and invoices, drop the invoice number field from invoice editing.
+1. Merge and publish BillerContracts 3.0.0.
+2. Biller PR: bump `BillerContracts` to 3.0.0 in `src/Domain/Domain.csproj`, plus all the changes above.
+3. Update BillerFrontEnd in this task (branch `BIL-65-series`), and deploy it together with the API, because the 2.0.0 front end can't create customers against the new API: bump `BillerContracts.Clients` to 3.0.0, customer forms pick a series instead of typing a name, add series pages per seller, show `SeriesName` on customers and invoices, drop the invoice number field from invoice editing.
 4. On the small PC: back up the database, run the pre-check queries, then `make update`.
 
 ## Out of scope
@@ -463,7 +465,7 @@ BillioIntegrationTest (branch `BIL-65-series`) covers customers and invoices, so
 
 ## Order of work
 
-1. BillerContracts 2.1.0 (+ clients)
+1. BillerContracts 3.0.0 (+ clients)
 2. Migrations 033, 034 (verify on a data copy)
 3. Domain + Infrastructure
 4. Application (series, then customer, then invoice)
