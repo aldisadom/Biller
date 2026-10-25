@@ -1,12 +1,13 @@
 # Plan: global error handling in the front end (BIL-96)
 
 Jira: [BIL-96](https://aldisadom.atlassian.net/browse/BIL-96). Epic: BIL-89 (Billeris). Repos:
-BillerContracts (step 1), Biller (step 2), BillerFrontEnd (steps 3–4). BillioIntegrationTest is only
-run as a check. It changes several repos, so it lives in Biller.
+BillerContracts (step 1), Biller (step 2), BillerFrontEnd (steps 3–4), BillioIntegrationTest (step 5).
+It changes several repos, so it lives in Biller.
 
-**Changed 2026-10-25:** BIL-92 is Won't Do and BillioIntegrationTest PR #16 is reverted (PR #17). The
-tests keep their own local clients, which already read the whole error, so the former step 5
-(remove `ApiErrorHandler`) is dropped. BIL-94 (package updates) runs after this task.
+**Changed 2026-10-25:** BIL-92 is Won't Do and BillioIntegrationTest PR #16 was reverted (PR #17).
+Then the owner asked for the tests to use the 2.0.0 package clients after all: step 5 brings back
+#16's conversion without its `ApiErrorHandler` workaround, using `ClientAPIException.Error`.
+BIL-94 (package updates) runs after this task.
 
 ## Decisions from the owner (2026-10-25)
 
@@ -14,10 +15,10 @@ tests keep their own local clients, which already read the whole error, so the f
    whose `OnInitializedAsync` fails would throw again on every `Recover()` until
    `ErrorBoundary.MaximumErrorCount` (100) ends the circuit. (Design decision 4.)
 2. **Keep prerendering.** Global `InteractiveServer` with the default prerender; pages keep
-   `[StreamRendering]`. `OnInitializedAsync` still runs twice (prerender, then interactive). Step 5
+   `[StreamRendering]`. `OnInitializedAsync` still runs twice (prerender, then interactive). Step 6
    checks that an error during the prerender pass also ends in a readable message.
 3. **BillerContracts 2.0.0** is released for this (the `UserGetRequest` namespace move is on master).
-4. **BIL-92 reverted:** BillioIntegrationTest stays on its local clients; no test changes here.
+4. **Integration tests on the 2.0.0 package clients** (step 5), with no test-side error decoding.
 
 ## Goal
 
@@ -40,7 +41,7 @@ tests keep their own local clients, which already read the whole error, so the f
 | FE `Domain/Models/ErrorModel.cs` | Unused, and clashes by name with `BillerContracts.ErrorModel` |
 | FE Fluent UI | Only `Microsoft.Fast.Components.FluentUI` 3.7.8 (the old FAST package), imported in `Invoices_add.razor` but no component used. Not registered in `Program.cs`. No toast component available |
 | FE `Program.cs` | `UseExceptionHandler("/Error")` runs when `DetailedErrors` is **true** (inverted). Pre-existing, affects only non-Blazor HTTP errors |
-| IT `Clients/BaseHttpClient.cs` | Local client: returns `Result<T>` and decodes an error response into `ErrorModel` (status code, message, extended message) itself. Not affected by this task |
+| IT `Clients/`, `Interfaces/` | Local clients: return `Result<T>` and decode an error response into `ErrorModel` themselves. `BillerContracts` 1.0.5, plus `LanguageExt.Core` and `FluentValidation` (unused) and `Serilog` (local client only) |
 
 ## Design decisions
 
@@ -49,8 +50,8 @@ tests keep their own local clients, which already read the whole error, so the f
    `ErrorResponse`. Null for other failures (deserialization). The existing constructors stay.
    The text also gets `, extended message: …`, so logs and test failures show the useful part.
 2. **Release 2.0.0** (because of the namespace move already on master). Biller and BillerFrontEnd
-   move to it; BillioIntegrationTest moves in BIL-94. None uses `UserGetRequest`, so the move needs no
-   code change.
+   move to it, and BillioIntegrationTest switches to the `BillerContracts.Clients` 2.0.0 package
+   (step 5). None uses `UserGetRequest`, so the move needs no code change.
 3. **Global interactivity, with prerender:** `<Routes @rendermode="InteractiveServer" />` and
    `<HeadOutlet @rendermode="InteractiveServer" />`; the 25 per-page `@rendermode` lines go,
    `[StreamRendering]` stays. Then `MainLayout` is interactive and an `ErrorBoundary` in it sees errors
@@ -84,7 +85,7 @@ tests keep their own local clients, which already read the whole error, so the f
 ## Dependencies
 
 - BIL-73 (Done): removed the `async void` handlers.
-- BIL-92: Won't Do, reverted (BillioIntegrationTest PR #17). Nothing here depends on it.
+- BIL-92: Won't Do, reverted (BillioIntegrationTest PR #17). Step 5 reuses its conversion.
 - BIL-91 (AutoMapper removal) and BIL-97 (PDF download) also edit the FE pages. Step 3 removes one
   line per page, so conflicts are trivial; whichever lands second rebases.
 - BIL-94 (package updates) is blocked by this task: it starts from 2.0.0.
@@ -119,7 +120,17 @@ tests keep their own local clients, which already read the whole error, so the f
   around `@Body`. Keep `#blazor-error-ui` for errors outside the boundary (layout, nav menu).
 - Delete `src/Domain/Models/ErrorModel.cs`.
 
-## Step 5: Check
+## Step 5: BillioIntegrationTest — [x] PR #18 (BillioIntegrationTest)
+
+- Re-apply #16 (revert of the revert): `BillerContracts.Clients` instead of the local `Clients/` and
+  `Interfaces/`, URLs from `appsettings.json`, clients built once in `ApiClients/TestClients.cs`,
+  `ApiClients/DeleteAll.cs` pages until a list is empty; `LanguageExt.Core`, `FluentValidation` and
+  `Serilog` removed.
+- No `ApiErrorHandler`: error tests use `(await Assert.ThrowsAsync<ClientAPIException>(() => call))!.Error!`
+  and compare status code, message and extended message.
+- `BillerContracts.Clients` 2.0.0.
+
+## Step 6: Check
 
 - Contracts: `dotnet test -c Release`. Biller: `run-coverage.sh`. FE: `dotnet build BillerFrontEnd.sln -c Release`.
 - In the browser, against a running Biller: a status change on a deleted invoice, an invalid form
@@ -130,9 +141,10 @@ tests keep their own local clients, which already read the whole error, so the f
   prerender too, no unhandled error. A bad id format fails before streaming and the prerendered
   HTML already holds the alert; an unknown id prerenders "Loading..." and the alert comes from the
   interactive render. Interactive behaviour still to check in a browser.
-- Integration tests (BillioIntegrationTest master, local clients) against Biller on 2.0.0: 172 pass.
-  Done 2026-10-25: `Passed! - Failed: 0, Passed: 172`. Prerender check repeated on the 2.0.0 package:
-  same result.
+- Integration tests (step 5 branch, package clients 2.0.0) against Biller on 2.0.0: the same 172
+  cases pass, twice in a row; a wrong expected extended message fails; with 30 invoices created first
+  (first page 25), cleanup leaves none. Done 2026-10-25. Prerender check repeated on the 2.0.0
+  package: same result.
 
 ## Out of scope
 
@@ -144,8 +156,9 @@ tests keep their own local clients, which already read the whole error, so the f
 ## Order of work
 
 1. Step 1, PR, then the owner publishes 2.0.0.
-2. Steps 2, 3 and 4 on branches named `BIL-96-frontend-error-handling` (Biller, BillerFrontEnd).
-3. Step 5.
+2. Steps 2–5 on branches named `BIL-96-frontend-error-handling` (Biller, BillerFrontEnd,
+   BillioIntegrationTest), so each CI pairs with the others.
+3. Step 6.
 
 ## Risk
 
