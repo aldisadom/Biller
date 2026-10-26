@@ -47,14 +47,6 @@ public class SeriesRepository : ISeriesRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<SeriesEntity>(sql, new { sellerId, name });
     }
 
-    public async Task<int> GetMaxInvoiceNumber(Guid id)
-    {
-        string sql = @"SELECT COALESCE(MAX(invoice_number), 0) FROM invoices
-                        WHERE series_id=@Id";
-
-        return await _dbConnection.ExecuteScalarAsync<int>(sql, new { id });
-    }
-
     public async Task<bool> IsInUse(Guid id)
     {
         string sql = @"SELECT EXISTS (SELECT 1 FROM customers WHERE series_id=@Id)
@@ -73,20 +65,32 @@ public class SeriesRepository : ISeriesRepository
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, series);
     }
 
-    // Returns false when the series is gone, when an invoice already has NextNumber or higher,
-    // or when next_number is no longer expectedNextNumber (an invoice was added or the latest
-    // one deleted since the caller read the series).
-    public async Task<bool> Update(SeriesEntity series, int expectedNextNumber)
+    // Locks the series row, which every invoice write locks first too, so no invoice of the series is
+    // created, changed or deleted until the update is done. Updates only when NextNumber is above the
+    // highest invoice number and the name stays the same or the series has no invoices.
+    // Returns null when the series doesn't exist.
+    public async Task<(bool Updated, int MaxInvoiceNumber)?> Update(SeriesEntity series)
     {
-        string sql = @"UPDATE series
-                        SET name=@Name, next_number=@NextNumber
-                        WHERE id=@Id
-                          AND next_number=@ExpectedNextNumber
-                          AND @NextNumber > (SELECT COALESCE(MAX(invoice_number), 0) FROM invoices WHERE series_id=@Id)";
+        string maxInvoiceNumberSql = @"SELECT COALESCE(MAX(invoice_number), 0) FROM invoices
+                                        WHERE series_id=@Id";
+        string updateSql = @"UPDATE series
+                            SET name=@Name, next_number=@NextNumber
+                            WHERE id=@Id
+                              AND @NextNumber > @MaxInvoiceNumber
+                              AND (name=@Name OR NOT EXISTS (SELECT 1 FROM invoices WHERE series_id=@Id))";
 
-        var parameters = new { series.Id, series.Name, series.NextNumber, ExpectedNextNumber = expectedNextNumber };
+        return await _dbConnection.InTransaction<(bool, int)?>(async transaction =>
+        {
+            if (!await _dbConnection.LockSeries(series.Id, transaction))
+                return null;
 
-        return await _dbConnection.ExecuteAsync(sql, parameters) == 1;
+            int maxInvoiceNumber = await _dbConnection.ExecuteScalarAsync<int>(maxInvoiceNumberSql, new { series.Id }, transaction);
+
+            var parameters = new { series.Id, series.Name, series.NextNumber, MaxInvoiceNumber = maxInvoiceNumber };
+            bool updated = await _dbConnection.ExecuteAsync(updateSql, parameters, transaction) == 1;
+
+            return (updated, maxInvoiceNumber);
+        });
     }
 
     public async Task Delete(Guid id)

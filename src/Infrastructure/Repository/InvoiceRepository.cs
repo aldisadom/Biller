@@ -17,21 +17,24 @@ public class InvoiceRepository : IInvoiceRepository
 
     public async Task<InvoiceEntity?> Get(Guid id)
     {
-        string sql = @"SELECT * FROM invoices
-                        WHERE id=@Id";
+        string sql = @"SELECT i.*, s.name AS series_name FROM invoices i
+                        JOIN series s ON s.id = i.series_id
+                        WHERE i.id=@Id";
 
         return await _dbConnection.QuerySingleOrDefaultAsync<InvoiceEntity>(sql, new { id });
     }
 
     public async Task<(IEnumerable<InvoiceEntity>, int)> Get(Guid? userId, Guid? sellerId, Guid? customerId, int page, int pageSize)
     {
-        string filter = @"WHERE (@UserId IS NULL OR user_id = @UserId)
-                          AND (@SellerId IS NULL OR seller_id = @SellerId)
-                          AND (@CustomerId IS NULL OR customer_id = @CustomerId)";
+        string filter = @"WHERE (@UserId IS NULL OR i.user_id = @UserId)
+                          AND (@SellerId IS NULL OR i.seller_id = @SellerId)
+                          AND (@CustomerId IS NULL OR i.customer_id = @CustomerId)";
 
-        string countSql = $"SELECT COUNT(*) FROM invoices {filter}";
-        string dataSql = $@"SELECT * FROM invoices {filter}
-                            ORDER BY created_date DESC
+        string countSql = $"SELECT COUNT(*) FROM invoices i {filter}";
+        string dataSql = $@"SELECT i.*, s.name AS series_name FROM invoices i
+                            JOIN series s ON s.id = i.series_id
+                            {filter}
+                            ORDER BY i.created_date DESC
                             LIMIT @PageSize OFFSET @Offset";
 
         var parameters = new { UserId = userId, SellerId = sellerId, CustomerId = customerId, PageSize = pageSize, Offset = (page - 1) * pageSize };
@@ -48,17 +51,22 @@ public class InvoiceRepository : IInvoiceRepository
                             UPDATE series
                             SET next_number = next_number + 1
                             WHERE id = @SeriesId
-                            RETURNING next_number - 1 AS invoice_number, name
+                            RETURNING next_number - 1 AS invoice_number
                         )
                         INSERT INTO invoices
-                        (customer_id, seller_id, user_id, series_id, series_name, invoice_number, user_data, created_date, due_date,
+                        (customer_id, seller_id, user_id, series_id, invoice_number, user_data, created_date, due_date,
                         seller_data, customer_data, items_data, comments, total_price, status)
-                        SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.name, reserved.invoice_number, @UserData, @CreatedDate, @DueDate,
+                        SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.invoice_number, @UserData, @CreatedDate, @DueDate,
                         @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice, @Status
                         FROM reserved
                         RETURNING id";
 
-        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, invoice);
+        return await _dbConnection.InTransaction(async transaction =>
+        {
+            await _dbConnection.LockSeries(invoice.SeriesId, transaction);
+
+            return await _dbConnection.ExecuteScalarAsync<Guid>(sql, invoice, transaction);
+        });
     }
 
     public async Task Update(InvoiceEntity invoice)
@@ -69,7 +77,11 @@ public class InvoiceRepository : IInvoiceRepository
                         items_data=@ItemsData, comments=@Comments, total_price=@TotalPrice
                         WHERE id=@Id";
 
-        await _dbConnection.ExecuteAsync(sql, invoice);
+        await _dbConnection.InTransaction(async transaction =>
+        {
+            await LockSeriesOfInvoice(invoice.Id, transaction);
+            await _dbConnection.ExecuteAsync(sql, invoice, transaction);
+        });
     }
 
     public async Task UpdateStatus(Guid id, InvoiceStatus status)
@@ -78,9 +90,15 @@ public class InvoiceRepository : IInvoiceRepository
                         SET status=@status
                         WHERE id=@Id";
 
-        await _dbConnection.ExecuteAsync(sql, new { Id = id, Status = status });
+        await _dbConnection.InTransaction(async transaction =>
+        {
+            await LockSeriesOfInvoice(id, transaction);
+            await _dbConnection.ExecuteAsync(sql, new { Id = id, Status = status }, transaction);
+        });
     }
 
+    // Gives the number back only when the invoice is the latest of its series. Invoices from before
+    // migration 020 can have number 0, which is never given back: next_number stays >= 1.
     public async Task Delete(Guid id)
     {
         string sql = @"WITH deleted AS (
@@ -92,8 +110,24 @@ public class InvoiceRepository : IInvoiceRepository
                         SET next_number = s.next_number - 1
                         FROM deleted d
                         WHERE s.id = d.series_id
-                          AND s.next_number = d.invoice_number + 1";
+                          AND s.next_number = d.invoice_number + 1
+                          AND d.invoice_number >= 1";
 
-        await _dbConnection.ExecuteAsync(sql, new { id });
+        await _dbConnection.InTransaction(async transaction =>
+        {
+            await LockSeriesOfInvoice(id, transaction);
+            await _dbConnection.ExecuteAsync(sql, new { id }, transaction);
+        });
+    }
+
+    // An invoice's series_id never changes, so it can be read before the lock.
+    private async Task LockSeriesOfInvoice(Guid invoiceId, IDbTransaction transaction)
+    {
+        string sql = @"SELECT series_id FROM invoices
+                        WHERE id=@InvoiceId";
+
+        Guid? seriesId = await _dbConnection.ExecuteScalarAsync<Guid?>(sql, new { invoiceId }, transaction);
+        if (seriesId is not null)
+            await _dbConnection.LockSeries(seriesId.Value, transaction);
     }
 }

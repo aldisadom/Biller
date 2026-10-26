@@ -6,7 +6,7 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
 
 - Move the invoice series name and the running number out of `customers` into a new `series` table.
 - Every series belongs to a seller. Every customer points to one series. Several customers of the same seller can share a series.
-- Invoices store their own `series_id`, a snapshot of the series name, and their number.
+- Invoices store their own `series_id` and number. The series name comes from `series`; a series with invoices can't be renamed.
 - Any invoice can be deleted. Only deleting the **latest** invoice of a series lowers the series' next number.
 - Reserving a number on create and releasing it on delete must be atomic, so two requests at the same time can't get the same number.
 
@@ -19,11 +19,13 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
 - [x] Step 10.3: BillerFrontEnd pages (0763dc0). Release build succeeds against the local clients. Not checked in a browser yet.
 - [x] Step 1.4: BillerContracts PR #10 merged, published as **3.0.0** (major, because properties were removed). The plan first said 2.1.0.
 - [x] Step 10.1–10.2: `BillerContracts` / `BillerContracts.Clients` bumped to 3.0.0 in Biller, BillioIntegrationTest and BillerFrontEnd.
+- [x] 2026-10-26: `invoices.series_name` dropped; a series with invoices can't be renamed. Invoice writes and series updates lock the series row in a transaction (design decisions 4, 5). Migration 034 links old invoices to the series named in their customer copy. Tested on a throwaway Postgres 16 (update, rollback, update; lock waits in both directions) and with BillioIntegrationTest: 190 passed.
 - [ ] Step 10: check the front end in a browser, merge the three PRs, deploy.
 
 Done differently from the plan:
 - `ISeriesRepository` also has `GetByName(sellerId, name)` for the duplicate-name check.
-- `InvoiceEntity.ToModel()` copies the invoice's `SeriesId`/`SeriesName` into the customer snapshot. Snapshots from before BIL-65 have no `SeriesId`, and `InvoiceUpdateValidator` runs `CustomerUpdateValidator`, which now requires one.
+- `InvoiceService.Update` copies the stored invoice's `SeriesId`/`SeriesName` into the customer copy it saves. `InvoiceUpdateValidator` uses `CustomerUpdateValidator.ForInvoiceUpdate()`, which doesn't require a `SeriesId`, because copies from before BIL-65 have none.
+- `PUT /invoices` can't move an invoice to another seller: the invoice keeps its series, and a series belongs to one seller.
 - Adding a series for a missing seller returns 404 (via `ISellerService.Get`).
 - `SeriesAddRequest` has no `NextNumber`: a new series always starts at 1 (decided 2026-10-25, after PR BillerContracts#10 was opened). The number can be changed afterwards with `PUT /series`.
 - 20 parallel inserts into one series on the test DB got 20 unique, consecutive numbers.
@@ -49,10 +51,10 @@ Done differently from the plan:
 1. **`series` has `seller_id`; `customers` has `series_id`.** A customer's series must belong to the customer's seller.
 2. **Series names are unique per seller** (`UNIQUE (seller_id, name)`), not globally.
 3. **`next_number`** keeps today's meaning: the number the next invoice will get. The latest existing invoice has `next_number - 1`.
-4. **Atomic numbering with single SQL statements** (data-modifying CTEs). PostgreSQL runs one statement atomically, so no transaction or unit-of-work plumbing is needed in the repositories. All repositories share one scoped `IDbConnection` today, and adding transactions there would touch every repository.
-5. **Invoices snapshot the series name** in a new `invoices.series_name` column, filled from the database in the same insert statement. Renaming a series later doesn't change old invoices or their PDFs.
-6. **The invoice number can't be edited.** `InvoiceNumber` is removed from `InvoiceUpdateRequest`, and `Update` no longer writes `invoice_number`, `series_id` or `series_name`.
-7. **Changing a customer's series** only affects new invoices. Existing invoices keep their `series_id` and `series_name`.
+4. **A series update and a write to one of its invoices never run at the same time.** Invoice create, update, status change and delete, and series update each run in a transaction that first locks the series row (`LockSeries`, `SELECT … FOR NO KEY UPDATE`). The transaction starts and ends inside one repository method (`InTransaction`), because all repositories share one scoped `IDbConnection`. Statements after the lock see everything committed before it, so a series update checks the real highest invoice number, and a delete sees the current next number. Numbers are still reserved and released in one statement (data-modifying CTE). Until 2026-10-26 everything was single statements, and a series update was rejected when the series changed meanwhile.
+5. **Invoices don't copy the series name.** It's read from `series` with a join. A series with invoices can't be renamed (`PUT /series` returns 400), so an invoice and its PDF never change. Until 2026-10-26 invoices had their own `series_name` column.
+6. **The invoice number can't be edited.** `InvoiceNumber` is removed from `InvoiceUpdateRequest`, and `Update` no longer writes `invoice_number` or `series_id`.
+7. **Changing a customer's series** only affects new invoices. Existing invoices keep their `series_id`.
 8. **`invoices.file_path` is dropped.** It's unused, and keeping it would mean computing the file name inside SQL. File names come from `InvoiceModel.GenerateFileLocation()`.
 
 ### Numbering rules (examples)
@@ -75,20 +77,24 @@ Series `ABC`, invoices 1–5 exist, `next_number = 6`.
 ### Pre-check queries (run before migration 034)
 
 ```sql
--- Customers with an empty series name. The migration needs a name; fix these first.
+-- Empty series names, on customers and on old invoices (the name they were issued with).
+-- The migration would create a series named ''; fix these first.
 SELECT id, company_name FROM customers WHERE COALESCE(TRIM(invoice_name), '') = '';
+SELECT id, invoice_number FROM invoices WHERE TRIM(customer_data::json->>'InvoiceName') = '';
 
 -- Customers of the same seller that share a series name. They will share one series.
 SELECT seller_id, TRIM(invoice_name), COUNT(*), ARRAY_AGG(invoice_number)
 FROM customers GROUP BY seller_id, TRIM(invoice_name) HAVING COUNT(*) > 1;
 
--- Invoice numbers that will collide in one series: customers of the same seller with the same
--- invoice_name each had their own counter, and the migration puts them into one series.
--- Any row here makes migration 034 fail on its unique index (it runs in one transaction, so the
--- database stays as it was). Rename one customer's invoice_name first.
-SELECT c.seller_id, TRIM(c.invoice_name), i.invoice_number, COUNT(*), ARRAY_AGG(c.company_name)
+-- Invoice numbers that will collide in one series. Each invoice goes into the series named in its
+-- customer copy (else its customer's current name), and customers of one seller with the same name
+-- each had their own counter. A row here is two invoices of one seller printed with the same series
+-- and number. It makes migration 034 fail on its unique index (it runs in one transaction, so the
+-- database stays as it was). Fix these by hand first.
+SELECT c.seller_id, TRIM(COALESCE(i.customer_data::json->>'InvoiceName', c.invoice_name)) AS series,
+       i.invoice_number, COUNT(*), ARRAY_AGG(c.company_name)
 FROM invoices i JOIN customers c ON c.id = i.customer_id
-GROUP BY c.seller_id, TRIM(c.invoice_name), i.invoice_number HAVING COUNT(*) > 1;
+GROUP BY 1, 2, 3 HAVING COUNT(*) > 1;
 ```
 
 ## Step 1: BillerContracts (new version 3.0.0)
@@ -179,75 +185,20 @@ CREATE INDEX idx_series_seller_id ON series (seller_id);
 
 ### 2.2 `034-Migrate-customers_invoices_to_series.sql`
 
-One changeset. PostgreSQL DDL is transactional, so it either runs completely or not at all.
+One changeset. PostgreSQL DDL is transactional, so it either runs completely or not at all. The SQL is in the file; in short:
 
-```sql
---liquibase formatted sql
-
--- changeset Aldis:34
--- comment: Move invoice series from customers to series table, link customers and invoices to series
-
--- 1. One series per (seller, invoice_name). next_number = highest "next number" of those customers.
-INSERT INTO series (seller_id, name, next_number)
-SELECT seller_id, invoice_name, MAX(GREATEST(COALESCE(invoice_number, 1), 1))
-FROM customers
-GROUP BY seller_id, invoice_name;
-
--- 2. Link customers to their series.
-ALTER TABLE customers ADD COLUMN series_id uuid;
-
-UPDATE customers c
-SET series_id = s.id
-FROM series s
-WHERE s.seller_id = c.seller_id AND s.name = c.invoice_name;
-
-ALTER TABLE customers ALTER COLUMN series_id SET NOT NULL;
-ALTER TABLE customers ADD CONSTRAINT fk_customers_series_id
-    FOREIGN KEY (series_id) REFERENCES series(id);
-CREATE INDEX idx_customers_series_id ON customers (series_id);
-
--- 3. Link invoices to the series of their customer; snapshot the series name the invoice was created with.
-ALTER TABLE invoices ADD COLUMN series_id uuid;
-ALTER TABLE invoices ADD COLUMN series_name character varying(10);
-
-UPDATE invoices i
-SET series_id = c.series_id,
-    series_name = COALESCE(i.customer_data::json->>'InvoiceName', c.invoice_name)
-FROM customers c
-WHERE c.id = i.customer_id;
-
-ALTER TABLE invoices ALTER COLUMN series_id SET NOT NULL;
-ALTER TABLE invoices ALTER COLUMN series_name SET NOT NULL;
-ALTER TABLE invoices ADD CONSTRAINT fk_invoices_series_id
-    FOREIGN KEY (series_id) REFERENCES series(id);
-CREATE UNIQUE INDEX uq_invoices_series_id_invoice_number ON invoices (series_id, invoice_number);
-
--- 4. next_number must be above every existing invoice number in the series.
-UPDATE series s
-SET next_number = GREATEST(s.next_number, m.max_number + 1)
-FROM (SELECT series_id, MAX(invoice_number) AS max_number FROM invoices GROUP BY series_id) m
-WHERE m.series_id = s.id;
-
--- 5. Remove the old columns.
-ALTER TABLE customers DROP COLUMN invoice_name;
-ALTER TABLE customers DROP COLUMN invoice_number;
-ALTER TABLE invoices DROP COLUMN file_path;
-
--- rollback ALTER TABLE invoices ADD COLUMN file_path character varying(255) NOT NULL DEFAULT '';
--- rollback ALTER TABLE customers ADD COLUMN invoice_name character varying(10);
--- rollback ALTER TABLE customers ADD COLUMN invoice_number INT DEFAULT 0;
--- rollback UPDATE customers c SET invoice_name = s.name, invoice_number = s.next_number FROM series s WHERE s.id = c.series_id;
--- rollback DROP INDEX uq_invoices_series_id_invoice_number;
--- rollback ALTER TABLE invoices DROP COLUMN series_name;
--- rollback ALTER TABLE invoices DROP COLUMN series_id;
--- rollback ALTER TABLE customers DROP COLUMN series_id;
--- rollback DELETE FROM series;
-```
+1. One series per seller and trimmed name, from the customers' current names and the names old invoices were issued with (`InvoiceName` in their customer copy). `next_number` = the highest "next number" of the customers with that name.
+2. Each customer points to the series with its current name.
+3. Each invoice points to the series with the name it was issued with, else its customer's current name. Unique index on `(series_id, invoice_number)`.
+4. `next_number` is raised above every invoice number in its series.
+5. `customers.invoice_name`, `customers.invoice_number` and `invoices.file_path` are dropped.
 
 Notes:
 - `customer_data` is Newtonsoft JSON with PascalCase names, so the old series name is at `->>'InvoiceName'`.
-- If old invoices were made while the customer had a different `invoice_name`, they get the customer's current series as `series_id` but keep their original name in `series_name`. Their numbers then count towards the current series in the unique index. The duplicate pre-check covers this.
+- An invoice made while its customer had a different `invoice_name` goes into the series with that old name, so its PDF doesn't change. The collision pre-check groups invoices the same way.
 - `customers.invoice_name` is `varchar(10)` (migration 003), so series names stay at max 10 characters. Existing data always fits, and the rollback can restore it.
+- The rollback gives each customer its series' name and next number. Customers that shared a series all get that series' next number.
+- The rollback also writes `InvoiceName` and `InvoiceNumber` into the customer copy of invoices that don't have them (made after deploy), so the old code prints their series and number. Tested on a throwaway Postgres 16: update, an invoice in the new shape, `rollback-count 2`, update.
 
 ### 2.3 Verify locally
 
@@ -255,7 +206,7 @@ Notes:
 docker compose up -d --build db liquibase
 docker logs billio-liquibase      # changesets 33 and 34 ran
 ```
-Then compare row counts and spot-check: every customer has a series, every invoice has `series_id` and `series_name`, and `next_number` = max invoice number + 1 per series. Test the rollback once on a copy (`liquibase rollback-count 2`).
+Then compare row counts and spot-check: every customer has a series, every invoice has `series_id`, old invoices are in the series they were issued with, and `next_number` = max invoice number + 1 per series. Test the rollback once on a copy (`liquibase rollback-count 2`).
 
 ## Step 3: Domain (`src/Domain`)
 
@@ -273,10 +224,13 @@ public interface ISeriesRepository
 {
     Task<SeriesEntity?> Get(Guid id);
     Task<(IEnumerable<SeriesEntity>, int)> Get(Guid? sellerId, int page, int pageSize);
-    Task<Guid> Add(SeriesEntity series);
-    Task Update(SeriesEntity series);
-    Task Delete(Guid id);
+    Task<SeriesEntity?> GetByName(Guid sellerId, string name);
     Task<bool> IsInUse(Guid id);   // referenced by any customer or invoice
+    Task<Guid> Add(SeriesEntity series);
+    // Locks the series row, then updates only when NextNumber > the highest invoice number and the name
+    // is unchanged or the series has no invoices. Null when the series doesn't exist.
+    Task<(bool Updated, int MaxInvoiceNumber)?> Update(SeriesEntity series);
+    Task Delete(Guid id);
 }
 ```
 
@@ -305,25 +259,31 @@ SELECT EXISTS (SELECT 1 FROM customers WHERE series_id = @Id)
 
 ### 4.3 `Repository/InvoiceRepository.cs`
 
-`Add`: reserve the number and insert in one statement. The series name is read from the database at the same moment, so the snapshot is never stale.
+`Add`, `Update`, `UpdateStatus` and `Delete` each run in a transaction (`InTransaction`) that first locks the invoice's series row (`LockSeries`):
+```sql
+SELECT id FROM series WHERE id = @SeriesId FOR NO KEY UPDATE;
+```
+The others read the invoice's `series_id` first; it never changes. `NO KEY UPDATE` is the lock an `UPDATE` of the series takes, so foreign-key checks from customers and invoices don't wait for it. `SeriesRepository.Update` locks the same row, so a series update and a write to one of its invoices wait for each other. Statements after the lock see everything committed before it.
+
+`Add`: then reserve the number and insert in one statement.
 ```sql
 WITH reserved AS (
     UPDATE series
     SET next_number = next_number + 1
     WHERE id = @SeriesId
-    RETURNING next_number - 1 AS invoice_number, name
+    RETURNING next_number - 1 AS invoice_number
 )
 INSERT INTO invoices
-    (customer_id, seller_id, user_id, series_id, series_name, invoice_number, user_data,
+    (customer_id, seller_id, user_id, series_id, invoice_number, user_data,
      created_date, due_date, seller_data, customer_data, items_data, comments, total_price, status)
-SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.name, reserved.invoice_number, @UserData,
+SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.invoice_number, @UserData,
        @CreatedDate, @DueDate, @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice, @Status
 FROM reserved
 RETURNING id;
 ```
 If the series doesn't exist, nothing is inserted and the result is `Guid.Empty`. The service checks the series first, but treat `Guid.Empty` as an error anyway.
 
-`Delete`: delete and release the number in one statement.
+`Delete`: then delete and release the number in one statement.
 ```sql
 WITH deleted AS (
     DELETE FROM invoices
@@ -334,12 +294,14 @@ UPDATE series s
 SET next_number = s.next_number - 1
 FROM deleted d
 WHERE s.id = d.series_id
-  AND s.next_number = d.invoice_number + 1;
+  AND s.next_number = d.invoice_number + 1
+  AND d.invoice_number >= 1;
 ```
+Invoices from before migration 020 can have number 0 (customers started at 0 until 2024-08). Number 0 is never given back, so `next_number` stays >= 1.
 
-`Update`: remove `file_path` and `invoice_number` from the `SET` list. `series_id` and `series_name` aren't updated either.
+`Update`: remove `file_path` and `invoice_number` from the `SET` list. `series_id` isn't updated either.
 
-`Get(...)`: no change (`SELECT *` picks up the new columns).
+`Get(...)`: join `series` for the name: `SELECT i.*, s.name AS series_name FROM invoices i JOIN series s ON s.id = i.series_id`.
 
 ### 4.4 `DependencyInjection.cs`
 
@@ -358,7 +320,7 @@ Add `services.AddScoped<ISeriesRepository, SeriesRepository>();`
 | `MappingProfiles/CustomerMappingProfile.cs` | Map `SeriesId`/`SeriesName` instead of the old fields |
 | `MappingProfiles/InvoiceMappingProfile.cs` | Map `SeriesId`/`SeriesName` in `ToModel`/`ToEntity`/`ToResponse`. Remove `FilePath`. `InvoiceUpdateRequest.ToModel` no longer sets `InvoiceNumber` |
 
-Old invoices: the `customer_data` JSON still contains `InvoiceName`/`InvoiceNumber`. Newtonsoft ignores unknown properties, so deserialization keeps working. The PDF reads the series name from `InvoiceModel.SeriesName` (the column), not from the customer snapshot: change the header line in `Models/Invoice/Documents/InvoiceDocumentSF.cs` and `InvoiceDocumentADA.cs` to `Model.SeriesName`.
+Old invoices: the `customer_data` JSON still contains `InvoiceName`/`InvoiceNumber`. Newtonsoft ignores unknown properties, so deserialization keeps working. The PDF reads the series name from `InvoiceModel.SeriesName` (joined from `series`), not from the customer snapshot: change the header line in `Models/Invoice/Documents/InvoiceDocumentSF.cs` and `InvoiceDocumentADA.cs` to `Model.SeriesName`.
 
 ### 5.2 `Interfaces/ISeriesService.cs` + `Services/SeriesService.cs` (new)
 
@@ -372,7 +334,7 @@ Task Delete(Guid id);                                                   // Valid
 ```
 
 - Duplicate name for the same seller: the unique constraint throws `PostgresException` 23505. Check first in `Add`/`Update` and return a clear validation error; keep the constraint as a safety net.
-- `Update` lowering `NextNumber` below an existing invoice number would cause a unique-index error on the next invoice. Reject `NextNumber <= MAX(invoice_number)` for that series. This needs `ISeriesRepository.GetMaxInvoiceNumber(Guid id)` (returns 0 if none).
+- `Update` lowering `NextNumber` below an existing invoice number would cause a unique-index error on the next invoice. Reject `NextNumber <= MAX(invoice_number)` for that series. Reject a new name when the series has any invoice (checked with `EXISTS`, since old invoices can be number 0). `ISeriesRepository.Update` checks both after locking the series row and returns the highest invoice number it read, for the error message.
 
 ### 5.3 `Services/CustomerService.cs`
 
@@ -420,7 +382,7 @@ Use the `write-tests` skill: hand-built data, strict Moq with `Verify`, a theory
 
 | Test file | Cases |
 |---|---|
-| `Application/Services/SeriesServiceTest.cs` (new) | Get found / not found. List with and without `SellerId`. `GetWithValidation`: OK / missing / other seller. Add: `NextNumber` 1 / duplicate name. Update: OK / not found / duplicate name / `NextNumber` ≤ max invoice number. Delete: OK / not found / in use |
+| `Application/Services/SeriesServiceTest.cs` (new) | Get found / not found. List with and without `SellerId`. `GetWithValidation`: OK / missing / other seller. Add: `NextNumber` 1 / duplicate name. Update: OK / not found / duplicate name / `NextNumber` ≤ max invoice number / new name with invoices / deleted meanwhile. Delete: OK / not found / in use |
 | `Application/Services/CustomerServiceTest.cs` | Add/Update with valid series / missing series / series of another seller. Remove the `IncreaseInvoiceNumber` tests |
 | `Application/Services/InvoiceServiceTest.cs` | Add sets `SeriesId` from customer and doesn't call `IncreaseInvoiceNumber`. Add throws when the repository returns `Guid.Empty`. Update keeps the stored number, `SeriesId` and `SeriesName` even if the request differs. Delete calls the repository once |
 | `Application/MappingProfiles/SeriesMappingProfileTest.cs` (new) | All mappings, including `NullChecker` for every property |
@@ -443,7 +405,7 @@ On the local Docker stack with a copy of the real data:
 2. Delete A3 → `next_number = 3`. Create another → it gets #3.
 3. Delete A2 (not the latest) → `next_number` unchanged, the gap at #2 stays.
 4. Two customers sharing one series → their invoices share one sequence.
-5. Change a customer's series → old invoices keep the old `series_name` in the PDF; new invoices use the new series.
+5. Change a customer's series → old invoices keep their series in the PDF; new invoices use the new series. Renaming a series with invoices → 400.
 6. Fire ~20 parallel `POST /invoices` for the same series → all numbers unique and consecutive.
 7. `DELETE /series/{id}` for a series in use → 400.
 8. Generate the PDF for an old invoice (from before the migration) → same series and number as before.
@@ -458,7 +420,7 @@ BillioIntegrationTest (branch `BIL-65-series`) covers customers and invoices, so
 
 1. Merge and publish BillerContracts 3.0.0.
 2. Biller PR: bump `BillerContracts` to 3.0.0 in `src/Domain/Domain.csproj`, plus all the changes above.
-3. Update BillerFrontEnd in this task (branch `BIL-65-series`), and deploy it together with the API, because the 2.0.0 front end can't create customers against the new API: bump `BillerContracts.Clients` to 3.0.0, customer forms pick a series instead of typing a name, add series pages per seller, show `SeriesName` on customers and invoices, drop the invoice number field from invoice editing.
+3. Update BillerFrontEnd in this task (branch `BIL-65-series`), and deploy it together with the API, because the 2.0.0 front end can't create customers against the new API: bump `BillerContracts.Clients` to 3.0.0, customer forms pick a series instead of typing a name, add series pages per seller, show `SeriesName` on customers and invoices, drop the invoice number field from invoice editing, and disable the seller selector there (an invoice can't move to another seller).
 4. On the small PC: back up the database, run the pre-check queries, then `make update`.
 
 ## Out of scope

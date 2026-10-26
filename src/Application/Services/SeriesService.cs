@@ -69,16 +69,15 @@ public class SeriesService : ISeriesService
 
         SeriesEntity seriesEntity = series.ToEntity();
 
-        if (await _seriesRepository.Update(seriesEntity, stored.NextNumber))
+        var (updated, maxInvoiceNumber) = await _seriesRepository.Update(seriesEntity)
+            ?? throw new NotFoundException($"Invoice series:{series.Id} not found");
+        if (updated)
             return;
 
-        await Get(series.Id);
-
-        int maxInvoiceNumber = await _seriesRepository.GetMaxInvoiceNumber(series.Id);
         if (series.NextNumber <= maxInvoiceNumber)
             throw new ValidationException($"Next number must be greater than {maxInvoiceNumber}, the highest invoice number in series {stored.Name}");
 
-        throw new ValidationException($"Series {stored.Name} was changed while it was updated, please try again");
+        throw new ValidationException($"Series {stored.Name} has invoices, so its name can't be changed");
     }
 
     public async Task Delete(Guid id)

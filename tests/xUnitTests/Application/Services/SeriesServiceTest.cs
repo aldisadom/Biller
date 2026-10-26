@@ -216,8 +216,8 @@ public class SeriesServiceTest
                         .ReturnsAsync(stored);
         _seriesRepositoryMock.Setup(m => m.GetByName(stored.SellerId, "KL"))
                         .ReturnsAsync(sameName);
-        _seriesRepositoryMock.Setup(m => m.Update(expected, stored.NextNumber))
-                        .ReturnsAsync(true);
+        _seriesRepositoryMock.Setup(m => m.Update(expected))
+                        .ReturnsAsync((true, 0));
 
         //Act
         await _seriesService.Update(series);
@@ -225,8 +225,7 @@ public class SeriesServiceTest
         //Assert
         _seriesRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
         _seriesRepositoryMock.Verify(m => m.GetByName(stored.SellerId, "KL"), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.Update(expected, stored.NextNumber), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.GetMaxInvoiceNumber(It.IsAny<Guid>()), Times.Never());
+        _seriesRepositoryMock.Verify(m => m.Update(expected), Times.Once());
     }
 
     [Fact]
@@ -244,7 +243,7 @@ public class SeriesServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _seriesRepositoryMock.Verify(m => m.Get(series.Id), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.Update(It.IsAny<SeriesEntity>(), It.IsAny<int>()), Times.Never());
+        _seriesRepositoryMock.Verify(m => m.Update(It.IsAny<SeriesEntity>()), Times.Never());
     }
 
     [Fact]
@@ -267,7 +266,7 @@ public class SeriesServiceTest
 
         _seriesRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
         _seriesRepositoryMock.Verify(m => m.GetByName(stored.SellerId, "KL"), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.Update(It.IsAny<SeriesEntity>(), It.IsAny<int>()), Times.Never());
+        _seriesRepositoryMock.Verify(m => m.Update(It.IsAny<SeriesEntity>()), Times.Never());
     }
 
     [Theory]
@@ -284,10 +283,8 @@ public class SeriesServiceTest
                         .ReturnsAsync(stored);
         _seriesRepositoryMock.Setup(m => m.GetByName(stored.SellerId, "WF"))
                         .ReturnsAsync(stored);
-        _seriesRepositoryMock.Setup(m => m.Update(expected, stored.NextNumber))
-                        .ReturnsAsync(false);
-        _seriesRepositoryMock.Setup(m => m.GetMaxInvoiceNumber(stored.Id))
-                        .ReturnsAsync(5);
+        _seriesRepositoryMock.Setup(m => m.Update(expected))
+                        .ReturnsAsync((false, 5));
 
         //Act
         //Assert
@@ -295,39 +292,35 @@ public class SeriesServiceTest
                             .Should().ThrowAsync<ValidationException>()
                             .WithMessage("Next number must be greater than 5, the highest invoice number in series WF");
 
-        _seriesRepositoryMock.Verify(m => m.Get(stored.Id), Times.Exactly(2));
+        _seriesRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
         _seriesRepositoryMock.Verify(m => m.GetByName(stored.SellerId, "WF"), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.Update(expected, stored.NextNumber), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.GetMaxInvoiceNumber(stored.Id), Times.Once());
+        _seriesRepositoryMock.Verify(m => m.Update(expected), Times.Once());
     }
 
     [Fact]
-    public async Task Update_GivenInvoiceChangedSeriesMeanwhile_ThrowsValidationException()
+    public async Task Update_GivenNewNameForSeriesWithInvoices_ThrowsValidationException()
     {
         //Arrange
-        SeriesEntity stored = new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid(), Name = "WF" };
-        SeriesModel series = new() { Id = stored.Id, Name = "WF", NextNumber = 4 };
-        SeriesEntity expected = new() { Id = stored.Id, SellerId = stored.SellerId, Name = "WF", NextNumber = 4 };
+        SeriesEntity stored = new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid(), Name = "WF", NextNumber = 4 };
+        SeriesModel series = new() { Id = stored.Id, Name = "KL", NextNumber = 4 };
+        SeriesEntity expected = new() { Id = stored.Id, SellerId = stored.SellerId, Name = "KL", NextNumber = 4 };
 
         _seriesRepositoryMock.Setup(m => m.Get(stored.Id))
                         .ReturnsAsync(stored);
-        _seriesRepositoryMock.Setup(m => m.GetByName(stored.SellerId, "WF"))
-                        .ReturnsAsync(stored);
-        _seriesRepositoryMock.Setup(m => m.Update(expected, stored.NextNumber))
-                        .ReturnsAsync(false);
-        _seriesRepositoryMock.Setup(m => m.GetMaxInvoiceNumber(stored.Id))
-                        .ReturnsAsync(3);
+        _seriesRepositoryMock.Setup(m => m.GetByName(stored.SellerId, "KL"))
+                        .ReturnsAsync((SeriesEntity)null!);
+        _seriesRepositoryMock.Setup(m => m.Update(expected))
+                        .ReturnsAsync((false, 3));
 
         //Act
         //Assert
         await _seriesService.Invoking(x => x.Update(series))
                             .Should().ThrowAsync<ValidationException>()
-                            .WithMessage("Series WF was changed while it was updated, please try again");
+                            .WithMessage("Series WF has invoices, so its name can't be changed");
 
-        _seriesRepositoryMock.Verify(m => m.Get(stored.Id), Times.Exactly(2));
-        _seriesRepositoryMock.Verify(m => m.GetByName(stored.SellerId, "WF"), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.Update(expected, stored.NextNumber), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.GetMaxInvoiceNumber(stored.Id), Times.Once());
+        _seriesRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
+        _seriesRepositoryMock.Verify(m => m.GetByName(stored.SellerId, "KL"), Times.Once());
+        _seriesRepositoryMock.Verify(m => m.Update(expected), Times.Once());
     }
 
     [Fact]
@@ -338,23 +331,21 @@ public class SeriesServiceTest
         SeriesModel series = new() { Id = stored.Id, Name = "WF", NextNumber = 4 };
         SeriesEntity expected = new() { Id = stored.Id, SellerId = stored.SellerId, Name = "WF", NextNumber = 4 };
 
-        _seriesRepositoryMock.SetupSequence(m => m.Get(stored.Id))
-                        .ReturnsAsync(stored)
-                        .ReturnsAsync((SeriesEntity)null!);
+        _seriesRepositoryMock.Setup(m => m.Get(stored.Id))
+                        .ReturnsAsync(stored);
         _seriesRepositoryMock.Setup(m => m.GetByName(stored.SellerId, "WF"))
                         .ReturnsAsync(stored);
-        _seriesRepositoryMock.Setup(m => m.Update(expected, stored.NextNumber))
-                        .ReturnsAsync(false);
+        _seriesRepositoryMock.Setup(m => m.Update(expected))
+                        .ReturnsAsync(((bool, int)?)null);
 
         //Act
         //Assert
         await _seriesService.Invoking(x => x.Update(series))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _seriesRepositoryMock.Verify(m => m.Get(stored.Id), Times.Exactly(2));
+        _seriesRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
         _seriesRepositoryMock.Verify(m => m.GetByName(stored.SellerId, "WF"), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.Update(expected, stored.NextNumber), Times.Once());
-        _seriesRepositoryMock.Verify(m => m.GetMaxInvoiceNumber(It.IsAny<Guid>()), Times.Never());
+        _seriesRepositoryMock.Verify(m => m.Update(expected), Times.Once());
     }
 
     [Fact]

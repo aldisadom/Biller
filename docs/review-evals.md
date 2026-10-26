@@ -20,6 +20,9 @@ commit that introduced it, and the fix (commit, or the Jira key while it's open)
 | 6 | New invoices are saved with status `Payed`: `Status` is never set, and `Payed` is the enum's 0 value. | 1fdf8a4 | open, BIL-73 |
 | 7 | Every invoice stores the whole `UserModel`, including the password hash, as JSON in `user_data`. | 0a480d5 | open, BIL-86 |
 | 8 | Editing an invoice (`PUT /invoices`) saves the seller and customer copies from the request, which has no `UserId`/`SellerId`, so the stored `Seller.UserId` and `Customer.SellerId` become empty GUIDs. | 013c8bf | open, BIL-73 |
+| 9 | `PUT /invoices` can move an invoice to another seller of the same user while it keeps the first seller's series and number, so the new seller can print two invoices with the same series and number. | e5ff9b8 | BIL-65 |
+| 10 | Deleting the latest invoice of a series when its number is 0 (possible for invoices from before migration 020) sets `next_number` to 0, breaks `ck_series_next_number`, and returns 500. | e5ff9b8 | BIL-65 |
+| 11 | The rollback of migration 034 leaves invoices made after deploy without `InvoiceName`/`InvoiceNumber` in their customer copy, so the old code prints them with an empty series and number 000000. | cc845e2 | BIL-65 |
 
 For an open bug, review the introducing commit. Once it's fixed, also check that reverting the
 fix's source change makes a test fail.

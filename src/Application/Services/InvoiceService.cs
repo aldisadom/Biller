@@ -110,6 +110,11 @@ public class InvoiceService : IInvoiceService
     public async Task Update(InvoiceModel invoiceData)
     {
         var invoice = await Get(invoiceData.Id);
+
+        // The invoice keeps its series and number, and a series belongs to one seller.
+        if (invoiceData.Seller!.Id != invoice.Seller!.Id)
+            throw new ValidationException($"Invoice id {invoiceData.Id} can't be moved to another seller");
+
         invoiceData.User = invoice.User;
         invoiceData.Status = invoice.Status;
         invoiceData.SeriesId = invoice.SeriesId;
