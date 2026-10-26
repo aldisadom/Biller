@@ -80,6 +80,10 @@ description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQ
    To verify: `docker compose exec db psql -U postgres -d Data -c '\d <table>'`.
    To test the rollback: `docker compose run --rm liquibase --changeLogFile=/migrations/dbChangeLog.yaml --url=jdbc:postgresql://db:5432/Data --username=postgres --password=postgres rollback-count 1`
    then run `docker compose run --rm liquibase` again.
+   If you test on a throwaway Postgres instead (for example to load data in the old shape without
+   touching the local DB), remove it with its volume when you're done: `docker rm -f -v <name>`.
+   Plain `docker rm` leaves the data volume behind. Check `docker ps -a` and
+   `docker volume ls -f dangling=true` afterwards.
 
 ## Before finishing
 

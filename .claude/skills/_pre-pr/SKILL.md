@@ -31,6 +31,13 @@ If the change adds endpoints or changes SQL, the integration tests in CI use the
 branch with the same name as this branch, or master if there isn't one. Check and paste the result
 of `git ls-remote --heads https://github.com/aldisadom/BillioIntegrationTest.git <branch>`.
 
+If you test against containers you start yourself (a throwaway Postgres for the migrations or the
+integration tests, the API), remove them and their volumes when the testing is done:
+`docker rm -f -v <name>`, or start them with `docker run --rm`. Plain `docker rm` leaves the
+postgres image's anonymous data volume behind. Then paste `docker ps -a` and
+`docker volume ls -f dangling=true`: nothing you created may be left. Leave the compose stack
+(`billio-*` containers) and volumes from before this session alone.
+
 ## 3. Review in a fresh context
 
 The reviewer must not share this conversation's assumptions. Note the reviewed commit
