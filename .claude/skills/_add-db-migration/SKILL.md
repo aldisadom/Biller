@@ -95,6 +95,13 @@ Tell the user the file name, what it does, how it rolls back, and any data impli
 production data (unique constraint, NOT NULL, type narrowing), say so explicitly and suggest a
 pre-check query such as `SELECT email, count(*) FROM users GROUP BY email HAVING count(*) > 1;`.
 
+**A data migration (one that copies, moves or rewrites existing rows) gets a pre-check query for every
+column type and constraint it writes into**: each `varchar(n)` length, integer arithmetic that can
+overflow (`+ 1` on an `integer`), `NOT NULL`, `CHECK`, `UNIQUE` and foreign keys. Data written by
+older code can break rules the new schema has. In BIL-65, migration 034 copied names from invoices'
+customer copies (never length-checked) into `varchar(10)` and numbers into a unique index, and the
+review found a missing pre-check four times. Put the queries in the plan and in the PR's Risk section.
+
 If the migration changes or deletes existing data, remind the user to back up the production
 database before deploying. Backups are manual: `make backup` once BIL-84 is merged, until then
 `docker exec billio-db pg_dump -U postgres -d Data -Fc -f /tmp/billio.dump` and
