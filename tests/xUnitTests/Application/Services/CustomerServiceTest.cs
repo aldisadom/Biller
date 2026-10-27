@@ -278,12 +278,68 @@ public class CustomerServiceTest
         _seriesServiceMock.Setup(m => m.GetWithValidation(customer.SeriesId, stored.SellerId))
                             .ReturnsAsync(series);
         _customerRepositoryMock.Setup(m => m.Update(customerEntity))
-                        .Returns(Task.CompletedTask);
+                        .ReturnsAsync(true);
 
         //Act
         //Assert
         await _customerService.Invoking(x => x.Update(customer))
                                         .Should().NotThrowAsync<Exception>();
+
+        _customerRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
+        _seriesServiceMock.Verify(m => m.GetWithValidation(customer.SeriesId, stored.SellerId), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Update(customerEntity), Times.Once());
+    }
+
+    [Fact]
+    public async Task Update_GivenNewSeriesWhenCustomerHasInvoices_ThrowsValidationException()
+    {
+        //Arrange
+        CustomerEntity stored = new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() };
+        CustomerModel customer = new() { Id = stored.Id, SeriesId = Guid.NewGuid() };
+        SeriesModel series = new() { Id = customer.SeriesId, SellerId = stored.SellerId };
+
+        CustomerEntity customerEntity = new() { Id = customer.Id, SeriesId = customer.SeriesId };
+
+        _customerRepositoryMock.Setup(m => m.Get(stored.Id))
+                                .ReturnsAsync(stored);
+        _seriesServiceMock.Setup(m => m.GetWithValidation(customer.SeriesId, stored.SellerId))
+                            .ReturnsAsync(series);
+        _customerRepositoryMock.Setup(m => m.Update(customerEntity))
+                        .ReturnsAsync(false);
+
+        //Act
+        //Assert
+        await _customerService.Invoking(x => x.Update(customer))
+                            .Should().ThrowAsync<ValidationException>()
+                            .WithMessage($"Customer id {customer.Id} has invoices, so its series can't be changed");
+
+        _customerRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
+        _seriesServiceMock.Verify(m => m.GetWithValidation(customer.SeriesId, stored.SellerId), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Update(customerEntity), Times.Once());
+    }
+
+    [Fact]
+    public async Task Update_GivenCustomerDeletedMeanwhile_ThrowsNotFoundException()
+    {
+        //Arrange
+        CustomerEntity stored = new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() };
+        CustomerModel customer = new() { Id = stored.Id, SeriesId = Guid.NewGuid() };
+        SeriesModel series = new() { Id = customer.SeriesId, SellerId = stored.SellerId };
+
+        CustomerEntity customerEntity = new() { Id = customer.Id, SeriesId = customer.SeriesId };
+
+        _customerRepositoryMock.Setup(m => m.Get(stored.Id))
+                                .ReturnsAsync(stored);
+        _seriesServiceMock.Setup(m => m.GetWithValidation(customer.SeriesId, stored.SellerId))
+                            .ReturnsAsync(series);
+        _customerRepositoryMock.Setup(m => m.Update(customerEntity))
+                        .ReturnsAsync((bool?)null);
+
+        //Act
+        //Assert
+        await _customerService.Invoking(x => x.Update(customer))
+                            .Should().ThrowAsync<NotFoundException>()
+                            .WithMessage($"Invoice customer:{customer.Id} not found");
 
         _customerRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
         _seriesServiceMock.Verify(m => m.GetWithValidation(customer.SeriesId, stored.SellerId), Times.Once());

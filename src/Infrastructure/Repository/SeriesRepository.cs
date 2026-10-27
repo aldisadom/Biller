@@ -28,7 +28,7 @@ public class SeriesRepository : ISeriesRepository
 
         string countSql = $"SELECT COUNT(*) FROM series {filter}";
         string dataSql = $@"SELECT * FROM series {filter}
-                            ORDER BY name
+                            ORDER BY name, id
                             LIMIT @PageSize OFFSET @Offset";
 
         var parameters = new { SellerId = sellerId, PageSize = pageSize, Offset = (page - 1) * pageSize };

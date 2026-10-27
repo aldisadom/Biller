@@ -8,6 +8,6 @@ public interface ICustomerRepository
     Task<IEnumerable<CustomerEntity>> GetBySellerId(Guid sellerId);
     Task<IEnumerable<CustomerEntity>> Get();
     Task<Guid> Add(CustomerEntity customer);
-    Task Update(CustomerEntity customer);
+    Task<bool?> Update(CustomerEntity customer);
     Task Delete(Guid id);
 }

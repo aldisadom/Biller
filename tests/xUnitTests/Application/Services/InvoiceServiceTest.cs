@@ -297,7 +297,7 @@ public class InvoiceServiceTest
         //Assert
         await _invoiceService.Invoking(x => x.Add(invoiceData))
                             .Should().ThrowAsync<FluentValidation.ValidationException>()
-                            .WithMessage($"Series id {invoiceData.Customer!.SeriesId} not found, invoice was not created");
+                            .WithMessage($"Invoice was not created: customer id {invoiceData.Customer!.Id} is no longer in series id {invoiceData.Customer!.SeriesId}, or the series has no numbers left");
 
         _userServiceMock.Verify(m => m.Get(invoiceData.User!.Id), Times.Once());
         _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id), Times.Once());
@@ -509,6 +509,36 @@ public class InvoiceServiceTest
         await _invoiceService.Invoking(x => x.Update(invoiceData))
                             .Should().ThrowAsync<FluentValidation.ValidationException>()
                             .WithMessage($"Invoice id {storedInvoice.Id} can't be moved to another seller");
+
+        _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _customerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), It.IsAny<Guid>()), Times.Never());
+        _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
+    }
+
+    [Fact]
+    public async Task Update_GivenOtherCustomer_ThrowsValidationExceptionBeforeValidating()
+    {
+        //Arrange
+        InvoiceModel storedInvoice = NewInvoiceModel();
+
+        InvoiceModel invoiceData = new()
+        {
+            Id = storedInvoice.Id,
+            Seller = new() { Id = storedInvoice.Seller!.Id },
+            Customer = new() { Id = Guid.NewGuid() },
+            Items = storedInvoice.Items
+        };
+
+        _invoiceDataRepositoryMock.Setup(m => m.Get(invoiceData.Id))
+            .ReturnsAsync(storedInvoice.ToEntity());
+
+        //Act
+        //Assert
+        await _invoiceService.Invoking(x => x.Update(invoiceData))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Invoice id {storedInvoice.Id} can't be moved to another customer");
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceData.Id), Times.Once());
         _sellerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());

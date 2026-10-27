@@ -22,7 +22,9 @@ on a small Linux PC.
 ## Conventions
 - A write that touches several rows or tables is one SQL statement (data-modifying CTE). The one
   exception: invoice writes and series updates lock the series row first (`LockSeries`) in a
-  transaction (`InTransaction`), so they never run at the same time. All repositories share one scoped
+  transaction (`InTransaction`), so they never run at the same time. A customer update that changes
+  the series locks the customer row, then its current series, so a transaction that holds a series
+  lock must not lock customer rows (plain reads and foreign-key checks are fine). All repositories share one scoped
   `IDbConnection`, so a transaction starts and ends inside one repository method.
 - Never edit a changeset that is already on master. Fix it with a new one. Every changeset has a `-- rollback`.
 - Invoices keep their own copy of seller, customer, item and user data. Editing those must not

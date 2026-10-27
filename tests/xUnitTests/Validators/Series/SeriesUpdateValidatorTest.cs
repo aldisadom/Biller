@@ -69,6 +69,9 @@ public class SeriesUpdateValidatorTest
 
     [Theory]
     [InlineData(1, true, Label = "next number 1 is accepted")]
+    [InlineData(2026001, true, Label = "next number above 6 digits from old data is accepted")]
+    [InlineData(int.MaxValue - 1, true, Label = "largest next number that can still be reserved is accepted")]
+    [InlineData(int.MaxValue, false, Label = "next number that would overflow the reservation is rejected")]
     [InlineData(0, false, Label = "next number 0 is rejected")]
     [InlineData(-5, false, Label = "negative next number is rejected")]
     public void Validate_GivenNextNumber_ReturnsExpected(int nextNumber, bool expected)

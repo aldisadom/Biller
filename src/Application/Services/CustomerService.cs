@@ -70,7 +70,10 @@ public class CustomerService : ICustomerService
 
         CustomerEntity customerEntity = customer.ToEntity();
 
-        await _customerRepository.Update(customerEntity);
+        bool updated = await _customerRepository.Update(customerEntity)
+            ?? throw new NotFoundException($"Invoice customer:{customer.Id} not found");
+        if (!updated)
+            throw new ValidationException($"Customer id {customer.Id} has invoices, so its series can't be changed");
     }
 
     public async Task Delete(Guid id)

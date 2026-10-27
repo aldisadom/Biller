@@ -51,6 +51,8 @@ public class InvoiceRepository : IInvoiceRepository
                             UPDATE series
                             SET next_number = next_number + 1
                             WHERE id = @SeriesId
+                              AND next_number < 2147483647
+                              AND EXISTS (SELECT 1 FROM customers WHERE id = @CustomerId AND series_id = @SeriesId)
                             RETURNING next_number - 1 AS invoice_number
                         )
                         INSERT INTO invoices
@@ -72,7 +74,7 @@ public class InvoiceRepository : IInvoiceRepository
     public async Task Update(InvoiceEntity invoice)
     {
         string sql = @"UPDATE invoices
-                        SET customer_id=@CustomerId, seller_id=@SellerId, user_data=@UserData,
+                        SET user_data=@UserData,
                         created_date=@CreatedDate, due_date=@DueDate, seller_data=@SellerData, customer_data=@CustomerData,
                         items_data=@ItemsData, comments=@Comments, total_price=@TotalPrice
                         WHERE id=@Id";

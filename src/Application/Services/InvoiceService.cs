@@ -102,7 +102,7 @@ public class InvoiceService : IInvoiceService
 
         Guid id = await _invoiceRepository.Add(invoiceDataEntity);
         if (id == Guid.Empty)
-            throw new ValidationException($"Series id {invoiceData.SeriesId} not found, invoice was not created");
+            throw new ValidationException($"Invoice was not created: customer id {invoiceData.Customer!.Id} is no longer in series id {invoiceData.SeriesId}, or the series has no numbers left");
 
         return id;
     }
@@ -114,6 +114,9 @@ public class InvoiceService : IInvoiceService
         // The invoice keeps its series and number, and a series belongs to one seller.
         if (invoiceData.Seller!.Id != invoice.Seller!.Id)
             throw new ValidationException($"Invoice id {invoiceData.Id} can't be moved to another seller");
+
+        if (invoiceData.Customer!.Id != invoice.Customer!.Id)
+            throw new ValidationException($"Invoice id {invoiceData.Id} can't be moved to another customer");
 
         invoiceData.User = invoice.User;
         invoiceData.Status = invoice.Status;

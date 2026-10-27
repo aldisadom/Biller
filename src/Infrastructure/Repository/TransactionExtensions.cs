@@ -40,8 +40,10 @@ internal static class TransactionExtensions
     }
 
     // Every invoice write and every series update takes this lock first, so they never run at the same time,
-    // and statements after it see everything committed before it. NO KEY UPDATE is the lock an UPDATE of the
-    // series takes, so foreign-key checks from customers and invoices don't wait for it.
+    // and statements after it see everything committed before it. A customer update that changes the series
+    // takes it after locking the customer row. NO KEY UPDATE is the lock an UPDATE of the series takes,
+    // so foreign-key checks from customers and invoices don't wait for it. A rename takes FOR UPDATE,
+    // because the name is in a unique key, so those checks wait for it.
     // Returns false when the series doesn't exist.
     public static async Task<bool> LockSeries(this IDbConnection connection, Guid seriesId, IDbTransaction transaction)
     {
