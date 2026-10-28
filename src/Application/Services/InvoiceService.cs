@@ -30,34 +30,6 @@ public class InvoiceService : IInvoiceService
         _invoiceDocumentFactory = invoiceDocumentFactory;
     }
 
-    private async Task GetInvoiceData(InvoiceModel invoiceData)
-    {
-        invoiceData.User = await _userService.Get(invoiceData.User!.Id);
-
-        var (seller, customer, items) = await Validate(invoiceData);
-        invoiceData.Seller = seller;
-        invoiceData.Customer = customer;
-        invoiceData.InvoiceNumber = invoiceData.Customer.InvoiceNumber;
-
-        MapItemToInvoiceItem(invoiceData.Items!, items);
-    }
-
-    public static void MapInvoiceItemToItem(List<InvoiceItemModel> invoiceItems, List<ItemModel> items)
-    {
-        foreach (ItemModel item in items)
-        {
-            foreach (InvoiceItemModel invoiceItem in invoiceItems)
-            {
-                if (invoiceItem.Id == item.Id)
-                {
-                    item.Price = invoiceItem.Price;
-                    item.Name = invoiceItem.Name;
-                    break;
-                }
-            }
-        }
-    }
-
     public static void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, IEnumerable<ItemModel> items)
     {
         foreach (InvoiceItemModel invoiceItem in invoiceItems)
@@ -74,7 +46,7 @@ public class InvoiceService : IInvoiceService
         }
     }
 
-    public async Task<InvoiceModel> Get(Guid id)
+    private async Task<InvoiceModel> GetStored(Guid id)
     {
         InvoiceEntity invoiceDataEntity = await _invoiceRepository.Get(id)
             ?? throw new NotFoundException($"Invoice:{id} not found");
@@ -82,7 +54,18 @@ public class InvoiceService : IInvoiceService
         return invoiceDataEntity.ToModel();
     }
 
-    public async Task<(IEnumerable<InvoiceModel>, int)> Get(InvoiceGetRequest? query)
+    public async Task<InvoiceModelFull> Get(Guid id)
+    {
+        InvoiceModel invoice = await GetStored(id);
+
+        UserModel user = await _userService.Get(invoice.UserId);
+        SellerModel seller = await _sellerService.Get(invoice.SellerId);
+        CustomerModel customer = await _customerService.Get(invoice.CustomerId);
+
+        return invoice.ToFull(user, seller, customer);
+    }
+
+    public async Task<(IEnumerable<InvoiceModelFull>, int)> Get(InvoiceGetRequest? query)
     {
         int page = query?.Page ?? 1;
         var pageSize = query?.PageSize ?? PageSize.p25;
@@ -90,32 +73,51 @@ public class InvoiceService : IInvoiceService
         var (entities, totalCount) = await _invoiceRepository.Get(
             query?.UserId, query?.SellerId, query?.CustomerId, page, (int)pageSize);
 
-        return (entities.Select(i => i.ToModel()), totalCount);
+        List<InvoiceModel> invoices = entities.Select(i => i.ToModel()).ToList();
+
+        Dictionary<Guid, UserModel> users = await GetEach(invoices.Select(i => i.UserId), _userService.Get);
+        Dictionary<Guid, SellerModel> sellers = await GetEach(invoices.Select(i => i.SellerId), _sellerService.Get);
+        Dictionary<Guid, CustomerModel> customers = await GetEach(invoices.Select(i => i.CustomerId), _customerService.Get);
+
+        return (invoices.Select(i => i.ToFull(users[i.UserId], sellers[i.SellerId], customers[i.CustomerId])).ToList(), totalCount);
+    }
+
+    private static async Task<Dictionary<Guid, T>> GetEach<T>(IEnumerable<Guid> ids, Func<Guid, Task<T>> get)
+    {
+        Dictionary<Guid, T> result = [];
+        foreach (Guid id in ids.Distinct())
+            result[id] = await get(id);
+
+        return result;
     }
 
     public async Task<Guid> Add(InvoiceModel invoiceData)
     {
-        await GetInvoiceData(invoiceData);
-        invoiceData.Status = InvoiceStatus.Created;
+        await _userService.Get(invoiceData.UserId);
 
-        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
+        var (customer, items) = await Validate(invoiceData);
+        invoiceData.InvoiceNumber = customer.InvoiceNumber;
+        invoiceData.Status = InvoiceStatus.Created;
+        MapItemToInvoiceItem(invoiceData.Items!, items);
+
+        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity(invoiceData.GenerateFileLocation(customer.InvoiceName));
 
         Guid id = await _invoiceRepository.Add(invoiceDataEntity);
-        await _customerService.IncreaseInvoiceNumber(invoiceData.Customer!.Id);
+        await _customerService.IncreaseInvoiceNumber(invoiceData.CustomerId);
 
         return id;
     }
 
     public async Task Update(InvoiceModel invoiceData)
     {
-        var invoice = await Get(invoiceData.Id);
-        invoiceData.User = invoice.User;
+        InvoiceModel invoice = await GetStored(invoiceData.Id);
+        invoiceData.UserId = invoice.UserId;
         invoiceData.Status = invoice.Status;
-        invoiceData.Seller!.UserId = invoice.User!.Id;
-        invoiceData.Customer!.SellerId = invoiceData.Seller.Id;
-        await Validate(invoiceData);
 
-        InvoiceEntity invoiceEntity = invoiceData.ToEntity();
+        var (customer, items) = await Validate(invoiceData);
+        MapItemToInvoiceItem(invoiceData.Items!, items);
+
+        InvoiceEntity invoiceEntity = invoiceData.ToEntity(invoiceData.GenerateFileLocation(customer.InvoiceName));
 
         await _invoiceRepository.Update(invoiceEntity);
     }
@@ -128,35 +130,35 @@ public class InvoiceService : IInvoiceService
         if (invoiceData.Status == InvoiceStatus.OverDue)
             throw new ValidationException("Overdue status cannot be set manually");
 
-        await Get(invoiceData.Id);
+        await GetStored(invoiceData.Id);
 
         await _invoiceRepository.UpdateStatus(invoiceData.Id, invoiceData.Status);
     }
 
-    private async Task<(SellerModel seller, CustomerModel customer, IEnumerable<ItemModel> items)> Validate(InvoiceModel invoiceData)
+    private async Task<(CustomerModel customer, IEnumerable<ItemModel> items)> Validate(InvoiceModel invoiceData)
     {
-        var sellerResult = await _sellerService.GetWithValidation(invoiceData.Seller!.Id, invoiceData.User!.Id);
-        var seller = sellerResult.Match(
+        var sellerResult = await _sellerService.GetWithValidation(invoiceData.SellerId, invoiceData.UserId);
+        sellerResult.Match(
             seller => { return seller; },
             error => { throw new ValidationException(error.ExtendedMessage); }
         );
-        var customerResult = await _customerService.GetWithValidation(invoiceData.Customer!.Id, invoiceData.Seller!.Id);
+        var customerResult = await _customerService.GetWithValidation(invoiceData.CustomerId, invoiceData.SellerId);
         var customer = customerResult.Match(
             customer => { return customer; },
             error => { throw new ValidationException(error.ExtendedMessage); }
         );
-        var itemsResult = await _itemService.GetWithValidation(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.Customer!.Id);
+        var itemsResult = await _itemService.GetWithValidation(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.CustomerId);
         var items = itemsResult.Match(
             items => { return items; },
             error => { throw new ValidationException(error.ExtendedMessage); }
         );
 
-        return (seller, customer, items);
+        return (customer, items);
     }
 
     public async Task Delete(Guid id)
     {
-        await Get(id);
+        await GetStored(id);
 
         await _invoiceRepository.Delete(id);
     }
@@ -169,7 +171,7 @@ public class InvoiceService : IInvoiceService
         if (!Enum.IsDefined(typeof(DocumentType), documentType))
             throw new ValidationException($"Invalid document type: {documentType}");
 
-        InvoiceModel invoiceData = await Get(id);
+        InvoiceModelFull invoiceData = await Get(id);
         return (_invoiceDocumentFactory.GeneratePdf(documentType, languageCode, invoiceData), invoiceData.GenerateFileLocation());
     }
 }

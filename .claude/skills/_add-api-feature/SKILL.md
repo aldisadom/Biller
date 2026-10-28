@@ -41,8 +41,8 @@ key and go to step 1. If not, create it first:
    - **Blockers:** each "is blocked by" issue and its status. If one isn't Done, ask before going on.
    - **Gaps:** what the issue doesn't say that the code needs (field types, required fields,
      relationships, status codes, error messages, which documents or languages are affected).
-   - **Conflicts:** anything that breaks `CLAUDE.md` or `REVIEW.md` (invoices keep their own copy of
-     data, one SQL statement per write, no mapping library), or that clashes with another open
+   - **Conflicts:** anything that breaks `CLAUDE.md` or `REVIEW.md` (invoices keep their own number,
+     dates and lines, one SQL statement per write, no mapping library), or that clashes with another open
      issue or plan touching the same tables or requests.
 3. **Find the plan.** Look, in order, for: a `Plan:` line in the description, then
    `docs/plans/BIL-<n>-*.md` in Biller. A plan that lives in a sibling repo needs `_sync-repos` first.

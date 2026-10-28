@@ -33,7 +33,6 @@ public class DependencyInjectionTests
         [typeof(IValidator<InvoiceGenerateRequest>)] = typeof(InvoiceGenerateValidator),
         [typeof(IValidator<InvoiceUpdateRequest>)] = typeof(InvoiceUpdateValidator),
         [typeof(IValidator<InvoiceItemRequest>)] = typeof(InvoiceItemValidator),
-        [typeof(IValidator<InvoiceItemUpdateRequest>)] = typeof(InvoiceItemUpdateValidator),
     };
 
     [Fact]
