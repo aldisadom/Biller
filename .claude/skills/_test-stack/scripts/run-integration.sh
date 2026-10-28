@@ -33,11 +33,12 @@ SLN="$(ls -- *.sln 2>/dev/null | head -n1)"
 [[ -n "$SLN" ]] || { echo "ERROR: no solution in $REPO" >&2; exit 2; }
 curl -sf "$URL/health" >/dev/null || { echo "ERROR: $URL/health does not answer" >&2; exit 2; }
 
+# Every client URL, or a missing one falls back to appsettings.json, which points at the user's own stack.
 export ClientsOptions__UserUrl="$URL/users" ClientsOptions__SellerUrl="$URL/sellers" \
   ClientsOptions__CustomerUrl="$URL/customers" ClientsOptions__ItemUrl="$URL/items" \
-  ClientsOptions__InvoiceUrl="$URL/invoices"
+  ClientsOptions__InvoiceUrl="$URL/invoices" ClientsOptions__SeriesUrl="$URL/series"
 # A Windows dotnet.exe started from WSL only sees the variables listed in WSLENV.
-[[ "$DOTNET" == *.exe ]] && export WSLENV="${WSLENV:+$WSLENV:}ClientsOptions__UserUrl:ClientsOptions__SellerUrl:ClientsOptions__CustomerUrl:ClientsOptions__ItemUrl:ClientsOptions__InvoiceUrl"
+[[ "$DOTNET" == *.exe ]] && export WSLENV="${WSLENV:+$WSLENV:}ClientsOptions__UserUrl:ClientsOptions__SellerUrl:ClientsOptions__CustomerUrl:ClientsOptions__ItemUrl:ClientsOptions__InvoiceUrl:ClientsOptions__SeriesUrl"
 
 echo ">> $SLN on '$(git branch --show-current)' against $URL"
 BUILD="$("$DOTNET" build "$SLN" -c Release -nologo 2>&1)"

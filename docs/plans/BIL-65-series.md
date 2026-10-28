@@ -27,6 +27,7 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
   - `InvoiceModel` holds ids plus `SeriesId`/`SeriesName`; `InvoiceModelFull` adds the current user, seller and customer for responses and PDFs. `GenerateFileLocation()` stays on `InvoiceModel` and uses `SeriesName`. `Update` rejects another seller or customer before validating, keeps the stored series and number, and copies line names and prices from the current items.
   - `CustomerUpdateValidator.ForInvoiceUpdate()` is gone: `PUT /invoices` sends no customer copy any more.
   - BillerContracts 4.0.0 (PR #12). Its branch had lost the series contracts in an earlier master merge (d2a3fc6); they are back.
+  - BillioIntegrationTest: 182 passed, three runs, against this branch's API on a throwaway Postgres 16, all built against BillerContracts packed locally from #12. `run-integration.sh` now also sets the series client's URL, which otherwise fell back to the user's own stack on port 8090.
 - [ ] Step 10: check the front end in a browser, merge the three PRs, deploy.
 
 Done differently from the plan:
