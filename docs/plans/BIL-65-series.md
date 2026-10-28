@@ -22,11 +22,16 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
 - [x] 2026-10-26: `invoices.series_name` dropped; a series with invoices can't be renamed. Invoice writes and series updates lock the series row in a transaction (design decisions 4, 5). Migration 034 links old invoices to the series named in their customer copy. Tested on a throwaway Postgres 16 (update, rollback, update; lock waits in both directions) and with BillioIntegrationTest: 190 passed.
 - [x] 2026-10-26, after a first look at the front end: a customer with invoices can't change its series, and an invoice can't be moved to another customer (design decision 7). The series list page is gone; the seller page shows the seller's series. A new customer gets the seller's first series. BillioIntegrationTest: 192 passed, twice, on a throwaway Postgres 16.
 - [x] 2026-10-27, review round 4: customer update and invoice create no longer race (tested by holding the series lock in psql: before the fix the customer moved series and the invoice landed in the old one; after it, the API request in each scenario returns 400). Reserving stops at `next_number` 2147483647 instead of overflowing (500 before, 400 after). `PUT /series` rejects `NextNumber` = `int.MaxValue`, which can't be reserved. New pre-check for series names longer than 10 characters in old invoice copies. BillioIntegrationTest: 193 passed, twice.
+- [x] 2026-10-28: merged master with BIL-86 (invoices store user, seller and customer ids; master's changeset 33 drops `user_data`, `seller_data` and `customer_data`). Done as BIL-86's plan, step 9:
+  - The series changesets are now 034 and 035. 035 can't read `customer_data`, so every old invoice goes into its customer's current series, and its rollback no longer writes `customer_data` (033's rollback rebuilds it from the customer's restored `invoice_name`). Tested on a throwaway Postgres 16 with 032-shape data: update, `rollback-count 3`, update. An invoice issued under an old name lands in its customer's series, and two same-name customers with the same invoice number make 035 fail on its unique index, as the pre-check says.
+  - `InvoiceModel` holds ids plus `SeriesId`/`SeriesName`; `InvoiceModelFull` adds the current user, seller and customer for responses and PDFs. `GenerateFileLocation()` stays on `InvoiceModel` and uses `SeriesName`. `Update` rejects another seller or customer before validating, keeps the stored series and number, and copies line names and prices from the current items.
+  - `CustomerUpdateValidator.ForInvoiceUpdate()` is gone: `PUT /invoices` sends no customer copy any more.
+  - BillerContracts 4.0.0 (PR #12). Its branch had lost the series contracts in an earlier master merge (d2a3fc6); they are back.
 - [ ] Step 10: check the front end in a browser, merge the three PRs, deploy.
 
 Done differently from the plan:
 - `ISeriesRepository` also has `GetByName(sellerId, name)` for the duplicate-name check.
-- `InvoiceService.Update` copies the stored invoice's `SeriesId`/`SeriesName` into the customer copy it saves. `InvoiceUpdateValidator` uses `CustomerUpdateValidator.ForInvoiceUpdate()`, which doesn't require a `SeriesId`, because copies from before BIL-65 have none.
+- `InvoiceService.Update` keeps the stored invoice's `SeriesId`, `SeriesName` and number. Before the BIL-86 merge it also copied them into the customer copy it saved, and `InvoiceUpdateValidator` used `CustomerUpdateValidator.ForInvoiceUpdate()`; both went with the copies.
 - `PUT /invoices` can't move an invoice to another seller: the invoice keeps its series, and a series belongs to one seller.
 - Adding a series for a missing seller returns 404 (via `ISellerService.Get`).
 - `SeriesAddRequest` has no `NextNumber`: a new series always starts at 1 (decided 2026-10-25, after PR BillerContracts#10 was opened). The number can be changed afterwards with `PUT /series`.
@@ -73,37 +78,32 @@ Series `ABC`, invoices 1–5 exist, `next_number = 6`.
 ## Prerequisites
 
 - [x] **Sync the sibling repos.** All four repos are on `BIL-65-series`, with master merged in (2026-10-25).
-- [ ] **Back up the production database** (the small PC, BIL-82) before deploying migration 034.
+- [ ] **Back up the production database** (the small PC, BIL-82) before deploying migration 035.
 - [ ] **Run the pre-check queries** below against a copy of the real data.
 
-### Pre-check queries (run before migration 034)
+### Pre-check queries (run before migration 035)
+
+Changeset 33 (BIL-86) drops the invoices' customer copies first, so these use the customers' current names only.
 
 ```sql
--- Empty series names, on customers and on old invoices (the name they were issued with).
--- The migration would create a series named ''; fix these first.
+-- Empty series names. The migration would create a series named ''; fix these first.
 SELECT id, company_name FROM customers WHERE COALESCE(TRIM(invoice_name), '') = '';
-SELECT id, invoice_number FROM invoices WHERE TRIM(customer_data::json->>'InvoiceName') = '';
-
--- Series names longer than 10 characters in old invoices' customer copy. PUT /invoices saved the request's
--- copy and only checked that the name wasn't empty. series.name is varchar(10), so migration 034 fails on these
--- (the database stays as it was). Shorten them by hand first.
-SELECT id, invoice_number, customer_data::json->>'InvoiceName' FROM invoices
-WHERE LENGTH(TRIM(customer_data::json->>'InvoiceName')) > 10;
 
 -- Customers of the same seller that share a series name. They will share one series.
 SELECT seller_id, TRIM(invoice_name), COUNT(*), ARRAY_AGG(invoice_number)
 FROM customers GROUP BY seller_id, TRIM(invoice_name) HAVING COUNT(*) > 1;
 
--- Invoice numbers that will collide in one series. Each invoice goes into the series named in its
--- customer copy (else its customer's current name), and customers of one seller with the same name
--- each had their own counter. A row here is two invoices of one seller printed with the same series
--- and number. It makes migration 034 fail on its unique index (it runs in one transaction, so the
--- database stays as it was). Fix these by hand first.
-SELECT c.seller_id, TRIM(COALESCE(i.customer_data::json->>'InvoiceName', c.invoice_name)) AS series,
-       i.invoice_number, COUNT(*), ARRAY_AGG(c.company_name)
+-- Invoice numbers that will collide in one series. Each invoice goes into its customer's current series,
+-- and customers of one seller with the same name each had their own counter. A row here is two invoices
+-- of one seller that will have the same series and number. It makes migration 035 fail on its unique
+-- index (it runs in one transaction, so the database stays as it was). Fix these by hand first.
+SELECT c.seller_id, TRIM(c.invoice_name) AS series, i.invoice_number, COUNT(*), ARRAY_AGG(c.company_name)
 FROM invoices i JOIN customers c ON c.id = i.customer_id
 GROUP BY 1, 2, 3 HAVING COUNT(*) > 1;
 ```
+
+BIL-86's pre-check 1 (`prefix_changed`) lists the old invoices whose customer was renamed since. They
+print the customer's current name from BIL-86 on, and go into that series here.
 
 ## Step 1: BillerContracts (new version 3.0.0)
 
@@ -165,12 +165,12 @@ public record SeriesUpdateRequest
 
 Use the `add-db-migration` skill. Files go in `migrations/sql/` (picked up by `includeAll` in `migrations/dbChangeLog.yaml`).
 
-### 2.1 `033-Create-table-series.sql`
+### 2.1 `034-Create-table-series.sql`
 
 ```sql
 --liquibase formatted sql
 
--- changeset Aldis:33
+-- changeset Aldis:34
 -- comment: Create series table (invoice series per seller)
 CREATE TABLE series (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -191,30 +191,28 @@ CREATE INDEX idx_series_seller_id ON series (seller_id);
 -- rollback DROP TABLE series;
 ```
 
-### 2.2 `034-Migrate-customers_invoices_to_series.sql`
+### 2.2 `035-Migrate-customers_invoices_to_series.sql`
 
 One changeset. PostgreSQL DDL is transactional, so it either runs completely or not at all. The SQL is in the file; in short:
 
-1. One series per seller and trimmed name, from the customers' current names and the names old invoices were issued with (`InvoiceName` in their customer copy). `next_number` = the highest "next number" of the customers with that name.
+1. One series per seller and trimmed customer name. `next_number` = the highest "next number" of the customers with that name.
 2. Each customer points to the series with its current name.
-3. Each invoice points to the series with the name it was issued with, else its customer's current name. Unique index on `(series_id, invoice_number)`.
+3. Each invoice points to its customer's series. Unique index on `(series_id, invoice_number)`.
 4. `next_number` is raised above every invoice number in its series.
 5. `customers.invoice_name`, `customers.invoice_number` and `invoices.file_path` are dropped.
 
 Notes:
-- `customer_data` is Newtonsoft JSON with PascalCase names, so the old series name is at `->>'InvoiceName'`.
-- An invoice made while its customer had a different `invoice_name` goes into the series with that old name, so its PDF doesn't change. The collision pre-check groups invoices the same way.
-- `customers.invoice_name` is `varchar(10)` (migration 003), so series names stay at max 10 characters and the rollback can restore them. The names in old invoices' customer copy can be longer (`PUT /invoices` saved the request's copy); the pre-check finds them.
-- The rollback gives each customer its series' name and next number. Customers that shared a series all get that series' next number.
-- The rollback also writes `InvoiceName` and `InvoiceNumber` into the customer copy of invoices that don't have them (made after deploy), so the old code prints their series and number. Tested on a throwaway Postgres 16: update, an invoice in the new shape, `rollback-count 2`, update.
+- Changeset 33 (BIL-86) has dropped `customer_data`, so the name an old invoice was issued with is gone. An invoice made while its customer had a different `invoice_name` goes into the customer's current series. The collision pre-check groups invoices the same way.
+- `customers.invoice_name` is `varchar(10)` (migration 003), so series names stay at max 10 characters and the rollback can restore them.
+- The rollback gives each customer its series' name and next number. Customers that shared a series all get that series' next number. Rolling back 33 as well rebuilds every invoice's customer copy from that name and the invoice's own number, so the old code prints the right series and number.
 
 ### 2.3 Verify locally
 
 ```bash
 docker compose up -d --build db liquibase
-docker logs billio-liquibase      # changesets 33 and 34 ran
+docker logs billio-liquibase      # changesets 34 and 35 ran
 ```
-Then compare row counts and spot-check: every customer has a series, every invoice has `series_id`, old invoices are in the series they were issued with, and `next_number` = max invoice number + 1 per series. Test the rollback once on a copy (`liquibase rollback-count 2`).
+Then compare row counts and spot-check: every customer has a series, every invoice has `series_id`, old invoices are in their customer's series, and `next_number` = max invoice number + 1 per series. Test the rollback once on a copy (`liquibase rollback-count 2`).
 
 ## Step 3: Domain (`src/Domain`)
 
@@ -282,10 +280,10 @@ WITH reserved AS (
     RETURNING next_number - 1 AS invoice_number
 )
 INSERT INTO invoices
-    (customer_id, seller_id, user_id, series_id, invoice_number, user_data,
-     created_date, due_date, seller_data, customer_data, items_data, comments, total_price, status)
-SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.invoice_number, @UserData,
-       @CreatedDate, @DueDate, @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice, @Status
+    (customer_id, seller_id, user_id, series_id, invoice_number,
+     created_date, due_date, items_data, comments, total_price, status)
+SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.invoice_number,
+       @CreatedDate, @DueDate, @ItemsData, @Comments, @TotalPrice, @Status
 FROM reserved
 RETURNING id;
 ```
@@ -328,7 +326,7 @@ Add `services.AddScoped<ISeriesRepository, SeriesRepository>();`
 | `MappingProfiles/CustomerMappingProfile.cs` | Map `SeriesId`/`SeriesName` instead of the old fields |
 | `MappingProfiles/InvoiceMappingProfile.cs` | Map `SeriesId`/`SeriesName` in `ToModel`/`ToEntity`/`ToResponse`. Remove `FilePath`. `InvoiceUpdateRequest.ToModel` no longer sets `InvoiceNumber` |
 
-Old invoices: the `customer_data` JSON still contains `InvoiceName`/`InvoiceNumber`. Newtonsoft ignores unknown properties, so deserialization keeps working. The PDF reads the series name from `InvoiceModel.SeriesName` (joined from `series`), not from the customer snapshot: change the header line in `Models/Invoice/Documents/InvoiceDocumentSF.cs` and `InvoiceDocumentADA.cs` to `Model.SeriesName`.
+Old invoices: since BIL-86 they have no customer copy. The PDF reads the series name from `InvoiceModel.SeriesName` (joined from `series`), not from the customer snapshot: change the header line in `Models/Invoice/Documents/InvoiceDocumentSF.cs` and `InvoiceDocumentADA.cs` to `Model.SeriesName`.
 
 ### 5.2 `Interfaces/ISeriesService.cs` + `Services/SeriesService.cs` (new)
 
@@ -416,7 +414,7 @@ On the local Docker stack with a copy of the real data:
 5. Change the series of a customer with invoices → 400. Move an invoice to another customer → 400. Renaming a series with invoices → 400.
 6. Fire ~20 parallel `POST /invoices` for the same series → all numbers unique and consecutive.
 7. `DELETE /series/{id}` for a series in use → 400.
-8. Generate the PDF for an old invoice (from before the migration) → same series and number as before.
+8. Generate the PDF for an old invoice (from before the migration) → same number as before, and its customer's current series name.
 
 BillioIntegrationTest (branch `BIL-65-series`) covers customers and invoices, so it must change in the same PR round, or CI fails:
 - Bump `BillerContracts.Clients` to 3.0.0.
@@ -426,9 +424,9 @@ BillioIntegrationTest (branch `BIL-65-series`) covers customers and invoices, so
 
 ## Step 10: Rollout
 
-1. Merge and publish BillerContracts 3.0.0.
-2. Biller PR: bump `BillerContracts` to 3.0.0 in `src/Domain/Domain.csproj`, plus all the changes above.
-3. Update BillerFrontEnd in this task (branch `BIL-65-series`), and deploy it together with the API, because the 2.0.0 front end can't create customers against the new API: bump `BillerContracts.Clients` to 3.0.0, customer forms pick a series instead of typing a name, show the seller's series on the seller page, show `SeriesName` on customers and invoices, drop the invoice number field from invoice editing, and disable the seller and customer selectors there (an invoice can't move to another seller or customer).
+1. Merge and publish BillerContracts 4.0.0 (PR #12). 3.0.0 is deprecated; 3.0.1 is BIL-86 without series.
+2. Biller PR: `BillerContracts` 4.0.0 in `src/Domain/Domain.csproj`, plus all the changes above.
+3. Update BillerFrontEnd in this task (branch `BIL-65-series`), and deploy it together with the API, because the 2.0.0 front end can't create customers against the new API: bump `BillerContracts.Clients` to 4.0.0, customer forms pick a series instead of typing a name, show the seller's series on the seller page, show `SeriesName` on customers and invoices, drop the invoice number field from invoice editing, and disable the seller and customer selectors there (an invoice can't move to another seller or customer).
 4. On the small PC: back up the database, run the pre-check queries, then `make update`.
 
 ## Out of scope
@@ -439,8 +437,8 @@ BillioIntegrationTest (branch `BIL-65-series`) covers customers and invoices, so
 
 ## Order of work
 
-1. BillerContracts 3.0.0 (+ clients)
-2. Migrations 033, 034 (verify on a data copy)
+1. BillerContracts 4.0.0 (+ clients)
+2. Migrations 034, 035 (verify on a data copy)
 3. Domain + Infrastructure
 4. Application (series, then customer, then invoice)
 5. Validators + WebAPI

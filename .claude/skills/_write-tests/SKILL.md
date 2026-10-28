@@ -96,6 +96,8 @@ user/seller/customer. Flag behaviour that looks wrong to the user instead of tes
 **A test for a bug fix must fail when the bug comes back.** Check it: undo the fix in the source
 (keep the test), run the test and see it fail, then restore the fix. If it still passes, the test
 doesn't cover the bug. Every fixed bug also gets a row in `docs/review-evals.md`.
+`bash .claude/skills/_write-tests/scripts/revert-check.sh --file <path> --old '<fixed code>' --new '<buggy code>' --filter "FullyQualifiedName~<Class>Test"`
+does all three steps. `--old` must match exactly once, and the file is restored byte for byte.
 
 ## Per-layer patterns
 

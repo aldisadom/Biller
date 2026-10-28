@@ -5,11 +5,11 @@ namespace Application.Models;
 public record InvoiceModel
 {
     public Guid Id { get; set; }
-    public UserModel? User { get; set; }
+    public Guid UserId { get; set; }
     public DateOnly CreatedDate { get; set; }
     public DateOnly DueDate { get; set; }
-    public SellerModel? Seller { get; set; }
-    public CustomerModel? Customer { get; set; }
+    public Guid SellerId { get; set; }
+    public Guid CustomerId { get; set; }
     public List<InvoiceItemModel>? Items { get; set; }
     public Guid SeriesId { get; set; }
     public string SeriesName { get; set; } = string.Empty;

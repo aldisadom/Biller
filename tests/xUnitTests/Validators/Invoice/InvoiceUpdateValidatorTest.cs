@@ -1,6 +1,4 @@
-﻿using BillerContracts.Requests.Customer;
-using BillerContracts.Requests.Invoice;
-using BillerContracts.Requests.Seller;
+﻿using BillerContracts.Requests.Invoice;
 using FluentAssertions;
 using FluentValidation;
 using Validators.Invoice;
@@ -11,41 +9,14 @@ public class InvoiceUpdateValidatorTest
 {
     private readonly InvoiceUpdateValidator _validator = new();
 
-    private static SellerUpdateRequest ValidSeller() => new()
-    {
-        Id = Guid.NewGuid(),
-        CompanyNumber = "123456",
-        CompanyName = "Seller Company",
-        Street = "Seller Street",
-        City = "Seller City",
-        State = "Seller State",
-        Email = "seller@example.com",
-        Phone = "1234567890",
-        BankName = "Test Bank",
-        BankNumber = "LT123456789"
-    };
-
-    private static CustomerUpdateRequest ValidCustomer() => new()
-    {
-        Id = Guid.NewGuid(),
-        CompanyNumber = "654321",
-        CompanyName = "Customer Company",
-        Street = "Customer Street",
-        City = "Customer City",
-        State = "Customer State",
-        Email = "customer@example.com",
-        Phone = "0987654321",
-        SeriesId = Guid.NewGuid()
-    };
-
     private static InvoiceUpdateRequest ValidRequest() => new()
     {
         Id = Guid.NewGuid(),
-        Seller = ValidSeller(),
-        Customer = ValidCustomer(),
+        SellerId = Guid.NewGuid(),
+        CustomerId = Guid.NewGuid(),
         Items =
         [
-            new InvoiceItemUpdateRequest { Id = Guid.NewGuid(), Name = "Item 1", Quantity = 2, Price = 10m }
+            new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 2 }
         ],
         CreatedDate = new DateOnly(2024, 1, 1),
         DueDate = new DateOnly(2024, 1, 31)
@@ -64,15 +35,17 @@ public class InvoiceUpdateValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    public static IEnumerable<TheoryDataRow<Action<InvoiceUpdateRequest>, string>> GetEmptyRequiredFieldTestData()
+    public static IEnumerable<TheoryDataRow<Action<InvoiceUpdateRequest>, string, string>> GetEmptyRequiredFieldTestData()
     {
-        yield return new(r => r.Id = Guid.Empty, nameof(InvoiceUpdateRequest.Id)) { Label = "empty id is rejected" };
-        yield return new(r => r.Items = [], nameof(InvoiceUpdateRequest.Items)) { Label = "empty item list is rejected" };
+        yield return new(r => r.Id = Guid.Empty, nameof(InvoiceUpdateRequest.Id), "Please specify invoice id") { Label = "empty id is rejected" };
+        yield return new(r => r.SellerId = Guid.Empty, nameof(InvoiceUpdateRequest.SellerId), "Please specify seller Id") { Label = "empty seller id is rejected" };
+        yield return new(r => r.CustomerId = Guid.Empty, nameof(InvoiceUpdateRequest.CustomerId), "Please specify customer id") { Label = "empty customer id is rejected" };
+        yield return new(r => r.Items = [], nameof(InvoiceUpdateRequest.Items), "Please provide at least one item") { Label = "empty item list is rejected" };
     }
 
     [Theory]
     [MemberData(nameof(GetEmptyRequiredFieldTestData))]
-    public void Validate_GivenEmptyRequiredField_IsInvalid(Action<InvoiceUpdateRequest> clearField, string propertyName)
+    public void Validate_GivenEmptyRequiredField_IsInvalid(Action<InvoiceUpdateRequest> clearField, string propertyName, string message)
     {
         //Arrange
         var request = ValidRequest();
@@ -83,7 +56,7 @@ public class InvoiceUpdateValidatorTest
 
         //Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == propertyName);
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName && e.ErrorMessage == message);
     }
 
     [Fact]
@@ -102,34 +75,20 @@ public class InvoiceUpdateValidatorTest
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.DueDate));
     }
 
-    public static IEnumerable<TheoryDataRow<Action<InvoiceUpdateRequest>>> GetInvalidNestedRequestTestData()
+    public static IEnumerable<TheoryDataRow<InvoiceItemRequest>> GetInvalidItemTestData()
     {
-        yield return new(r => r.Seller.Email = "not-an-email") { Label = "seller with invalid email throws" };
-        yield return new(r => r.Customer.CompanyName = string.Empty) { Label = "customer with empty company name throws" };
-        yield return new(r => r.Items = [new InvoiceItemUpdateRequest { Id = Guid.NewGuid(), Name = string.Empty, Quantity = 1, Price = 10m }]) { Label = "item with empty name throws" };
-    }
-
-    [Fact]
-    public void Validate_GivenCustomerWithoutSeries_IsValid()
-    {
-        //Arrange
-        var request = ValidRequest();
-        request.Customer.SeriesId = Guid.Empty;
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.IsValid.Should().BeTrue();
+        yield return new(new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 }) { Label = "item with empty id throws" };
+        yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 0 }) { Label = "item with zero quantity throws" };
+        yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = -1 }) { Label = "item with negative quantity throws" };
     }
 
     [Theory]
-    [MemberData(nameof(GetInvalidNestedRequestTestData))]
-    public void Validate_GivenInvalidNestedRequest_ThrowsValidationException(Action<InvoiceUpdateRequest> breakNestedRequest)
+    [MemberData(nameof(GetInvalidItemTestData))]
+    public void Validate_GivenInvalidItem_ThrowsValidationException(InvoiceItemRequest item)
     {
         //Arrange
         var request = ValidRequest();
-        breakNestedRequest(request);
+        request.Items = [item];
 
         //Act
         //Assert

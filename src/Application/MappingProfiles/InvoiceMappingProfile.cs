@@ -13,12 +13,12 @@ public static class InvoiceModelExtensions
         return new InvoiceModel
         {
             Id = from.Id,
+            UserId = from.UserId,
+            CustomerId = from.CustomerId,
+            SellerId = from.SellerId,
             SeriesId = from.SeriesId,
             SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
-            User = JsonConvert.DeserializeObject<UserModel>(from.UserData),
-            Seller = JsonConvert.DeserializeObject<SellerModel>(from.SellerData),
-            Customer = JsonConvert.DeserializeObject<CustomerModel>(from.CustomerData),
             Items = JsonConvert.DeserializeObject<List<InvoiceItemModel>>(from.ItemsData),
             Comments = from.Comments,
             Status = from.Status,
@@ -35,12 +35,9 @@ public static class InvoiceModelExtensions
             SeriesId = from.SeriesId,
             SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
-            UserId = from.User!.Id,
-            UserData = JsonConvert.SerializeObject(from.User),
-            SellerId = from.Seller!.Id,
-            SellerData = JsonConvert.SerializeObject(from.Seller),
-            CustomerId = from.Customer!.Id,
-            CustomerData = JsonConvert.SerializeObject(from.Customer),
+            UserId = from.UserId,
+            SellerId = from.SellerId,
+            CustomerId = from.CustomerId,
             ItemsData = JsonConvert.SerializeObject(from.Items),
             Comments = from.Comments,
             Status = from.Status,
@@ -50,23 +47,25 @@ public static class InvoiceModelExtensions
         };
     }
 
-    public static InvoiceResponse ToResponse(this InvoiceModel from)
+    public static InvoiceModelFull ToFull(this InvoiceModel from, UserModel user, SellerModel seller, CustomerModel customer)
     {
-        return new InvoiceResponse
+        return new InvoiceModelFull
         {
             Id = from.Id,
+            UserId = from.UserId,
+            SellerId = from.SellerId,
+            CustomerId = from.CustomerId,
             SeriesId = from.SeriesId,
             SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
-            UserId = from.User!.Id,
-            Seller = from.Seller!.ToResponse(),
-            Customer = from.Customer!.ToResponse(),
-            Items = from.Items!.Select(i => i.ToInvoiceItemResponse()).ToList(),
+            Items = from.Items,
             Comments = from.Comments,
             Status = from.Status,
             CreatedDate = from.CreatedDate,
             DueDate = from.DueDate,
-            TotalPrice = from.CalculateTotal()
+            User = user,
+            Seller = seller,
+            Customer = customer
         };
     }
 
@@ -74,9 +73,9 @@ public static class InvoiceModelExtensions
     {
         return new InvoiceModel
         {
-            User = new() { Id = from.UserId },
-            Seller = new() { Id = from.SellerId },
-            Customer = new() { Id = from.CustomerId },
+            UserId = from.UserId,
+            SellerId = from.SellerId,
+            CustomerId = from.CustomerId,
             Items = from.Items.Select(i => i.ToInvoiceItemModel()).ToList(),
             Comments = from.Comments,
             CreatedDate = from.CreatedDate,
@@ -94,25 +93,13 @@ public static class InvoiceModelExtensions
         };
     }
 
-    public static InvoiceItemModel ToInvoiceItemModel(this InvoiceItemUpdateRequest from)
-    {
-        return new InvoiceItemModel
-        {
-            Id = from.Id,
-            Name = from.Name,
-            Price = from.Price,
-            Quantity = from.Quantity,
-            Comments = from.Comments
-        };
-    }
-
     public static InvoiceModel ToModel(this InvoiceUpdateRequest from)
     {
         return new InvoiceModel
         {
             Id = from.Id,
-            Seller = from.Seller.ToModel(),
-            Customer = from.Customer.ToModel(),
+            SellerId = from.SellerId,
+            CustomerId = from.CustomerId,
             Comments = from.Comments,
             CreatedDate = from.CreatedDate,
             DueDate = from.DueDate,

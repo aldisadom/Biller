@@ -1,8 +1,6 @@
-﻿using BillerContracts.Requests.Customer;
-using BillerContracts.Requests.Invoice;
-using BillerContracts.Requests.Seller;
+﻿using BillerContracts.Requests.Invoice;
 using FluentValidation;
-using Validators.Seller;
+using FluentValidation.Results;
 
 namespace Validators.Invoice;
 
@@ -11,46 +9,37 @@ namespace Validators.Invoice;
 /// </summary>
 public class InvoiceUpdateValidator : AbstractValidator<InvoiceUpdateRequest>
 {
-    private static readonly InvoiceItemUpdateValidator _itemValidator = new();
-    private static readonly SellerUpdateValidator _sellerValidator = new();
-    private static readonly CustomerUpdateValidator _customerValidator = CustomerUpdateValidator.ForInvoiceUpdate();
-
     /// <summary>
     /// Validation
     /// </summary>
     public InvoiceUpdateValidator()
     {
         RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify invoice id");
-        RuleFor(x => x.Seller).NotEmpty().WithMessage("Please specify seller");
-        RuleFor(x => x.Customer).NotEmpty().WithMessage("Please specify customer");
+        RuleFor(x => x.SellerId).NotEmpty().WithMessage("Please specify seller Id");
+        RuleFor(x => x.CustomerId).NotEmpty().WithMessage("Please specify customer id");
         RuleFor(x => x.Items).Must(x => x.Count != 0).WithMessage("Please provide at least one item");
         RuleFor(x => x.CreatedDate).NotEmpty().WithMessage("Please specify create date");
         RuleFor(x => x.DueDate).GreaterThanOrEqualTo(x => x.CreatedDate).WithMessage("Please specify due date >= create date");
 
         RuleFor(x => x.Items).Must(ValidateInvoiceItems);
-        RuleFor(x => x.Seller).Must(ValidateInvoiceSeller);
-        RuleFor(x => x.Customer).Must(ValidateInvoiceCustomer);
     }
 
-    private bool ValidateInvoiceItems(List<InvoiceItemUpdateRequest> items)
+    private bool ValidateInvoiceItems(List<InvoiceItemRequest> items)
     {
+        InvoiceItemValidator validator = new();
+
+        string errorMessage = string.Empty;
+
         foreach (var item in items)
-            _itemValidator.CheckValidation(item);
+        {
+            ValidationResult result = validator.Validate(item);
+            if (!result.IsValid)
+                errorMessage += (errorMessage.Length == 0 ? "" : "\n") + result.ToString();
+        }
 
-        return true;
-    }
-
-    private bool ValidateInvoiceSeller(SellerUpdateRequest seller)
-    {
-        _sellerValidator.CheckValidation(seller);
-
-        return true;
-    }
-
-    private bool ValidateInvoiceCustomer(CustomerUpdateRequest customer)
-    {
-        _customerValidator.CheckValidation(customer);
-
-        return true;
+        if (string.IsNullOrEmpty(errorMessage))
+            return true;
+        else
+            throw new ValidationException(errorMessage);
     }
 }

@@ -27,12 +27,15 @@ on a small Linux PC.
   lock must not lock customer rows (plain reads and foreign-key checks are fine). All repositories share one scoped
   `IDbConnection`, so a transaction starts and ends inside one repository method.
 - Never edit a changeset that is already on master. Fix it with a new one. Every changeset has a `-- rollback`.
-- Invoices keep their own copy of seller, customer, item and user data. Editing those must not
-  change an existing invoice or its PDF. The series name isn't copied, so a series with invoices
-  can't be renamed.
+- Invoices store their user, seller and customer ids and show the current data. They keep their
+  own number, dates and lines. Editing an item must not change an existing invoice or its PDF.
+  Saving the invoice itself (`PUT /invoices`) copies line names and prices from the current items.
+  The series name isn't copied, so a series with invoices can't be renamed.
 - Mirror the Item feature when adding a layer. Map every property by hand.
 - Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be
   on the branch with Biller's branch name, else on up-to-date master.
+- Working copies on Windows have CRLF line endings (`.gitattributes` stores LF). Change files with
+  the Edit tool, which keeps them. Don't rewrite source files with sed or Python scripts.
 
 ## Non-goals
 - No ORM.
@@ -42,7 +45,9 @@ on a small Linux PC.
 
 ## Commands
 - Tests and coverage: `bash .claude/skills/_test-coverage/scripts/run-coverage.sh`
-- Local stack: `docker compose up -d --build` (Swagger at http://localhost:8090/swagger, DB on port 5437).
+- Build any repo, warnings in changed files only: `bash .claude/skills/_test-coverage/scripts/build.sh [repo]`
+- Throwaway stack and integration tests: the `_test-stack` skill (`test-stack.sh up`, `run-integration.sh`, `test-stack.sh down`).
+- The user's local stack: `docker compose up -d --build` (Swagger at http://localhost:8090/swagger, DB on port 5437). Don't use it for tests.
 
 ## More
 - Plans: `docs/plans/BIL-<n>-<slug>.md` (Jira project BIL), in the repo the work is in. Only plans

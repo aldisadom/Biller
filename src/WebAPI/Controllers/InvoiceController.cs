@@ -57,7 +57,7 @@ public class InvoiceController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id)
     {
-        InvoiceModel invoice = await _invoiceService.Get(id);
+        InvoiceModelFull invoice = await _invoiceService.Get(id);
 
         InvoiceResponse result = invoice.ToResponse();
 

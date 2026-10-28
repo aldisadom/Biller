@@ -79,33 +79,4 @@ public class CustomerUpdateValidatorTest
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Email));
     }
-
-    [Fact]
-    public void ForInvoiceUpdate_GivenEmptySeriesId_IsValid()
-    {
-        //Arrange
-        var request = ValidRequest();
-        request.SeriesId = Guid.Empty;
-
-        //Act
-        var result = CustomerUpdateValidator.ForInvoiceUpdate().Validate(request);
-
-        //Assert
-        result.IsValid.Should().BeTrue();
-    }
-
-    [Fact]
-    public void ForInvoiceUpdate_GivenEmptyCompanyName_IsInvalid()
-    {
-        //Arrange
-        var request = ValidRequest();
-        request.CompanyName = string.Empty;
-
-        //Act
-        var result = CustomerUpdateValidator.ForInvoiceUpdate().Validate(request);
-
-        //Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.CompanyName));
-    }
 }

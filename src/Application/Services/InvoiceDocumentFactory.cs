@@ -10,7 +10,7 @@ namespace Application.Services;
 
 public interface IInvoiceDocumentFactory
 {
-    MemoryStream GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModel invoiceData);
+    MemoryStream GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModelFull invoiceData);
 }
 
 public class InvoiceDocumentFactory : IInvoiceDocumentFactory
@@ -22,7 +22,7 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
         _priceToWordsFactory = priceToWordsFactory;
     }
 
-    public MemoryStream GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModel invoiceData)
+    public MemoryStream GeneratePdf(DocumentType documentType, Language languageCode, InvoiceModelFull invoiceData)
     {
         var texts = GetTexts(languageCode);
         var document = GetDocument(languageCode, documentType, invoiceData, texts);
@@ -30,6 +30,7 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
         string path = invoiceData.GenerateFileLocation();
         MemoryStream stream = new();
         document.GeneratePdf(stream);
+        stream.Position = 0;
 
         return stream;
     }
@@ -44,7 +45,7 @@ public class InvoiceDocumentFactory : IInvoiceDocumentFactory
         };
     }
 
-    private IDocument GetDocument(Language languageCode, DocumentType documentType, InvoiceModel invoiceData, IInvoiceTexts texts)
+    private IDocument GetDocument(Language languageCode, DocumentType documentType, InvoiceModelFull invoiceData, IInvoiceTexts texts)
     {
         var priceToWords = _priceToWordsFactory.GetConverter(languageCode);
         return documentType switch

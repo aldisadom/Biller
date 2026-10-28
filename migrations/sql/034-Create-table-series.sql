@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
--- changeset Aldis:33
+-- changeset Aldis:34
 -- comment: Create series table (invoice series per seller)
 CREATE TABLE series (
     id uuid NOT NULL DEFAULT gen_random_uuid(),

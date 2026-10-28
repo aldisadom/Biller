@@ -3,7 +3,7 @@
 Failure here looks like:
 - An invoice total, line sum, or amount in words is wrong.
 - Two invoices get the same number, or a number is skipped without a delete.
-- An old invoice or its PDF changes after a seller, customer, item, or unit is edited.
+- An old invoice or its PDF changes after an item or unit is edited.
 - A migration loses data, can't roll back, or edits an already-applied changeset.
 - A password, hash, or salt ends up in a response, log, or invoice.
 - A request for one user's data returns another user's data.

@@ -23,31 +23,13 @@ public class InvoiceModelTest
     }
 
     [Fact]
-    public void GenerateInvoiceName_GivenCustomerSnapshot_UsesInvoiceOwnNumber()
-    {
-        //Arrange
-        InvoiceModel invoice = new()
-        {
-            InvoiceNumber = 5,
-            Customer = new() { SeriesName = "OLD" }
-        };
-
-        //Act
-        string result = invoice.GenerateInvoiceName();
-
-        //Assert
-        result.Should().Be("000005");
-    }
-
-    [Fact]
     public void GenerateFileLocation_GivenSeriesAndNumber_UsesInvoiceSeriesName()
     {
         //Arrange
         InvoiceModel invoice = new()
         {
             SeriesName = "WF",
-            InvoiceNumber = 12,
-            Customer = new() { SeriesName = "OLD" }
+            InvoiceNumber = 12
         };
 
         //Act

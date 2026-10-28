@@ -73,7 +73,12 @@ description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQ
    models + mapping extensions in `src/Application`. If the field must be exposed through the API,
    use the `_add-api-feature` skill — request/response types live in the separate BillerContracts
    NuGet package.
-5. **Apply locally (optional — ask first, it changes the user's local DB)**:
+5. **Try it on a throwaway database (preferred)**: the `_test-stack` skill runs the migrations on its
+   own Postgres. `test-stack.sh up --seed`, then `test-stack.sh rollback-check --table <table>`
+   rolls the changeset back on a table with rows, prints `\d <table>` before and after, and runs
+   `update` again. `test-stack.sh down` when done. This doesn't touch the user's local DB.
+
+   **Or apply locally (ask first, it changes the user's local DB)**:
    `docker compose run --rm liquibase` starts the db and runs `liquibase update`, printing each
    changeset it runs. The compose file uses fixed container names (`billio-db`, ...), so if the
    start fails with a name conflict, another checkout's stack is running: ask before stopping it.

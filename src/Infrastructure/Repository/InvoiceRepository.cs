@@ -56,10 +56,10 @@ public class InvoiceRepository : IInvoiceRepository
                             RETURNING next_number - 1 AS invoice_number
                         )
                         INSERT INTO invoices
-                        (customer_id, seller_id, user_id, series_id, invoice_number, user_data, created_date, due_date,
-                        seller_data, customer_data, items_data, comments, total_price, status)
-                        SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.invoice_number, @UserData, @CreatedDate, @DueDate,
-                        @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice, @Status
+                        (customer_id, seller_id, user_id, series_id, invoice_number, created_date, due_date,
+                        items_data, comments, total_price, status)
+                        SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.invoice_number, @CreatedDate, @DueDate,
+                        @ItemsData, @Comments, @TotalPrice, @Status
                         FROM reserved
                         RETURNING id";
 
@@ -74,8 +74,7 @@ public class InvoiceRepository : IInvoiceRepository
     public async Task Update(InvoiceEntity invoice)
     {
         string sql = @"UPDATE invoices
-                        SET user_data=@UserData,
-                        created_date=@CreatedDate, due_date=@DueDate, seller_data=@SellerData, customer_data=@CustomerData,
+                        SET created_date=@CreatedDate, due_date=@DueDate,
                         items_data=@ItemsData, comments=@Comments, total_price=@TotalPrice
                         WHERE id=@Id";
 
