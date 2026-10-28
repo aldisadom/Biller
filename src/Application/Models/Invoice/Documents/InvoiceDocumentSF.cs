@@ -8,14 +8,14 @@ namespace Application.Models.Invoice.Documents;
 
 public class InvoiceDocumentSF : IDocument
 {
-    public InvoiceModel Model { get; }
+    public InvoiceModelFull Model { get; }
     private readonly IPriceToWords _priceToWords;
     private readonly IInvoiceTexts _texts;
 
     public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
     public DocumentSettings GetSettings() => DocumentSettings.Default;
 
-    public InvoiceDocumentSF(InvoiceModel model, IPriceToWords priceToWords, IInvoiceTexts texts)
+    public InvoiceDocumentSF(InvoiceModelFull model, IPriceToWords priceToWords, IInvoiceTexts texts)
     {
         Model = model;
         _priceToWords = priceToWords;

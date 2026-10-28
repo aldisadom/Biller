@@ -23,8 +23,9 @@ on a small Linux PC.
 - A write that touches several rows or tables is one SQL statement (data-modifying CTE). All
   repositories share one scoped `IDbConnection`, so don't add transactions.
 - Never edit a changeset that is already on master. Fix it with a new one. Every changeset has a `-- rollback`.
-- Invoices keep their own copy of seller, customer, item and user data. Editing those must not
-  change an existing invoice or its PDF.
+- Invoices store their user, seller and customer ids and show the current data. They keep their
+  own number, dates and lines. Editing an item must not change an existing invoice or its PDF.
+  Saving the invoice itself (`PUT /invoices`) copies line names and prices from the current items.
 - Mirror the Item feature when adding a layer. Map every property by hand.
 - Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be
   on the branch with Biller's branch name, else on up-to-date master.
