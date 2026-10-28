@@ -191,14 +191,14 @@ tests show which files a feature needs. A new resource needs:
 ## 8. Verify
 
 1. Run the `_test-coverage` skill. Everything should pass, and the new classes should show coverage.
-2. Optionally (ask first, it changes the local DB) see it live. `docker compose up -d --build`
-   runs the migrations and starts the API. `docker compose logs liquibase` shows the changesets
-   that ran. Create the entity through Swagger at http://localhost:8090/swagger.
-   Integration tests run against that stack. Run `_sync-repos` first, so `../BillioIntegrationTest`
-   is on the branch with Biller's branch name or up-to-date master, then
-   `dotnet test ../BillioIntegrationTest/BillioIntegrationTest.sln`.
-   They delete all data through the API first. New endpoints need integration tests on a branch
-   with the same name in BillioIntegrationTest; CI uses that branch.
+2. See it live with the `_test-stack` skill. It doesn't touch the user's local DB:
+   `test-stack.sh up` runs the migrations and starts this checkout's API on port 8091 (Swagger at
+   http://localhost:8091/swagger). Run `_sync-repos` first, so `../BillioIntegrationTest` is on the
+   branch with Biller's branch name or up-to-date master, then `run-integration.sh --repeat 3`.
+   The tests delete all data through the API first. `test-stack.sh down` when done. New endpoints
+   need integration tests on a branch with the same name in BillioIntegrationTest; CI uses that
+   branch. The user's own stack (`docker compose up -d --build`, port 8090) is theirs; ask before
+   using it.
 3. Summarize for the user: the files touched per layer, the migration name, the plan steps that are
    done and any that are left, and any pending
    BillerContracts publish/version bump, including a reminder if the temporary ProjectReference is

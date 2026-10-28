@@ -21,23 +21,39 @@ Don't say a step passed without that output.
   clones only Biller. Stop and tell the user (see `_add-api-feature`, section 1). A `-preview`
   BillerContracts version is fine on the branch, but put it under Risk: it must be replaced by a
   released version before merging.
+- When sibling repos have a branch with the same name, each one gets its own PR. Run steps 1 to 5
+  for each repo with that repo's `CLAUDE.md` and `REVIEW.md`. The scripts below take the repo
+  folder or sibling name (`BillerFrontEnd`) as an argument.
 
 ## 2. Build and test
 
 Run `bash .claude/skills/_test-coverage/scripts/run-coverage.sh` and paste the `Passed!/Failed!`
 line. If the build fails or a test is red, stop: fix it if this change caused it, otherwise report it.
+For a sibling repo, `bash .claude/skills/_test-coverage/scripts/build.sh <repo> --release` prints
+its errors and the warnings in changed files.
 
 If the change adds endpoints or changes SQL, the integration tests in CI use the BillioIntegrationTest
 branch with the same name as this branch, or master if there isn't one. Check and paste the result
-of `git ls-remote --heads https://github.com/aldisadom/BillioIntegrationTest.git <branch>`.
+of `git ls-remote --heads https://github.com/aldisadom/BillioIntegrationTest.git <branch>`. Run
+them before the review with the `_test-stack` skill (`test-stack.sh up`, then
+`run-integration.sh --repeat 3`, then `test-stack.sh down`).
 
 ## 3. Review in a fresh context
 
-The reviewer must not share this conversation's assumptions. Note the reviewed commit
-(`git rev-parse HEAD`), then run `/code-review` (the `code-review` skill) on the current branch
-against master, and tell it to follow `REVIEW.md`. If that skill isn't available, start a
-general-purpose subagent whose prompt holds only the output of `git diff master...HEAD`, an
-instruction to read `CLAUDE.md` and `REVIEW.md` first, and to report in REVIEW.md's format.
+The reviewer must not share this conversation's assumptions. Every review starts cold and is the
+most expensive step, so hand it one file with what it needs instead of letting it explore:
+
+```bash
+R=.claude/skills/_pre-pr/scripts/review-round.sh
+bash $R save [repo] [--exclude .claude]   # snapshot of what is reviewed now (exclude untracked folders that aren't part of the change)
+bash $R pack [repo] --full --plan docs/plans/BIL-<n>-<slug>.md   # prints the pack's path
+```
+
+Then run `/code-review` (the `code-review` skill) at its default level. Tell it to read the pack
+first, to follow the repo's `REVIEW.md` (it's in the pack), and to open other files only to check
+a finding. For a sibling repo, name the repo folder as the target. Reviews of different repos can
+run at the same time. If that skill isn't available, start a general-purpose subagent with the
+same prompt.
 
 ## 4. Handle every finding
 
@@ -48,13 +64,17 @@ instruction to read `CLAUDE.md` and `REVIEW.md` first, and to report in REVIEW.m
 - A finding you think is wrong: answer with the reason (`file:line`, the input that shows it's
   fine). Don't change code just to silence it.
 
-Keep a list of every finding and what happened to it. It goes into the PR description.
+Keep a list of every finding and what happened to it in the findings file
+(`bash $R findings [repo]` prints its path), one line each: tag, `file:line`, what was done. It goes
+into the next pack and the PR description.
 
 ## 5. Re-review, at most 3 rounds
 
-After fixing, run step 2 again, then review **only the new diff**: `git diff <reviewed commit>`
-(this includes uncommitted changes). Give the reviewer the list of findings already handled, so it
-doesn't report them again.
+After fixing, run step 2 again, then for each repo:
+- `bash $R changed [repo]`. If only docs changed since the snapshot, skip this repo's round and say so.
+- `bash $R pack [repo]` (the diff since the last snapshot, with the findings already handled), then
+  `bash $R save [repo]` so the next round starts from here.
+- Run `/code-review low` with the pack: a re-review only checks the fixes and what they touch.
 
 Stop after round 3 even if findings remain. Tell the user what keeps coming back and whether the
 approach should change. When a kind of finding keeps coming back across PRs, propose a rule for

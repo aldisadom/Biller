@@ -15,7 +15,11 @@ There is no `make test` target; use the bundled script.
 bash .claude/skills/_test-coverage/scripts/run-coverage.sh                  # full suite + report
 bash .claude/skills/_test-coverage/scripts/run-coverage.sh --filter "FullyQualifiedName~ItemService"   # subset
 bash .claude/skills/_test-coverage/scripts/run-coverage.sh --no-report      # tests only, faster
+bash .claude/skills/_test-coverage/scripts/build.sh [repo] [--release]      # build only: errors, warnings in changed files
 ```
+
+`build.sh` also builds a sibling (`build.sh BillerFrontEnd --release`). It compares against
+`master`, so old warnings elsewhere don't hide new ones.
 
 The script picks `dotnet` or, from WSL, Windows `dotnet.exe` / `reportgenerator.exe`
 (`C:\Users\<user>\.dotnet\tools`). It writes results to

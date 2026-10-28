@@ -29,6 +29,8 @@ on a small Linux PC.
 - Mirror the Item feature when adding a layer. Map every property by hand.
 - Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be
   on the branch with Biller's branch name, else on up-to-date master.
+- Working copies on Windows have CRLF line endings (`.gitattributes` stores LF). Change files with
+  the Edit tool, which keeps them. Don't rewrite source files with sed or Python scripts.
 
 ## Non-goals
 - No ORM.
@@ -38,7 +40,9 @@ on a small Linux PC.
 
 ## Commands
 - Tests and coverage: `bash .claude/skills/_test-coverage/scripts/run-coverage.sh`
-- Local stack: `docker compose up -d --build` (Swagger at http://localhost:8090/swagger, DB on port 5437).
+- Build any repo, warnings in changed files only: `bash .claude/skills/_test-coverage/scripts/build.sh [repo]`
+- Throwaway stack and integration tests: the `_test-stack` skill (`test-stack.sh up`, `run-integration.sh`, `test-stack.sh down`).
+- The user's local stack: `docker compose up -d --build` (Swagger at http://localhost:8090/swagger, DB on port 5437). Don't use it for tests.
 
 ## More
 - Plans: `docs/plans/BIL-<n>-<slug>.md` (Jira project BIL), in the repo the work is in. Only plans
