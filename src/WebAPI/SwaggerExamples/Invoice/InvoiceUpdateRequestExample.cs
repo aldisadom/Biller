@@ -1,6 +1,4 @@
-﻿using BillerContracts.Requests.Customer;
-using BillerContracts.Requests.Invoice;
-using BillerContracts.Requests.Seller;
+﻿using BillerContracts.Requests.Invoice;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.Invoice;
@@ -19,21 +17,23 @@ public class InvoiceUpdateRequestExample : IExamplesProvider<InvoiceUpdateReques
         return new InvoiceUpdateRequest()
         {
             Id = Guid.NewGuid(),
+            InvoiceNumber = 1,
             CreatedDate = DateOnly.FromDateTime(DateTime.Now),
             DueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(10)),
-            Seller = new SellerUpdateRequest()
-            {
-                Id = Guid.NewGuid()
-            },
-            Customer = new CustomerUpdateRequest()
-            {
-                Id = Guid.NewGuid()
-            },
+            SellerId = Guid.Parse("c85f22c7-1323-423a-a402-9b711a44c119"),
+            CustomerId = Guid.Parse("b1f796e8-d23d-4b8b-b464-5e121e4385c7"),
             Items =
             [
-                new InvoiceItemUpdateRequest()
+                new()
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.Parse("f8ff867d-8e7f-4c4d-b7f3-0f7ac1ecfd43"),
+                    Quantity = 2
+                },
+                new()
+                {
+                    Id = Guid.Parse("87b3b388-9e67-4a0d-b7f3-bcb4b458ab29"),
+                    Quantity = 5,
+                    Comments = "With defects"
                 }
             ],
             Comments = "Invoice comment"

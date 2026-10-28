@@ -45,10 +45,10 @@ public class InvoiceRepository : IInvoiceRepository
     public async Task<Guid> Add(InvoiceEntity invoice)
     {
         string sql = @"INSERT INTO invoices
-                        (customer_id, seller_id, user_id, file_path, invoice_number, user_data, created_date, due_date,
-                        seller_data, customer_data, items_data, comments, total_price, status)
-                        VALUES (@CustomerId, @SellerId, @UserId, @FilePath, @InvoiceNumber, @UserData, @CreatedDate, @DueDate,
-                        @SellerData, @CustomerData, @ItemsData, @Comments, @TotalPrice, @Status)
+                        (customer_id, seller_id, user_id, file_path, invoice_number, created_date, due_date,
+                        items_data, comments, total_price, status)
+                        VALUES (@CustomerId, @SellerId, @UserId, @FilePath, @InvoiceNumber, @CreatedDate, @DueDate,
+                        @ItemsData, @Comments, @TotalPrice, @Status)
                         RETURNING id";
 
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, invoice);
@@ -57,8 +57,8 @@ public class InvoiceRepository : IInvoiceRepository
     public async Task Update(InvoiceEntity invoice)
     {
         string sql = @"UPDATE invoices
-                        SET customer_id=@CustomerId, seller_id=@SellerId, file_path=@FilePath, invoice_number=@InvoiceNumber, user_data=@UserData,
-                        created_date=@CreatedDate, due_date=@DueDate, seller_data=@SellerData, customer_data=@CustomerData,
+                        SET customer_id=@CustomerId, seller_id=@SellerId, file_path=@FilePath, invoice_number=@InvoiceNumber,
+                        created_date=@CreatedDate, due_date=@DueDate,
                         items_data=@ItemsData, comments=@Comments, total_price=@TotalPrice
                         WHERE id=@Id";
 
