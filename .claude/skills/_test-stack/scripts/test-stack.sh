@@ -6,7 +6,7 @@
 #   up [--biller DIR] [--frontend] [--frontend-repo DIR] [--seed]
 #              start the stack from the Biller checkout DIR (default: this repo) and the front end
 #              from DIR (default: ../BillerFrontEnd); --seed also runs `seed`
-#   seed       add one user, seller, customer, item and invoice through the API and print their ids
+#   seed       add one user, seller, series, customer, item and invoice through the API and print their ids
 #   rollback-check [--count N] [--table NAME]
 #              roll back the last N changesets (default 1), then update again; with --table, print
 #              `\d NAME` before, after the rollback, and after the update
@@ -103,7 +103,8 @@ cmd_up() {
       -e ASPNETCORE_HTTP_PORTS=8080 -e ASPNETCORE_HTTPS_PORTS= \
       -e "ClientsOptions__UserUrl=$inner/users" -e "ClientsOptions__SellerUrl=$inner/sellers" \
       -e "ClientsOptions__CustomerUrl=$inner/customers" -e "ClientsOptions__ItemUrl=$inner/items" \
-      -e "ClientsOptions__InvoiceUrl=$inner/invoices" -p "$FRONTEND_PORT:8080" "$FRONTEND_IMAGE" >/dev/null \
+      -e "ClientsOptions__InvoiceUrl=$inner/invoices" -e "ClientsOptions__SeriesUrl=$inner/series" \
+      -p "$FRONTEND_PORT:8080" "$FRONTEND_IMAGE" >/dev/null \
       || die "could not start $FRONTEND"
     wait_for 60 curl -s -o /dev/null "http://localhost:$FRONTEND_PORT/" || die "front end did not answer"
     echo "Front end: http://localhost:$FRONTEND_PORT"
@@ -120,16 +121,18 @@ post() { # <path> <json>; prints the new id
 
 cmd_seed() {
   curl -sf "$API_URL/health" >/dev/null || die "the API at $API_URL does not answer. Run: test-stack.sh up"
-  local tag user seller customer item invoice today due
+  local tag user seller series customer item invoice today due
   tag="$(date +%s)"
   today="$(date +%F)"; due="$(date -d '+14 days' +%F)"
   user="$(post users "{\"email\":\"tyrion$tag@casterlyrock.com\",\"name\":\"Tyrion\",\"lastName\":\"Lannister\",\"password\":\"StrongPassword1!\"}")" || die "adding the user failed"
   seller="$(post sellers "{\"userId\":\"$user\",\"email\":\"seller$tag@casterlyrock.com\",\"companyName\":\"Lannister gold\",\"companyNumber\":\"123\",\"street\":\"Lion st\",\"city\":\"Casterly Rock\",\"state\":\"Westerlands\",\"phone\":\"+1\",\"bankName\":\"Iron bank\",\"bankNumber\":\"LT01\"}")" || die "adding the seller failed"
-  customer="$(post customers "{\"sellerId\":\"$seller\",\"email\":\"ned$tag@winterfell.com\",\"companyName\":\"Winterfell\",\"companyNumber\":\"456\",\"street\":\"North st\",\"city\":\"Winterfell\",\"state\":\"North\",\"phone\":\"+2\",\"invoiceName\":\"WF\"}")" || die "adding the customer failed"
+  series="$(post series "{\"sellerId\":\"$seller\",\"name\":\"WF\"}")" || die "adding the series failed"
+  customer="$(post customers "{\"sellerId\":\"$seller\",\"email\":\"ned$tag@winterfell.com\",\"companyName\":\"Winterfell\",\"companyNumber\":\"456\",\"street\":\"North st\",\"city\":\"Winterfell\",\"state\":\"North\",\"phone\":\"+2\",\"seriesId\":\"$series\"}")" || die "adding the customer failed"
   item="$(post items "{\"customerId\":\"$customer\",\"name\":\"Iron throne\",\"price\":10,\"quantity\":5}")" || die "adding the item failed"
   invoice="$(post invoices "{\"userId\":\"$user\",\"sellerId\":\"$seller\",\"customerId\":\"$customer\",\"items\":[{\"id\":\"$item\",\"quantity\":2}],\"comments\":\"Lannisters pay their debts\",\"dueDate\":\"$due\",\"createdDate\":\"$today\"}")" || die "adding the invoice failed"
   echo "user=$user"
   echo "seller=$seller"
+  echo "series=$series"
   echo "customer=$customer"
   echo "item=$item"
   echo "invoice=$invoice"
