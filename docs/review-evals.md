@@ -1,9 +1,9 @@
 # Known bugs to test reviews against
 
 Real Biller bugs, with the commit that introduced each one. They are a small eval set for the
-review setup (`REVIEW.md`, the `_pre-pr` skill, `/code-review`).
+review setup (`REVIEW.md`, the `_pr-review` skill, `/code-review`).
 
-**When you change `REVIEW.md` or the `_pre-pr` skill**, run `/code-review` on two or three of the
+**When you change `REVIEW.md` or the `_pr-review` skill**, run `/code-review` on two or three of the
 introducing commits below and check that the bug is still reported. Keep the change only if it
 catches at least as many as before.
 
