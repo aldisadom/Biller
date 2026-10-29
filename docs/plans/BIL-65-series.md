@@ -102,6 +102,13 @@ FROM customers GROUP BY seller_id, TRIM(invoice_name) HAVING COUNT(*) > 1;
 SELECT c.seller_id, TRIM(c.invoice_name) AS series, i.invoice_number, COUNT(*), ARRAY_AGG(c.company_name)
 FROM invoices i JOIN customers c ON c.id = i.customer_id
 GROUP BY 1, 2, 3 HAVING COUNT(*) > 1;
+
+-- Numbers at the integer limit. The old validators only checked > 0, so a customer's next number or an
+-- invoice number can be 2147483647. 035 sets next_number = MAX(invoice_number) + 1, which overflows and
+-- fails the changeset (the database stays as it was). A series that starts at 2147483647 can't reserve
+-- it, so every new invoice in it returns 400. Lower these by hand first.
+SELECT id, company_name, invoice_number FROM customers WHERE invoice_number >= 2147483647;
+SELECT id, customer_id, invoice_number FROM invoices WHERE invoice_number >= 2147483647;
 ```
 
 BIL-86's pre-check 1 (`prefix_changed`) lists the old invoices whose customer was renamed since. They

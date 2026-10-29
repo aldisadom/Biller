@@ -103,7 +103,7 @@ pre-check query such as `SELECT email, count(*) FROM users GROUP BY email HAVING
 **A data migration (one that copies, moves or rewrites existing rows) gets a pre-check query for every
 column type and constraint it writes into**: each `varchar(n)` length, integer arithmetic that can
 overflow (`+ 1` on an `integer`), `NOT NULL`, `CHECK`, `UNIQUE` and foreign keys. Data written by
-older code can break rules the new schema has. In BIL-65, migration 034 copied names from invoices'
+older code can break rules the new schema has. In BIL-65, a draft of the series migration (cc845e2) copied names from invoices'
 customer copies (never length-checked) into `varchar(10)` and numbers into a unique index, and the
 review found a missing pre-check four times. Put the queries in the plan and in the PR's Risk section.
 
