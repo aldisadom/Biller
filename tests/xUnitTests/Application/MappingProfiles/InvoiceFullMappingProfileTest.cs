@@ -13,31 +13,11 @@ public class InvoiceFullMappingProfileTest
     {
         //Arrange
         UserModel userModel = new() { Id = Guid.NewGuid() };
-        SellerModel sellerModel = new()
-        {
-            Id = Guid.NewGuid(),
-            UserId = userModel.Id,
-            CompanyName = "CompanyName",
-            CompanyNumber = "123456",
-            Street = "Main St",
-            City = "Vilnius",
-            State = "LT",
-            Email = "test@email.com",
-            Phone = "+37060000000",
-            BankName = "Bank",
-            BankNumber = "IBan"
-        };
+        SellerModel sellerModel = new() { Id = Guid.NewGuid(), CompanyName = "Lannister gold" };
         CustomerModel customerModel = new()
         {
             Id = Guid.NewGuid(),
-            SellerId = sellerModel.Id,
-            CompanyName = "CompanyName",
-            CompanyNumber = "123456",
-            Street = "Main St",
-            City = "Vilnius",
-            State = "LT",
-            Email = "test@email.com",
-            Phone = "+37060000000",
+            CompanyName = "Winterfell",
             SeriesId = Guid.NewGuid(),
             SeriesName = "INV"
         };
@@ -71,15 +51,15 @@ public class InvoiceFullMappingProfileTest
 
         //Assert
         HashSet<string> ignoreProperties = [
-            "Seller",
-            "Customer",
+            "SellerName",
+            "CustomerName",
             "Items",
             "TotalPrice"
         ];
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
 
-        to.Seller.Should().Be(sellerModel.ToResponse());
-        to.Customer.Should().Be(customerModel.ToResponse());
+        to.SellerName.Should().Be("Lannister gold");
+        to.CustomerName.Should().Be("Winterfell");
         to.Items.Should().BeEquivalentTo(invoiceItems.Select(i => i.ToInvoiceItemResponse()));
         to.TotalPrice.Should().Be(51.5m);
     }

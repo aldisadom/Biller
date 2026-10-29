@@ -28,6 +28,7 @@ Jira: [BIL-65](https://aldisadom.atlassian.net/browse/BIL-65) (series table and 
   - `CustomerUpdateValidator.ForInvoiceUpdate()` is gone: `PUT /invoices` sends no customer copy any more.
   - BillerContracts 4.0.0 (PR #12). Its branch had lost the series contracts in an earlier master merge (d2a3fc6); they are back.
   - BillioIntegrationTest: 182 passed, three runs, against this branch's API on a throwaway Postgres 16, all built against BillerContracts packed locally from #12. `run-integration.sh` now also sets the series client's URL, which otherwise fell back to the user's own stack on port 8090.
+- [x] 2026-10-29: BillerContracts 4.0.1 (#13, replaces 4.0.0, which is deprecated): `InvoiceResponse` has `SellerId`/`SellerName` and `CustomerId`/`CustomerName` instead of `Seller` and `Customer`. The names are the current `CompanyName`s; nothing in the front end read more than that from an invoice. Biller, BillerFrontEnd and BillioIntegrationTest are on 4.0.1. The integration tests now check a seller's or customer's other fields only through their own endpoints. BillioIntegrationTest: 182 passed, three runs, on the throwaway test stack. The invoice list, invoice page and update page render both names.
 - [ ] Step 10: check the front end in a browser, merge the three PRs, deploy.
 
 Done differently from the plan:
@@ -425,9 +426,9 @@ BillioIntegrationTest (branch `BIL-65-series`) covers customers and invoices, so
 
 ## Step 10: Rollout
 
-1. Merge and publish BillerContracts 4.0.0 (PR #12). 3.0.0 is deprecated; 3.0.1 is BIL-86 without series.
-2. Biller PR: `BillerContracts` 4.0.0 in `src/Domain/Domain.csproj`, plus all the changes above.
-3. Update BillerFrontEnd in this task (branch `BIL-65-series`), and deploy it together with the API, because the 2.0.0 front end can't create customers against the new API: bump `BillerContracts.Clients` to 4.0.0, customer forms pick a series instead of typing a name, show the seller's series on the seller page, show `SeriesName` on customers and invoices, drop the invoice number field from invoice editing, and disable the seller and customer selectors there (an invoice can't move to another seller or customer).
+1. Merge and publish BillerContracts 4.0.0 (PR #12) and 4.0.1 (PR #13). 3.0.0 and 4.0.0 are deprecated; 3.0.1 is BIL-86 without series.
+2. Biller PR: `BillerContracts` 4.0.1 in `src/Domain/Domain.csproj`, plus all the changes above.
+3. Update BillerFrontEnd in this task (branch `BIL-65-series`), and deploy it together with the API, because the 2.0.0 front end can't create customers against the new API: bump `BillerContracts.Clients` to 4.0.1, customer forms pick a series instead of typing a name, show the seller's series on the seller page, show `SeriesName` on customers and invoices, drop the invoice number field from invoice editing, and disable the seller and customer selectors there (an invoice can't move to another seller or customer).
 4. On the small PC: back up the database, run the pre-check queries, then `make update`.
 
 ## Out of scope
@@ -438,7 +439,7 @@ BillioIntegrationTest (branch `BIL-65-series`) covers customers and invoices, so
 
 ## Order of work
 
-1. BillerContracts 4.0.0 (+ clients)
+1. BillerContracts 4.0.1 (+ clients)
 2. Migrations 034, 035 (verify on a data copy)
 3. Domain + Infrastructure
 4. Application (series, then customer, then invoice)
