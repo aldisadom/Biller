@@ -35,8 +35,30 @@ bash $S/test-stack.sh down                    # always, when done
 - `render-page.sh` shows the server-rendered page (values, selected options, table cells, the error
   box). It can't click; say what still needs a browser.
 
+## As a PR step
+
+`_pre-pr` runs this (step 3) when `scope.md` says `Integration tests: yes`. CI takes the tests from
+the BillioIntegrationTest branch named there, so put the local checkout on that branch first
+(`_sync-repos`). Then save the result for the PR description:
+
+```bash
+P=.claude/skills/_pre-pr/scripts/pr-state.sh
+bash $S/test-stack.sh up
+OUT="$(bash $S/run-integration.sh --repeat 3 2>&1)"; CODE=$?; echo "$OUT"
+bash $S/test-stack.sh down
+{ echo "BillioIntegrationTest branch: $(git -C ../BillioIntegrationTest branch --show-current)"
+  echo "Command: run-integration.sh --repeat 3 (exit $CODE)"
+  grep -E '^Run [0-9]+/[0-9]+|Build FAILED' <<< "$OUT"; } | bash $P write integration
+```
+
 ## When done
 
 Run `test-stack.sh down`, even after a failure, then check `docker ps -a` shows no `biller-test-*`
 container. Paste the result lines of each command (the `Run n/N` lines, the Liquibase lines, the
 page values). Don't say something passed without them.
+
+Containers you start yourself (a throwaway Postgres, the API) get removed with their volumes too:
+`docker rm -f -v <name>`, or start them with `docker run --rm`. Plain `docker rm` leaves the
+postgres image's anonymous data volume behind. Then paste `docker ps -a` and
+`docker volume ls -f dangling=true`: nothing you created may be left. Leave the compose stack
+(`billio-*` containers) and volumes from before this session alone.
