@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
-# Review bookkeeping for _pre-pr, per repo and branch: snapshots of what was reviewed, the list of
-# findings already handled, and one context file ("pack") the reviewer reads instead of exploring.
-# State lives in <repo>/.git/review-rounds/<branch>/ and is never committed.
+# Review bookkeeping for _pr-review, per repo and branch: snapshots of what was reviewed, the
+# findings and what happened to them, and one context file ("pack") the reviewer reads instead of
+# exploring. Everything lives in the PR state folder (_pre-pr/scripts/pr-state.sh dir), next to
+# scope.md, whose plan and risk notes go into the pack.
 #
 # Usage: review-round.sh <command> [repo] [options]
 #   repo       a repo folder or a sibling name such as BillerFrontEnd (default: this repo)
-#   save [--exclude PATH]...
-#              snapshot the working tree (commits, uncommitted changes and new files) as the
-#              reviewed state; --exclude leaves out untracked folders that aren't part of the change
+#   save       snapshot the working tree (commits, uncommitted changes and new files) as the
+#              reviewed state, without the paths left out with pr-state.sh exclude
 #   changed    list the files changed since the last snapshot; exit 0 when code changed,
 #              1 when only docs (*.md, docs/) or nothing changed, so the next round can be skipped
 #   pack [--full] [--plan FILE]
-#              write the reviewer's context file and print its path: REVIEW.md, the handled
-#              findings, and the diff since the last snapshot (--full: against master)
-#   findings   print the path of the handled-findings file; add one line per finding and outcome
+#              write the reviewer's context file and print its path: scope.md, REVIEW.md, the
+#              findings so far, and the diff since the last snapshot (--full: since the branch
+#              left master). The plan defaults to the one named in scope.md.
+#   findings   print the path of findings.md: one "- [ ] <tag> <file:line> <finding> (round N)" line
+#              per finding; _pr-fix ticks it and adds "-> <what was done>"
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
@@ -30,49 +32,27 @@ fi
 cd "$DIR" || exit 2
 
 BRANCH="$(git branch --show-current)"
-STATE="$(git rev-parse --absolute-git-dir)/review-rounds/${BRANCH//\//_}"
-mkdir -p "$STATE"
+PR_STATE="$REPO_ROOT/.claude/skills/_pre-pr/scripts/pr-state.sh"
+STATE="$(bash "$PR_STATE" dir "$DIR")" || exit 2
 FINDINGS="$STATE/findings.md"
 
-pathspec() {
-  printf '%s\0' .
-  [[ -f "$STATE/excludes" ]] && while read -r ex; do [[ -n "$ex" ]] && printf ':(exclude)%s\0' "$ex"; done < "$STATE/excludes"
-}
-
-# New files in the change. Honours .gitignore but not the local .git/info/exclude, which in Biller
-# hides new files under .claude/ (files already tracked there are not affected).
-new_files() { pathspec | xargs -0 git ls-files --others --exclude-per-directory=.gitignore --; }
-
-# The working tree as a tree object, without touching the real index.
-current_tree() {
-  local index; index="$(mktemp)"
-  cp "$(git rev-parse --absolute-git-dir)/index" "$index"
-  pathspec | GIT_INDEX_FILE="$index" xargs -0 git add -u -- 2>/dev/null
-  new_files | tr '\n' '\0' | GIT_INDEX_FILE="$index" xargs -0 -r git add -f -- 2>/dev/null
-  GIT_INDEX_FILE="$index" git write-tree
-  rm -f "$index"
-}
+# The working tree as a tree object (honouring the excludes saved in the state folder).
+current_tree() { bash "$PR_STATE" tree "$DIR"; }
 
 last_round() { ls "$STATE"/round-*.tree 2>/dev/null | sed -E 's#.*/round-([0-9]+)\.tree#\1#' | sort -n | tail -n1; }
 
 case "$COMMAND" in
   save)
-    : > "$STATE/excludes"
-    while [[ $# -gt 0 ]]; do
-      case "$1" in
-        --exclude) echo "$2" >> "$STATE/excludes"; shift 2 ;;
-        *) echo "Unknown argument: $1" >&2; exit 2 ;;
-      esac
-    done
+    [[ $# -eq 0 ]] || { echo "Unknown argument: $1 (leave paths out with pr-state.sh exclude)" >&2; exit 2; }
     tree="$(current_tree)"
     previous="$(last_round)"
     round=$(( ${previous:-0} + 1 ))
     echo "$tree" > "$STATE/round-$round.tree"
     echo "Round $round snapshot of $(basename "$DIR") on '$BRANCH': $tree"
-    git diff --stat master "$tree" | tail -n1
-    untracked="$(new_files)"
+    git diff --stat "$(bash "$PR_STATE" base "$DIR")" "$tree" | tail -n1
+    untracked="$(git diff --name-only --diff-filter=A HEAD "$tree")"
     if [[ -n "$untracked" ]]; then
-      echo "New files in the snapshot (use --exclude if they aren't part of the change):"
+      echo "Files not committed yet (leave out those that aren't part of the PR with pr-state.sh exclude):"
       sed 's/^/  /' <<< "$untracked"
     fi
     ;;
@@ -96,10 +76,12 @@ case "$COMMAND" in
         *) echo "Unknown argument: $1" >&2; exit 2 ;;
       esac
     done
+    [[ -z "$plan" && -f "$STATE/scope.md" ]] \
+      && plan="$(sed -nE 's/^Plan: ([^ ]+\.md).*/\1/p' "$STATE/scope.md" | head -n1)"
     tree="$(current_tree)"
     round="$(last_round)"
     if [[ $full -eq 1 || -z "$round" ]]; then
-      from=master; what="against master"
+      from="$(bash "$PR_STATE" base "$DIR")"; what="against master (from the branch's base $from)"
     else
       from="$(cat "$STATE/round-$round.tree")"; what="since the round $round snapshot ($from)"
     fi
@@ -112,10 +94,13 @@ case "$COMMAND" in
       echo
       echo "## Files"; echo '```'; git diff --stat "$from" "$tree"; echo '```'
       echo
+      echo "## Scope (from _pr-scope)"
+      if [[ -f "$STATE/scope.md" ]]; then sed '1{/^<!-- tree: /d}' "$STATE/scope.md"; else echo "(no scope.md)"; fi
+      echo
       echo "## Review rules (REVIEW.md)"
       if [[ -f REVIEW.md ]]; then cat REVIEW.md; else echo "(no REVIEW.md)"; fi
       echo
-      echo "## Already handled, don't report again"
+      echo "## Findings so far: [x] lines are handled, don't report them again"
       if [[ -s "$FINDINGS" ]]; then cat "$FINDINGS"; else echo "(none yet)"; fi
       echo
       echo "## Diff"; echo '```diff'; git diff "$from" "$tree"; echo '```'
@@ -128,5 +113,5 @@ case "$COMMAND" in
     echo "$FINDINGS"
     ;;
 
-  *) sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

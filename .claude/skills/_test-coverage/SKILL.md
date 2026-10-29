@@ -57,6 +57,21 @@ link, e.g. `[Open coverage report](file:///C:/Users/Aldis/source/repo2/Biller/co
 If the report wasn't generated (build failure, `--no-report`, reportgenerator missing), say so
 instead of linking.
 
+## As a PR step
+
+In `_pre-pr` (step 2), save the result for the later steps; the PR description's Testing section
+is written from it:
+
+```bash
+P=.claude/skills/_pre-pr/scripts/pr-state.sh
+OUT="$(bash .claude/skills/_test-coverage/scripts/run-coverage.sh 2>&1)"; CODE=$?; echo "$OUT"
+{ echo "Command: bash .claude/skills/_test-coverage/scripts/run-coverage.sh (exit $CODE)"
+  grep -E 'Passed!|Failed!|Line coverage|Branch coverage|: error ' <<< "$OUT"; } | bash $P write tests
+```
+
+For a sibling repo, save `build.sh <repo> --release` the same way, with its `Warnings:` and
+`Build succeeded.`/`Build FAILED` lines, as `bash $P write <repo> tests`.
+
 ## Writing missing tests
 
 When asked to close a gap, write the tests with the `_write-tests` skill, which holds the test
