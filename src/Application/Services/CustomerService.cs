@@ -6,6 +6,7 @@ using BillerContracts.Requests.Customer;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
+using FluentValidation;
 using System.Net;
 
 namespace Application.Services;
@@ -13,10 +14,12 @@ namespace Application.Services;
 public class CustomerService : ICustomerService
 {
     private readonly ICustomerRepository _customerRepository;
+    private readonly ISeriesService _seriesService;
 
-    public CustomerService(ICustomerRepository customerRepository)
+    public CustomerService(ICustomerRepository customerRepository, ISeriesService seriesService)
     {
         _customerRepository = customerRepository;
+        _seriesService = seriesService;
     }
 
     public async Task<CustomerModel> Get(Guid id)
@@ -53,7 +56,8 @@ public class CustomerService : ICustomerService
 
     public async Task<Guid> Add(CustomerModel customer)
     {
-        customer.InvoiceNumber = 1;
+        await ValidateSeries(customer.SeriesId, customer.SellerId);
+
         CustomerEntity customerEntity = customer.ToEntity();
 
         return await _customerRepository.Add(customerEntity);
@@ -61,16 +65,15 @@ public class CustomerService : ICustomerService
 
     public async Task Update(CustomerModel customer)
     {
-        await Get(customer.Id);
+        CustomerModel stored = await Get(customer.Id);
+        await ValidateSeries(customer.SeriesId, stored.SellerId);
 
         CustomerEntity customerEntity = customer.ToEntity();
 
-        await _customerRepository.Update(customerEntity);
-    }
-
-    public async Task IncreaseInvoiceNumber(Guid id)
-    {
-        await _customerRepository.IncreaseInvoiceNumber(id);
+        bool updated = await _customerRepository.Update(customerEntity)
+            ?? throw new NotFoundException($"Invoice customer:{customer.Id} not found");
+        if (!updated)
+            throw new ValidationException($"Customer id {customer.Id} has invoices, so its series can't be changed");
     }
 
     public async Task Delete(Guid id)
@@ -78,5 +81,14 @@ public class CustomerService : ICustomerService
         await Get(id);
 
         await _customerRepository.Delete(id);
+    }
+
+    private async Task ValidateSeries(Guid seriesId, Guid sellerId)
+    {
+        var seriesResult = await _seriesService.GetWithValidation(seriesId, sellerId);
+        seriesResult.Match(
+            series => { return series; },
+            error => { throw new ValidationException(error.ExtendedMessage); }
+        );
     }
 }

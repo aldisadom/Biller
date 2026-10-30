@@ -31,7 +31,7 @@ public class InvoiceDocumentADA : IDocument
             row.RelativeItem().Column(column =>
             {
                 column.Item().AlignCenter().Text($"{_texts.JobDoneAct()}").Style(titleStyle);
-                column.Item().AlignCenter().Text($"{_texts.InvoiceSeries()} {Model.Customer!.InvoiceName} {_texts.NumberShort()} {Model.GenerateInvoiceName()}");
+                column.Item().AlignCenter().Text($"{_texts.InvoiceSeries()} {Model.SeriesName} {_texts.NumberShort()} {Model.GenerateInvoiceName()}");
             });
         });
     }

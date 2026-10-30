@@ -6,10 +6,10 @@ namespace xUnitTests.Application.Models;
 public class InvoiceModelTest
 {
     [Theory]
-    [InlineData(5, "000005", Label = "one digit number is padded to six digits")]
-    [InlineData(123, "000123", Label = "three digit number is padded to six digits")]
+    [InlineData(1, "000001", Label = "one digit number is padded to six digits")]
+    [InlineData(42, "000042", Label = "two digit number is padded to six digits")]
     [InlineData(123456, "123456", Label = "six digit number is not padded")]
-    [InlineData(1234567, "1234567", Label = "number longer than six digits is kept whole")]
+    [InlineData(1234567, "1234567", Label = "seven digit number is kept whole")]
     public void GenerateInvoiceName_GivenInvoiceNumber_ReturnsPaddedNumber(int invoiceNumber, string expected)
     {
         //Arrange
@@ -23,15 +23,39 @@ public class InvoiceModelTest
     }
 
     [Fact]
-    public void GenerateFileLocation_GivenInvoiceName_ReturnsNameAndPaddedNumber()
+    public void GenerateFileLocation_GivenSeriesAndNumber_UsesInvoiceSeriesName()
     {
         //Arrange
-        InvoiceModel invoice = new() { InvoiceNumber = 5 };
+        InvoiceModel invoice = new()
+        {
+            SeriesName = "WF",
+            InvoiceNumber = 12
+        };
 
         //Act
-        string result = invoice.GenerateFileLocation("WF");
+        string result = invoice.GenerateFileLocation();
 
         //Assert
-        result.Should().Be("WF-000005.pdf");
+        result.Should().Be("WF-000012.pdf");
+    }
+
+    [Fact]
+    public void CalculateTotal_GivenItems_ReturnsSumOfPriceTimesQuantity()
+    {
+        //Arrange
+        InvoiceModel invoice = new()
+        {
+            Items =
+            [
+                new() { Price = 10.5m, Quantity = 2 },
+                new() { Price = 3m, Quantity = 1.5m }
+            ]
+        };
+
+        //Act
+        decimal result = invoice.CalculateTotal();
+
+        //Assert
+        result.Should().Be(25.5m);
     }
 }

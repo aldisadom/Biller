@@ -12,5 +12,4 @@ public interface ICustomerService
     Task<CustomerModel> Get(Guid id);
     Task<Result<CustomerModel>> GetWithValidation(Guid id, Guid sellerId);
     Task Update(CustomerModel Customer);
-    Task IncreaseInvoiceNumber(Guid id);
 }

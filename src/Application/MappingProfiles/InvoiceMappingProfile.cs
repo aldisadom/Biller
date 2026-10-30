@@ -16,6 +16,8 @@ public static class InvoiceModelExtensions
             UserId = from.UserId,
             CustomerId = from.CustomerId,
             SellerId = from.SellerId,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
             Items = JsonConvert.DeserializeObject<List<InvoiceItemModel>>(from.ItemsData),
             Comments = from.Comments,
@@ -25,16 +27,17 @@ public static class InvoiceModelExtensions
         };
     }
 
-    public static InvoiceEntity ToEntity(this InvoiceModel from, string filePath)
+    public static InvoiceEntity ToEntity(this InvoiceModel from)
     {
         return new InvoiceEntity
         {
             Id = from.Id,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
             UserId = from.UserId,
             SellerId = from.SellerId,
             CustomerId = from.CustomerId,
-            FilePath = filePath,
             ItemsData = JsonConvert.SerializeObject(from.Items),
             Comments = from.Comments,
             Status = from.Status,
@@ -52,6 +55,8 @@ public static class InvoiceModelExtensions
             UserId = from.UserId,
             SellerId = from.SellerId,
             CustomerId = from.CustomerId,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
             Items = from.Items,
             Comments = from.Comments,
@@ -93,7 +98,6 @@ public static class InvoiceModelExtensions
         return new InvoiceModel
         {
             Id = from.Id,
-            InvoiceNumber = from.InvoiceNumber,
             SellerId = from.SellerId,
             CustomerId = from.CustomerId,
             Comments = from.Comments,

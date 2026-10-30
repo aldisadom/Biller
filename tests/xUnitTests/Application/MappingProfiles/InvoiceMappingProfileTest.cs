@@ -37,6 +37,8 @@ public class InvoiceMappingProfileTest
         UserId = Guid.NewGuid(),
         SellerId = Guid.NewGuid(),
         CustomerId = Guid.NewGuid(),
+        SeriesId = Guid.NewGuid(),
+        SeriesName = "INV",
         InvoiceNumber = 6,
         Items = NewItems(),
         Comments = "invoice comment",
@@ -46,20 +48,19 @@ public class InvoiceMappingProfileTest
     };
 
     [Fact]
-    public void ToEntity_GivenModelAndFilePath_MapsAllProperties()
+    public void ToEntity_GivenModel_MapsAllProperties()
     {
         //Arrange
         InvoiceModel from = NewInvoice();
 
         //Act
-        var to = from.ToEntity("WF-000006.pdf");
+        var to = from.ToEntity();
 
         //Assert
         HashSet<string> ignoreProperties = [
             "ItemsData",
             "CreatedDate",
             "DueDate",
-            "FilePath",
             "TotalPrice"
         ];
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
@@ -67,7 +68,6 @@ public class InvoiceMappingProfileTest
         to.ItemsData.Should().Be(JsonConvert.SerializeObject(from.Items));
         to.CreatedDate.Should().Be(from.CreatedDate.ToDateTime(TimeOnly.MinValue));
         to.DueDate.Should().Be(from.DueDate.ToDateTime(TimeOnly.MinValue));
-        to.FilePath.Should().Be("WF-000006.pdf");
         to.TotalPrice.Should().Be(51.5m);
     }
 
@@ -105,6 +105,8 @@ public class InvoiceMappingProfileTest
         var from = new InvoiceEntity
         {
             Id = Guid.NewGuid(),
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "INV",
             InvoiceNumber = 6,
             UserId = Guid.NewGuid(),
             SellerId = Guid.NewGuid(),
@@ -170,7 +172,6 @@ public class InvoiceMappingProfileTest
         var from = new InvoiceUpdateRequest
         {
             Id = Guid.NewGuid(),
-            InvoiceNumber = 963,
             SellerId = Guid.NewGuid(),
             CustomerId = Guid.NewGuid(),
             Items =

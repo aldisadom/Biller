@@ -20,12 +20,17 @@ on a small Linux PC.
 - `src/Infrastructure`: Dapper repositories, DI for the DB and PDF generation.
 
 ## Conventions
-- A write that touches several rows or tables is one SQL statement (data-modifying CTE). All
-  repositories share one scoped `IDbConnection`, so don't add transactions.
+- A write that touches several rows or tables is one SQL statement (data-modifying CTE). The one
+  exception: invoice writes and series updates lock the series row first (`LockSeries`) in a
+  transaction (`InTransaction`), so they never run at the same time. A customer update that changes
+  the series locks the customer row, then its current series, so a transaction that holds a series
+  lock must not lock customer rows (plain reads and foreign-key checks are fine). All repositories share one scoped
+  `IDbConnection`, so a transaction starts and ends inside one repository method.
 - Never edit a changeset that is already on master. Fix it with a new one. Every changeset has a `-- rollback`.
 - Invoices store their user, seller and customer ids and show the current data. They keep their
   own number, dates and lines. Editing an item must not change an existing invoice or its PDF.
   Saving the invoice itself (`PUT /invoices`) copies line names and prices from the current items.
+  The series name isn't copied, so a series with invoices can't be renamed.
 - Mirror the Item feature when adding a layer. Map every property by hand.
 - Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be
   on the branch with Biller's branch name, else on up-to-date master.

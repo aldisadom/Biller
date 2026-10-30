@@ -11,6 +11,8 @@ public record InvoiceModel
     public Guid SellerId { get; set; }
     public Guid CustomerId { get; set; }
     public List<InvoiceItemModel>? Items { get; set; }
+    public Guid SeriesId { get; set; }
+    public string SeriesName { get; set; } = string.Empty;
     public int InvoiceNumber { get; set; }
     public string? Comments { get; set; }
     public InvoiceStatus Status { get; set; }
@@ -24,13 +26,13 @@ public record InvoiceModel
         return total;
     }
 
+    public string GenerateFileLocation()
+    {
+        return $"{SeriesName}-{GenerateInvoiceName()}.pdf";
+    }
+
     public string GenerateInvoiceName()
     {
         return InvoiceNumber.ToString("D6");
-    }
-
-    public string GenerateFileLocation(string invoiceName)
-    {
-        return $"{invoiceName}-{GenerateInvoiceName()}.pdf";
     }
 }

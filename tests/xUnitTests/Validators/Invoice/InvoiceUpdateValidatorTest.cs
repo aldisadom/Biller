@@ -12,7 +12,6 @@ public class InvoiceUpdateValidatorTest
     private static InvoiceUpdateRequest ValidRequest() => new()
     {
         Id = Guid.NewGuid(),
-        InvoiceNumber = 1,
         SellerId = Guid.NewGuid(),
         CustomerId = Guid.NewGuid(),
         Items =
@@ -74,23 +73,6 @@ public class InvoiceUpdateValidatorTest
         //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.DueDate));
-    }
-
-    [Theory]
-    [InlineData(0, Label = "zero invoice number is rejected")]
-    [InlineData(-1, Label = "negative invoice number is rejected")]
-    public void Validate_GivenInvoiceNumberNotGreaterThanZero_IsInvalid(int invoiceNumber)
-    {
-        //Arrange
-        var request = ValidRequest();
-        request.InvoiceNumber = invoiceNumber;
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.InvoiceNumber));
     }
 
     public static IEnumerable<TheoryDataRow<InvoiceItemRequest>> GetInvalidItemTestData()

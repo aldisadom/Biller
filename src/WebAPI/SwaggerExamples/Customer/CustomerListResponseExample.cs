@@ -20,6 +20,8 @@ public class CustomerListResponseExample : IExamplesProvider<CustomerListRespons
         {
             Id = Guid.NewGuid(),
             SellerId = Guid.NewGuid(),
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "GG",
             CompanyName = "Glass Garden",
             Street = "Main road 5",
             City = "Winterfell",
@@ -32,6 +34,8 @@ public class CustomerListResponseExample : IExamplesProvider<CustomerListRespons
         {
             Id = Guid.NewGuid(),
             SellerId = Guid.NewGuid(),
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "TT",
             CompanyName = "Throne Takers",
             Street = "Ocean road 1",
             City = "Casterly Rock",

@@ -55,15 +55,17 @@ public class InvoiceServiceTest
     {
         //Arrange
         InvoiceModel storedInvoice = NewInvoiceModel();
+        storedInvoice.SeriesId = Guid.NewGuid();
+        storedInvoice.SeriesName = "WF";
         storedInvoice.InvoiceNumber = 5;
         storedInvoice.Items = [new() { Id = Guid.NewGuid(), Name = "Iron throne", Price = 10m, Quantity = 2 }];
 
         UserModel user = new() { Id = storedInvoice.UserId };
         SellerModel seller = new() { Id = storedInvoice.SellerId };
-        CustomerModel customer = new() { Id = storedInvoice.CustomerId, InvoiceNumber = 9 };
+        CustomerModel customer = new() { Id = storedInvoice.CustomerId };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
-                        .ReturnsAsync(storedInvoice.ToEntity(string.Empty));
+                        .ReturnsAsync(storedInvoice.ToEntity());
         _userServiceMock.Setup(m => m.Get(user.Id))
                 .ReturnsAsync(user);
         _sellerServiceMock.Setup(m => m.Get(seller.Id))
@@ -76,6 +78,8 @@ public class InvoiceServiceTest
 
         //Assert
         result.Id.Should().Be(storedInvoice.Id);
+        result.SeriesId.Should().Be(storedInvoice.SeriesId);
+        result.SeriesName.Should().Be("WF");
         result.InvoiceNumber.Should().Be(5);
         result.Items.Should().BeEquivalentTo(new List<InvoiceItemModel> { new() { Id = storedInvoice.Items[0].Id, Name = "Iron throne", Price = 10m, Quantity = 2 } });
         result.User.Should().BeSameAs(user);
@@ -125,7 +129,7 @@ public class InvoiceServiceTest
 
         InvoiceModel firstInvoice = new() { Id = Guid.NewGuid(), UserId = user.Id, SellerId = seller.Id, CustomerId = customer.Id, InvoiceNumber = 1, Items = [] };
         InvoiceModel secondInvoice = new() { Id = Guid.NewGuid(), UserId = user.Id, SellerId = seller.Id, CustomerId = customer.Id, InvoiceNumber = 2, Items = [] };
-        List<InvoiceEntity> invoiceDataList = [firstInvoice.ToEntity(string.Empty), secondInvoice.ToEntity(string.Empty)];
+        List<InvoiceEntity> invoiceDataList = [firstInvoice.ToEntity(), secondInvoice.ToEntity()];
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(null, null, null, 1, (int)PageSize.p25))
                         .ReturnsAsync((invoiceDataList, 7));
@@ -167,7 +171,7 @@ public class InvoiceServiceTest
 
         InvoiceModel invoice = new() { Id = Guid.NewGuid(), UserId = user.Id, SellerId = seller.Id, CustomerId = customer.Id, Items = [] };
         InvoiceModel otherInvoice = new() { Id = Guid.NewGuid(), UserId = user.Id, SellerId = seller.Id, CustomerId = otherCustomer.Id, Items = [] };
-        List<InvoiceEntity> invoiceDataList = [invoice.ToEntity(string.Empty), otherInvoice.ToEntity(string.Empty)];
+        List<InvoiceEntity> invoiceDataList = [invoice.ToEntity(), otherInvoice.ToEntity()];
         InvoiceGetRequest request = new() { SellerId = seller.Id };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(null, seller.Id, null, request.Page, (int)request.PageSize))
@@ -325,12 +329,11 @@ public class InvoiceServiceTest
         _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.SellerId, invoiceData.UserId), Times.Once());
         _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.CustomerId, invoiceData.SellerId), Times.Once());
         _itemServiceMock.Verify(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), invoiceData.CustomerId), Times.Once());
-        _customerServiceMock.Verify(m => m.IncreaseInvoiceNumber(It.IsAny<Guid>()), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
     [Fact]
-    public async Task Add_GivenValidData_SavesCustomersNumberAndCurrentItemNamesAndPrices()
+    public async Task Add_GivenValidData_SavesCustomersSeriesAndCurrentItemNamesAndPrices()
     {
         //Arrange
         Guid throneId = Guid.NewGuid();
@@ -349,7 +352,7 @@ public class InvoiceServiceTest
 
         UserModel user = new() { Id = invoiceData.UserId };
         SellerModel seller = new() { Id = invoiceData.SellerId };
-        CustomerModel customer = new() { Id = invoiceData.CustomerId, InvoiceName = "WF", InvoiceNumber = 7 };
+        CustomerModel customer = new() { Id = invoiceData.CustomerId, SeriesId = Guid.NewGuid() };
         List<ItemModel> items =
         [
             new() { Id = throneId, Name = "Iron throne", Price = 10m },
@@ -362,9 +365,8 @@ public class InvoiceServiceTest
             UserId = invoiceData.UserId,
             SellerId = invoiceData.SellerId,
             CustomerId = invoiceData.CustomerId,
-            InvoiceNumber = 7,
+            SeriesId = customer.SeriesId,
             Status = InvoiceStatus.Created,
-            FilePath = "WF-000007.pdf",
             CreatedDate = new DateTime(2026, 10, 1),
             DueDate = new DateTime(2026, 10, 11),
             ItemsData = JsonConvert.SerializeObject(new List<InvoiceItemModel>
@@ -390,9 +392,6 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Add(expectedEntity))
                                  .ReturnsAsync(newId);
 
-        _customerServiceMock.Setup(m => m.IncreaseInvoiceNumber(customer.Id))
-                .Returns(Task.CompletedTask);
-
         //Act
         Guid result = await _invoiceService.Add(invoiceData);
 
@@ -404,7 +403,44 @@ public class InvoiceServiceTest
         _customerServiceMock.Verify(m => m.GetWithValidation(customer.Id, seller.Id), Times.Once());
         _itemServiceMock.Verify(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customer.Id), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Add(expectedEntity), Times.Once());
-        _customerServiceMock.Verify(m => m.IncreaseInvoiceNumber(customer.Id), Times.Once());
+    }
+
+    [Fact]
+    public async Task Add_GivenSeriesGoneBeforeInsert_ThrowsValidationException()
+    {
+        //Arrange
+        InvoiceModel invoiceData = NewInvoiceModel();
+        List<Guid> itemIds = invoiceData.Items!.Select(i => i.Id).ToList();
+
+        UserModel user = new() { Id = invoiceData.UserId };
+        SellerModel seller = new() { Id = invoiceData.SellerId };
+        CustomerModel customer = new() { Id = invoiceData.CustomerId, SeriesId = Guid.NewGuid() };
+        List<ItemModel> items = invoiceData.Items!.Select(i => new ItemModel() { Id = i.Id }).ToList();
+
+        InvoiceEntity expectedEntity = invoiceData.ToEntity() with { Status = InvoiceStatus.Created, SeriesId = customer.SeriesId };
+
+        _userServiceMock.Setup(m => m.Get(user.Id))
+                .ReturnsAsync(user);
+        _sellerServiceMock.Setup(m => m.GetWithValidation(seller.Id, user.Id))
+                .ReturnsAsync(seller);
+        _customerServiceMock.Setup(m => m.GetWithValidation(customer.Id, seller.Id))
+                .ReturnsAsync(customer);
+        _itemServiceMock.Setup(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customer.Id))
+            .ReturnsAsync(items);
+        _invoiceDataRepositoryMock.Setup(m => m.Add(expectedEntity))
+                                 .ReturnsAsync(Guid.Empty);
+
+        //Act
+        //Assert
+        await _invoiceService.Invoking(x => x.Add(invoiceData))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Invoice was not created: customer id {customer.Id} is no longer in series id {customer.SeriesId}, or the series has no numbers left");
+
+        _userServiceMock.Verify(m => m.Get(user.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetWithValidation(seller.Id, user.Id), Times.Once());
+        _customerServiceMock.Verify(m => m.GetWithValidation(customer.Id, seller.Id), Times.Once());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customer.Id), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Add(expectedEntity), Times.Once());
     }
 
     [Fact]
@@ -477,15 +513,16 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task GeneratePDF_GivenValidId_ReturnsPdfNamedWithInvoicesOwnNumber()
+    public async Task GeneratePDF_GivenValidId_ReturnsPdfNamedWithInvoicesSeriesAndNumber()
     {
         //Arrange
         InvoiceModel storedInvoice = NewInvoiceModel();
+        storedInvoice.SeriesName = "WF";
         storedInvoice.InvoiceNumber = 5;
 
         UserModel user = new() { Id = storedInvoice.UserId };
         SellerModel seller = new() { Id = storedInvoice.SellerId };
-        CustomerModel customer = new() { Id = storedInvoice.CustomerId, InvoiceName = "WF", InvoiceNumber = 9 };
+        CustomerModel customer = new() { Id = storedInvoice.CustomerId, SeriesName = "KL" };
 
         Language languageCode = Language.LT;
         DocumentType documentType = DocumentType.Invoice;
@@ -493,13 +530,14 @@ public class InvoiceServiceTest
 
         Expression<Func<InvoiceModelFull, bool>> matchesInvoice = i =>
             i.Id == storedInvoice.Id &&
+            i.SeriesName == "WF" &&
             i.InvoiceNumber == 5 &&
             i.User == user &&
             i.Seller == seller &&
             i.Customer == customer;
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
-                        .ReturnsAsync(storedInvoice.ToEntity(string.Empty));
+                        .ReturnsAsync(storedInvoice.ToEntity());
         _userServiceMock.Setup(m => m.Get(user.Id))
                 .ReturnsAsync(user);
         _sellerServiceMock.Setup(m => m.Get(seller.Id))
@@ -524,7 +562,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Update_GivenValidInvoice_KeepsStoredUserAndStatusAndCopiesCurrentItemPrices()
+    public async Task Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndCopiesCurrentItemPrices()
     {
         //Arrange
         Guid throneId = Guid.NewGuid();
@@ -534,6 +572,8 @@ public class InvoiceServiceTest
             UserId = Guid.NewGuid(),
             SellerId = Guid.NewGuid(),
             CustomerId = Guid.NewGuid(),
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "WF",
             InvoiceNumber = 5,
             Status = InvoiceStatus.Send,
             Items = [new() { Id = throneId, Name = "Wooden throne", Price = 8m, Quantity = 1 }]
@@ -542,8 +582,10 @@ public class InvoiceServiceTest
         InvoiceModel invoiceData = new()
         {
             Id = storedInvoice.Id,
-            SellerId = Guid.NewGuid(),
-            CustomerId = Guid.NewGuid(),
+            SellerId = storedInvoice.SellerId,
+            CustomerId = storedInvoice.CustomerId,
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "KL",
             InvoiceNumber = 6,
             Status = InvoiceStatus.Payed,
             Comments = "Winter is coming",
@@ -554,18 +596,19 @@ public class InvoiceServiceTest
         List<Guid> itemIds = [throneId];
 
         SellerModel seller = new() { Id = invoiceData.SellerId };
-        CustomerModel customer = new() { Id = invoiceData.CustomerId, InvoiceName = "WF", InvoiceNumber = 9 };
+        CustomerModel customer = new() { Id = invoiceData.CustomerId };
         List<ItemModel> items = [new() { Id = throneId, Name = "Iron throne", Price = 12m }];
 
         InvoiceEntity expectedEntity = new()
         {
             Id = storedInvoice.Id,
             UserId = storedInvoice.UserId,
-            SellerId = invoiceData.SellerId,
-            CustomerId = invoiceData.CustomerId,
-            InvoiceNumber = 6,
+            SellerId = storedInvoice.SellerId,
+            CustomerId = storedInvoice.CustomerId,
+            SeriesId = storedInvoice.SeriesId,
+            SeriesName = "WF",
+            InvoiceNumber = 5,
             Status = InvoiceStatus.Send,
-            FilePath = "WF-000006.pdf",
             Comments = "Winter is coming",
             CreatedDate = new DateTime(2026, 10, 1),
             DueDate = new DateTime(2026, 10, 11),
@@ -577,7 +620,7 @@ public class InvoiceServiceTest
         };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
-            .ReturnsAsync(storedInvoice.ToEntity(string.Empty));
+            .ReturnsAsync(storedInvoice.ToEntity());
 
         _sellerServiceMock.Setup(m => m.GetWithValidation(seller.Id, storedInvoice.UserId))
             .ReturnsAsync(seller);
@@ -603,7 +646,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Update_GivenSellerOfAnotherUser_ThrowsAndDoesNotSave()
+    public async Task Update_GivenOtherSeller_ThrowsValidationExceptionBeforeValidating()
     {
         //Arrange
         InvoiceModel storedInvoice = NewInvoiceModel();
@@ -616,9 +659,74 @@ public class InvoiceServiceTest
         };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
-            .ReturnsAsync(storedInvoice.ToEntity(string.Empty));
+            .ReturnsAsync(storedInvoice.ToEntity());
 
-        _sellerServiceMock.Setup(m => m.GetWithValidation(invoiceData.SellerId, storedInvoice.UserId))
+        //Act
+        //Assert
+        await _invoiceService.Invoking(x => x.Update(invoiceData))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Invoice id {storedInvoice.Id} can't be moved to another seller");
+
+        _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _customerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), It.IsAny<Guid>()), Times.Never());
+        _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
+    }
+
+    [Fact]
+    public async Task Update_GivenOtherCustomer_ThrowsValidationExceptionBeforeValidating()
+    {
+        //Arrange
+        InvoiceModel storedInvoice = NewInvoiceModel();
+        InvoiceModel invoiceData = new()
+        {
+            Id = storedInvoice.Id,
+            SellerId = storedInvoice.SellerId,
+            CustomerId = Guid.NewGuid(),
+            Items = storedInvoice.Items
+        };
+
+        _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
+            .ReturnsAsync(storedInvoice.ToEntity());
+
+        //Act
+        //Assert
+        await _invoiceService.Invoking(x => x.Update(invoiceData))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Invoice id {storedInvoice.Id} can't be moved to another customer");
+
+        _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _customerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.IsAny<List<Guid>>(), It.IsAny<Guid>()), Times.Never());
+        _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
+    }
+
+    [Fact]
+    public async Task Update_GivenItemOfAnotherCustomer_ThrowsAndDoesNotSave()
+    {
+        //Arrange
+        InvoiceModel storedInvoice = NewInvoiceModel();
+        InvoiceModel invoiceData = new()
+        {
+            Id = storedInvoice.Id,
+            SellerId = storedInvoice.SellerId,
+            CustomerId = storedInvoice.CustomerId,
+            Items = [new() { Id = Guid.NewGuid() }]
+        };
+        List<Guid> itemIds = [invoiceData.Items[0].Id];
+
+        _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
+            .ReturnsAsync(storedInvoice.ToEntity());
+
+        _sellerServiceMock.Setup(m => m.GetWithValidation(storedInvoice.SellerId, storedInvoice.UserId))
+            .ReturnsAsync(new SellerModel { Id = storedInvoice.SellerId });
+
+        _customerServiceMock.Setup(m => m.GetWithValidation(storedInvoice.CustomerId, storedInvoice.SellerId))
+            .ReturnsAsync(new CustomerModel { Id = storedInvoice.CustomerId });
+
+        _itemServiceMock.Setup(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), storedInvoice.CustomerId))
             .ReturnsAsync(new ErrorModel());
 
         //Act
@@ -627,8 +735,9 @@ public class InvoiceServiceTest
                             .Should().ThrowAsync<FluentValidation.ValidationException>();
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.SellerId, storedInvoice.UserId), Times.Once());
-        _customerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _sellerServiceMock.Verify(m => m.GetWithValidation(storedInvoice.SellerId, storedInvoice.UserId), Times.Once());
+        _customerServiceMock.Verify(m => m.GetWithValidation(storedInvoice.CustomerId, storedInvoice.SellerId), Times.Once());
+        _itemServiceMock.Verify(m => m.GetWithValidation(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), storedInvoice.CustomerId), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 

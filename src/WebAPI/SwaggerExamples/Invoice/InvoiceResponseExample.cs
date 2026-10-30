@@ -1,6 +1,4 @@
-﻿using BillerContracts.Responses.Customer;
-using BillerContracts.Responses.Invoice;
-using BillerContracts.Responses.Seller;
+﻿using BillerContracts.Responses.Invoice;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.Invoice;
@@ -20,17 +18,15 @@ public class InvoiceResponseExample : IExamplesProvider<InvoiceResponse>
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
+            SeriesId = Guid.NewGuid(),
+            SeriesName = "WF",
             InvoiceNumber = 1,
             CreatedDate = DateOnly.FromDateTime(DateTime.Now),
             DueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(10)),
-            Seller = new SellerResponse
-            {
-                Id = Guid.NewGuid(),
-            },
-            Customer = new CustomerResponse
-            {
-                Id = Guid.NewGuid(),
-            },
+            SellerId = Guid.NewGuid(),
+            SellerName = "Throne Takers",
+            CustomerId = Guid.NewGuid(),
+            CustomerName = "Winterfell",
             Items =
             [
                 new InvoiceItemResponse()

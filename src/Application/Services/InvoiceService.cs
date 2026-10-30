@@ -96,14 +96,15 @@ public class InvoiceService : IInvoiceService
         await _userService.Get(invoiceData.UserId);
 
         var (customer, items) = await Validate(invoiceData);
-        invoiceData.InvoiceNumber = customer.InvoiceNumber;
+        invoiceData.SeriesId = customer.SeriesId;
         invoiceData.Status = InvoiceStatus.Created;
         MapItemToInvoiceItem(invoiceData.Items!, items);
 
-        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity(invoiceData.GenerateFileLocation(customer.InvoiceName));
+        InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
 
         Guid id = await _invoiceRepository.Add(invoiceDataEntity);
-        await _customerService.IncreaseInvoiceNumber(invoiceData.CustomerId);
+        if (id == Guid.Empty)
+            throw new ValidationException($"Invoice was not created: customer id {invoiceData.CustomerId} is no longer in series id {invoiceData.SeriesId}, or the series has no numbers left");
 
         return id;
     }
@@ -111,13 +112,24 @@ public class InvoiceService : IInvoiceService
     public async Task Update(InvoiceModel invoiceData)
     {
         InvoiceModel invoice = await GetStored(invoiceData.Id);
+
+        // The invoice keeps its series and number, and a series belongs to one seller.
+        if (invoiceData.SellerId != invoice.SellerId)
+            throw new ValidationException($"Invoice id {invoiceData.Id} can't be moved to another seller");
+
+        if (invoiceData.CustomerId != invoice.CustomerId)
+            throw new ValidationException($"Invoice id {invoiceData.Id} can't be moved to another customer");
+
         invoiceData.UserId = invoice.UserId;
         invoiceData.Status = invoice.Status;
+        invoiceData.SeriesId = invoice.SeriesId;
+        invoiceData.SeriesName = invoice.SeriesName;
+        invoiceData.InvoiceNumber = invoice.InvoiceNumber;
 
-        var (customer, items) = await Validate(invoiceData);
+        var (_, items) = await Validate(invoiceData);
         MapItemToInvoiceItem(invoiceData.Items!, items);
 
-        InvoiceEntity invoiceEntity = invoiceData.ToEntity(invoiceData.GenerateFileLocation(customer.InvoiceName));
+        InvoiceEntity invoiceEntity = invoiceData.ToEntity();
 
         await _invoiceRepository.Update(invoiceEntity);
     }

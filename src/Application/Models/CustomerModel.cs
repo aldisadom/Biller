@@ -4,8 +4,8 @@ public record CustomerModel
 {
     public Guid Id { get; set; }
     public Guid SellerId { get; set; }
-    public string InvoiceName { get; set; } = string.Empty;
-    public int InvoiceNumber { get; set; }
+    public Guid SeriesId { get; set; }
+    public string SeriesName { get; set; } = string.Empty;
     public string CompanyName { get; set; } = string.Empty;
     public string CompanyNumber { get; set; } = string.Empty;
     public string Street { get; set; } = string.Empty;

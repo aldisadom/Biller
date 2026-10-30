@@ -85,6 +85,10 @@ description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQ
    To verify: `docker compose exec db psql -U postgres -d Data -c '\d <table>'`.
    To test the rollback: `docker compose run --rm liquibase --changeLogFile=/migrations/dbChangeLog.yaml --url=jdbc:postgresql://db:5432/Data --username=postgres --password=postgres rollback-count 1`
    then run `docker compose run --rm liquibase` again.
+   If you test on a throwaway Postgres instead (for example to load data in the old shape without
+   touching the local DB), remove it with its volume when you're done: `docker rm -f -v <name>`.
+   Plain `docker rm` leaves the data volume behind. Check `docker ps -a` and
+   `docker volume ls -f dangling=true` afterwards.
 
 ## Before finishing
 
@@ -95,6 +99,13 @@ Tell the user the file name, what it does, how it rolls back, and any data impli
 (backfill values chosen, rows that could violate a new constraint). If the change could fail on
 production data (unique constraint, NOT NULL, type narrowing), say so explicitly and suggest a
 pre-check query such as `SELECT email, count(*) FROM users GROUP BY email HAVING count(*) > 1;`.
+
+**A data migration (one that copies, moves or rewrites existing rows) gets a pre-check query for every
+column type and constraint it writes into**: each `varchar(n)` length, integer arithmetic that can
+overflow (`+ 1` on an `integer`), `NOT NULL`, `CHECK`, `UNIQUE` and foreign keys. Data written by
+older code can break rules the new schema has. In BIL-65, a draft of the series migration (cc845e2) copied names from invoices'
+customer copies (never length-checked) into `varchar(10)` and numbers into a unique index, and the
+review found a missing pre-check four times. Put the queries in the plan and in the PR's Risk section.
 
 If the migration changes or deletes existing data, remind the user to back up the production
 database before deploying. Backups are manual: `make backup` once BIL-84 is merged, until then

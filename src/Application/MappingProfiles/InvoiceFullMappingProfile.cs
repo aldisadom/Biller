@@ -10,10 +10,14 @@ public static class InvoiceModelFullExtensions
         return new InvoiceResponse
         {
             Id = from.Id,
+            SeriesId = from.SeriesId,
+            SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
             UserId = from.UserId,
-            Seller = from.Seller.ToResponse(),
-            Customer = from.Customer.ToResponse(),
+            SellerId = from.SellerId,
+            SellerName = from.Seller.CompanyName,
+            CustomerId = from.CustomerId,
+            CustomerName = from.Customer.CompanyName,
             Items = from.Items!.Select(i => i.ToInvoiceItemResponse()).ToList(),
             Comments = from.Comments,
             Status = from.Status,

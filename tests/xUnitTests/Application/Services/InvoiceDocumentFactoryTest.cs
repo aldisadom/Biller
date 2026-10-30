@@ -35,13 +35,14 @@ public class InvoiceDocumentFactoryTest
         //Arrange
         InvoiceModelFull invoice = new()
         {
+            SeriesName = "WF",
             InvoiceNumber = 5,
             CreatedDate = new DateOnly(2026, 10, 1),
             DueDate = new DateOnly(2026, 10, 11),
             Items = [new() { Name = "Iron throne", Price = 10m, Quantity = 2 }],
             User = new() { Name = "Tyrion", LastName = "Lannister" },
             Seller = new() { CompanyName = "Lannister gold" },
-            Customer = new() { CompanyName = "Winterfell", InvoiceName = "WF" }
+            Customer = new() { CompanyName = "Winterfell" }
         };
 
         _priceToWordsFactoryMock.Setup(m => m.GetConverter(languageCode))
