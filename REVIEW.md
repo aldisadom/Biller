@@ -11,6 +11,11 @@ Failure here looks like:
 - A test passes whatever the code does (wrong class under test, missing `Verify`, expected value copied from the output).
 - A mapping library (AutoMapper or similar) is added, or a mapping method misses a property.
 
+Don't report races that need concurrent requests on the same customer, series or invoice: there is
+one owner and at most about 1 request per second per customer (see `CLAUDE.md`). Don't ask for
+transactions or row locks. A write that touches several rows or tables in separate statements is
+still a finding: it must be one statement.
+
 Skip: `bin/`, `obj/`, `coveragereport/`, `TestResults/`, `*.Designer.cs`, migrations already on master (flag edits to them instead).
 
 Tag each finding **Important**, **Nit**, or **Pre-existing** (the bug was there before this change). At most 2 Nits. No naming or formatting comments.
