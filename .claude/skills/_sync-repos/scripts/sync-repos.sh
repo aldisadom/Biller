@@ -5,8 +5,9 @@
 # Usage: sync-repos.sh [--sync] [--branch <name>] [repo ...]
 #   (default)  report only, change nothing
 #   --sync     switch repos without uncommitted changes to their target branch and fast-forward them
-#   --branch   use this branch name instead of Biller's current branch
-#   repo       sibling folder names (default: BillerContracts BillerFrontEnd BillioIntegrationTest)
+#   --branch   use this branch name instead of Biller's current branch, and put Biller on it too
+#   repo       sibling folder names (default: BillerContracts BillerFrontEnd BillioIntegrationTest,
+#              with Biller first when --branch is given)
 # Exit code: 0 when every repo is on its target branch and not behind origin, 1 otherwise.
 set -uo pipefail
 
@@ -25,7 +26,10 @@ while [[ $# -gt 0 ]]; do
     *) REPOS+=("$1"); shift ;;
   esac
 done
-[[ ${#REPOS[@]} -eq 0 ]] && REPOS=(BillerContracts BillerFrontEnd BillioIntegrationTest)
+if [[ ${#REPOS[@]} -eq 0 ]]; then
+  REPOS=(BillerContracts BillerFrontEnd BillioIntegrationTest)
+  [[ -n "$BRANCH" ]] && REPOS=(Biller "${REPOS[@]}")
+fi
 BILLER_BRANCH="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD)"
 [[ -z "$BRANCH" ]] && BRANCH="$BILLER_BRANCH"
 

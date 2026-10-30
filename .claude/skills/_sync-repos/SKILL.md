@@ -21,7 +21,12 @@ branch with the same name, else master.
 bash .claude/skills/_sync-repos/scripts/sync-repos.sh                         # check only, changes nothing
 bash .claude/skills/_sync-repos/scripts/sync-repos.sh --sync                  # switch and fast-forward
 bash .claude/skills/_sync-repos/scripts/sync-repos.sh --sync BillerContracts  # only the repos you need
+bash .claude/skills/_sync-repos/scripts/sync-repos.sh --sync --branch master  # Biller and every sibling on master
 ```
+
+When the user gives a branch (`/_sync-repos master`), pass it as `--branch`. Biller then goes on
+that branch too, by the same rules: it switches only without uncommitted changes, and the branch
+must exist, else master.
 
 It fetches every repo first, then prints one line per repo: `ok`, `NOT READY` (check mode only),
 `BLOCKED` or `MISSING`. Exit code 0 means every repo is `ok`. From a sibling repo, pass its branch
