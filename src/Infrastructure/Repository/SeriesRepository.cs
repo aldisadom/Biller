@@ -65,32 +65,36 @@ public class SeriesRepository : ISeriesRepository
         return await _dbConnection.ExecuteScalarAsync<Guid>(sql, series);
     }
 
-    // Locks the series row, which every invoice write locks first too, so no invoice of the series is
-    // created, changed or deleted until the update is done. Updates only when NextNumber is above the
-    // highest invoice number and the name stays the same or the series has no invoices.
-    // Returns null when the series doesn't exist.
+    // Updates only when NextNumber is above the highest invoice number and the name stays the same or
+    // the series has no invoices. Returns null when the series doesn't exist.
     public async Task<(bool Updated, int MaxInvoiceNumber)?> Update(SeriesEntity series)
     {
-        string maxInvoiceNumberSql = @"SELECT COALESCE(MAX(invoice_number), 0) FROM invoices
-                                        WHERE series_id=@Id";
-        string updateSql = @"UPDATE series
+        string sql = @"WITH existing AS (
+                            SELECT COALESCE(MAX(invoice_number), 0) AS max_number, COUNT(*) > 0 AS has_invoices FROM invoices
+                            WHERE series_id=@Id
+                        ),
+                        updated AS (
+                            UPDATE series
                             SET name=@Name, next_number=@NextNumber
+                            FROM existing
                             WHERE id=@Id
-                              AND @NextNumber > @MaxInvoiceNumber
-                              AND (name=@Name OR NOT EXISTS (SELECT 1 FROM invoices WHERE series_id=@Id))";
+                              AND @NextNumber > existing.max_number
+                              AND (name=@Name OR NOT existing.has_invoices)
+                            RETURNING id
+                        )
+                        SELECT EXISTS (SELECT 1 FROM updated) AS updated, (SELECT max_number FROM existing) AS max_invoice_number
+                        FROM series
+                        WHERE id=@Id";
 
-        return await _dbConnection.InTransaction<(bool, int)?>(async transaction =>
-        {
-            if (!await _dbConnection.LockSeries(series.Id, transaction))
-                return null;
+        SeriesUpdateResult? result = await _dbConnection.QuerySingleOrDefaultAsync<SeriesUpdateResult>(sql, series);
 
-            int maxInvoiceNumber = await _dbConnection.ExecuteScalarAsync<int>(maxInvoiceNumberSql, new { series.Id }, transaction);
+        return result is null ? null : (result.Updated, result.MaxInvoiceNumber);
+    }
 
-            var parameters = new { series.Id, series.Name, series.NextNumber, MaxInvoiceNumber = maxInvoiceNumber };
-            bool updated = await _dbConnection.ExecuteAsync(updateSql, parameters, transaction) == 1;
-
-            return (updated, maxInvoiceNumber);
-        });
+    private sealed class SeriesUpdateResult
+    {
+        public bool Updated { get; set; }
+        public int MaxInvoiceNumber { get; set; }
     }
 
     public async Task Delete(Guid id)
