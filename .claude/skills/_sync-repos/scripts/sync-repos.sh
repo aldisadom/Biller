@@ -36,7 +36,7 @@ if [[ ${#REPOS[@]} -eq 0 && $BILLER -eq 0 ]]; then
 fi
 
 # Switching Biller can replace this file while bash still reads it, so run from a copy.
-if [[ $SYNC -eq 1 && $BILLER -eq 1 && -z "${SYNC_REPOS_ROOT:-}" ]]; then
+if [[ $SYNC -eq 1 && $BILLER -eq 1 && -n "$BRANCH" && -z "${SYNC_REPOS_ROOT:-}" ]]; then
   copy="$(mktemp)"
   trap 'rm -f "$copy"' EXIT
   cp "${BASH_SOURCE[0]}" "$copy"
@@ -63,9 +63,14 @@ sync_repo() {
   dirty="$(git -C "$dir" status --porcelain --untracked-files=no)"
 
   if [[ "$current" != "$target" ]]; then
-    blocking="$(git -C "$dir" status --porcelain --untracked-files="$untracked")"
-    if [[ $SYNC -eq 0 || "$switch" == no-switch ]]; then
+    blocking="$dirty"
+    [[ "$untracked" != no ]] && blocking="$(git -C "$dir" status --porcelain --untracked-files="$untracked")"
+    if [[ $SYNC -eq 0 ]]; then
       echo "$repo: NOT READY. On '$current', should be on '$target'${blocking:+ (has uncommitted changes)}"
+      return 1
+    fi
+    if [[ "$switch" == no-switch ]]; then
+      echo "$repo: BLOCKED. On '$current', has no branch '$BRANCH', so should be on '$target'. Ask the user."
       return 1
     fi
     if [[ -n "$blocking" ]]; then
@@ -87,10 +92,11 @@ sync_repo() {
     echo "$repo: BLOCKED. '$target' has diverged from origin (behind $behind, ahead $ahead). Ask the user."
     return 1
   elif [[ "$behind" -gt 0 ]]; then
-    if [[ $SYNC -eq 1 && -z "$dirty" ]] && git -C "$dir" merge --quiet --ff-only '@{upstream}' 2>/dev/null; then
+    out=""
+    if [[ $SYNC -eq 1 && -z "$dirty" ]] && out="$(git -C "$dir" merge --quiet --ff-only '@{upstream}' 2>&1)"; then
       echo "$repo: ok. On '$target' (${note}fast-forwarded $behind commits)"
     else
-      echo "$repo: NOT READY. On '$target' but $behind commits behind origin${dirty:+, has uncommitted changes}"
+      echo "$repo: NOT READY. On '$target' but $behind commits behind origin${dirty:+, has uncommitted changes}${out:+: ${out%%$'\n'*}}"
       return 1
     fi
   else

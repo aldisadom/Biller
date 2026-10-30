@@ -27,12 +27,13 @@ bash .claude/skills/_sync-repos/scripts/sync-repos.sh --sync --branch master  # 
 When the user gives a branch (`/_sync-repos master`), pass it as `--branch` and name no repos. Biller
 (this checkout) then goes on that branch too, after the siblings. It switches only when it has no
 uncommitted changes, new files included. When Biller has no such branch it should be on master,
-but the script doesn't move it there: it reports `NOT READY`, and you ask the user. With repos
+but the script doesn't move it there: `--sync` reports `BLOCKED`, and you ask the user. With repos
 named, Biller is included only when `Biller` is one of them. In a worktree, a branch that another
 worktree has checked out can't be switched to, so Biller reports `BLOCKED`.
 
-It fetches every repo first, then prints one line per repo: `ok`, `NOT READY` (check mode only),
-`BLOCKED` or `MISSING`. Exit code 0 means every repo is `ok`. From a sibling repo, pass its branch
+It fetches every repo first, then prints one line per repo: `ok`, `NOT READY` (check mode, or with
+`--sync` a fast-forward that failed: the line gives git's reason, so tell the user), `BLOCKED` or
+`MISSING`. Exit code 0 means every repo is `ok`. From a sibling repo, pass its branch
 and the repos to check, including Biller:
 `bash ../Biller/.claude/skills/_sync-repos/scripts/sync-repos.sh --branch "$(git branch --show-current)" Biller BillerContracts`.
 
