@@ -24,9 +24,10 @@ bash .claude/skills/_sync-repos/scripts/sync-repos.sh --sync BillerContracts  # 
 bash .claude/skills/_sync-repos/scripts/sync-repos.sh --sync --branch master  # Biller and every sibling on master
 ```
 
-When the user gives a branch (`/_sync-repos master`), pass it as `--branch`. Biller then goes on
-that branch too, by the same rules: it switches only without uncommitted changes, and the branch
-must exist, else master.
+When the user gives a branch (`/_sync-repos master`), pass it as `--branch` and name no repos. Biller
+(this checkout) then goes on that branch too, after the siblings. It switches only when it has no
+uncommitted changes, new files included, and only when it has that branch: otherwise it stays
+where it is. With repos named, Biller is included only when `Biller` is one of them.
 
 It fetches every repo first, then prints one line per repo: `ok`, `NOT READY` (check mode only),
 `BLOCKED` or `MISSING`. Exit code 0 means every repo is `ok`. From a sibling repo, pass its branch
