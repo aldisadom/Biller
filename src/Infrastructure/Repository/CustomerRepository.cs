@@ -53,27 +53,18 @@ public class CustomerRepository : ICustomerRepository
     // Null when the customer doesn't exist, false when it has invoices and the series would change.
     public async Task<bool?> Update(CustomerEntity customer)
     {
-        string currentSeriesSql = @"SELECT series_id FROM customers
-                                    WHERE id=@Id
-                                    FOR NO KEY UPDATE";
-        string updateSql = @"UPDATE customers
+        string sql = @"WITH updated AS (
+                            UPDATE customers
                             SET series_id=@SeriesId, company_name=@CompanyName, street=@Street, city=@City, email=@Email,
                                 phone=@Phone, state=@State, company_number=@CompanyNumber
                             WHERE id=@Id
-                              AND (series_id=@SeriesId OR NOT EXISTS (SELECT 1 FROM invoices WHERE customer_id=@Id))";
+                              AND (series_id=@SeriesId OR NOT EXISTS (SELECT 1 FROM invoices WHERE customer_id=@Id))
+                            RETURNING id
+                        )
+                        SELECT EXISTS (SELECT 1 FROM updated) FROM customers
+                        WHERE id=@Id";
 
-        return await _dbConnection.InTransaction<bool?>(async transaction =>
-        {
-            Guid? currentSeriesId = await _dbConnection.ExecuteScalarAsync<Guid?>(currentSeriesSql, new { customer.Id }, transaction);
-            if (currentSeriesId is null)
-                return null;
-
-            // An invoice being created for this customer holds this lock until it commits, so the check sees it.
-            if (currentSeriesId != customer.SeriesId)
-                await _dbConnection.LockSeries(currentSeriesId.Value, transaction);
-
-            return await _dbConnection.ExecuteAsync(updateSql, customer, transaction) == 1;
-        });
+        return await _dbConnection.ExecuteScalarAsync<bool?>(sql, customer);
     }
 
     public async Task Delete(Guid id)

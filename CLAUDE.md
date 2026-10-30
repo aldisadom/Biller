@@ -20,12 +20,12 @@ on a small Linux PC.
 - `src/Infrastructure`: Dapper repositories, DI for the DB and PDF generation.
 
 ## Conventions
-- A write that touches several rows or tables is one SQL statement (data-modifying CTE). The one
-  exception: invoice writes and series updates lock the series row first (`LockSeries`) in a
-  transaction (`InTransaction`), so they never run at the same time. A customer update that changes
-  the series locks the customer row, then its current series, so a transaction that holds a series
-  lock must not lock customer rows (plain reads and foreign-key checks are fine). All repositories share one scoped
-  `IDbConnection`, so a transaction starts and ends inside one repository method.
+- A write that touches several rows or tables is one SQL statement (data-modifying CTE).
+- Race conditions are low risk: one owner, and at most about 1 request per second creates invoices
+  for the same customer. So no explicit transactions or row locks (`FOR UPDATE`): a single statement
+  is enough. Accepted on purpose: a series update at the same time as an invoice create in that
+  series (any of its customers) can set `next_number` to a number just taken. The unique index on
+  `(series_id, invoice_number)` then fails the next create instead of saving a duplicate number.
 - Never edit a changeset that is already on master. Fix it with a new one. Every changeset has a `-- rollback`.
 - Invoices store their user, seller and customer ids and show the current data. They keep their
   own number, dates and lines. Editing an item must not change an existing invoice or its PDF.

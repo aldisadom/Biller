@@ -63,12 +63,7 @@ public class InvoiceRepository : IInvoiceRepository
                         FROM reserved
                         RETURNING id";
 
-        return await _dbConnection.InTransaction(async transaction =>
-        {
-            await _dbConnection.LockSeries(invoice.SeriesId, transaction);
-
-            return await _dbConnection.ExecuteScalarAsync<Guid>(sql, invoice, transaction);
-        });
+        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, invoice);
     }
 
     public async Task Update(InvoiceEntity invoice)
@@ -78,11 +73,7 @@ public class InvoiceRepository : IInvoiceRepository
                         items_data=@ItemsData, comments=@Comments, total_price=@TotalPrice
                         WHERE id=@Id";
 
-        await _dbConnection.InTransaction(async transaction =>
-        {
-            await LockSeriesOfInvoice(invoice.Id, transaction);
-            await _dbConnection.ExecuteAsync(sql, invoice, transaction);
-        });
+        await _dbConnection.ExecuteAsync(sql, invoice);
     }
 
     public async Task UpdateStatus(Guid id, InvoiceStatus status)
@@ -91,11 +82,7 @@ public class InvoiceRepository : IInvoiceRepository
                         SET status=@status
                         WHERE id=@Id";
 
-        await _dbConnection.InTransaction(async transaction =>
-        {
-            await LockSeriesOfInvoice(id, transaction);
-            await _dbConnection.ExecuteAsync(sql, new { Id = id, Status = status }, transaction);
-        });
+        await _dbConnection.ExecuteAsync(sql, new { Id = id, Status = status });
     }
 
     // Gives the number back only when the invoice is the latest of its series. Invoices from before
@@ -114,21 +101,6 @@ public class InvoiceRepository : IInvoiceRepository
                           AND s.next_number = d.invoice_number + 1
                           AND d.invoice_number >= 1";
 
-        await _dbConnection.InTransaction(async transaction =>
-        {
-            await LockSeriesOfInvoice(id, transaction);
-            await _dbConnection.ExecuteAsync(sql, new { id }, transaction);
-        });
-    }
-
-    // An invoice's series_id never changes, so it can be read before the lock.
-    private async Task LockSeriesOfInvoice(Guid invoiceId, IDbTransaction transaction)
-    {
-        string sql = @"SELECT series_id FROM invoices
-                        WHERE id=@InvoiceId";
-
-        Guid? seriesId = await _dbConnection.ExecuteScalarAsync<Guid?>(sql, new { invoiceId }, transaction);
-        if (seriesId is not null)
-            await _dbConnection.LockSeries(seriesId.Value, transaction);
+        await _dbConnection.ExecuteAsync(sql, new { id });
     }
 }

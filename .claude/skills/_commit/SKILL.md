@@ -65,7 +65,7 @@ plan or a message, stop there.
 BIL-65 Customers with invoices keep their series; invoices keep their customer
 
 - PUT /customers returns 400 when it changes the series of a customer with
-  invoices. The update locks the customer row, then its current series.
+  invoices.
 - POST /invoices stops at next_number 2147483647 instead of overflowing
   (400, not 500).
 

@@ -25,9 +25,10 @@ key and go to step 1. If not, create it first:
   resource, fields or endpoints, the rules and error cases, which repos it touches (front end?
   integration tests?), what it depends on, what is out of scope, and the parent epic. Ask the open
   points together, not one by one, and use "Pin down scope" below to see what is missing.
-- **Draft it** in the style of the existing BIL issues (e.g. BIL-90, BIL-92): a summary, then
-  **Goal**, **Found while planning** (what the code shows today), **Plan in short** (numbered
-  steps), **Depends on** and **Risk**. Fill "Found" from the code, not from memory.
+- **Draft it short:** a summary, and a description of at most two short paragraphs. The first says
+  what the user can do afterwards and why. The second gives the scope: the resource, fields or
+  endpoints, the repos it touches and what is out of scope. No headings, step lists or risk
+  sections. The details go in the plan (step 5), and blockers go in as issue links, not text.
 - **Show the draft and create it once the user agrees:** `createJiraIssue` in project `BIL`, type
   `Task`, `parent` = the epic, plus any priority the user gives. Link each blocker with
   `createJiraIssueLink` (`linkType: "Blocks"`, the blocker as `inwardIssue`).
