@@ -41,7 +41,7 @@ git ls-files --error-unmatch -- "$FILE" >/dev/null 2>&1 \
   || { echo "$FILE is not tracked: stage the whole file with git add, or check the path (relative to $(basename "$DIR"))" >&2; exit 2; }
 
 # safecrlf=false: no "CRLF will be replaced by LF" warning for every CRLF working copy.
-diff_of() { git -c core.quotePath=false -c core.safecrlf=false diff--no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ "$CTX" -- "$FILE"; }
+diff_of() { git -c core.quotePath=false -c core.safecrlf=false diff --no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ "$CTX" -- "$FILE"; }
 
 DIFF="$(diff_of)"
 [[ -n "$DIFF" ]] || { echo "$FILE has no unstaged changes."; exit 1; }
