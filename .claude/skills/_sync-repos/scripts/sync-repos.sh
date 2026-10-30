@@ -6,27 +6,17 @@
 #   (default)  report only, change nothing
 #   --sync     switch repos without uncommitted changes to their target branch and fast-forward them
 #   --branch   use this branch name instead of Biller's current branch, and put Biller on it too
-#              when Biller has it (Biller stays where it is otherwise)
+#              when Biller has it (otherwise Biller should be on master, but isn't moved there)
 #   repo       folder names (default: BillerContracts BillerFrontEnd BillioIntegrationTest, plus
 #              Biller when --branch is given). Biller means the checkout this script runs from.
 # Exit code: 0 when every repo is on its target branch and not behind origin, 1 otherwise.
 set -uo pipefail
 
 REPO_ROOT="${SYNC_REPOS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)}"
-
-# Switching Biller can replace this file while bash still reads it, so run from a copy.
-if [[ -z "${SYNC_REPOS_ROOT:-}" ]]; then
-  copy="$(mktemp)"
-  cp "${BASH_SOURCE[0]}" "$copy"
-  SYNC_REPOS_ROOT="$REPO_ROOT" bash "$copy" "$@"
-  code=$?
-  rm -f "$copy"
-  exit $code
-fi
-
 PARENT="$(dirname "$REPO_ROOT")"
 export GIT_TERMINAL_PROMPT=0
 
+ARGS=("$@")
 SYNC=0
 BRANCH=""
 BILLER=0
@@ -44,6 +34,16 @@ if [[ ${#REPOS[@]} -eq 0 && $BILLER -eq 0 ]]; then
   REPOS=(BillerContracts BillerFrontEnd BillioIntegrationTest)
   [[ -n "$BRANCH" ]] && BILLER=1
 fi
+
+# Switching Biller can replace this file while bash still reads it, so run from a copy.
+if [[ $SYNC -eq 1 && $BILLER -eq 1 && -z "${SYNC_REPOS_ROOT:-}" ]]; then
+  copy="$(mktemp)"
+  trap 'rm -f "$copy"' EXIT
+  cp "${BASH_SOURCE[0]}" "$copy"
+  SYNC_REPOS_ROOT="$REPO_ROOT" bash "$copy" "${ARGS[@]}"
+  exit $?
+fi
+
 BILLER_BRANCH="$(git -C "$REPO_ROOT" symbolic-ref --short -q HEAD || echo '(detached HEAD)')"
 [[ -z "$BRANCH" ]] && BRANCH="$BILLER_BRANCH"
 
@@ -54,20 +54,21 @@ has_branch() {
   git -C "$1" show-ref --verify --quiet "refs/heads/$2" || git -C "$1" show-ref --verify --quiet "refs/remotes/origin/$2"
 }
 
-# Puts one repo on its target branch and reports it. $4 is git status's --untracked-files mode:
-# "no" for siblings, "normal" for Biller, where new files may be the user's work in progress.
-# Returns 1 when the repo isn't ready.
+# Puts one repo on its target branch and reports it. $4 is git status's --untracked-files mode
+# for the switch: "no" for siblings, "normal" for Biller, where new files may be the user's work in
+# progress. $5 = "no-switch" reports instead of switching. Returns 1 when the repo isn't ready.
 sync_repo() {
-  local repo="$1" dir="$2" target="$3" untracked="$4" current dirty note="" out behind ahead extra
+  local repo="$1" dir="$2" target="$3" untracked="$4" switch="${5:-}" current dirty blocking note="" out behind ahead extra
   current="$(git -C "$dir" symbolic-ref --short -q HEAD || echo '(detached HEAD)')"
-  dirty="$(git -C "$dir" status --porcelain --untracked-files="$untracked")"
+  dirty="$(git -C "$dir" status --porcelain --untracked-files=no)"
 
   if [[ "$current" != "$target" ]]; then
-    if [[ $SYNC -eq 0 ]]; then
-      echo "$repo: NOT READY. On '$current', should be on '$target'${dirty:+ (has uncommitted changes)}"
+    blocking="$(git -C "$dir" status --porcelain --untracked-files="$untracked")"
+    if [[ $SYNC -eq 0 || "$switch" == no-switch ]]; then
+      echo "$repo: NOT READY. On '$current', should be on '$target'${blocking:+ (has uncommitted changes)}"
       return 1
     fi
-    if [[ -n "$dirty" ]]; then
+    if [[ -n "$blocking" ]]; then
       echo "$repo: BLOCKED. On '$current' with uncommitted changes, should be on '$target'. Ask the user."
       return 1
     fi
@@ -119,14 +120,13 @@ for repo in "${REPOS[@]}"; do
   sync_repo "$repo" "$dir" "$target" no || FAILED=1
 done
 
-# Biller last: it is the checkout the user works in. It goes on the given branch only when it has
-# one; otherwise it stays on its own branch rather than falling back to master.
+# Biller last: it is the checkout the user works in. Without the given branch it should be on
+# master, as CI pairs it, but it isn't moved there: the user may be in the middle of other work.
 if [[ $BILLER -eq 1 ]]; then
   if has_branch "$REPO_ROOT" "$BRANCH"; then
     sync_repo Biller "$REPO_ROOT" "$BRANCH" normal || FAILED=1
   else
-    echo "Biller: has no branch '$BRANCH', stays on '$BILLER_BRANCH'."
-    sync_repo Biller "$REPO_ROOT" "$BILLER_BRANCH" normal || FAILED=1
+    sync_repo Biller "$REPO_ROOT" master normal no-switch || FAILED=1
   fi
 fi
 exit $FAILED
