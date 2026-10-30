@@ -20,16 +20,17 @@ For each open line:
 - **Wrong**: answer with the reason (`file:line`, the input that shows it's fine). Don't change
   code just to silence it.
 
-Then tick the line and add what happened after `->`:
+Then tick the line, keep its number, and add what happened after `->`:
 
 ```
-- [x] Important src/Infrastructure/Repository/SeriesRepository.cs:88 next_number overflows at int.MaxValue (round 2) -> fixed: stops at int.MaxValue with 400; SeriesRepositoryTest.Add_AtMaxNumber fails without it
-- [x] Nit src/Validators/SeriesValidator.cs:14 message doesn't name the field (round 2) -> not fixed: FluentValidation adds the property name
-- [x] Pre-existing src/Application/Services/ItemService.cs:40 no paging limit (round 1) -> pre-existing: listed for the user
+- [x] F4 Important src/Infrastructure/Repository/SeriesRepository.cs:88 next_number overflows at int.MaxValue (round 2) -> fixed: stops at int.MaxValue with 400; SeriesRepositoryTest.Add_AtMaxNumber fails without it
+- [x] F5 Nit src/Validators/SeriesValidator.cs:14 message doesn't name the field (round 2) -> not fixed: FluentValidation adds the property name
+- [x] F1 Pre-existing src/Application/Services/ItemService.cs:40 no paging limit (round 1) -> pre-existing: listed for the user
 ```
 
 The next review round reads these lines and doesn't report them again, and the PR description
-counts them.
+counts them. When the user names findings by number ("fix F2, leave F3"), do what they say for
+those and handle the rest as above. Report each outcome with its number.
 
 After fixing, `tests.md` is stale: the tests run again (`_test-coverage`) before the next review
 round. Commit the fixes only when the user wants commits, with `_commit` and a

@@ -46,8 +46,9 @@ a change to docs only (`*.md`, `docs/`) doesn't. Committing doesn't change the t
 2. Steps 1 to 3. Stop at a blocker in `scope.md`, a failed build, or a red test this change caused:
    fix it, or report it and ask, before going on.
 3. Steps 4 and 5 are the review loop: review, fix, then step 2 again (and step 3 when a fix touched
-   what it tests), then review again. At most 3 rounds; `_pr-review` skips a round when only docs
-   changed. After round 3, stop even if findings remain. Tell the user what keeps coming back and
+   what it tests), then review again. Round 1 runs at medium effort, later rounds at high, and only
+   when the round before found something and code changed since. At most 3 rounds. After round 3,
+   stop even if findings remain. Tell the user what keeps coming back and
    whether the approach should change.
 4. Step 6, then show the description.
 5. Step 7 only when the user asks. Commit only when asked, with `_commit`.

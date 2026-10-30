@@ -14,7 +14,7 @@
 #              write the reviewer's context file and print its path: scope.md, REVIEW.md, the
 #              findings so far, and the diff since the last snapshot (--full: since the branch
 #              left master). The plan defaults to the one named in scope.md.
-#   findings   print the path of findings.md: one "- [ ] <tag> <file:line> <finding> (round N)" line
+#   findings   print the path of findings.md: one "- [ ] F<n> <tag> <file:line> <finding> (round N)" line
 #              per finding; _pr-fix ticks it and adds "-> <what was done>"
 set -uo pipefail
 
