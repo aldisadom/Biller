@@ -2,6 +2,23 @@
 
 Jira: [BIL-101](https://aldisadom.atlassian.net/browse/BIL-101). Epic: BIL-89 (Billeris).
 
+## Progress
+
+- [x] Step 0: `IUserClient.Get(UserGetRequest)` and its test in BillerContracts, PR #14, published as 4.1.0.
+- [x] Steps 1–3: `PagingRules`, five Get validators, five controllers, tests. 797 unit tests pass; the new validators and the five controllers are fully covered.
+- [x] Step 4 for invoices, customers, items, sellers: page 1, page 0 and page 42949673 per endpoint. 194 passed, three runs, on a throwaway stack.
+- [x] Step 4 for users: BillioIntegrationTest on BillerContracts.Clients 4.1.0, the same three tests. 197 passed, three runs, on a throwaway stack.
+- [x] Review: the page-1 tests became last-allowed-page tests (42949672 at p50), and `Tests/Paging.cs` holds `MaxPage` and the message. BillerFrontEnd goes to BillerContracts.Clients 4.1.0 too, on its own `BIL-101-page-validation` branch. 197 passed, three runs.
+- [x] Owner's follow-ups:
+  - non-nullable list queries without the null guard;
+  - binding errors answered with `ErrorResponse` (`ModelStateErrors`);
+  - empty-Guid invoice filters rejected;
+  - invoice TotalCount and page-order integration tests;
+  - the undefined page size tested on every paged GET;
+  - the invoice list's double fetch fixed in BillerFrontEnd.
+
+  798 unit tests and 207 integration tests pass, three runs.
+
 ## Goal
 
 - `GET /invoices`, `/customers`, `/items`, `/sellers` and `/users` return 400 for a page below 1 or
