@@ -24,6 +24,7 @@ public class ItemController : ControllerBase
     private readonly ILogger<ItemController> _logger;
     private readonly IValidator<ItemAddRequest> _validatorAdd;
     private readonly IValidator<ItemUpdateRequest> _validatorUpdate;
+    private readonly IValidator<ItemGetRequest> _validatorGet;
 
     /// <summary>
     /// Constructor
@@ -32,14 +33,17 @@ public class ItemController : ControllerBase
     /// <param name="logger"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
+    /// <param name="validatorGet"></param>
     public ItemController(IItemService itemService, ILogger<ItemController> logger,
-        IValidator<ItemAddRequest> validatorAdd, IValidator<ItemUpdateRequest> validatorUpdate)
+        IValidator<ItemAddRequest> validatorAdd, IValidator<ItemUpdateRequest> validatorUpdate,
+        IValidator<ItemGetRequest> validatorGet)
     {
         _itemService = itemService;
         _logger = logger;
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
+        _validatorGet = validatorGet;
     }
 
     /// <summary>
@@ -68,8 +72,11 @@ public class ItemController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(ItemListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery] ItemGetRequest? query)
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Get([FromQuery] ItemGetRequest query)
     {
+        _validatorGet.CheckValidation(query);
+
         IEnumerable<ItemModel> items = await _itemService.Get(query);
 
         ItemListResponse result = new()

@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using BillerContracts.Enums;
 using BillerContracts.Requests.Invoice;
 using BillerContracts.Responses;
 using BillerContracts.Responses.Invoice;
@@ -26,6 +25,7 @@ public class InvoiceController : ControllerBase
     private readonly IValidator<InvoiceAddRequest> _validatorAdd;
     private readonly IValidator<InvoiceGenerateRequest> _validatorGenerate;
     private readonly IValidator<InvoiceUpdateRequest> _validatorUpdate;
+    private readonly IValidator<InvoiceGetRequest> _validatorGet;
 
     /// <summary>
     /// Constructor
@@ -35,15 +35,17 @@ public class InvoiceController : ControllerBase
     /// <param name="validatorAdd"></param>
     /// <param name="validatorGenerate"></param>
     /// <param name="validatorUpdate"></param>
+    /// <param name="validatorGet"></param>
     public InvoiceController(IInvoiceService invoiceService, ILogger<InvoiceController> logger,
         IValidator<InvoiceAddRequest> validatorAdd, IValidator<InvoiceGenerateRequest> validatorGenerate,
-        IValidator<InvoiceUpdateRequest> validatorUpdate)
+        IValidator<InvoiceUpdateRequest> validatorUpdate, IValidator<InvoiceGetRequest> validatorGet)
     {
         _invoiceService = invoiceService;
         _logger = logger;
         _validatorAdd = validatorAdd;
         _validatorGenerate = validatorGenerate;
         _validatorUpdate = validatorUpdate;
+        _validatorGet = validatorGet;
     }
 
     /// <summary>
@@ -72,16 +74,19 @@ public class InvoiceController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(InvoiceListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery] InvoiceGetRequest? query)
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Get([FromQuery] InvoiceGetRequest query)
     {
+        _validatorGet.CheckValidation(query);
+
         var (invoicesData, totalCount) = await _invoiceService.Get(query);
 
         InvoiceListResponse result = new()
         {
             Invoices = invoicesData.Select(i => i.ToResponse()).ToList(),
             TotalCount = totalCount,
-            Page = query?.Page ?? 1,
-            PageSize = query?.PageSize ?? PageSize.p25
+            Page = query.Page,
+            PageSize = query.PageSize
         };
 
         return Ok(result);

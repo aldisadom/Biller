@@ -21,6 +21,7 @@ public class InvoiceControllerTest
     private readonly Mock<IValidator<InvoiceAddRequest>> _validatorAddMock;
     private readonly Mock<IValidator<InvoiceGenerateRequest>> _validatorGenerateMock;
     private readonly Mock<IValidator<InvoiceUpdateRequest>> _validatorUpdateMock;
+    private readonly Mock<IValidator<InvoiceGetRequest>> _validatorGetMock;
     private readonly InvoiceController _invoiceController;
     private readonly Guid _userId = Guid.NewGuid();
     private readonly Guid _sellerId = Guid.NewGuid();
@@ -32,13 +33,15 @@ public class InvoiceControllerTest
         _validatorAddMock = new Mock<IValidator<InvoiceAddRequest>>(MockBehavior.Strict);
         _validatorGenerateMock = new Mock<IValidator<InvoiceGenerateRequest>>(MockBehavior.Strict);
         _validatorUpdateMock = new Mock<IValidator<InvoiceUpdateRequest>>(MockBehavior.Strict);
+        _validatorGetMock = new Mock<IValidator<InvoiceGetRequest>>(MockBehavior.Strict);
 
         _invoiceController = new InvoiceController(
             _invoiceServiceMock.Object,
             new Mock<ILogger<InvoiceController>>().Object,
             _validatorAddMock.Object,
             _validatorGenerateMock.Object,
-            _validatorUpdateMock.Object);
+            _validatorUpdateMock.Object,
+            _validatorGetMock.Object);
     }
 
     private InvoiceModelFull CreateInvoice() => new()
@@ -77,9 +80,11 @@ public class InvoiceControllerTest
     public async Task Get_GivenQuery_ReturnsOkWithInvoiceListResponse()
     {
         //Arrange
+        var query = new InvoiceGetRequest { UserId = Guid.NewGuid(), Page = 3, PageSize = PageSize.p50 };
         var invoices = new List<InvoiceModelFull> { CreateInvoice(), CreateInvoice() };
-        var query = new InvoiceGetRequest { UserId = _userId };
 
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult());
         _invoiceServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync((invoices, invoices.Count));
 
@@ -92,11 +97,33 @@ public class InvoiceControllerTest
             {
                 Invoices = invoices.Select(i => i.ToResponse()).ToList(),
                 TotalCount = invoices.Count,
-                Page = query.Page,
-                PageSize = query.PageSize
+                Page = 3,
+                PageSize = PageSize.p50
             });
 
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _invoiceServiceMock.Verify(s => s.Get(query), Times.Once());
+        _invoiceServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Get_GivenInvalidQuery_ThrowsValidationException()
+    {
+        //Arrange
+        var query = new InvoiceGetRequest { Page = 0 };
+
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _invoiceController.Get(query);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _invoiceServiceMock.VerifyNoOtherCalls();
     }
 

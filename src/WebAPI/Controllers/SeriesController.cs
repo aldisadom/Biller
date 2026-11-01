@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using BillerContracts.Enums;
 using BillerContracts.Requests.Series;
 using BillerContracts.Responses;
 using BillerContracts.Responses.Series;
@@ -74,10 +73,9 @@ public class SeriesController : ControllerBase
     [ProducesResponseType(typeof(SeriesListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(SeriesListResponseExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Get([FromQuery] SeriesGetRequest? query)
+    public async Task<IActionResult> Get([FromQuery] SeriesGetRequest query)
     {
-        if (query is not null)
-            _validatorGet.CheckValidation(query);
+        _validatorGet.CheckValidation(query);
 
         var (series, totalCount) = await _seriesService.Get(query);
 
@@ -85,8 +83,8 @@ public class SeriesController : ControllerBase
         {
             Series = series.Select(s => s.ToResponse()).ToList(),
             TotalCount = totalCount,
-            Page = query?.Page ?? 1,
-            PageSize = query?.PageSize ?? PageSize.p25
+            Page = query.Page,
+            PageSize = query.PageSize
         };
 
         return Ok(result);

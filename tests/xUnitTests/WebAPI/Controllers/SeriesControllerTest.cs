@@ -65,26 +65,19 @@ public class SeriesControllerTest
         _seriesServiceMock.VerifyNoOtherCalls();
     }
 
-    public static IEnumerable<TheoryDataRow<SeriesGetRequest?, int, PageSize>> GetQueryTestData()
-    {
-        yield return new(null, 1, PageSize.p25) { Label = "no query returns first page of 25" };
-        yield return new(new SeriesGetRequest { SellerId = Guid.NewGuid(), Page = 3, PageSize = PageSize.p50 }, 3, PageSize.p50) { Label = "query page and page size are echoed" };
-    }
-
-    [Theory]
-    [MemberData(nameof(GetQueryTestData))]
-    public async Task Get_GivenQuery_ReturnsOkWithSeriesListResponse(SeriesGetRequest? query, int expectedPage, PageSize expectedPageSize)
+    [Fact]
+    public async Task Get_GivenQuery_ReturnsOkWithSeriesListResponse()
     {
         //Arrange
+        var query = new SeriesGetRequest { SellerId = Guid.NewGuid(), Page = 3, PageSize = PageSize.p50 };
         var series = new List<SeriesModel>
         {
             new() { Id = _series1Id, SellerId = _sellerId },
             new() { Id = _series2Id, SellerId = _sellerId }
         };
 
-        if (query is not null)
-            _validatorGetMock.Setup(v => v.Validate(query))
-                .Returns(new ValidationResult());
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult());
         _seriesServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync((series, 7));
 
@@ -97,11 +90,11 @@ public class SeriesControllerTest
             {
                 Series = series.Select(c => c.ToResponse()).ToList(),
                 TotalCount = 7,
-                Page = expectedPage,
-                PageSize = expectedPageSize
+                Page = 3,
+                PageSize = PageSize.p50
             });
 
-        _validatorGetMock.Verify(v => v.Validate(query!), query is null ? Times.Never() : Times.Once());
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
         _validatorGetMock.VerifyNoOtherCalls();
         _seriesServiceMock.Verify(s => s.Get(query), Times.Once());
         _seriesServiceMock.VerifyNoOtherCalls();

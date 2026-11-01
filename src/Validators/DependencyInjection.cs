@@ -22,9 +22,11 @@ public static class DependencyInjection
         services.AddScoped<IValidator<UserAddRequest>, UserAddValidator>();
         services.AddScoped<IValidator<UserUpdateRequest>, UserUpdateValidator>();
         services.AddScoped<IValidator<UserLoginRequest>, UserLoginValidator>();
+        services.AddScoped<IValidator<UserGetRequest>, UserGetValidator>();
 
         services.AddScoped<IValidator<SellerAddRequest>, SellerAddValidator>();
         services.AddScoped<IValidator<SellerUpdateRequest>, SellerUpdateValidator>();
+        services.AddScoped<IValidator<SellerGetRequest>, SellerGetValidator>();
 
         services.AddScoped<IValidator<SeriesAddRequest>, SeriesAddValidator>();
         services.AddScoped<IValidator<SeriesUpdateRequest>, SeriesUpdateValidator>();
@@ -32,14 +34,17 @@ public static class DependencyInjection
 
         services.AddScoped<IValidator<CustomerAddRequest>, CustomerAddValidator>();
         services.AddScoped<IValidator<CustomerUpdateRequest>, CustomerUpdateValidator>();
+        services.AddScoped<IValidator<CustomerGetRequest>, CustomerGetValidator>();
 
         services.AddScoped<IValidator<ItemAddRequest>, ItemAddValidator>();
         services.AddScoped<IValidator<ItemUpdateRequest>, ItemUpdateValidator>();
+        services.AddScoped<IValidator<ItemGetRequest>, ItemGetValidator>();
 
         services.AddScoped<IValidator<InvoiceAddRequest>, InvoiceAddValidator>();
         services.AddScoped<IValidator<InvoiceGenerateRequest>, InvoiceGenerateValidator>();
         services.AddScoped<IValidator<InvoiceUpdateRequest>, InvoiceUpdateValidator>();
         services.AddScoped<IValidator<InvoiceItemRequest>, InvoiceItemValidator>();
+        services.AddScoped<IValidator<InvoiceGetRequest>, InvoiceGetValidator>();
 
         return services;
     }
