@@ -44,6 +44,9 @@ public class Program
 
         var app = builder.Build();
 
+        //one log line per request, with the status ErrorChecking sets
+        app.UseSerilogRequestLogging();
+
         //custom error handling middleware
         app.UseMiddleware<ErrorChecking>();
 
