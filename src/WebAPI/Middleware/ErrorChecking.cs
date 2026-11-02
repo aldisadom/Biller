@@ -133,15 +133,19 @@ public class ErrorChecking
             }
 
             ErrorModel errorMessage = new(message, extendedMessage, statusCode);
-            await UpdateContextAndLog(errorMessage, context);
+            await UpdateContextAndLog(errorMessage, context, e);
         }
     }
 
-    private async Task UpdateContextAndLog(ErrorModel errorMessage, HttpContext context)
+    private async Task UpdateContextAndLog(ErrorModel errorMessage, HttpContext context, Exception e)
     {
         context.Response.StatusCode = (int)errorMessage.StatusCode;
 
-        _logger.LogError("{Message}", JsonConvert.SerializeObject(errorMessage));
+        //client errors (4xx) are warnings, server errors get the stack trace
+        if (context.Response.StatusCode >= 500)
+            _logger.LogError(e, "{Message}", JsonConvert.SerializeObject(errorMessage));
+        else
+            _logger.LogWarning("{Message}", JsonConvert.SerializeObject(errorMessage));
 
         ErrorResponse response = new()
         {
