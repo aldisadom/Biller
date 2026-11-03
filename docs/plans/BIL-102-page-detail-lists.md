@@ -160,7 +160,21 @@ Planned:
 - A page past the end returns an empty list with the right `TotalCount`.
 - Existing tests that expect every row from `Get()` keep passing (they create fewer than 25 rows).
 
-## Step 9: Front end (BillerFrontEnd, branch `BIL-102-page-detail-lists`)
+## Step 9: Front end (BillerFrontEnd, branch `BIL-102-page-detail-lists`) ✅ (click-through left)
+
+Done as planned, plus:
+- The paged grids lost their search boxes (the handlers were empty) and `Sortable` (it would only
+  sort the current page).
+- The detail pages render their grids only once the parent has loaded, so the grid's first load
+  runs after `?page=` is applied and doesn't reset the URL to page 1.
+- Fixed on the way: Edit on a seller of the user page opened `/items/{id}`.
+- Checked on the test stack with 12 users, sellers, customers and invoices and 52 items
+  (server-rendered pages): page 2 or 6 from the URL on every grid, both grids on the customer
+  page at once, the invoice add selectors with 12/12/52 entries and the invoice edit item
+  selector with 52. Still to check in a browser: clicking the pager, changing the page size,
+  and deleting a row.
+
+Planned:
 
 - `Users_id.razor` (sellers), `Sellers_id.razor` (customers), `Customers_id.razor` (items): copy the
   `Invoices.razor` grid: `ItemsProvider` with the parent id filter, page size select, `?page=`.
