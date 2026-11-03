@@ -18,6 +18,12 @@ Jira: [BIL-101](https://aldisadom.atlassian.net/browse/BIL-101). Epic: BIL-89 (B
   - the invoice list's double fetch fixed in BillerFrontEnd.
 
   798 unit tests and 207 integration tests pass, three runs.
+- [x] Shared base types (branch `BIL-101-paged-base-types`, merged into this branch by PR):
+  - BillerContracts 4.2.0 (#15): `PagedRequest` and `PagedResponse` are the base records of every list query and response;
+  - `PagedRequestValidator<T>` replaces `PagingRules`, `WithPaging` fills the paging fields;
+  - empty-Guid filters rejected on customers, items, sellers and series too.
+
+  781 unit tests and 211 integration tests pass, three runs. The JSON field order is unchanged.
 
 ## Goal
 

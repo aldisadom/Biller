@@ -1,4 +1,3 @@
-using BillerContracts.Enums;
 using BillerContracts.Requests.Seller;
 using FluentAssertions;
 using Validators.Seller;
@@ -22,26 +21,35 @@ public class SellerGetValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(1, true, Label = "first page is accepted")]
-    [InlineData(42949672, true, Label = "highest page whose offset fits in an int is accepted")]
-    [InlineData(0, false, Label = "page 0 is rejected")]
-    [InlineData(-1, false, Label = "negative page is rejected")]
-    [InlineData(42949673, false, Label = "page whose offset overflows an int is rejected")]
-    public void Validate_GivenPage_ReturnsExpected(int page, bool expected)
+    [Fact]
+    public void Validate_GivenUserId_IsValid()
     {
         //Arrange
-        var request = new SellerGetRequest { Page = page, PageSize = PageSize.p50 };
+        var request = new SellerGetRequest { UserId = Guid.NewGuid() };
 
         //Act
         var result = _validator.Validate(request);
 
         //Assert
-        result.IsValid.Should().Be(expected);
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact]
-    public void Validate_GivenPageZero_ReturnsPageRangeMessage()
+    public void Validate_GivenEmptyUserId_ReturnsUserIdMessage()
+    {
+        //Arrange
+        var request = new SellerGetRequest { UserId = Guid.Empty };
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.UserId))
+            .Which.ErrorMessage.Should().Be("Please specify valid user Id");
+    }
+
+    [Fact]
+    public void Validate_GivenPageZero_AppliesPagingRules()
     {
         //Arrange
         var request = new SellerGetRequest { Page = 0 };
@@ -52,19 +60,5 @@ public class SellerGetValidatorTest
         //Assert
         result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.Page))
             .Which.ErrorMessage.Should().Be("Please specify page from 1 to 42949672");
-    }
-
-    [Fact]
-    public void Validate_GivenUndefinedPageSize_IsInvalid()
-    {
-        //Arrange
-        var request = new SellerGetRequest { PageSize = (PageSize)7 };
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.PageSize));
     }
 }

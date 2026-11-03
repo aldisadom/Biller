@@ -1,6 +1,6 @@
-using BillerContracts.Enums;
 using BillerContracts.Requests.Invoice;
 using FluentAssertions;
+using FluentValidation.Results;
 using Validators.Invoice;
 
 namespace xUnitTests.Validators.Invoice;
@@ -20,38 +20,6 @@ public class InvoiceGetValidatorTest
 
         //Assert
         result.IsValid.Should().BeTrue();
-    }
-
-    [Theory]
-    [InlineData(1, true, Label = "first page is accepted")]
-    [InlineData(42949672, true, Label = "highest page whose offset fits in an int is accepted")]
-    [InlineData(0, false, Label = "page 0 is rejected")]
-    [InlineData(-1, false, Label = "negative page is rejected")]
-    [InlineData(42949673, false, Label = "page whose offset overflows an int is rejected")]
-    public void Validate_GivenPage_ReturnsExpected(int page, bool expected)
-    {
-        //Arrange
-        var request = new InvoiceGetRequest { Page = page, PageSize = PageSize.p50 };
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.IsValid.Should().Be(expected);
-    }
-
-    [Fact]
-    public void Validate_GivenPageZero_ReturnsPageRangeMessage()
-    {
-        //Arrange
-        var request = new InvoiceGetRequest { Page = 0 };
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.Page))
-            .Which.ErrorMessage.Should().Be("Please specify page from 1 to 42949672");
     }
 
     [Fact]
@@ -83,20 +51,20 @@ public class InvoiceGetValidatorTest
 
         //Assert
         result.Errors.Should().ContainSingle()
-            .Which.Should().Match<FluentValidation.Results.ValidationFailure>(e => e.PropertyName == propertyName && e.ErrorMessage == expectedMessage);
+            .Which.Should().Match<ValidationFailure>(e => e.PropertyName == propertyName && e.ErrorMessage == expectedMessage);
     }
 
     [Fact]
-    public void Validate_GivenUndefinedPageSize_IsInvalid()
+    public void Validate_GivenPageZero_AppliesPagingRules()
     {
         //Arrange
-        var request = new InvoiceGetRequest { PageSize = (PageSize)7 };
+        var request = new InvoiceGetRequest { Page = 0 };
 
         //Act
         var result = _validator.Validate(request);
 
         //Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.PageSize));
+        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.Page))
+            .Which.ErrorMessage.Should().Be("Please specify page from 1 to 42949672");
     }
 }

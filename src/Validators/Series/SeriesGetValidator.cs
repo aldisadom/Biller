@@ -6,14 +6,13 @@ namespace Validators.Series;
 /// <summary>
 /// Series list query validation
 /// </summary>
-public class SeriesGetValidator : AbstractValidator<SeriesGetRequest>
+public class SeriesGetValidator : PagedRequestValidator<SeriesGetRequest>
 {
     /// <summary>
     /// Validation
     /// </summary>
     public SeriesGetValidator()
     {
-        RuleFor(x => x.Page).ValidPage();
-        RuleFor(x => x.PageSize).ValidPageSize();
+        RuleFor(x => x.SellerId).NotEqual(Guid.Empty).WithMessage("Please specify valid seller Id");
     }
 }
