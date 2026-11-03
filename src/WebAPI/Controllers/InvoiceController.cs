@@ -81,13 +81,10 @@ public class InvoiceController : ControllerBase
 
         var (invoicesData, totalCount) = await _invoiceService.Get(query);
 
-        InvoiceListResponse result = new()
+        InvoiceListResponse result = new InvoiceListResponse
         {
-            Invoices = invoicesData.Select(i => i.ToResponse()).ToList(),
-            TotalCount = totalCount,
-            Page = query.Page,
-            PageSize = query.PageSize
-        };
+            Invoices = invoicesData.Select(i => i.ToResponse()).ToList()
+        }.WithPaging(query, totalCount);
 
         return Ok(result);
     }

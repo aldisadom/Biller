@@ -79,13 +79,10 @@ public class SeriesController : ControllerBase
 
         var (series, totalCount) = await _seriesService.Get(query);
 
-        SeriesListResponse result = new()
+        SeriesListResponse result = new SeriesListResponse
         {
-            Series = series.Select(s => s.ToResponse()).ToList(),
-            TotalCount = totalCount,
-            Page = query.Page,
-            PageSize = query.PageSize
-        };
+            Series = series.Select(s => s.ToResponse()).ToList()
+        }.WithPaging(query, totalCount);
 
         return Ok(result);
     }

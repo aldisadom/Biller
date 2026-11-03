@@ -1,19 +1,8 @@
 using BillerContracts.Requests.User;
-using FluentValidation;
 
 namespace Validators.User;
 
 /// <summary>
-/// User list query validation
+/// User list query validation: paging only
 /// </summary>
-public class UserGetValidator : AbstractValidator<UserGetRequest>
-{
-    /// <summary>
-    /// Validation
-    /// </summary>
-    public UserGetValidator()
-    {
-        RuleFor(x => x.Page).ValidPage();
-        RuleFor(x => x.PageSize).ValidPageSize();
-    }
-}
+public class UserGetValidator : PagedRequestValidator<UserGetRequest>;

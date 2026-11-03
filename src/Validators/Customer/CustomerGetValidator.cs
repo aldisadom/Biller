@@ -6,14 +6,13 @@ namespace Validators.Customer;
 /// <summary>
 /// Customer list query validation
 /// </summary>
-public class CustomerGetValidator : AbstractValidator<CustomerGetRequest>
+public class CustomerGetValidator : PagedRequestValidator<CustomerGetRequest>
 {
     /// <summary>
     /// Validation
     /// </summary>
     public CustomerGetValidator()
     {
-        RuleFor(x => x.Page).ValidPage();
-        RuleFor(x => x.PageSize).ValidPageSize();
+        RuleFor(x => x.SellerId).NotEqual(Guid.Empty).WithMessage("Please specify valid seller Id");
     }
 }

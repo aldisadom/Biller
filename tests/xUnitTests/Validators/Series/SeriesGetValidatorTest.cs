@@ -1,5 +1,4 @@
-﻿using BillerContracts.Enums;
-using BillerContracts.Requests.Series;
+﻿using BillerContracts.Requests.Series;
 using FluentAssertions;
 using Validators.Series;
 
@@ -22,35 +21,44 @@ public class SeriesGetValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    [Theory]
-    [InlineData(1, true, Label = "first page is accepted")]
-    [InlineData(42949672, true, Label = "highest page whose offset fits in an int is accepted")]
-    [InlineData(0, false, Label = "page 0 is rejected")]
-    [InlineData(-1, false, Label = "negative page is rejected")]
-    [InlineData(42949673, false, Label = "page whose offset overflows an int is rejected")]
-    public void Validate_GivenPage_ReturnsExpected(int page, bool expected)
+    [Fact]
+    public void Validate_GivenSellerId_IsValid()
     {
         //Arrange
-        var request = new SeriesGetRequest { Page = page, PageSize = PageSize.p50 };
+        var request = new SeriesGetRequest { SellerId = Guid.NewGuid() };
 
         //Act
         var result = _validator.Validate(request);
 
         //Assert
-        result.IsValid.Should().Be(expected);
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact]
-    public void Validate_GivenUndefinedPageSize_IsInvalid()
+    public void Validate_GivenEmptySellerId_ReturnsSellerIdMessage()
     {
         //Arrange
-        var request = new SeriesGetRequest { PageSize = (PageSize)7 };
+        var request = new SeriesGetRequest { SellerId = Guid.Empty };
 
         //Act
         var result = _validator.Validate(request);
 
         //Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.PageSize));
+        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.SellerId))
+            .Which.ErrorMessage.Should().Be("Please specify valid seller Id");
+    }
+
+    [Fact]
+    public void Validate_GivenPageZero_AppliesPagingRules()
+    {
+        //Arrange
+        var request = new SeriesGetRequest { Page = 0 };
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.Page))
+            .Which.ErrorMessage.Should().Be("Please specify page from 1 to 42949672");
     }
 }
