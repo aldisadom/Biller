@@ -7,7 +7,7 @@ Jira: [BIL-102](https://aldisadom.atlassian.net/browse/BIL-102). Epic: BIL-89 (B
 - The user page pages its sellers, the seller page its customers, and the customer page its items
   and its invoices. Each grid loads one page at a time from the API, has a page size select
   (10/25/50) and keeps the page in the URL (`?page=`), like `/invoices`.
-- `GET /sellers`, `/customers` and `/items` page in SQL and return `TotalCount`, `Page` and `PageSize`.
+- `GET /users`, `/sellers`, `/customers` and `/items` page in SQL and return `TotalCount`, `Page` and `PageSize`.
 - No caller silently loses rows after the first page.
 
 ## Current state (master @ 26f7b19)
@@ -67,6 +67,10 @@ Jira: [BIL-102](https://aldisadom.atlassian.net/browse/BIL-102). Epic: BIL-89 (B
    - `/sellers/user/{id}`, `/customers/sellers/{id}`, `/items/customer/{id}` (`Sellers_userId.razor`,
      `Customers_sellerId.razor`, `Items_customerId.razor`) are deleted. No page links to them, and
      the user, seller and customer pages show the same lists.
+10. **Users page too** (the user's decision; the issue left the users list out, but BIL-101 expected
+    BIL-102 to page it). `IUserRepository.Get(int page, int pageSize)` replaces `Get()`, ordered
+    `last_name, name, id`; `IUserService.Get(UserGetRequest? query)` and `UserController.Get` return
+    the paging fields; `/users` (`Users.razor`) moves to the `ItemsProvider` grid.
 
 ## Dependencies
 
@@ -84,12 +88,13 @@ No change. Biller, the front end and the integration tests stay on 4.2.0.
 
 None. The filter columns are indexed.
 
-## Step 3: Domain and Infrastructure
+## Step 3: Domain and Infrastructure ✅
 
 - `ISellerRepository`: `Task<(IEnumerable<SellerEntity>, int)> Get(Guid? userId, int page, int pageSize)` replaces `Get()` and `GetByUserId`.
 - `ICustomerRepository`: `Get(Guid? sellerId, int page, int pageSize)` replaces `Get()` and `GetBySellerId`.
 - `IItemRepository`: `Get(Guid? customerId, int page, int pageSize)` replaces `Get()` and `GetByCustomerId`.
   `Get(List<Guid> ids)` stays (used by `ItemService.GetWithValidation`).
+- `IUserRepository`: `Get(int page, int pageSize)` replaces `Get()` (decision 10).
 
 ```sql
 -- sellers
@@ -113,35 +118,35 @@ ORDER BY name, id
 LIMIT @PageSize OFFSET @Offset;
 ```
 
-## Step 4: Application
+## Step 4: Application ✅
 
-- `ISellerService.Get(SellerGetRequest? query)`, `ICustomerService.Get(...)`, `IItemService.Get(ItemGetRequest?)`
+- `IUserService.Get(UserGetRequest? query)`, `ISellerService.Get(SellerGetRequest? query)`, `ICustomerService.Get(...)`, `IItemService.Get(ItemGetRequest?)`
   return `(IEnumerable<Model>, int)` and pass the filter, `Page` and `PageSize` straight through
   (no more `if`/`else` on the filter).
 
-## Step 5: Validators
+## Step 5: Validators ✅
 
 - Delete `src/Validators/Invoice/InvoiceModelUpdateValidator.cs` (decision 2).
 - The Get validators don't change (BIL-101 already validates paging and the filter ids).
 
-## Step 6: WebAPI
+## Step 6: WebAPI ✅
 
-- `SellerController.Get`, `CustomerController.Get`, `ItemController.Get`: take the tuple and
+- `UserController.Get`, `SellerController.Get`, `CustomerController.Get`, `ItemController.Get`: take the tuple and
   return `new XListResponse { ... }.WithPaging(query, totalCount)`.
-- Swagger list examples: check they fill `TotalCount`, `Page`, `PageSize` (the example test
-  requires every property).
+- Swagger list examples: `UserListResponseExample`, `SellerListResponseExample`, `CustomerListResponseExample` and
+  `ItemListResponseExample` now fill `TotalCount`, `Page`, `PageSize`, like the series one.
 
-## Step 7: Unit tests (`_write-tests`)
+## Step 7: Unit tests (`_write-tests`) ✅
 
-- `SellerServiceTest`, `CustomerServiceTest`, `ItemServiceTest`: `Get` with a filter, without one,
+- `UserServiceTest`, `SellerServiceTest`, `CustomerServiceTest`, `ItemServiceTest`: `Get` with a filter, without one,
   and with a null query (defaults page 1 / `p25`), verifying the repository arguments and the total.
-- `SellerControllerTest`, `CustomerControllerTest`, `ItemControllerTest`: the response carries
+- `UserControllerTest`, `SellerControllerTest`, `CustomerControllerTest`, `ItemControllerTest`: the response carries
   `TotalCount`, `Page`, `PageSize`.
 - Delete `Validators/Invoice/InvoiceValidatorTest.cs` with the validator.
 
 ## Step 8: Integration tests (BillioIntegrationTest, branch `BIL-102-page-detail-lists`)
 
-- For sellers (by user), customers (by seller) and items (by customer): create 3 rows, get
+- For users (no filter), sellers (by user), customers (by seller) and items (by customer): create 3 rows, get
   page 2 with `PageSize = p1`, and check it holds the second row by the order in decision 3 and
   that `TotalCount = 3`, `Page = 2`, `PageSize = p1`.
 - A page past the end returns an empty list with the right `TotalCount`.
@@ -156,15 +161,13 @@ LIMIT @PageSize OFFSET @Offset;
 - `Customers_id.razor`: new invoice grid (decision 7).
 - `Capabilities/SellerClientExtensions.cs`, `CustomerClientExtensions.cs`, `ItemClientExtensions.cs`
   and the `Invoices_add` / `Invoices_update` call sites from decision 5.
-- `Sellers.razor`, `Customers.razor`, `Items.razor` move to the `ItemsProvider` grid; delete
+- `Users.razor`, `Sellers.razor`, `Customers.razor`, `Items.razor` move to the `ItemsProvider` grid; delete
   `Sellers_userId.razor`, `Customers_sellerId.razor`, `Items_customerId.razor` (decision 9).
 - Check in the browser with more rows than one page: moving between pages, changing the page size,
   the totals, and that the invoice add selectors list every seller, customer and item.
 
 ## Out of scope
 
-- Paging `GET /users` and the users list (`/users`). It still returns every user (BIL-101's
-  commit expected BIL-102 to page it, but the issue leaves the users list out).
 - Server-side sorting or filtering by name in the grids.
 
 ## Order of work
