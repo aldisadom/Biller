@@ -24,6 +24,7 @@ public class SellerController : ControllerBase
     private readonly ILogger<SellerController> _logger;
     private readonly IValidator<SellerAddRequest> _validatorAdd;
     private readonly IValidator<SellerUpdateRequest> _validatorUpdate;
+    private readonly IValidator<SellerGetRequest> _validatorGet;
 
     /// <summary>
     /// Constructor
@@ -32,14 +33,17 @@ public class SellerController : ControllerBase
     /// <param name="logger"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
+    /// <param name="validatorGet"></param>
     public SellerController(ISellerService sellerService, ILogger<SellerController> logger,
-        IValidator<SellerAddRequest> validatorAdd, IValidator<SellerUpdateRequest> validatorUpdate)
+        IValidator<SellerAddRequest> validatorAdd, IValidator<SellerUpdateRequest> validatorUpdate,
+        IValidator<SellerGetRequest> validatorGet)
     {
         _sellerService = sellerService;
         _logger = logger;
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
+        _validatorGet = validatorGet;
     }
 
     /// <summary>
@@ -68,8 +72,11 @@ public class SellerController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(SellerListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(SellerListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery] SellerGetRequest? query)
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Get([FromQuery] SellerGetRequest query)
     {
+        _validatorGet.CheckValidation(query);
+
         IEnumerable<SellerModel> sellers = await _sellerService.Get(query);
 
         SellerListResponse result = new()

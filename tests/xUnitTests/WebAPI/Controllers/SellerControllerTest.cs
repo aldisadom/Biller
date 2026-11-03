@@ -19,6 +19,7 @@ public class SellerControllerTest
     private readonly Mock<ISellerService> _sellerServiceMock;
     private readonly Mock<IValidator<SellerAddRequest>> _validatorAddMock;
     private readonly Mock<IValidator<SellerUpdateRequest>> _validatorUpdateMock;
+    private readonly Mock<IValidator<SellerGetRequest>> _validatorGetMock;
     private readonly SellerController _sellerController;
     private readonly Guid _seller1Id = Guid.NewGuid();
     private readonly Guid _seller2Id = Guid.NewGuid();
@@ -29,12 +30,14 @@ public class SellerControllerTest
         _sellerServiceMock = new Mock<ISellerService>(MockBehavior.Strict);
         _validatorAddMock = new Mock<IValidator<SellerAddRequest>>(MockBehavior.Strict);
         _validatorUpdateMock = new Mock<IValidator<SellerUpdateRequest>>(MockBehavior.Strict);
+        _validatorGetMock = new Mock<IValidator<SellerGetRequest>>(MockBehavior.Strict);
 
         _sellerController = new SellerController(
             _sellerServiceMock.Object,
             new Mock<ILogger<SellerController>>().Object,
             _validatorAddMock.Object,
-            _validatorUpdateMock.Object);
+            _validatorUpdateMock.Object,
+            _validatorGetMock.Object);
     }
 
     [Fact]
@@ -65,13 +68,15 @@ public class SellerControllerTest
     public async Task Get_GivenQuery_ReturnsOkWithSellerListResponse()
     {
         //Arrange
+        var query = new SellerGetRequest { UserId = Guid.NewGuid() };
         var sellers = new List<SellerModel>
         {
             new() { Id = _seller1Id, UserId = _userId },
             new() { Id = _seller2Id, UserId = _userId }
         };
-        var query = new SellerGetRequest { UserId = _userId };
 
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult());
         _sellerServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync(sellers);
 
@@ -85,7 +90,29 @@ public class SellerControllerTest
                 Sellers = sellers.Select(s => s.ToResponse()).ToList()
             });
 
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _sellerServiceMock.Verify(s => s.Get(query), Times.Once());
+        _sellerServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Get_GivenInvalidQuery_ThrowsValidationException()
+    {
+        //Arrange
+        var query = new SellerGetRequest { Page = 0 };
+
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _sellerController.Get(query);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _sellerServiceMock.VerifyNoOtherCalls();
     }
 

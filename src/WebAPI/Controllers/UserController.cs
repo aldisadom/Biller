@@ -25,6 +25,7 @@ public class UserController : ControllerBase
     private readonly IValidator<UserAddRequest> _validatorAdd;
     private readonly IValidator<UserUpdateRequest> _validatorUpdate;
     private readonly IValidator<UserLoginRequest> _validatorLogin;
+    private readonly IValidator<UserGetRequest> _validatorGet;
 
     /// <summary>
     /// Constructor
@@ -34,8 +35,10 @@ public class UserController : ControllerBase
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
     /// <param name="validatorLogin"></param>
+    /// <param name="validatorGet"></param>
     public UserController(IUserService userService, ILogger<UserController> logger,
-        IValidator<UserAddRequest> validatorAdd, IValidator<UserUpdateRequest> validatorUpdate, IValidator<UserLoginRequest> validatorLogin)
+        IValidator<UserAddRequest> validatorAdd, IValidator<UserUpdateRequest> validatorUpdate, IValidator<UserLoginRequest> validatorLogin,
+        IValidator<UserGetRequest> validatorGet)
     {
         _userService = userService;
         _logger = logger;
@@ -43,6 +46,7 @@ public class UserController : ControllerBase
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
         _validatorLogin = validatorLogin;
+        _validatorGet = validatorGet;
     }
 
     /// <summary>
@@ -89,12 +93,16 @@ public class UserController : ControllerBase
     /// <summary>
     /// Gets all users
     /// </summary>
+    /// <param name="query">paging parameters</param>
     /// <returns>list of users</returns>
     [HttpGet]
     [ProducesResponseType(typeof(UserListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(UserListResponseExample))]
-    public async Task<IActionResult> Get()
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Get([FromQuery] UserGetRequest query)
     {
+        _validatorGet.CheckValidation(query);
+
         IEnumerable<UserModel> users = await _userService.Get();
 
         UserListResponse result = new()

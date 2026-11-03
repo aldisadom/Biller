@@ -20,6 +20,7 @@ public class UserControllerTest
     private readonly Mock<IValidator<UserAddRequest>> _validatorAddMock;
     private readonly Mock<IValidator<UserUpdateRequest>> _validatorUpdateMock;
     private readonly Mock<IValidator<UserLoginRequest>> _validatorLoginMock;
+    private readonly Mock<IValidator<UserGetRequest>> _validatorGetMock;
     private readonly UserController _userController;
     private readonly Guid _user1Id = Guid.NewGuid();
     private readonly Guid _user2Id = Guid.NewGuid();
@@ -30,13 +31,15 @@ public class UserControllerTest
         _validatorAddMock = new Mock<IValidator<UserAddRequest>>(MockBehavior.Strict);
         _validatorUpdateMock = new Mock<IValidator<UserUpdateRequest>>(MockBehavior.Strict);
         _validatorLoginMock = new Mock<IValidator<UserLoginRequest>>(MockBehavior.Strict);
+        _validatorGetMock = new Mock<IValidator<UserGetRequest>>(MockBehavior.Strict);
 
         _userController = new UserController(
             _userServiceMock.Object,
             new Mock<ILogger<UserController>>().Object,
             _validatorAddMock.Object,
             _validatorUpdateMock.Object,
-            _validatorLoginMock.Object);
+            _validatorLoginMock.Object,
+            _validatorGetMock.Object);
     }
 
     [Fact]
@@ -92,20 +95,23 @@ public class UserControllerTest
     }
 
     [Fact]
-    public async Task Get_GivenUsers_ReturnsOkWithUserListResponse()
+    public async Task Get_GivenQuery_ReturnsOkWithUserListResponse()
     {
         //Arrange
+        var query = new UserGetRequest { Page = 2 };
         var users = new List<UserModel>
         {
             new() { Id = _user1Id },
             new() { Id = _user2Id }
         };
 
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult());
         _userServiceMock.Setup(s => s.Get())
             .ReturnsAsync(users);
 
         //Act
-        var result = await _userController.Get();
+        var result = await _userController.Get(query);
 
         //Assert
         result.Should().BeOfType<OkObjectResult>()
@@ -114,7 +120,29 @@ public class UserControllerTest
                 Users = users.Select(u => u.ToResponse()).ToList()
             });
 
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _userServiceMock.Verify(s => s.Get(), Times.Once());
+        _userServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Get_GivenInvalidQuery_ThrowsValidationException()
+    {
+        //Arrange
+        var query = new UserGetRequest { Page = 0 };
+
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _userController.Get(query);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _userServiceMock.VerifyNoOtherCalls();
     }
 

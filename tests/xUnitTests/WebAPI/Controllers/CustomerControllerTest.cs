@@ -19,6 +19,7 @@ public class CustomerControllerTest
     private readonly Mock<ICustomerService> _customerServiceMock;
     private readonly Mock<IValidator<CustomerAddRequest>> _validatorAddMock;
     private readonly Mock<IValidator<CustomerUpdateRequest>> _validatorUpdateMock;
+    private readonly Mock<IValidator<CustomerGetRequest>> _validatorGetMock;
     private readonly CustomerController _customerController;
     private readonly Guid _customer1Id = Guid.NewGuid();
     private readonly Guid _customer2Id = Guid.NewGuid();
@@ -29,12 +30,14 @@ public class CustomerControllerTest
         _customerServiceMock = new Mock<ICustomerService>(MockBehavior.Strict);
         _validatorAddMock = new Mock<IValidator<CustomerAddRequest>>(MockBehavior.Strict);
         _validatorUpdateMock = new Mock<IValidator<CustomerUpdateRequest>>(MockBehavior.Strict);
+        _validatorGetMock = new Mock<IValidator<CustomerGetRequest>>(MockBehavior.Strict);
 
         _customerController = new CustomerController(
             _customerServiceMock.Object,
             new Mock<ILogger<CustomerController>>().Object,
             _validatorAddMock.Object,
-            _validatorUpdateMock.Object);
+            _validatorUpdateMock.Object,
+            _validatorGetMock.Object);
     }
 
     [Fact]
@@ -65,13 +68,15 @@ public class CustomerControllerTest
     public async Task Get_GivenQuery_ReturnsOkWithCustomerListResponse()
     {
         //Arrange
+        var query = new CustomerGetRequest { SellerId = Guid.NewGuid() };
         var customers = new List<CustomerModel>
         {
             new() { Id = _customer1Id, SellerId = _sellerId },
             new() { Id = _customer2Id, SellerId = _sellerId }
         };
-        var query = new CustomerGetRequest { SellerId = _sellerId };
 
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult());
         _customerServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync(customers);
 
@@ -85,7 +90,29 @@ public class CustomerControllerTest
                 Customers = customers.Select(c => c.ToResponse()).ToList()
             });
 
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _customerServiceMock.Verify(s => s.Get(query), Times.Once());
+        _customerServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Get_GivenInvalidQuery_ThrowsValidationException()
+    {
+        //Arrange
+        var query = new CustomerGetRequest { Page = 0 };
+
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _customerController.Get(query);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _customerServiceMock.VerifyNoOtherCalls();
     }
 

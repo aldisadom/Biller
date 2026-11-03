@@ -24,6 +24,7 @@ public class CustomerController : ControllerBase
     private readonly ILogger<CustomerController> _logger;
     private readonly IValidator<CustomerAddRequest> _validatorAdd;
     private readonly IValidator<CustomerUpdateRequest> _validatorUpdate;
+    private readonly IValidator<CustomerGetRequest> _validatorGet;
 
     /// <summary>
     /// Constructor
@@ -32,14 +33,17 @@ public class CustomerController : ControllerBase
     /// <param name="logger"></param>
     /// <param name="validatorAdd"></param>
     /// <param name="validatorUpdate"></param>
+    /// <param name="validatorGet"></param>
     public CustomerController(ICustomerService customerService, ILogger<CustomerController> logger,
-        IValidator<CustomerAddRequest> validatorAdd, IValidator<CustomerUpdateRequest> validatorUpdate)
+        IValidator<CustomerAddRequest> validatorAdd, IValidator<CustomerUpdateRequest> validatorUpdate,
+        IValidator<CustomerGetRequest> validatorGet)
     {
         _customerService = customerService;
         _logger = logger;
 
         _validatorAdd = validatorAdd;
         _validatorUpdate = validatorUpdate;
+        _validatorGet = validatorGet;
     }
 
     /// <summary>
@@ -68,8 +72,11 @@ public class CustomerController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(CustomerListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(CustomerListResponseExample))]
-    public async Task<IActionResult> Get([FromQuery] CustomerGetRequest? query)
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Get([FromQuery] CustomerGetRequest query)
     {
+        _validatorGet.CheckValidation(query);
+
         IEnumerable<CustomerModel> customers = await _customerService.Get(query);
 
         CustomerListResponse result = new()

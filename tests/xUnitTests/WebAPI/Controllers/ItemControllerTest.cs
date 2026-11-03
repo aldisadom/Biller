@@ -19,6 +19,7 @@ public class ItemControllerTest
     private readonly Mock<IItemService> _itemServiceMock;
     private readonly Mock<IValidator<ItemAddRequest>> _validatorAddMock;
     private readonly Mock<IValidator<ItemUpdateRequest>> _validatorUpdateMock;
+    private readonly Mock<IValidator<ItemGetRequest>> _validatorGetMock;
     private readonly ItemController _itemController;
     private readonly Guid _item1Id = Guid.NewGuid();
     private readonly Guid _item2Id = Guid.NewGuid();
@@ -29,12 +30,14 @@ public class ItemControllerTest
         _itemServiceMock = new Mock<IItemService>(MockBehavior.Strict);
         _validatorAddMock = new Mock<IValidator<ItemAddRequest>>(MockBehavior.Strict);
         _validatorUpdateMock = new Mock<IValidator<ItemUpdateRequest>>(MockBehavior.Strict);
+        _validatorGetMock = new Mock<IValidator<ItemGetRequest>>(MockBehavior.Strict);
 
         _itemController = new ItemController(
             _itemServiceMock.Object,
             new Mock<ILogger<ItemController>>().Object,
             _validatorAddMock.Object,
-            _validatorUpdateMock.Object);
+            _validatorUpdateMock.Object,
+            _validatorGetMock.Object);
     }
 
     [Fact]
@@ -65,13 +68,15 @@ public class ItemControllerTest
     public async Task Get_GivenQuery_ReturnsOkWithItemListResponse()
     {
         //Arrange
+        var query = new ItemGetRequest { CustomerId = Guid.NewGuid() };
         var items = new List<ItemModel>
         {
             new() { Id = _item1Id, CustomerId = _customerId },
             new() { Id = _item2Id, CustomerId = _customerId }
         };
-        var query = new ItemGetRequest { CustomerId = _customerId };
 
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult());
         _itemServiceMock.Setup(s => s.Get(query))
             .ReturnsAsync(items);
 
@@ -85,7 +90,29 @@ public class ItemControllerTest
                 Items = items.Select(i => i.ToResponse()).ToList()
             });
 
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _itemServiceMock.Verify(s => s.Get(query), Times.Once());
+        _itemServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Get_GivenInvalidQuery_ThrowsValidationException()
+    {
+        //Arrange
+        var query = new ItemGetRequest { Page = 0 };
+
+        _validatorGetMock.Setup(v => v.Validate(query))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+
+        //Act
+        Func<Task> act = () => _itemController.Get(query);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>();
+
+        _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
+        _validatorGetMock.VerifyNoOtherCalls();
         _itemServiceMock.VerifyNoOtherCalls();
     }
 
