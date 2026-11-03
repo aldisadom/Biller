@@ -30,19 +30,21 @@ public class ItemRepository : IItemRepository
         return await _dbConnection.QueryAsync<ItemEntity>(sql, new { ids });
     }
 
-    public async Task<IEnumerable<ItemEntity>> GetByCustomerId(Guid customerId)
+    public async Task<(IEnumerable<ItemEntity>, int)> Get(Guid? customerId, int page, int pageSize)
     {
-        string sql = @"SELECT * FROM items
-                        WHERE customer_id=@CustomerId";
+        string filter = @"WHERE (@CustomerId IS NULL OR customer_id = @CustomerId)";
 
-        return await _dbConnection.QueryAsync<ItemEntity>(sql, new { customerId });
-    }
+        string countSql = $"SELECT COUNT(*) FROM items {filter}";
+        string dataSql = $@"SELECT * FROM items {filter}
+                            ORDER BY name, id
+                            LIMIT @PageSize OFFSET @Offset";
 
-    public async Task<IEnumerable<ItemEntity>> Get()
-    {
-        string sql = @"SELECT * FROM items";
+        var parameters = new { CustomerId = customerId, PageSize = pageSize, Offset = (page - 1) * pageSize };
 
-        return await _dbConnection.QueryAsync<ItemEntity>(sql);
+        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters);
+        IEnumerable<ItemEntity> items = await _dbConnection.QueryAsync<ItemEntity>(dataSql, parameters);
+
+        return (items, totalCount);
     }
 
     public async Task<Guid> Add(ItemEntity item)

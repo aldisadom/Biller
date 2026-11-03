@@ -103,12 +103,12 @@ public class UserController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        IEnumerable<UserModel> users = await _userService.Get();
+        var (users, totalCount) = await _userService.Get(query);
 
-        UserListResponse result = new()
+        UserListResponse result = new UserListResponse
         {
             Users = users.Select(u => u.ToResponse()).ToList()
-        };
+        }.WithPaging(query, totalCount);
 
         return Ok(result);
     }

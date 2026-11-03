@@ -2,6 +2,7 @@
 using Application.Models;
 using Application.Services;
 using BillerContracts;
+using BillerContracts.Enums;
 using BillerContracts.Requests.Customer;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -146,78 +147,52 @@ public class CustomerServiceTest
         _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    public static IEnumerable<TheoryDataRow<CustomerGetRequest?>> GetNoFilterQueryTestData()
+    public static IEnumerable<TheoryDataRow<CustomerGetRequest?, Guid?, int, int>> GetQueryTestData()
     {
-        yield return new((CustomerGetRequest?)null) { Label = "no query returns all customers" };
-        yield return new(new CustomerGetRequest()) { Label = "query without filters returns all customers" };
+        Guid sellerId = Guid.NewGuid();
+
+        yield return new(null, null, 1, 25) { Label = "no query reads the first 25 customers of all sellers" };
+        yield return new(new CustomerGetRequest(), null, 1, 25) { Label = "empty query reads the first 25 customers of all sellers" };
+        yield return new(new CustomerGetRequest { SellerId = sellerId, Page = 2, PageSize = PageSize.p50 }, sellerId, 2, 50) { Label = "seller filter and paging are passed to the repository" };
     }
 
     [Theory]
-    [MemberData(nameof(GetNoFilterQueryTestData))]
-    public async Task Get_GivenNoFilter_ReturnsDTO(CustomerGetRequest? request)
+    [MemberData(nameof(GetQueryTestData))]
+    public async Task Get_GivenQuery_PassesFilterToRepository(CustomerGetRequest? query, Guid? sellerId, int page, int pageSize)
     {
         //Arrange
-        List<CustomerEntity> customerList = [new(), new(), new()];
+        List<CustomerEntity> customers = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
-        _customerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(customerList);
-
-        List<CustomerModel> expectedResult = [new(), new(), new()];
+        _customerRepositoryMock.Setup(m => m.Get(sellerId, page, pageSize))
+                        .ReturnsAsync((customers, 9));
 
         //Act
-        var result = await _customerService.Get(request);
+        var (result, totalCount) = await _customerService.Get(query);
 
         //Assert
-        result.Count().Should().Be(customerList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
+        result.Select(c => c.Id).Should().Equal(customers.Select(c => c.Id));
+        totalCount.Should().Be(9);
 
-        _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(sellerId, page, pageSize), Times.Once());
     }
 
     [Fact]
-    public async Task Get_GivenSellerIdQuery_ReturnsDTO()
+    public async Task Get_GivenPagePastTheEnd_ReturnsEmptyListWithTotal()
     {
         //Arrange
-        List<CustomerEntity> customerList = [new(), new(), new()];
+        CustomerGetRequest query = new() { Page = 5 };
 
-        CustomerGetRequest? request = new()
-        {
-            SellerId = Guid.NewGuid()
-        };
-
-        _customerRepositoryMock.Setup(m => m.GetBySellerId((Guid)request.SellerId!))
-                        .ReturnsAsync(customerList);
-
-        List<CustomerModel> expectedResult = [new(), new(), new()];
+        _customerRepositoryMock.Setup(m => m.Get(null, 5, 25))
+                        .ReturnsAsync((new List<CustomerEntity>(), 4));
 
         //Act
-        var result = await _customerService.Get(request);
+        var (result, totalCount) = await _customerService.Get(query);
 
         //Assert
-        result.Count().Should().Be(customerList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
+        result.Should().BeEmpty();
+        totalCount.Should().Be(4);
 
-        _customerRepositoryMock.Verify(m => m.GetBySellerId((Guid)request.SellerId!), Times.Once());
-    }
-
-    [Fact]
-    public async Task Get_GivenEmpty_ShouldReturnEmpty()
-    {
-        //Arrange
-        CustomerGetRequest request = new();
-        List<CustomerEntity> customerList = [];
-
-        _customerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(customerList);
-
-        //Act
-        var result = await _customerService.Get(request);
-
-        //Assert
-        result.Count().Should().Be(0);
-        result.Should().BeEquivalentTo(new List<CustomerModel>());
-
-        _customerRepositoryMock.Verify(m => m.Get(), Times.Once());
+        _customerRepositoryMock.Verify(m => m.Get(null, 5, 25), Times.Once());
     }
 
     [Fact]

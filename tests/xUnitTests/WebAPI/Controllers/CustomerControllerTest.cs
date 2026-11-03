@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
+using BillerContracts.Enums;
 using BillerContracts.Requests.Customer;
 using BillerContracts.Responses;
 using BillerContracts.Responses.Customer;
@@ -68,7 +69,7 @@ public class CustomerControllerTest
     public async Task Get_GivenQuery_ReturnsOkWithCustomerListResponse()
     {
         //Arrange
-        var query = new CustomerGetRequest { SellerId = Guid.NewGuid() };
+        var query = new CustomerGetRequest { SellerId = Guid.NewGuid(), Page = 3, PageSize = PageSize.p50 };
         var customers = new List<CustomerModel>
         {
             new() { Id = _customer1Id, SellerId = _sellerId },
@@ -78,7 +79,7 @@ public class CustomerControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _customerServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync(customers);
+            .ReturnsAsync((customers, 7));
 
         //Act
         var result = await _customerController.Get(query);
@@ -87,7 +88,10 @@ public class CustomerControllerTest
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new CustomerListResponse
             {
-                Customers = customers.Select(c => c.ToResponse()).ToList()
+                Customers = customers.Select(c => c.ToResponse()).ToList(),
+                TotalCount = 7,
+                Page = 3,
+                PageSize = PageSize.p50
             });
 
         _validatorGetMock.Verify(v => v.Validate(query), Times.Once());

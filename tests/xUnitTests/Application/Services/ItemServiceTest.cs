@@ -2,6 +2,7 @@
 using Application.Models;
 using Application.Services;
 using BillerContracts;
+using BillerContracts.Enums;
 using BillerContracts.Requests.Item;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -176,81 +177,52 @@ public class ItemServiceTest
         _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
     }
 
-    public static IEnumerable<TheoryDataRow<ItemGetRequest?>> GetNoFilterQueryTestData()
+    public static IEnumerable<TheoryDataRow<ItemGetRequest?, Guid?, int, int>> GetQueryTestData()
     {
-        yield return new((ItemGetRequest?)null) { Label = "no query returns all items" };
-        yield return new(new ItemGetRequest()) { Label = "query without filters returns all items" };
+        Guid customerId = Guid.NewGuid();
+
+        yield return new(null, null, 1, 25) { Label = "no query reads the first 25 items of all customers" };
+        yield return new(new ItemGetRequest(), null, 1, 25) { Label = "empty query reads the first 25 items of all customers" };
+        yield return new(new ItemGetRequest { CustomerId = customerId, Page = 2, PageSize = PageSize.p50 }, customerId, 2, 50) { Label = "customer filter and paging are passed to the repository" };
     }
 
     [Theory]
-    [MemberData(nameof(GetNoFilterQueryTestData))]
-    public async Task Get_GivenNoFilter_ReturnsDTO(ItemGetRequest? request)
+    [MemberData(nameof(GetQueryTestData))]
+    public async Task Get_GivenQuery_PassesFilterToRepository(ItemGetRequest? query, Guid? customerId, int page, int pageSize)
     {
         //Arrange
-        List<ItemEntity> itemList = [new(), new(), new()];
+        List<ItemEntity> items = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
-        _itemRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(itemList);
-
-        var expectedResult = itemList.Select(i => i.ToModel());
+        _itemRepositoryMock.Setup(m => m.Get(customerId, page, pageSize))
+                        .ReturnsAsync((items, 9));
 
         //Act
-        var result = await _itemService.Get(request);
+        var (result, totalCount) = await _itemService.Get(query);
 
         //Assert
-        result.Count().Should().Be(itemList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
+        result.Select(i => i.Id).Should().Equal(items.Select(i => i.Id));
+        totalCount.Should().Be(9);
 
-        _itemRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
+        _itemRepositoryMock.Verify(m => m.Get(customerId, page, pageSize), Times.Once());
     }
 
     [Fact]
-    public async Task Get_GivenCustomerIdQuery_ReturnsDTO()
+    public async Task Get_GivenPagePastTheEnd_ReturnsEmptyListWithTotal()
     {
         //Arrange
-        List<ItemEntity> itemList = [new(), new(), new()];
+        ItemGetRequest query = new() { Page = 5 };
 
-        ItemGetRequest? request = new()
-        {
-            CustomerId = Guid.NewGuid()
-        };
-
-        _itemRepositoryMock.Setup(m => m.GetByCustomerId((Guid)request.CustomerId!))
-                        .ReturnsAsync(itemList);
-
-        var expectedResult = itemList.Select(i => i.ToModel());
+        _itemRepositoryMock.Setup(m => m.Get(null, 5, 25))
+                        .ReturnsAsync((new List<ItemEntity>(), 4));
 
         //Act
-        var result = await _itemService.Get(request);
+        var (result, totalCount) = await _itemService.Get(query);
 
         //Assert
-        result.Count().Should().Be(itemList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
+        result.Should().BeEmpty();
+        totalCount.Should().Be(4);
 
-        _itemRepositoryMock.Verify(m => m.GetByCustomerId((Guid)request.CustomerId!), Times.Once());
-        _itemRepositoryMock.Verify(m => m.Get(), Times.Never());
-    }
-
-    [Fact]
-    public async Task Get_GivenEmpty_ShouldReturnEmpty()
-    {
-        //Arrange
-        ItemGetRequest request = new();
-        List<ItemEntity> itemList = [];
-
-        _itemRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(itemList);
-
-        //Act
-        var result = await _itemService.Get(request);
-
-        //Assert
-        result.Count().Should().Be(0);
-        result.Should().BeEquivalentTo(new List<ItemModel>());
-
-        _itemRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _itemRepositoryMock.Verify(m => m.GetByCustomerId(It.IsAny<Guid>()), Times.Never());
+        _itemRepositoryMock.Verify(m => m.Get(null, 5, 25), Times.Once());
     }
 
     [Fact]

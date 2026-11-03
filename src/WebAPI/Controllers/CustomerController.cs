@@ -77,12 +77,12 @@ public class CustomerController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        IEnumerable<CustomerModel> customers = await _customerService.Get(query);
+        var (customers, totalCount) = await _customerService.Get(query);
 
-        CustomerListResponse result = new()
+        CustomerListResponse result = new CustomerListResponse
         {
             Customers = customers.Select(c => c.ToResponse()).ToList()
-        };
+        }.WithPaging(query, totalCount);
 
         return Ok(result);
     }

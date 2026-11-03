@@ -1,4 +1,5 @@
-﻿using BillerContracts.Responses.Item;
+﻿using BillerContracts.Enums;
+using BillerContracts.Responses.Item;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.Item;
@@ -14,7 +15,12 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
     /// <returns></returns>
     public ItemListResponse GetExamples()
     {
-        ItemListResponse itemListResponse = new();
+        ItemListResponse itemListResponse = new()
+        {
+            TotalCount = 3,
+            Page = 1,
+            PageSize = PageSize.p25
+        };
 
         itemListResponse.Items.Add(new ItemResponse()
         {

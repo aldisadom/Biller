@@ -30,11 +30,19 @@ public class UserRepository : IUserRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { email });
     }
 
-    public async Task<IEnumerable<UserEntity>> Get()
+    public async Task<(IEnumerable<UserEntity>, int)> Get(int page, int pageSize)
     {
-        string sql = @"SELECT * FROM users";
+        string countSql = "SELECT COUNT(*) FROM users";
+        string dataSql = @"SELECT * FROM users
+                            ORDER BY last_name, name, id
+                            LIMIT @PageSize OFFSET @Offset";
 
-        return await _dbConnection.QueryAsync<UserEntity>(sql);
+        var parameters = new { PageSize = pageSize, Offset = (page - 1) * pageSize };
+
+        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql);
+        IEnumerable<UserEntity> users = await _dbConnection.QueryAsync<UserEntity>(dataSql, parameters);
+
+        return (users, totalCount);
     }
 
     public async Task<Guid> Add(UserEntity item)
