@@ -1,5 +1,6 @@
 using BillerContracts.Requests.User;
 using FluentAssertions;
+using Validators;
 using Validators.User;
 
 namespace xUnitTests.Validators.User;
@@ -19,19 +20,6 @@ public class UserGetValidatorTest
 
         //Assert
         result.IsValid.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Validate_GivenPageZero_AppliesPagingRules()
-    {
-        //Arrange
-        var request = new UserGetRequest { Page = 0 };
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.Page))
-            .Which.ErrorMessage.Should().Be("Please specify page from 1 to 42949672");
+        _validator.Should().BeAssignableTo<PagedRequestValidator<UserGetRequest>>();
     }
 }

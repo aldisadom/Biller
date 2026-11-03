@@ -1,5 +1,6 @@
 using BillerContracts.Requests.Customer;
 using FluentAssertions;
+using Validators;
 using Validators.Customer;
 
 namespace xUnitTests.Validators.Customer;
@@ -19,6 +20,7 @@ public class CustomerGetValidatorTest
 
         //Assert
         result.IsValid.Should().BeTrue();
+        _validator.Should().BeAssignableTo<PagedRequestValidator<CustomerGetRequest>>();
     }
 
     [Fact]
@@ -46,19 +48,5 @@ public class CustomerGetValidatorTest
         //Assert
         result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.SellerId))
             .Which.ErrorMessage.Should().Be("Please specify valid seller Id");
-    }
-
-    [Fact]
-    public void Validate_GivenPageZero_AppliesPagingRules()
-    {
-        //Arrange
-        var request = new CustomerGetRequest { Page = 0 };
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.Page))
-            .Which.ErrorMessage.Should().Be("Please specify page from 1 to 42949672");
     }
 }

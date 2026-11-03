@@ -1,5 +1,6 @@
 using BillerContracts.Requests.Invoice;
 using FluentAssertions;
+using Validators;
 using FluentValidation.Results;
 using Validators.Invoice;
 
@@ -20,6 +21,7 @@ public class InvoiceGetValidatorTest
 
         //Assert
         result.IsValid.Should().BeTrue();
+        _validator.Should().BeAssignableTo<PagedRequestValidator<InvoiceGetRequest>>();
     }
 
     [Fact]
@@ -52,19 +54,5 @@ public class InvoiceGetValidatorTest
         //Assert
         result.Errors.Should().ContainSingle()
             .Which.Should().Match<ValidationFailure>(e => e.PropertyName == propertyName && e.ErrorMessage == expectedMessage);
-    }
-
-    [Fact]
-    public void Validate_GivenPageZero_AppliesPagingRules()
-    {
-        //Arrange
-        var request = new InvoiceGetRequest { Page = 0 };
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.Page))
-            .Which.ErrorMessage.Should().Be("Please specify page from 1 to 42949672");
     }
 }
