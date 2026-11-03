@@ -144,7 +144,15 @@ LIMIT @PageSize OFFSET @Offset;
   `TotalCount`, `Page`, `PageSize`.
 - Delete `Validators/Invoice/InvoiceValidatorTest.cs` with the validator.
 
-## Step 8: Integration tests (BillioIntegrationTest, branch `BIL-102-page-detail-lists`)
+## Step 8: Integration tests (BillioIntegrationTest, branch `BIL-102-page-detail-lists`) ✅
+
+Done differently: the test data has two rows per resource and one per parent, so each
+`<X>GetAll_SecondPage_Success` reads page 2 of the unfiltered list with `PageSize = p1` and checks
+the second row by name, `TotalCount = 2`, `Page = 2`, `PageSize = p1`. The page past the end is the
+existing `<X>Get_LastAllowedPage_Success`, which now expects an empty page with `Page`/`PageSize`
+set. The get-all and get-for-parent tests check `TotalCount`. 215 tests, 3 runs, all passed.
+
+Planned:
 
 - For users (no filter), sellers (by user), customers (by seller) and items (by customer): create 3 rows, get
   page 2 with `PageSize = p1`, and check it holds the second row by the order in decision 3 and
