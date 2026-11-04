@@ -35,11 +35,12 @@ Jira: [BIL-102](https://aldisadom.atlassian.net/browse/BIL-102). Epic: BIL-89 (B
    `(IEnumerable<Entity>, int)`**, like `SeriesRepository.Get`, replacing the unpaged `Get()`.
    Count and data are two statements, as in Series and Invoice (reads, so the one-statement rule
    for writes doesn't apply).
-2. **Delete the unused `InvoiceValidator` and `GetByUserId`, `GetBySellerId`, `GetByCustomerId`**
-   (Gap 1). The validator loads a whole list to check one id and nothing calls it; the ownership
-   checks it duplicates are the services' `GetWithValidation`, which read one row by id. With it
-   gone, the `GetBy*` methods have no callers left once the services use the paged `Get`, so they
-   go too and no unpaged list query remains.
+2. **Keep `InvoiceModelUpdateValidator.cs` and use it; delete `GetByUserId`, `GetBySellerId`,
+   `GetByCustomerId`** (Gap 1, owner's decision). The validator becomes `InvoiceModelUpdateValidator`,
+   an `AbstractValidator<InvoiceModel>` that only checks the ids aren't empty (invoice, seller,
+   customer, items), registered in DI and run by `InvoiceController.Update` after `ToModel()`. It
+   no longer loads lists; the ownership checks stay in the services' `GetWithValidation`, which read
+   one row by id. The `GetBy*` methods then have no callers, so no unpaged list query remains.
 3. **Stable order:** sellers and customers `ORDER BY company_name, id`, items `ORDER BY name, id`.
    The `id` tie-break keeps pages from overlapping when names repeat.
 4. **Services return `(IEnumerable<Model>, int)`** and default to page 1 / `p25` when the query is
@@ -126,7 +127,9 @@ LIMIT @PageSize OFFSET @Offset;
 
 ## Step 5: Validators ✅
 
-- Delete `src/Validators/Invoice/InvoiceModelUpdateValidator.cs` (decision 2).
+- `src/Validators/Invoice/InvoiceModelUpdateValidator.cs` checks the ids only, registered as
+  `IValidator<InvoiceModel>` and run in `InvoiceController.Update` (decision 2). First deleted in
+  this branch, then brought back on the owner's request.
 - The Get validators don't change (BIL-101 already validates paging and the filter ids).
 
 ## Step 6: WebAPI ✅
@@ -142,7 +145,8 @@ LIMIT @PageSize OFFSET @Offset;
   and with a null query (defaults page 1 / `p25`), verifying the repository arguments and the total.
 - `UserControllerTest`, `SellerControllerTest`, `CustomerControllerTest`, `ItemControllerTest`: the response carries
   `TotalCount`, `Page`, `PageSize`.
-- Delete `Validators/Invoice/InvoiceValidatorTest.cs` with the validator.
+- `Validators/Invoice/InvoiceModelUpdateValidatorTest.cs` replaces `InvoiceValidatorTest.cs`; the
+  `InvoiceControllerTest` update cases cover the new validator call, and the DI test its registration.
 
 ## Step 8: Integration tests (BillioIntegrationTest, branch `BIL-102-page-detail-lists`) ✅
 
