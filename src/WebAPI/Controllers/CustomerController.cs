@@ -65,10 +65,10 @@ public class CustomerController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all Customers
+    /// Gets one page of Customers (default page 1, 25 per page) and their total count
     /// </summary>
-    /// <param name="query">filtering parameters</param>
-    /// <returns>list of Customers</returns>
+    /// <param name="query">filtering and paging parameters</param>
+    /// <returns>one page of Customers</returns>
     [HttpGet]
     [ProducesResponseType(typeof(CustomerListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(CustomerListResponseExample))]

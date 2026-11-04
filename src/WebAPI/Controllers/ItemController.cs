@@ -65,10 +65,10 @@ public class ItemController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all items
+    /// Gets one page of items (default page 1, 25 per page) and their total count
     /// </summary>
-    /// <param name="query">filtering parameters</param>
-    /// <returns>list of items</returns>
+    /// <param name="query">filtering and paging parameters</param>
+    /// <returns>one page of items</returns>
     [HttpGet]
     [ProducesResponseType(typeof(ItemListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemListResponseExample))]

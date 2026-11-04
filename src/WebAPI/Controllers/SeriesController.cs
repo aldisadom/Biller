@@ -65,10 +65,10 @@ public class SeriesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all Series
+    /// Gets one page of Series (default page 1, 25 per page) and their total count
     /// </summary>
-    /// <param name="query">filtering parameters</param>
-    /// <returns>list of Series</returns>
+    /// <param name="query">filtering and paging parameters</param>
+    /// <returns>one page of Series</returns>
     [HttpGet]
     [ProducesResponseType(typeof(SeriesListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(SeriesListResponseExample))]

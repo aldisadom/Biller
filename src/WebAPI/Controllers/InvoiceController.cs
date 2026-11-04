@@ -67,10 +67,10 @@ public class InvoiceController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all invoices
+    /// Gets one page of invoices (default page 1, 25 per page) and their total count
     /// </summary>
-    /// <param name="query">filtering parameters</param>
-    /// <returns>list of invoices</returns>
+    /// <param name="query">filtering and paging parameters</param>
+    /// <returns>one page of invoices</returns>
     [HttpGet]
     [ProducesResponseType(typeof(InvoiceListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceListResponseExample))]

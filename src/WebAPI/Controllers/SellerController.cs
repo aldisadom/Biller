@@ -65,10 +65,10 @@ public class SellerController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all Sellers
+    /// Gets one page of Sellers (default page 1, 25 per page) and their total count
     /// </summary>
-    /// <param name="query">filtering parameters</param>
-    /// <returns>list of Sellers</returns>
+    /// <param name="query">filtering and paging parameters</param>
+    /// <returns>one page of Sellers</returns>
     [HttpGet]
     [ProducesResponseType(typeof(SellerListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(SellerListResponseExample))]
