@@ -26,6 +26,7 @@ public class InvoiceController : ControllerBase
     private readonly IValidator<InvoiceGenerateRequest> _validatorGenerate;
     private readonly IValidator<InvoiceUpdateRequest> _validatorUpdate;
     private readonly IValidator<InvoiceGetRequest> _validatorGet;
+    private readonly IValidator<InvoiceModel> _validatorModelUpdate;
 
     /// <summary>
     /// Constructor
@@ -36,9 +37,11 @@ public class InvoiceController : ControllerBase
     /// <param name="validatorGenerate"></param>
     /// <param name="validatorUpdate"></param>
     /// <param name="validatorGet"></param>
+    /// <param name="validatorModelUpdate"></param>
     public InvoiceController(IInvoiceService invoiceService, ILogger<InvoiceController> logger,
         IValidator<InvoiceAddRequest> validatorAdd, IValidator<InvoiceGenerateRequest> validatorGenerate,
-        IValidator<InvoiceUpdateRequest> validatorUpdate, IValidator<InvoiceGetRequest> validatorGet)
+        IValidator<InvoiceUpdateRequest> validatorUpdate, IValidator<InvoiceGetRequest> validatorGet,
+        IValidator<InvoiceModel> validatorModelUpdate)
     {
         _invoiceService = invoiceService;
         _logger = logger;
@@ -46,6 +49,7 @@ public class InvoiceController : ControllerBase
         _validatorGenerate = validatorGenerate;
         _validatorUpdate = validatorUpdate;
         _validatorGet = validatorGet;
+        _validatorModelUpdate = validatorModelUpdate;
     }
 
     /// <summary>
@@ -136,6 +140,7 @@ public class InvoiceController : ControllerBase
     {
         _validatorUpdate.CheckValidation(invoice);
         InvoiceModel invoiceData = invoice.ToModel();
+        _validatorModelUpdate.CheckValidation(invoiceData);
 
         await _invoiceService.Update(invoiceData);
 

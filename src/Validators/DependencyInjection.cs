@@ -1,4 +1,5 @@
-﻿using BillerContracts.Requests.Customer;
+﻿using Application.Models;
+using BillerContracts.Requests.Customer;
 using BillerContracts.Requests.Invoice;
 using BillerContracts.Requests.Item;
 using BillerContracts.Requests.Seller;
@@ -43,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IValidator<InvoiceAddRequest>, InvoiceAddValidator>();
         services.AddScoped<IValidator<InvoiceGenerateRequest>, InvoiceGenerateValidator>();
         services.AddScoped<IValidator<InvoiceUpdateRequest>, InvoiceUpdateValidator>();
+        services.AddScoped<IValidator<InvoiceModel>, InvoiceModelUpdateValidator>();
         services.AddScoped<IValidator<InvoiceItemRequest>, InvoiceItemValidator>();
         services.AddScoped<IValidator<InvoiceGetRequest>, InvoiceGetValidator>();
 
