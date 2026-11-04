@@ -13,7 +13,7 @@ public class InvoiceModelUpdateValidatorTest
         Id = Guid.NewGuid(),
         SellerId = Guid.NewGuid(),
         CustomerId = Guid.NewGuid(),
-        Items = [new() { Id = Guid.NewGuid() }]
+        Items = [new() { Id = Guid.NewGuid(), Quantity = 1 }]
     };
 
     [Fact]
@@ -52,5 +52,39 @@ public class InvoiceModelUpdateValidatorTest
         //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == propertyName);
+    }
+
+    [Theory]
+    [InlineData(0, Label = "zero quantity is rejected")]
+    [InlineData(-1, Label = "negative quantity is rejected")]
+    public void Validate_GivenQuantityNotGreaterThanZero_IsInvalid(decimal quantity)
+    {
+        //Arrange
+        InvoiceModel model = ValidModel();
+        model.Items![0].Quantity = quantity;
+
+        //Act
+        var result = _validator.Validate(model);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == $"{nameof(InvoiceModel.Items)}[0]"
+            && e.ErrorMessage == $"Please provide quantity that should > 0 for {model.Items[0].Id}");
+    }
+
+    [Theory]
+    [InlineData(0.5, Label = "fractional quantity is accepted")]
+    [InlineData(100, Label = "large quantity is accepted")]
+    public void Validate_GivenQuantityAboveZero_IsValid(decimal quantity)
+    {
+        //Arrange
+        InvoiceModel model = ValidModel();
+        model.Items![0].Quantity = quantity;
+
+        //Act
+        var result = _validator.Validate(model);
+
+        //Assert
+        result.IsValid.Should().BeTrue();
     }
 }
