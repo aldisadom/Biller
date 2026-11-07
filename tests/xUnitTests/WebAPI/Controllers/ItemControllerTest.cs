@@ -79,7 +79,7 @@ public class ItemControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _itemServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync((items, 7));
+            .ReturnsAsync((items, 102));
 
         //Act
         var result = await _itemController.Get(query);
@@ -89,7 +89,7 @@ public class ItemControllerTest
             .Which.Value.Should().BeEquivalentTo(new ItemListResponse
             {
                 Items = items.Select(i => i.ToResponse()).ToList(),
-                TotalCount = 7,
+                TotalCount = 102,
                 Page = 3,
                 PageSize = PageSize.p50
             });
@@ -104,7 +104,7 @@ public class ItemControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new ItemGetRequest { Page = 0 };
+        var query = new ItemGetRequest { Page = 42949673 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));

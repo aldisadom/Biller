@@ -79,7 +79,7 @@ public class SeriesControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _seriesServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync((series, 7));
+            .ReturnsAsync((series, 102));
 
         //Act
         var result = await _seriesController.Get(query);
@@ -89,7 +89,7 @@ public class SeriesControllerTest
             .Which.Value.Should().BeEquivalentTo(new SeriesListResponse
             {
                 Series = series.Select(c => c.ToResponse()).ToList(),
-                TotalCount = 7,
+                TotalCount = 102,
                 Page = 3,
                 PageSize = PageSize.p50
             });
@@ -104,7 +104,7 @@ public class SeriesControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new SeriesGetRequest { Page = 0 };
+        var query = new SeriesGetRequest { Page = 42949673 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));

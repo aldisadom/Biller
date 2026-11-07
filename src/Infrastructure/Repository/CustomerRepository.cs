@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Domain.Entities;
+using Domain.Helpers;
 using Domain.Repositories;
 using System.Data;
 
@@ -34,9 +35,11 @@ public class CustomerRepository : ICustomerRepository
                             ORDER BY c.company_name, c.id
                             LIMIT @PageSize OFFSET @Offset";
 
+        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { SellerId = sellerId });
+
+        page = Paging.PageInBounds(page, pageSize, totalCount);
         var parameters = new { SellerId = sellerId, PageSize = pageSize, Offset = (page - 1) * pageSize };
 
-        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters);
         IEnumerable<CustomerEntity> customers = await _dbConnection.QueryAsync<CustomerEntity>(dataSql, parameters);
 
         return (customers, totalCount);

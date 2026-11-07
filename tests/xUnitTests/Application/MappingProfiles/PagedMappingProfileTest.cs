@@ -29,4 +29,32 @@ public class PagedMappingProfileTest
             PageSize = PageSize.p50
         });
     }
+
+    [Fact]
+    public void WithPaging_GivenPagePastTheLast_SetsLastPage()
+    {
+        //Arrange
+        var response = new SeriesListResponse();
+        var query = new SeriesGetRequest { Page = 9, PageSize = PageSize.p25 };
+
+        //Act
+        var result = response.WithPaging(query, 60);
+
+        //Assert
+        result.Page.Should().Be(3);
+    }
+
+    [Fact]
+    public void WithPaging_GivenNegativePage_SetsFirstPage()
+    {
+        //Arrange
+        var response = new SeriesListResponse();
+        var query = new SeriesGetRequest { Page = -1, PageSize = PageSize.p25 };
+
+        //Act
+        var result = response.WithPaging(query, 60);
+
+        //Assert
+        result.Page.Should().Be(1);
+    }
 }

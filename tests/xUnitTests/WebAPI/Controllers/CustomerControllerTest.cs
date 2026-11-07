@@ -79,7 +79,7 @@ public class CustomerControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _customerServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync((customers, 7));
+            .ReturnsAsync((customers, 102));
 
         //Act
         var result = await _customerController.Get(query);
@@ -89,7 +89,7 @@ public class CustomerControllerTest
             .Which.Value.Should().BeEquivalentTo(new CustomerListResponse
             {
                 Customers = customers.Select(c => c.ToResponse()).ToList(),
-                TotalCount = 7,
+                TotalCount = 102,
                 Page = 3,
                 PageSize = PageSize.p50
             });
@@ -104,7 +104,7 @@ public class CustomerControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new CustomerGetRequest { Page = 0 };
+        var query = new CustomerGetRequest { Page = 42949673 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));

@@ -79,7 +79,7 @@ public class SellerControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _sellerServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync((sellers, 7));
+            .ReturnsAsync((sellers, 102));
 
         //Act
         var result = await _sellerController.Get(query);
@@ -89,7 +89,7 @@ public class SellerControllerTest
             .Which.Value.Should().BeEquivalentTo(new SellerListResponse
             {
                 Sellers = sellers.Select(s => s.ToResponse()).ToList(),
-                TotalCount = 7,
+                TotalCount = 102,
                 Page = 3,
                 PageSize = PageSize.p50
             });
@@ -104,7 +104,7 @@ public class SellerControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new SellerGetRequest { Page = 0 };
+        var query = new SellerGetRequest { Page = 42949673 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));

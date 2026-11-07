@@ -1,6 +1,7 @@
 ﻿using BillerContracts.Enums;
 using Dapper;
 using Domain.Entities;
+using Domain.Helpers;
 using Domain.Repositories;
 using System.Data;
 
@@ -37,9 +38,11 @@ public class InvoiceRepository : IInvoiceRepository
                             ORDER BY i.created_date DESC
                             LIMIT @PageSize OFFSET @Offset";
 
+        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { UserId = userId, SellerId = sellerId, CustomerId = customerId });
+
+        page = Paging.PageInBounds(page, pageSize, totalCount);
         var parameters = new { UserId = userId, SellerId = sellerId, CustomerId = customerId, PageSize = pageSize, Offset = (page - 1) * pageSize };
 
-        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters);
         IEnumerable<InvoiceEntity> items = await _dbConnection.QueryAsync<InvoiceEntity>(dataSql, parameters);
 
         return (items, totalCount);

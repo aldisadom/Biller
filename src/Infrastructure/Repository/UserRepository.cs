@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Domain.Entities;
+using Domain.Helpers;
 using Domain.Repositories;
 using System.Data;
 
@@ -37,9 +38,11 @@ public class UserRepository : IUserRepository
                             ORDER BY last_name, name, id
                             LIMIT @PageSize OFFSET @Offset";
 
+        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql);
+
+        page = Paging.PageInBounds(page, pageSize, totalCount);
         var parameters = new { PageSize = pageSize, Offset = (page - 1) * pageSize };
 
-        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql);
         IEnumerable<UserEntity> users = await _dbConnection.QueryAsync<UserEntity>(dataSql, parameters);
 
         return (users, totalCount);

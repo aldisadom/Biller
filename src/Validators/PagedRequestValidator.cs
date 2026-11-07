@@ -26,7 +26,8 @@ public abstract class PagedRequestValidator<T> : AbstractValidator<T> where T : 
     protected PagedRequestValidator()
     {
         int maxPage = PagedRequestValidator.MaxPage;
-        RuleFor(x => x.Page).InclusiveBetween(1, maxPage).WithMessage($"Please specify page from 1 to {maxPage}");
+        // A page below 1 isn't rejected: the repositories answer it with page 1
+        RuleFor(x => x.Page).LessThanOrEqualTo(maxPage).WithMessage($"Please specify page up to {maxPage}");
         RuleFor(x => x.PageSize).IsInEnum().WithMessage("Please specify valid page size");
     }
 }

@@ -89,7 +89,7 @@ public class InvoiceControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _invoiceServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync((invoices, invoices.Count));
+            .ReturnsAsync((invoices, 102));
 
         //Act
         var result = await _invoiceController.Get(query);
@@ -99,7 +99,7 @@ public class InvoiceControllerTest
             .Which.Value.Should().BeEquivalentTo(new InvoiceListResponse
             {
                 Invoices = invoices.Select(i => i.ToResponse()).ToList(),
-                TotalCount = invoices.Count,
+                TotalCount = 102,
                 Page = 3,
                 PageSize = PageSize.p50
             });
@@ -114,7 +114,7 @@ public class InvoiceControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new InvoiceGetRequest { Page = 0 };
+        var query = new InvoiceGetRequest { Page = 42949673 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
