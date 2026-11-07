@@ -23,21 +23,18 @@ public class CustomerRepository : ICustomerRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<CustomerEntity>(sql, new { id });
     }
 
-    public async Task<IEnumerable<CustomerEntity>> GetBySellerId(Guid sellerId)
+    public async Task<(IEnumerable<CustomerEntity> Items, int TotalCount, int Page)> Get(Guid? sellerId, int page, int pageSize)
     {
-        string sql = @"SELECT c.*, s.name AS series_name FROM customers c
-                        JOIN series s ON s.id = c.series_id
-                        WHERE c.seller_id=@SellerId";
+        string filter = @"WHERE (@SellerId IS NULL OR c.seller_id = @SellerId)";
 
-        return await _dbConnection.QueryAsync<CustomerEntity>(sql, new { sellerId });
-    }
+        string countSql = $"SELECT COUNT(*) FROM customers c {filter}";
+        string dataSql = $@"SELECT c.*, s.name AS series_name, COUNT(*) OVER() AS total_count FROM customers c
+                            JOIN series s ON s.id = c.series_id
+                            {filter}
+                            ORDER BY c.company_name, c.id
+                            LIMIT @PageSize OFFSET @Offset";
 
-    public async Task<IEnumerable<CustomerEntity>> Get()
-    {
-        string sql = @"SELECT c.*, s.name AS series_name FROM customers c
-                        JOIN series s ON s.id = c.series_id";
-
-        return await _dbConnection.QueryAsync<CustomerEntity>(sql);
+        return await _dbConnection.QueryPage<CustomerEntity>(dataSql, countSql, new { SellerId = sellerId }, page, pageSize);
     }
 
     public async Task<Guid> Add(CustomerEntity customer)

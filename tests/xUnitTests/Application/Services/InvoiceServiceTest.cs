@@ -132,7 +132,7 @@ public class InvoiceServiceTest
         List<InvoiceEntity> invoiceDataList = [firstInvoice.ToEntity(), secondInvoice.ToEntity()];
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(null, null, null, 1, (int)PageSize.p25))
-                        .ReturnsAsync((invoiceDataList, 7));
+                        .ReturnsAsync((invoiceDataList, 7, 1));
         _userServiceMock.Setup(m => m.Get(user.Id))
                 .ReturnsAsync(user);
         _sellerServiceMock.Setup(m => m.Get(seller.Id))
@@ -141,7 +141,7 @@ public class InvoiceServiceTest
                 .ReturnsAsync(customer);
 
         //Act
-        var (result, totalCount) = await _invoiceService.Get(request);
+        var (result, totalCount, returnedPage) = await _invoiceService.Get(request);
 
         //Assert
         result.Select(i => i.Id).Should().Equal(firstInvoice.Id, secondInvoice.Id);
@@ -153,6 +153,7 @@ public class InvoiceServiceTest
             i.Customer.Should().BeSameAs(customer);
         });
         totalCount.Should().Be(7);
+        returnedPage.Should().Be(1);
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(null, null, null, 1, (int)PageSize.p25), Times.Once());
         _userServiceMock.Verify(m => m.Get(user.Id), Times.Once());
@@ -175,7 +176,7 @@ public class InvoiceServiceTest
         InvoiceGetRequest request = new() { SellerId = seller.Id };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(null, seller.Id, null, request.Page, (int)request.PageSize))
-                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count));
+                        .ReturnsAsync((invoiceDataList, invoiceDataList.Count, 1));
         _userServiceMock.Setup(m => m.Get(user.Id))
                 .ReturnsAsync(user);
         _sellerServiceMock.Setup(m => m.Get(seller.Id))
@@ -186,12 +187,13 @@ public class InvoiceServiceTest
                 .ReturnsAsync(otherCustomer);
 
         //Act
-        var (result, totalCount) = await _invoiceService.Get(request);
+        var (result, totalCount, returnedPage) = await _invoiceService.Get(request);
 
         //Assert
         result.Single(i => i.Id == invoice.Id).Customer.Should().BeSameAs(customer);
         result.Single(i => i.Id == otherInvoice.Id).Customer.Should().BeSameAs(otherCustomer);
         totalCount.Should().Be(2);
+        returnedPage.Should().Be(1);
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(null, seller.Id, null, request.Page, (int)request.PageSize), Times.Once());
         _userServiceMock.Verify(m => m.Get(user.Id), Times.Once());
@@ -219,14 +221,15 @@ public class InvoiceServiceTest
         List<InvoiceEntity> invoiceDataList = [];
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(userId, sellerId, customerId, request.Page, (int)request.PageSize))
-                        .ReturnsAsync((invoiceDataList, 0));
+                        .ReturnsAsync((invoiceDataList, 0, 1));
 
         //Act
-        var (result, totalCount) = await _invoiceService.Get(request);
+        var (result, totalCount, returnedPage) = await _invoiceService.Get(request);
 
         //Assert
         result.Should().BeEmpty();
         totalCount.Should().Be(0);
+        returnedPage.Should().Be(1);
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(userId, sellerId, customerId, request.Page, (int)request.PageSize), Times.Once());
     }

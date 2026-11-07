@@ -1,6 +1,8 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
+using BillerContracts.Enums;
+using BillerContracts.Requests.User;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -39,11 +41,14 @@ public class UserService : IUserService
         return userEntity.ToModel();
     }
 
-    public async Task<IEnumerable<UserModel>> Get()
+    public async Task<(IEnumerable<UserModel> Items, int TotalCount, int Page)> Get(UserGetRequest? query)
     {
-        IEnumerable<UserEntity> userEntities = await _userRepository.Get();
+        int page = query?.Page ?? 1;
+        var pageSize = query?.PageSize ?? PageSize.p25;
 
-        return userEntities.Select(u => u.ToModel());
+        var (entities, totalCount, returnedPage) = await _userRepository.Get(page, (int)pageSize);
+
+        return (entities.Select(u => u.ToModel()), totalCount, returnedPage);
     }
 
     public async Task<Guid> Add(UserModel user)

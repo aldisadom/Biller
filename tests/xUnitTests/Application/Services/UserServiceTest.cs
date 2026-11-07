@@ -2,6 +2,8 @@
 using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
+using BillerContracts.Enums;
+using BillerContracts.Requests.User;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
@@ -130,45 +132,53 @@ public class UserServiceTest
         _userRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    [Fact]
-    public async Task Get_GivenUsers_ReturnsModels()
+    public static IEnumerable<TheoryDataRow<UserGetRequest?, int, int>> GetQueryTestData()
     {
-        //Arrange
-        List<UserEntity> userList = [new(), new(), new()];
-
-        _userRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(userList);
-
-        var expectedResult = userList.Select(u => u.ToModel());
-
-        //Act
-        var result = await _userService.Get();
-
-        //Assert
-        result.Count().Should().Be(userList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
-
-        _userRepositoryMock.Verify(m => m.Get(), Times.Once());
+        yield return new(null, 1, 25) { Label = "no query reads the first 25 users" };
+        yield return new(new UserGetRequest(), 1, 25) { Label = "empty query reads the first 25 users" };
+        yield return new(new UserGetRequest { Page = 2, PageSize = PageSize.p50 }, 2, 50) { Label = "paging is passed to the repository" };
     }
 
-
-    [Fact]
-    public async Task Get_GivenEmpty_ShouldReturnEmpty()
+    [Theory]
+    [MemberData(nameof(GetQueryTestData))]
+    public async Task Get_GivenQuery_PassesPagingToRepository(UserGetRequest? query, int page, int pageSize)
     {
         //Arrange
-        List<UserEntity> userList = [];
+        List<UserEntity> users = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
-        _userRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(userList);
+        _userRepositoryMock.Setup(m => m.Get(page, pageSize))
+                        .ReturnsAsync((users, 9, page));
 
         //Act
-        var result = await _userService.Get();
+        var (result, totalCount, returnedPage) = await _userService.Get(query);
 
         //Assert
-        result.Count().Should().Be(0);
-        result.Should().BeEquivalentTo(new List<UserModel>());
+        result.Select(u => u.Id).Should().Equal(users.Select(u => u.Id));
+        totalCount.Should().Be(9);
+        returnedPage.Should().Be(page);
 
-        _userRepositoryMock.Verify(m => m.Get(), Times.Once());
+        _userRepositoryMock.Verify(m => m.Get(page, pageSize), Times.Once());
+    }
+
+    [Fact]
+    public async Task Get_GivenPagePastTheEnd_ReturnsPageTheRepositoryReturned()
+    {
+        //Arrange
+        UserGetRequest query = new() { Page = 5 };
+        List<UserEntity> users = [new() { Id = Guid.NewGuid() }];
+
+        _userRepositoryMock.Setup(m => m.Get(5, 25))
+                        .ReturnsAsync((users, 4, 1));
+
+        //Act
+        var (result, totalCount, returnedPage) = await _userService.Get(query);
+
+        //Assert
+        result.Select(u => u.Id).Should().Equal(users.Select(u => u.Id));
+        totalCount.Should().Be(4);
+        returnedPage.Should().Be(1);
+
+        _userRepositoryMock.Verify(m => m.Get(5, 25), Times.Once());
     }
 
     [Fact]

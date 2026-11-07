@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
+using BillerContracts.Enums;
 using BillerContracts.Requests.Item;
 using BillerContracts.Responses;
 using BillerContracts.Responses.Item;
@@ -68,7 +69,7 @@ public class ItemControllerTest
     public async Task Get_GivenQuery_ReturnsOkWithItemListResponse()
     {
         //Arrange
-        var query = new ItemGetRequest { CustomerId = Guid.NewGuid() };
+        var query = new ItemGetRequest { CustomerId = Guid.NewGuid(), Page = 3, PageSize = PageSize.p50 };
         var items = new List<ItemModel>
         {
             new() { Id = _item1Id, CustomerId = _customerId },
@@ -78,7 +79,7 @@ public class ItemControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _itemServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync(items);
+            .ReturnsAsync((items, 102, 2));
 
         //Act
         var result = await _itemController.Get(query);
@@ -87,7 +88,10 @@ public class ItemControllerTest
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new ItemListResponse
             {
-                Items = items.Select(i => i.ToResponse()).ToList()
+                Items = items.Select(i => i.ToResponse()).ToList(),
+                TotalCount = 102,
+                Page = 2,
+                PageSize = PageSize.p50
             });
 
         _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
@@ -100,10 +104,10 @@ public class ItemControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new ItemGetRequest { Page = 0 };
+        var query = new ItemGetRequest { PageSize = (PageSize)7 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
-            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.PageSize), "invalid value")]));
 
         //Act
         Func<Task> act = () => _itemController.Get(query);

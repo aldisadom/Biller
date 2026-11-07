@@ -8,7 +8,7 @@ public interface IInvoiceService
 {
     Task<Guid> Add(InvoiceModel invoiceData);
     Task Delete(Guid id);
-    Task<(IEnumerable<InvoiceModelFull>, int)> Get(InvoiceGetRequest? query);
+    Task<(IEnumerable<InvoiceModelFull> Items, int TotalCount, int Page)> Get(InvoiceGetRequest? query);
     Task<InvoiceModelFull> Get(Guid id);
     Task Update(InvoiceModel invoiceDetails);
     Task UpdateStatus(InvoiceUpdateStatusRequest invoiceDetails);

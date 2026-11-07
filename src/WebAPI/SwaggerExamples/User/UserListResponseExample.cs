@@ -1,4 +1,5 @@
-﻿using BillerContracts.Responses.User;
+﻿using BillerContracts.Enums;
+using BillerContracts.Responses.User;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.User;
@@ -14,7 +15,12 @@ public class UserListResponseExample : IExamplesProvider<UserListResponse>
     /// <returns></returns>
     public UserListResponse GetExamples()
     {
-        UserListResponse userList = new();
+        UserListResponse userList = new()
+        {
+            TotalCount = 2,
+            Page = 1,
+            PageSize = PageSize.p25
+        };
 
         userList.Users.Add(new UserResponse()
         {

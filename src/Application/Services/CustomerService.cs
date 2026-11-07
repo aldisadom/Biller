@@ -2,6 +2,7 @@
 using Application.MappingProfiles;
 using Application.Models;
 using BillerContracts;
+using BillerContracts.Enums;
 using BillerContracts.Requests.Customer;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -30,18 +31,14 @@ public class CustomerService : ICustomerService
         return customerEntity.ToModel();
     }
 
-    public async Task<IEnumerable<CustomerModel>> Get(CustomerGetRequest? query)
+    public async Task<(IEnumerable<CustomerModel> Items, int TotalCount, int Page)> Get(CustomerGetRequest? query)
     {
-        IEnumerable<CustomerEntity> customerEntities;
+        int page = query?.Page ?? 1;
+        var pageSize = query?.PageSize ?? PageSize.p25;
 
-        if (query is null)
-            customerEntities = await _customerRepository.Get();
-        else if (query.SellerId is not null)
-            customerEntities = await _customerRepository.GetBySellerId((Guid)query.SellerId);
-        else
-            customerEntities = await _customerRepository.Get();
+        var (entities, totalCount, returnedPage) = await _customerRepository.Get(query?.SellerId, page, (int)pageSize);
 
-        return customerEntities.Select(c => c.ToModel());
+        return (entities.Select(c => c.ToModel()), totalCount, returnedPage);
     }
 
     public async Task<Result<CustomerModel>> GetWithValidation(Guid id, Guid sellerId)

@@ -1,43 +1,23 @@
-﻿using Application.Models;
-using Domain.Repositories;
+using Application.Models;
 using FluentValidation;
 
 namespace Validators.Invoice;
 
 /// <summary>
-/// Invoice update validation
+/// Invoice model validation before update: every id is set and every item quantity is above 0
 /// </summary>
-public class InvoiceValidator : AbstractValidator<InvoiceModel>
+public class InvoiceModelUpdateValidator : AbstractValidator<InvoiceModel>
 {
-    private readonly ICustomerRepository _customer;
-    private readonly ISellerRepository _seller;
-    private readonly IItemRepository _item;
-
     /// <summary>
     /// Validation
     /// </summary>
-    public InvoiceValidator(ICustomerRepository customer, ISellerRepository seller, IItemRepository item)
+    public InvoiceModelUpdateValidator()
     {
-        _customer = customer;
-        _seller = seller;
-        _item = item;
-    }
-
-    public async Task<bool> IsValidSellerId(Guid sellerId, Guid userId)
-    {
-        var sellers = await _seller.GetByUserId(userId);
-        return sellers.Where(x => x.Id == sellerId).Count() == 1;
-    }
-
-    public async Task<bool> IsValidCustomerId(Guid customerId, Guid sellerId)
-    {
-        var customers = await _customer.GetBySellerId(sellerId);
-        return customers.Where(x => x.Id == customerId).Count() == 1;
-    }
-
-    public async Task<bool> IsValidItemsId(List<Guid> itemIds, Guid customer)
-    {
-        var items = await _item.GetByCustomerId(customer);
-        return itemIds.All(id => items.Any(x => x.Id == id));
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify invoice id");
+        RuleFor(x => x.SellerId).NotEmpty().WithMessage("Please specify seller Id");
+        RuleFor(x => x.CustomerId).NotEmpty().WithMessage("Please specify customer id");
+        RuleFor(x => x.Items).NotEmpty().WithMessage("Please provide at least one item");
+        RuleForEach(x => x.Items).Must(i => i.Id != Guid.Empty).WithMessage("Please specify item Id");
+        RuleForEach(x => x.Items).Must(i => i.Quantity > 0).WithMessage((_, i) => $"Please provide quantity that should > 0 for {i.Id}");
     }
 }

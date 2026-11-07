@@ -6,7 +6,7 @@ public interface IUserRepository
 {
     Task<UserEntity?> Get(Guid id);
     Task<UserEntity?> Get(string email);
-    Task<IEnumerable<UserEntity>> Get();
+    Task<(IEnumerable<UserEntity> Items, int TotalCount, int Page)> Get(int page, int pageSize);
     Task<Guid> Add(UserEntity user);
     Task Update(UserEntity user);
     Task Delete(Guid id);

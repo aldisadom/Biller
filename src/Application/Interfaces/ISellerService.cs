@@ -10,7 +10,7 @@ namespace Application.Interfaces
         Task Delete(Guid id);
         Task<SellerModel> Get(Guid id);
         Task<Result<SellerModel>> GetWithValidation(Guid id, Guid userId);
-        Task<IEnumerable<SellerModel>> Get(SellerGetRequest? query);
+        Task<(IEnumerable<SellerModel> Items, int TotalCount, int Page)> Get(SellerGetRequest? query);
         Task Update(SellerModel seller);
     }
 }

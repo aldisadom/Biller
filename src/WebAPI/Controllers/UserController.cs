@@ -91,10 +91,10 @@ public class UserController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all users
+    /// Gets one page of users (default page 1, 25 per page) and their total count
     /// </summary>
     /// <param name="query">paging parameters</param>
-    /// <returns>list of users</returns>
+    /// <returns>one page of users</returns>
     [HttpGet]
     [ProducesResponseType(typeof(UserListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(UserListResponseExample))]
@@ -103,12 +103,12 @@ public class UserController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        IEnumerable<UserModel> users = await _userService.Get();
+        var (users, totalCount, page) = await _userService.Get(query);
 
-        UserListResponse result = new()
+        UserListResponse result = new UserListResponse
         {
             Users = users.Select(u => u.ToResponse()).ToList()
-        };
+        }.WithPaging(query, totalCount, page);
 
         return Ok(result);
     }

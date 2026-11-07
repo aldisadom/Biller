@@ -65,10 +65,10 @@ public class ItemController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all items
+    /// Gets one page of items (default page 1, 25 per page) and their total count
     /// </summary>
-    /// <param name="query">filtering parameters</param>
-    /// <returns>list of items</returns>
+    /// <param name="query">filtering and paging parameters</param>
+    /// <returns>one page of items</returns>
     [HttpGet]
     [ProducesResponseType(typeof(ItemListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemListResponseExample))]
@@ -77,12 +77,12 @@ public class ItemController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        IEnumerable<ItemModel> items = await _itemService.Get(query);
+        var (items, totalCount, page) = await _itemService.Get(query);
 
-        ItemListResponse result = new()
+        ItemListResponse result = new ItemListResponse
         {
             Items = items.Select(i => i.ToResponse()).ToList()
-        };
+        }.WithPaging(query, totalCount, page);
 
         return Ok(result);
     }

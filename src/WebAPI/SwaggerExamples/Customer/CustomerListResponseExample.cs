@@ -1,4 +1,5 @@
-﻿using BillerContracts.Responses.Customer;
+﻿using BillerContracts.Enums;
+using BillerContracts.Responses.Customer;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace WebAPI.SwaggerExamples.Customer;
@@ -14,7 +15,12 @@ public class CustomerListResponseExample : IExamplesProvider<CustomerListRespons
     /// <returns></returns>
     public CustomerListResponse GetExamples()
     {
-        CustomerListResponse clientList = new();
+        CustomerListResponse clientList = new()
+        {
+            TotalCount = 2,
+            Page = 1,
+            PageSize = PageSize.p25
+        };
 
         clientList.Customers.Add(new CustomerResponse()
         {

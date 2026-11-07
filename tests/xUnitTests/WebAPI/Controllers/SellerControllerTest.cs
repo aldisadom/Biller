@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
+using BillerContracts.Enums;
 using BillerContracts.Requests.Seller;
 using BillerContracts.Responses;
 using BillerContracts.Responses.Seller;
@@ -68,7 +69,7 @@ public class SellerControllerTest
     public async Task Get_GivenQuery_ReturnsOkWithSellerListResponse()
     {
         //Arrange
-        var query = new SellerGetRequest { UserId = Guid.NewGuid() };
+        var query = new SellerGetRequest { UserId = Guid.NewGuid(), Page = 3, PageSize = PageSize.p50 };
         var sellers = new List<SellerModel>
         {
             new() { Id = _seller1Id, UserId = _userId },
@@ -78,7 +79,7 @@ public class SellerControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _sellerServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync(sellers);
+            .ReturnsAsync((sellers, 102, 2));
 
         //Act
         var result = await _sellerController.Get(query);
@@ -87,7 +88,10 @@ public class SellerControllerTest
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new SellerListResponse
             {
-                Sellers = sellers.Select(s => s.ToResponse()).ToList()
+                Sellers = sellers.Select(s => s.ToResponse()).ToList(),
+                TotalCount = 102,
+                Page = 2,
+                PageSize = PageSize.p50
             });
 
         _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
@@ -100,10 +104,10 @@ public class SellerControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new SellerGetRequest { Page = 0 };
+        var query = new SellerGetRequest { PageSize = (PageSize)7 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
-            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.PageSize), "invalid value")]));
 
         //Act
         Func<Task> act = () => _sellerController.Get(query);

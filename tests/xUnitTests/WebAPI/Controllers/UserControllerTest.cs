@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
+using BillerContracts.Enums;
 using BillerContracts.Requests.User;
 using BillerContracts.Responses;
 using BillerContracts.Responses.User;
@@ -98,7 +99,7 @@ public class UserControllerTest
     public async Task Get_GivenQuery_ReturnsOkWithUserListResponse()
     {
         //Arrange
-        var query = new UserGetRequest { Page = 2 };
+        var query = new UserGetRequest { Page = 3, PageSize = PageSize.p50 };
         var users = new List<UserModel>
         {
             new() { Id = _user1Id },
@@ -107,8 +108,8 @@ public class UserControllerTest
 
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
-        _userServiceMock.Setup(s => s.Get())
-            .ReturnsAsync(users);
+        _userServiceMock.Setup(s => s.Get(query))
+            .ReturnsAsync((users, 102, 2));
 
         //Act
         var result = await _userController.Get(query);
@@ -117,12 +118,15 @@ public class UserControllerTest
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(new UserListResponse
             {
-                Users = users.Select(u => u.ToResponse()).ToList()
+                Users = users.Select(u => u.ToResponse()).ToList(),
+                TotalCount = 102,
+                Page = 2,
+                PageSize = PageSize.p50
             });
 
         _validatorGetMock.Verify(v => v.Validate(query), Times.Once());
         _validatorGetMock.VerifyNoOtherCalls();
-        _userServiceMock.Verify(s => s.Get(), Times.Once());
+        _userServiceMock.Verify(s => s.Get(query), Times.Once());
         _userServiceMock.VerifyNoOtherCalls();
     }
 
@@ -130,10 +134,10 @@ public class UserControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new UserGetRequest { Page = 0 };
+        var query = new UserGetRequest { PageSize = (PageSize)7 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
-            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.PageSize), "invalid value")]));
 
         //Act
         Func<Task> act = () => _userController.Get(query);

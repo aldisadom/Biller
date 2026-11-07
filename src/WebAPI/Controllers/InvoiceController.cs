@@ -26,6 +26,7 @@ public class InvoiceController : ControllerBase
     private readonly IValidator<InvoiceGenerateRequest> _validatorGenerate;
     private readonly IValidator<InvoiceUpdateRequest> _validatorUpdate;
     private readonly IValidator<InvoiceGetRequest> _validatorGet;
+    private readonly IValidator<InvoiceModel> _validatorModelUpdate;
 
     /// <summary>
     /// Constructor
@@ -36,9 +37,11 @@ public class InvoiceController : ControllerBase
     /// <param name="validatorGenerate"></param>
     /// <param name="validatorUpdate"></param>
     /// <param name="validatorGet"></param>
+    /// <param name="validatorModelUpdate"></param>
     public InvoiceController(IInvoiceService invoiceService, ILogger<InvoiceController> logger,
         IValidator<InvoiceAddRequest> validatorAdd, IValidator<InvoiceGenerateRequest> validatorGenerate,
-        IValidator<InvoiceUpdateRequest> validatorUpdate, IValidator<InvoiceGetRequest> validatorGet)
+        IValidator<InvoiceUpdateRequest> validatorUpdate, IValidator<InvoiceGetRequest> validatorGet,
+        IValidator<InvoiceModel> validatorModelUpdate)
     {
         _invoiceService = invoiceService;
         _logger = logger;
@@ -46,6 +49,7 @@ public class InvoiceController : ControllerBase
         _validatorGenerate = validatorGenerate;
         _validatorUpdate = validatorUpdate;
         _validatorGet = validatorGet;
+        _validatorModelUpdate = validatorModelUpdate;
     }
 
     /// <summary>
@@ -67,10 +71,10 @@ public class InvoiceController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all invoices
+    /// Gets one page of invoices (default page 1, 25 per page) and their total count
     /// </summary>
-    /// <param name="query">filtering parameters</param>
-    /// <returns>list of invoices</returns>
+    /// <param name="query">filtering and paging parameters</param>
+    /// <returns>one page of invoices</returns>
     [HttpGet]
     [ProducesResponseType(typeof(InvoiceListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(InvoiceListResponseExample))]
@@ -79,12 +83,12 @@ public class InvoiceController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        var (invoicesData, totalCount) = await _invoiceService.Get(query);
+        var (invoicesData, totalCount, page) = await _invoiceService.Get(query);
 
         InvoiceListResponse result = new InvoiceListResponse
         {
             Invoices = invoicesData.Select(i => i.ToResponse()).ToList()
-        }.WithPaging(query, totalCount);
+        }.WithPaging(query, totalCount, page);
 
         return Ok(result);
     }
@@ -136,6 +140,7 @@ public class InvoiceController : ControllerBase
     {
         _validatorUpdate.CheckValidation(invoice);
         InvoiceModel invoiceData = invoice.ToModel();
+        _validatorModelUpdate.CheckValidation(invoiceData);
 
         await _invoiceService.Update(invoiceData);
 

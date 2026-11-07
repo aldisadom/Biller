@@ -24,25 +24,21 @@ public class InvoiceRepository : IInvoiceRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<InvoiceEntity>(sql, new { id });
     }
 
-    public async Task<(IEnumerable<InvoiceEntity>, int)> Get(Guid? userId, Guid? sellerId, Guid? customerId, int page, int pageSize)
+    public async Task<(IEnumerable<InvoiceEntity> Items, int TotalCount, int Page)> Get(Guid? userId, Guid? sellerId, Guid? customerId, int page, int pageSize)
     {
         string filter = @"WHERE (@UserId IS NULL OR i.user_id = @UserId)
                           AND (@SellerId IS NULL OR i.seller_id = @SellerId)
                           AND (@CustomerId IS NULL OR i.customer_id = @CustomerId)";
 
         string countSql = $"SELECT COUNT(*) FROM invoices i {filter}";
-        string dataSql = $@"SELECT i.*, s.name AS series_name FROM invoices i
+        string dataSql = $@"SELECT i.*, s.name AS series_name, COUNT(*) OVER() AS total_count FROM invoices i
                             JOIN series s ON s.id = i.series_id
                             {filter}
                             ORDER BY i.created_date DESC
                             LIMIT @PageSize OFFSET @Offset";
 
-        var parameters = new { UserId = userId, SellerId = sellerId, CustomerId = customerId, PageSize = pageSize, Offset = (page - 1) * pageSize };
-
-        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters);
-        IEnumerable<InvoiceEntity> items = await _dbConnection.QueryAsync<InvoiceEntity>(dataSql, parameters);
-
-        return (items, totalCount);
+        return await _dbConnection.QueryPage<InvoiceEntity>(dataSql, countSql,
+            new { UserId = userId, SellerId = sellerId, CustomerId = customerId }, page, pageSize);
     }
 
     public async Task<Guid> Add(InvoiceEntity invoice)

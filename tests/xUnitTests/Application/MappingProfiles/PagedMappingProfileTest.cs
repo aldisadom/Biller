@@ -17,7 +17,7 @@ public class PagedMappingProfileTest
         var query = new SeriesGetRequest { SellerId = Guid.NewGuid(), Page = 3, PageSize = PageSize.p50 };
 
         //Act
-        var result = response.WithPaging(query, 120);
+        var result = response.WithPaging(query, 120, 3);
 
         //Assert
         result.Should().BeSameAs(response);
@@ -28,5 +28,19 @@ public class PagedMappingProfileTest
             Page = 3,
             PageSize = PageSize.p50
         });
+    }
+
+    [Fact]
+    public void WithPaging_GivenReturnedPageOtherThanRequested_SetsReturnedPage()
+    {
+        //Arrange
+        var response = new SeriesListResponse();
+        var query = new SeriesGetRequest { Page = 9, PageSize = PageSize.p25 };
+
+        //Act
+        var result = response.WithPaging(query, 60, 3);
+
+        //Assert
+        result.Page.Should().Be(3);
     }
 }

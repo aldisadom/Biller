@@ -22,6 +22,7 @@ public class InvoiceControllerTest
     private readonly Mock<IValidator<InvoiceGenerateRequest>> _validatorGenerateMock;
     private readonly Mock<IValidator<InvoiceUpdateRequest>> _validatorUpdateMock;
     private readonly Mock<IValidator<InvoiceGetRequest>> _validatorGetMock;
+    private readonly Mock<IValidator<InvoiceModel>> _validatorModelUpdateMock;
     private readonly InvoiceController _invoiceController;
     private readonly Guid _userId = Guid.NewGuid();
     private readonly Guid _sellerId = Guid.NewGuid();
@@ -34,6 +35,7 @@ public class InvoiceControllerTest
         _validatorGenerateMock = new Mock<IValidator<InvoiceGenerateRequest>>(MockBehavior.Strict);
         _validatorUpdateMock = new Mock<IValidator<InvoiceUpdateRequest>>(MockBehavior.Strict);
         _validatorGetMock = new Mock<IValidator<InvoiceGetRequest>>(MockBehavior.Strict);
+        _validatorModelUpdateMock = new Mock<IValidator<InvoiceModel>>(MockBehavior.Strict);
 
         _invoiceController = new InvoiceController(
             _invoiceServiceMock.Object,
@@ -41,7 +43,8 @@ public class InvoiceControllerTest
             _validatorAddMock.Object,
             _validatorGenerateMock.Object,
             _validatorUpdateMock.Object,
-            _validatorGetMock.Object);
+            _validatorGetMock.Object,
+            _validatorModelUpdateMock.Object);
     }
 
     private InvoiceModelFull CreateInvoice() => new()
@@ -86,7 +89,7 @@ public class InvoiceControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _invoiceServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync((invoices, invoices.Count));
+            .ReturnsAsync((invoices, 102, 2));
 
         //Act
         var result = await _invoiceController.Get(query);
@@ -96,8 +99,8 @@ public class InvoiceControllerTest
             .Which.Value.Should().BeEquivalentTo(new InvoiceListResponse
             {
                 Invoices = invoices.Select(i => i.ToResponse()).ToList(),
-                TotalCount = invoices.Count,
-                Page = 3,
+                TotalCount = 102,
+                Page = 2,
                 PageSize = PageSize.p50
             });
 
@@ -111,10 +114,10 @@ public class InvoiceControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new InvoiceGetRequest { Page = 0 };
+        var query = new InvoiceGetRequest { PageSize = (PageSize)7 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
-            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.PageSize), "invalid value")]));
 
         //Act
         Func<Task> act = () => _invoiceController.Get(query);
@@ -176,6 +179,8 @@ public class InvoiceControllerTest
 
         _validatorUpdateMock.Setup(v => v.Validate(request))
             .Returns(new ValidationResult());
+        _validatorModelUpdateMock.Setup(v => v.Validate(It.Is<InvoiceModel>(m => m.Id == request.Id)))
+            .Returns(new ValidationResult());
         _invoiceServiceMock.Setup(s => s.Update(It.Is<InvoiceModel>(m =>
                 m.Id == request.Id &&
                 m.SellerId == request.SellerId &&
@@ -190,6 +195,8 @@ public class InvoiceControllerTest
 
         _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
         _validatorUpdateMock.VerifyNoOtherCalls();
+        _validatorModelUpdateMock.Verify(v => v.Validate(It.Is<InvoiceModel>(m => m.Id == request.Id)), Times.Once());
+        _validatorModelUpdateMock.VerifyNoOtherCalls();
         _invoiceServiceMock.Verify(s => s.Update(It.Is<InvoiceModel>(m =>
                 m.Id == request.Id &&
                 m.SellerId == request.SellerId &&
@@ -307,6 +314,31 @@ public class InvoiceControllerTest
 
         _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
         _validatorUpdateMock.VerifyNoOtherCalls();
+        _validatorModelUpdateMock.VerifyNoOtherCalls();
+        _invoiceServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Update_GivenInvalidModel_ThrowsValidationException()
+    {
+        //Arrange
+        var request = new InvoiceUpdateRequest { Id = Guid.NewGuid() };
+
+        _validatorUpdateMock.Setup(v => v.Validate(request))
+            .Returns(new ValidationResult());
+        _validatorModelUpdateMock.Setup(v => v.Validate(It.Is<InvoiceModel>(m => m.Id == request.Id)))
+            .Returns(new ValidationResult([new ValidationFailure(nameof(InvoiceModel.SellerId), "Please specify seller Id")]));
+
+        //Act
+        Func<Task> act = () => _invoiceController.Update(request);
+
+        //Assert
+        await act.Should().ThrowAsync<ValidationException>().WithMessage("Please specify seller Id");
+
+        _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
+        _validatorUpdateMock.VerifyNoOtherCalls();
+        _validatorModelUpdateMock.Verify(v => v.Validate(It.Is<InvoiceModel>(m => m.Id == request.Id)), Times.Once());
+        _validatorModelUpdateMock.VerifyNoOtherCalls();
         _invoiceServiceMock.VerifyNoOtherCalls();
     }
 

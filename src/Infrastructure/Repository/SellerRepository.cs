@@ -22,19 +22,16 @@ public class SellerRepository : ISellerRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<SellerEntity>(sql, new { id });
     }
 
-    public async Task<IEnumerable<SellerEntity>> GetByUserId(Guid userId)
+    public async Task<(IEnumerable<SellerEntity> Items, int TotalCount, int Page)> Get(Guid? userId, int page, int pageSize)
     {
-        string sql = @"SELECT * FROM sellers
-                        WHERE user_id=@UserId";
+        string filter = @"WHERE (@UserId IS NULL OR user_id = @UserId)";
 
-        return await _dbConnection.QueryAsync<SellerEntity>(sql, new { userId });
-    }
+        string countSql = $"SELECT COUNT(*) FROM sellers {filter}";
+        string dataSql = $@"SELECT *, COUNT(*) OVER() AS total_count FROM sellers {filter}
+                            ORDER BY company_name, id
+                            LIMIT @PageSize OFFSET @Offset";
 
-    public async Task<IEnumerable<SellerEntity>> Get()
-    {
-        string sql = @"SELECT * FROM sellers";
-
-        return await _dbConnection.QueryAsync<SellerEntity>(sql);
+        return await _dbConnection.QueryPage<SellerEntity>(dataSql, countSql, new { UserId = userId }, page, pageSize);
     }
 
     public async Task<Guid> Add(SellerEntity item)

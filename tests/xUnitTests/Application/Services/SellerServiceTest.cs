@@ -2,6 +2,7 @@
 using Application.Models;
 using Application.Services;
 using BillerContracts;
+using BillerContracts.Enums;
 using BillerContracts.Requests.Seller;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -143,81 +144,55 @@ public class SellerServiceTest
         _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
-    public static IEnumerable<TheoryDataRow<SellerGetRequest?>> GetNoFilterQueryTestData()
+    public static IEnumerable<TheoryDataRow<SellerGetRequest?, Guid?, int, int>> GetQueryTestData()
     {
-        yield return new((SellerGetRequest?)null) { Label = "no query returns all sellers" };
-        yield return new(new SellerGetRequest()) { Label = "query without filters returns all sellers" };
+        Guid userId = Guid.NewGuid();
+
+        yield return new(null, null, 1, 25) { Label = "no query reads the first 25 sellers of all users" };
+        yield return new(new SellerGetRequest(), null, 1, 25) { Label = "empty query reads the first 25 sellers of all users" };
+        yield return new(new SellerGetRequest { UserId = userId, Page = 2, PageSize = PageSize.p50 }, userId, 2, 50) { Label = "user filter and paging are passed to the repository" };
     }
 
     [Theory]
-    [MemberData(nameof(GetNoFilterQueryTestData))]
-    public async Task Get_GivenNoFilter_ReturnsDTO(SellerGetRequest? request)
+    [MemberData(nameof(GetQueryTestData))]
+    public async Task Get_GivenQuery_PassesFilterToRepository(SellerGetRequest? query, Guid? userId, int page, int pageSize)
     {
         //Arrange
-        List<SellerEntity> sellerList = [new(), new(), new()];
+        List<SellerEntity> sellers = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
-        _sellerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(sellerList);
-
-        var expectedResult = sellerList.Select(s => s.ToModel());
+        _sellerRepositoryMock.Setup(m => m.Get(userId, page, pageSize))
+                        .ReturnsAsync((sellers, 9, page));
 
         //Act
-        var result = await _sellerService.Get(request);
+        var (result, totalCount, returnedPage) = await _sellerService.Get(query);
 
         //Assert
-        result.Count().Should().Be(sellerList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
+        result.Select(s => s.Id).Should().Equal(sellers.Select(s => s.Id));
+        totalCount.Should().Be(9);
+        returnedPage.Should().Be(page);
 
-        _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
+        _sellerRepositoryMock.Verify(m => m.Get(userId, page, pageSize), Times.Once());
     }
 
     [Fact]
-    public async Task Get_GivenUserIdQuery_ReturnsDTO()
+    public async Task Get_GivenPagePastTheEnd_ReturnsPageTheRepositoryReturned()
     {
         //Arrange
-        List<SellerEntity> sellerList = [new(), new(), new()];
+        SellerGetRequest query = new() { Page = 5 };
+        List<SellerEntity> sellers = [new() { Id = Guid.NewGuid() }];
 
-        SellerGetRequest? request = new()
-        {
-            UserId = Guid.NewGuid()
-        };
-
-        _sellerRepositoryMock.Setup(m => m.GetByUserId((Guid)request.UserId!))
-                        .ReturnsAsync(sellerList);
-
-        var expectedResult = sellerList.Select(s => s.ToModel());
+        _sellerRepositoryMock.Setup(m => m.Get(null, 5, 25))
+                        .ReturnsAsync((sellers, 4, 1));
 
         //Act
-        var result = await _sellerService.Get(request);
+        var (result, totalCount, returnedPage) = await _sellerService.Get(query);
 
         //Assert
-        result.Count().Should().Be(sellerList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
+        result.Select(s => s.Id).Should().Equal(sellers.Select(s => s.Id));
+        totalCount.Should().Be(4);
+        returnedPage.Should().Be(1);
 
-        _sellerRepositoryMock.Verify(m => m.GetByUserId((Guid)request.UserId!), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.Get(), Times.Never());
-    }
-
-    [Fact]
-    public async Task Get_GivenEmpty_ShouldReturnEmpty()
-    {
-        //Arrange
-        SellerGetRequest request = new();
-        List<SellerEntity> sellerList = [];
-
-        _sellerRepositoryMock.Setup(m => m.Get())
-                        .ReturnsAsync(sellerList);
-
-        //Act
-        var result = await _sellerService.Get(request);
-
-        //Assert
-        result.Count().Should().Be(0);
-        result.Should().BeEquivalentTo(new List<SellerModel>());
-
-        _sellerRepositoryMock.Verify(m => m.Get(), Times.Once());
-        _sellerRepositoryMock.Verify(m => m.GetByUserId(It.IsAny<Guid>()), Times.Never());
+        _sellerRepositoryMock.Verify(m => m.Get(null, 5, 25), Times.Once());
     }
 
     [Fact]

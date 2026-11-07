@@ -65,10 +65,10 @@ public class SeriesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all Series
+    /// Gets one page of Series (default page 1, 25 per page) and their total count
     /// </summary>
-    /// <param name="query">filtering parameters</param>
-    /// <returns>list of Series</returns>
+    /// <param name="query">filtering and paging parameters</param>
+    /// <returns>one page of Series</returns>
     [HttpGet]
     [ProducesResponseType(typeof(SeriesListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(SeriesListResponseExample))]
@@ -77,12 +77,12 @@ public class SeriesController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        var (series, totalCount) = await _seriesService.Get(query);
+        var (series, totalCount, page) = await _seriesService.Get(query);
 
         SeriesListResponse result = new SeriesListResponse
         {
             Series = series.Select(s => s.ToResponse()).ToList()
-        }.WithPaging(query, totalCount);
+        }.WithPaging(query, totalCount, page);
 
         return Ok(result);
     }

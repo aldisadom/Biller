@@ -65,10 +65,10 @@ public class SellerController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all Sellers
+    /// Gets one page of Sellers (default page 1, 25 per page) and their total count
     /// </summary>
-    /// <param name="query">filtering parameters</param>
-    /// <returns>list of Sellers</returns>
+    /// <param name="query">filtering and paging parameters</param>
+    /// <returns>one page of Sellers</returns>
     [HttpGet]
     [ProducesResponseType(typeof(SellerListResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(SellerListResponseExample))]
@@ -77,12 +77,12 @@ public class SellerController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        IEnumerable<SellerModel> sellers = await _sellerService.Get(query);
+        var (sellers, totalCount, page) = await _sellerService.Get(query);
 
-        SellerListResponse result = new()
+        SellerListResponse result = new SellerListResponse
         {
             Sellers = sellers.Select(s => s.ToResponse()).ToList()
-        };
+        }.WithPaging(query, totalCount, page);
 
         return Ok(result);
     }

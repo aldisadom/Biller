@@ -5,10 +5,11 @@ namespace Application.MappingProfiles;
 
 public static class PagedResponseExtensions
 {
-    public static T WithPaging<T>(this T response, PagedRequest query, int totalCount) where T : PagedResponse
+    // page is the one the repository returned, which differs from query.Page when that is out of range
+    public static T WithPaging<T>(this T response, PagedRequest query, int totalCount, int page) where T : PagedResponse
     {
         response.TotalCount = totalCount;
-        response.Page = query.Page;
+        response.Page = page;
         response.PageSize = query.PageSize;
 
         return response;

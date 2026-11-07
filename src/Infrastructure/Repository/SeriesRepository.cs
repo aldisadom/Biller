@@ -22,21 +22,16 @@ public class SeriesRepository : ISeriesRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<SeriesEntity>(sql, new { id });
     }
 
-    public async Task<(IEnumerable<SeriesEntity>, int)> Get(Guid? sellerId, int page, int pageSize)
+    public async Task<(IEnumerable<SeriesEntity> Items, int TotalCount, int Page)> Get(Guid? sellerId, int page, int pageSize)
     {
         string filter = @"WHERE (@SellerId IS NULL OR seller_id = @SellerId)";
 
         string countSql = $"SELECT COUNT(*) FROM series {filter}";
-        string dataSql = $@"SELECT * FROM series {filter}
+        string dataSql = $@"SELECT *, COUNT(*) OVER() AS total_count FROM series {filter}
                             ORDER BY name, id
                             LIMIT @PageSize OFFSET @Offset";
 
-        var parameters = new { SellerId = sellerId, PageSize = pageSize, Offset = (page - 1) * pageSize };
-
-        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, parameters);
-        IEnumerable<SeriesEntity> series = await _dbConnection.QueryAsync<SeriesEntity>(dataSql, parameters);
-
-        return (series, totalCount);
+        return await _dbConnection.QueryPage<SeriesEntity>(dataSql, countSql, new { SellerId = sellerId }, page, pageSize);
     }
 
     public async Task<SeriesEntity?> GetByName(Guid sellerId, string name)
