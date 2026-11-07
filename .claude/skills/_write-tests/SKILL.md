@@ -117,9 +117,12 @@ does all three steps. `--old` must match exactly once, and the file is restored 
   `yield return new(r => r.CompanyName = string.Empty, nameof(TRequest.CompanyName)) { Label = "empty company name is rejected" };`.
   Rules with their own logic (email format, boundaries, nested validators) keep their own test;
   boundary values via `[Theory, InlineData]`.
-- **Validators with repositories** (e.g. `InvoiceValidator`): strict repository mocks with
-  `Verify`, `MemberData` theories feeding the repository result, the ID(s) to check and the
-  expected `bool`.
+- **Validators with repositories** (none at the moment: `InvoiceValidator` was removed in BIL-102):
+  strict repository mocks with `Verify`, `MemberData` theories feeding the repository result, the
+  ID(s) to check and the expected `bool`.
+- **List query validators** (`<X>GetValidator : PagedRequestValidator<<X>GetRequest>`): assert the
+  type with `BeAssignableTo<PagedRequestValidator<...>>()`; the page size rule is tested once in
+  `PagedRequestValidatorTest`. Any page is valid.
 - **Mapping extensions** (`Application/MappingProfiles`): build the source by hand with every
   property non-default, then `MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo)` for
   model/entity/response targets or `MapStyle.UsedAllFrom` for requests. One test per extension

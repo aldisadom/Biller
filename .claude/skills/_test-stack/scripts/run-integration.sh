@@ -10,7 +10,8 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
-PARENT="$(dirname "$REPO_ROOT")"
+# The siblings sit next to the main checkout, also when this runs from a worktree inside it
+PARENT="$(common="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" && dirname "$(dirname "$common")" || dirname "$REPO_ROOT")"
 
 URL="http://localhost:${TEST_STACK_API_PORT:-8091}"
 REPEAT=1

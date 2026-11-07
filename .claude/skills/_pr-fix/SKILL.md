@@ -33,6 +33,6 @@ counts them. When the user names findings by number ("fix F2, leave F3"), do wha
 those and handle the rest as above. Report each outcome with its number.
 
 After fixing, `tests.md` is stale: the tests run again (`_test-coverage`) before the next review
-round. Commit the fixes only when the user wants commits, with `_commit` and a
+round. Commit the fixes only when the user wants commits, staged by path, with a
 `BIL-<n> Review round <N>: ...` subject. Otherwise leave them uncommitted; the next snapshot
 includes them.

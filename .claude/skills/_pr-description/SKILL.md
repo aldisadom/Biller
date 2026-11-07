@@ -13,6 +13,9 @@ bash $P status [repo]
 `scope`, `tests` and `findings` must be `ok`, and `integration` too unless it's `not needed`. When
 one is missing or `STALE`, run that step first, or tell the user which one is missing. Never write
 the Testing section from a stale result: it would describe code that has changed since.
+`findings` is `ok` when none is open and no code changed since the last review snapshot. It shows
+`STALE` after a fix made since then: review that change (`_pr-review`, a new round), or say in the
+description which fixes no review round saw.
 
 Read them with `bash $P read [repo] <step>`, then fill `.github/pull_request_template.md`:
 

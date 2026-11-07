@@ -31,8 +31,10 @@ done
 
 BACKUP="$(mktemp)"
 cp -p "$FILE" "$BACKUP"
+# Plain cp, not cp -p: the restored file must be newer than the assemblies just built with the bug
+# back, or the next incremental build skips it and runs the tests against the buggy binary.
 restore() {
-  cp -p "$BACKUP" "$FILE"
+  cp "$BACKUP" "$FILE"
   if cmp -s "$BACKUP" "$FILE"; then rm -f "$BACKUP"; else echo "ERROR: restore failed, the original is in $BACKUP" >&2; exit 2; fi
 }
 trap restore EXIT

@@ -43,13 +43,20 @@ the BillioIntegrationTest branch named there, so put the local checkout on that 
 
 ```bash
 P=.claude/skills/_pre-pr/scripts/pr-state.sh
-bash $S/test-stack.sh up
-OUT="$(bash $S/run-integration.sh --repeat 3 2>&1)"; CODE=$?; echo "$OUT"
-bash $S/test-stack.sh down
-{ echo "BillioIntegrationTest branch: $(git -C ../BillioIntegrationTest branch --show-current)"
-  echo "Command: run-integration.sh --repeat 3 (exit $CODE)"
-  grep -E '^Run [0-9]+/[0-9]+|Build FAILED' <<< "$OUT"; } | bash $P write integration
+if bash $S/test-stack.sh up; then
+  OUT="$(bash $S/run-integration.sh --repeat 3 2>&1)"; CODE=$?; echo "$OUT"
+  bash $S/test-stack.sh down
+  { echo "BillioIntegrationTest branch: $(git -C ../BillioIntegrationTest branch --show-current)"
+    echo "Command: run-integration.sh --repeat 3 (exit $CODE)"
+    grep -E '^Run [0-9]+/[0-9]+|Build FAILED' <<< "$OUT"; } | bash $P write integration
+else
+  echo "test-stack.sh up failed: nothing saved. Fix the error, run test-stack.sh down, then run this again."
+fi
 ```
+
+Run the tests only when `up` succeeded. When it fails ("the test stack is already there", a build
+or migration error), an older stack may still answer on port 8091, and the tests would pass for code
+that isn't in it.
 
 ## When done
 

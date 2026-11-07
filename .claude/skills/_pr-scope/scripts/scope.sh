@@ -11,7 +11,8 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
-PARENT="$(dirname "$REPO_ROOT")"
+# The siblings sit next to the main checkout, also when this runs from a worktree inside it
+PARENT="$(common="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" && dirname "$(dirname "$common")" || dirname "$REPO_ROOT")"
 PR_STATE="$REPO_ROOT/.claude/skills/_pre-pr/scripts/pr-state.sh"
 SIBLINGS=(Biller BillerContracts BillerFrontEnd BillioIntegrationTest)
 
@@ -48,7 +49,7 @@ if [[ -n "$KEY" ]]; then
   done
 fi
 
-# Uncommitted: modified tracked files plus new files (new skill files too, which .git/info/exclude hides).
+# Uncommitted: modified tracked files plus new files, without the paths left out with pr-state.sh exclude.
 UNCOMMITTED="$(git diff --name-only HEAD "$TREE")"
 EXCLUDED="$(bash "$PR_STATE" exclude "$DIR" | sed -n 's/^  //p')"
 
@@ -59,12 +60,14 @@ NOTES="$([[ -f "$OLD" ]] && sed -n '/^Notes:$/,$p' "$OLD" | sed 1d)"
 # Risk flags, by path (Biller's layout; siblings mostly have none).
 migrations="$(grep -E '^migrations/' <<< "$CHANGED" | xargs -r -n1 basename | paste -sd, - | sed 's/,/, /g')"
 [[ -n "$migrations" ]] && RISKS+=("migrations: $migrations (pre-check queries for production data, rollback tested?)")
-contracts="$(git diff -U0 "$BASE" "$TREE" -- '*.csproj' | grep -E '^[-+] *<PackageReference Include="BillerContracts' \
-  | sed -E 's/.*Version="([^"]+)".*/\1/' | paste -sd' ' -)"
+# The removed and the added version separately: a new reference has only an added line.
+contract_lines="$(git diff -U0 "$BASE" "$TREE" -- '*.csproj' | grep -E '^[-+] *<PackageReference Include="BillerContracts')"
+old="$(grep -E '^-' <<< "$contract_lines" | sed -E 's/.*Version="([^"]+)".*/\1/' | head -n1)"
+new="$(grep -E '^\+' <<< "$contract_lines" | sed -E 's/.*Version="([^"]+)".*/\1/' | head -n1)"
+contracts="$old$new"
 if [[ -n "$contracts" ]]; then
-  read -r old new <<< "$contracts"
-  RISKS+=("BillerContracts ${old:-?} -> ${new:-removed}")
-  [[ "${new:-}" == *-* ]] && RISKS+=("BillerContracts $new is a pre-release: replace it with a released version before merging")
+  RISKS+=("BillerContracts ${old:-(new reference)} -> ${new:-removed}")
+  [[ "$new" == *-* ]] && RISKS+=("BillerContracts $new is a pre-release: replace it with a released version before merging")
 fi
 git diff -U0 "$BASE" "$TREE" -- '*.csproj' | grep -qE '^\+ *<ProjectReference[^>]*BillerContracts' \
   && BLOCKERS+=("ProjectReference to BillerContracts: CI clones only this repo, so it can't build it")
@@ -77,11 +80,12 @@ data="$(grep -E '^migrations/.*\.sql$' <<< "$CHANGED" | while read -r f; do
   done | paste -sd, - | sed 's/,/, /g')"
 [[ -n "$data" ]] && RISKS+=("data changes in $data: can the rollback restore the data?")
 
-# Integration tests: Biller's endpoints, validators, SQL or contracts changed, or the tests themselves.
+# Integration tests: any Biller code, SQL or contracts changed (services, mapping and middleware
+# change what the API answers too), or the tests themselves.
 INTEGRATION=no
 WHY=""
 if [[ "$REPO" == Biller ]]; then
-  for pair in src/WebAPI/Controllers/:controllers src/Validators/:validators src/Infrastructure/:repositories migrations/:migrations; do
+  for pair in src/WebAPI/:api src/Validators/:validators src/Application/:services src/Domain/:domain src/Infrastructure/:repositories migrations/:migrations; do
     grep -q "^${pair%%:*}" <<< "$CHANGED" && WHY="${WHY:+$WHY, }${pair#*:}"
   done
   [[ -n "$contracts" ]] && WHY="${WHY:+$WHY, }contracts"

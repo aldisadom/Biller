@@ -126,8 +126,10 @@ Steps:
 
 - `src/Domain/Entities/<X>Entity.cs`: a `public record`. Property names must be the PascalCase form of
   the snake_case columns, because Dapper runs with `MatchNamesWithUnderscores = true`.
-- `src/Domain/Repositories/I<X>Repository.cs`: `Get(Guid)` returning `<X>Entity?`, `Get()`,
-  filter queries, `Add` returning `Guid`, `Update`, `Delete`.
+- `src/Domain/Repositories/I<X>Repository.cs`: `Get(Guid)` returning `<X>Entity?`, the paged list
+  `Get(Guid? <parent>Id, int page, int pageSize)` returning
+  `(IEnumerable<<X>Entity> Items, int TotalCount, int Page)`, `Add` returning `Guid`, `Update`,
+  `Delete`. There is no unpaged list query.
 - **Migration**: use the `_add-db-migration` skill (next number in `migrations/sql/`, rollback line,
   snake_case plural table, `uuid DEFAULT gen_random_uuid()` PK).
 
@@ -136,8 +138,13 @@ Steps:
 - `src/Infrastructure/Repository/<X>Repository.cs`: inject `IDbConnection`. Use verbatim `@"..."` SQL
   strings and `QuerySingleOrDefaultAsync` / `QueryAsync` / `ExecuteScalarAsync<Guid>` with
   `INSERT ... RETURNING id` / `ExecuteAsync`. Parameters are anonymous objects (`new { id }`) or the
-  entity itself. Lists use `WHERE id=ANY(@Ids)`. Keep `INSERT` column lists and `UPDATE SET` lists in
-  sync with the migration.
+  entity itself. Lists by id use `WHERE id=ANY(@Ids)`. Keep `INSERT` column lists and `UPDATE SET`
+  lists in sync with the migration.
+- The paged list goes through `_dbConnection.QueryPage<<X>Entity>(dataSql, countSql, filter, page,
+  pageSize)` (`PagedQuery.cs`), like `ItemRepository.Get`: `dataSql` selects
+  `*, COUNT(*) OVER() AS total_count` as the last column, has a stable `ORDER BY` (a name, then
+  `id`) and ends with `LIMIT @PageSize OFFSET @Offset`; `countSql` is `SELECT COUNT(*)` with the
+  same filter. A page below 1 returns page 1 and a page past the last returns the last page.
 - Register it in `src/Infrastructure/DependencyInjection.cs` (`AddScoped<I<X>Repository, <X>Repository>()`).
 
 ## 4. Application
@@ -152,7 +159,9 @@ Steps:
 - `src/Application/Interfaces/I<X>Service.cs` + `src/Application/Services/<X>Service.cs`:
   `Get(Guid)` throws `NotFoundException($"<X>:{id} not found")` when the repo returns null.
   `Update`/`Delete` call `Get(id)` first so missing ids become 404s. Cross-entity checks return
-  `Result<T>`/`ErrorModel` (see `ItemService.GetWithValidation`).
+  `Result<T>`/`ErrorModel` (see `ItemService.GetWithValidation`). The list `Get(<X>GetRequest? query)`
+  defaults to page 1 and `PageSize.p25` and passes the repository's `(Items, TotalCount, Page)` on,
+  mapped to models.
 - Register it in `src/Application/DependencyInjection.cs`.
 
 ## 5. Validators
@@ -160,7 +169,9 @@ Steps:
 - `src/Validators/<X>/<X>AddValidator.cs`, `<X>UpdateValidator.cs`: `AbstractValidator<TRequest>`
   with XML doc comments. Every rule gets `.WithMessage("Please specify ...")`. Use the shared
   `EmailValidator` for emails.
-- Register both in `src/Validators/DependencyInjection.cs` once each. Watch for copy-paste
+- `<X>GetValidator : PagedRequestValidator<<X>GetRequest>` for the list query: it checks the page
+  size; add rules only for the filter ids.
+- Register them in `src/Validators/DependencyInjection.cs` once each. Watch for copy-paste
   duplicates, which have happened in this file before.
 
 ## 6. WebAPI
@@ -174,6 +185,8 @@ Steps:
   `ProducesResponseType` + `SwaggerRequestExample`/`SwaggerResponseExample`. Status codes:
   GET → 200 (+404 on by-id), POST → `CreatedAtAction(nameof(Add), new AddResponse{...})` 201,
   PUT/DELETE → `NoContent()` 204. Call `_validatorX.CheckValidation(request)` before mapping.
+  The list action builds `<X>ListResponse` and ends with `.WithPaging(query, totalCount, page)`,
+  using the page the service returned (see `ItemController.Get`).
 - WebAPI has `GenerateDocumentationFile=true`, so add `/// <summary>` docs on public members, or the
   build will warn.
 
