@@ -113,12 +113,16 @@ public class InvoiceController : ControllerBase
     }
 
     /// <summary>
-    /// Get invoice pdf
+    /// Get invoice pdf: the invoice (Invoice) or the job done act (JobDoneAct), in LT or EN
     /// </summary>
-    /// <param name="query">Invoices ID and language selection</param>
+    /// <remarks>
+    /// The file is named {series}-{number}.pdf, e.g. ABC-000005.pdf, for every document type and language.
+    /// </remarks>
+    /// <param name="query">Invoices ID, language and document type selection</param>
     /// <returns>invoice pdf</returns>
     [HttpPost("generate")]
-    [ProducesResponseType(typeof(InvoiceGenerateRequest), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK, "application/pdf")]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GeneratePDF([FromQuery] InvoiceGenerateRequest query)
     {
