@@ -20,16 +20,23 @@
 #                 add a "- <text>" line to <step>.md, keeping its stamp
 #   read <step>   print <step>.md; exit 1 when missing, 3 when code changed since it was written
 #                 (when only docs changed it prints a note and exits 0)
-#   status        one line per step: ok, docs changed, STALE, missing or not needed
-#   reset         delete every result, snapshot and finding of this branch, to start over
-# Steps: scope, tests, integration, findings, description. Docs are *.md files and docs/.
+#   status        one line per step: ok, docs changed, STALE, missing or not needed; findings is
+#                 ok when none is open and no code changed since the last review snapshot
+#   has-code      read a file list on stdin; exit 0 when it holds code (see Docs below), 1 if not
+#   pin <name> <tree>
+#                 keep a tree from git gc as refs/pre-pr/<branch>/<name> (snapshots and stamps
+#                 aren't in any commit, so gc would prune them after two weeks)
+#   reset         delete every result, snapshot, finding and pin of this branch, to start over
+# Steps: scope, tests, integration, findings, description. Docs are *.md files and docs/, except
+# the instructions the steps and the reviewer follow (.claude/, .github/, CLAUDE.md, REVIEW.md).
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
-PARENT="$(dirname "$REPO_ROOT")"
+# The siblings sit next to the main checkout, also when this runs from a worktree inside it
+PARENT="$(common="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" && dirname "$(dirname "$common")" || dirname "$REPO_ROOT")"
 STEPS=(scope tests integration findings description)
 
-usage() { sed -n '8,25p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '8,31p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
 COMMAND="${1:-}"; [[ $# -gt 0 ]] && shift
 DIR="$REPO_ROOT"
@@ -43,22 +50,24 @@ BRANCH="$(git branch --show-current)"
 [[ -n "$BRANCH" ]] || { echo "Detached HEAD in $DIR: check out the PR branch first." >&2; exit 2; }
 STATE="$(git rev-parse --path-format=absolute --git-common-dir)/pre-pr/${BRANCH//\//_}"
 mkdir -p "$STATE"
+PINS="refs/pre-pr/${BRANCH//\//_}"
 
 pathspec() {
   printf '%s\0' .
   [[ -f "$STATE/excludes" ]] && while read -r ex; do [[ -n "$ex" ]] && printf ':(exclude)%s\0' "$ex"; done < "$STATE/excludes"
 }
 
-# New files in the change. Honours .gitignore but not the local .git/info/exclude, which in Biller
-# hides new files under .claude/ (files already tracked there are not affected).
-new_files() { pathspec | xargs -0 git ls-files --others --exclude-per-directory=.gitignore --; }
+# New files in the change, NUL-separated so names with spaces or non-ASCII letters arrive as they
+# are. Honours .gitignore and .git/info/exclude, which lists Claude Code's runtime state under
+# .claude/ (worktrees, checkpoints, scheduled tasks).
+new_files() { pathspec | xargs -0 git ls-files -z --others --exclude-standard --; }
 
 # The working tree as a tree object, without touching the real index.
 current_tree() {
   local index; index="$(mktemp)"
   cp "$(git rev-parse --absolute-git-dir)/index" "$index"
   pathspec | GIT_INDEX_FILE="$index" xargs -0 git add -u -- 2>/dev/null
-  new_files | tr '\n' '\0' | GIT_INDEX_FILE="$index" xargs -0 -r git add -f -- 2>/dev/null
+  new_files | GIT_INDEX_FILE="$index" xargs -0 -r git add -- 2>/dev/null
   GIT_INDEX_FILE="$index" git -c core.safecrlf=false write-tree
   rm -f "$index"
 }
@@ -71,9 +80,17 @@ freshness() {
   [[ "$stamp" == "$now" ]] && { echo ok; return; }
   files="$(git diff --name-only "$stamp" "$now" 2>/dev/null)" || { echo stale; return; }
   if [[ -z "$files" ]]; then echo ok
-  elif grep -qvE '(\.md$|^docs/)' <<< "$files"; then echo stale
+  elif has_code "$files"; then echo stale
   else echo docs; fi
 }
+
+# True when a file list holds code. Skill files, the PR template, CLAUDE.md and REVIEW.md are
+# Markdown, but the steps and the reviewer follow them, so they count as code.
+has_code() {
+  grep -qvE '(\.md$|^docs/)' <<< "$1" || grep -qE '^\.claude/|^\.github/|(^|/)(CLAUDE|REVIEW)\.md$' <<< "$1"
+}
+
+pin() { git update-ref "$PINS/$1" "$2"; }
 
 step_arg() {
   [[ -n "${1:-}" ]] || usage
@@ -101,7 +118,18 @@ case "$COMMAND" in
     step_arg "${1:-}"
     tree="$(current_tree)"
     { echo "<!-- tree: $tree written: $(date '+%Y-%m-%d %H:%M') -->"; cat; } > "$STATE/$1.md"
+    pin "$1" "$tree"
     echo "Wrote $1.md for tree $tree" >&2
+    ;;
+
+  pin)
+    [[ $# -eq 2 ]] || usage
+    pin "$1" "$2"
+    ;;
+
+  has-code)
+    # Reads a file list on stdin; exit 0 when it holds code (see has_code)
+    has_code "$(cat)"
     ;;
 
   note)
@@ -136,9 +164,20 @@ case "$COMMAND" in
       elif [[ ! -f "$file" ]]; then
         state=missing
       elif [[ "$step" == findings ]]; then
-        rounds="$(ls "$STATE"/round-*.tree 2>/dev/null | wc -l)"
+        last="$(ls "$STATE"/round-*.tree 2>/dev/null | sed -E 's#.*/round-([0-9]+)\.tree#\1#' | sort -n | tail -n1)"
         open="$(grep -c '^- \[ \]' "$file")"
-        state="$rounds round(s), $open open"
+        if [[ -z "$last" ]]; then
+          state="missing (no review round saved)"
+        elif [[ "$open" -gt 0 ]]; then
+          state="$open open (round $last)"
+        else
+          # A fix made after the last snapshot hasn't been reviewed
+          case "$(freshness "$(cat "$STATE/round-$last.tree")" "$now")" in
+            ok) state="ok ($last round(s), 0 open)" ;;
+            docs) state="ok ($last round(s), 0 open; docs changed since)" ;;
+            stale) state="STALE (code changed since round $last)" ;;
+          esac
+        fi
       else
         case "$(freshness "$(stamp_of "$file")" "$now")" in
           ok) state=ok ;; docs) state="ok (docs changed since)" ;; stale) state="STALE (code changed since)" ;;
@@ -150,7 +189,8 @@ case "$COMMAND" in
 
   reset)
     rm -rf "$STATE"
-    echo "Deleted $STATE"
+    git for-each-ref --format='%(refname)' "$PINS/" | while read -r ref; do git update-ref -d "$ref"; done
+    echo "Deleted $STATE and the $PINS/* pins"
     ;;
 
   *) usage ;;
