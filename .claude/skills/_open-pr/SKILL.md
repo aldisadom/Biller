@@ -14,7 +14,9 @@ Every step must be `ok` (or `not needed`). When one is missing or `STALE`, run `
 step, show the new description, and continue only once the user has seen it.
 
 1. **Commit what belongs.** A PR only has commits. When `git status` shows changes that are part
-   of the PR (see `scope.md`), commit them with `_commit`. Leave excluded paths alone. Committing
+   of the PR (see `scope.md`), stage them by path and commit with a `BIL-<n> <what is true now>`
+   subject (master squash-merges each PR, so its title and description matter more than the
+   split). Leave excluded paths alone. Committing
    doesn't change the tree, so the results stay `ok`.
 2. **Push**: `git push -u origin <branch>`. Never force-push unless the user asks.
 3. **Create the PR**, with the body from `description.md` (`read` leaves out the stamp line):

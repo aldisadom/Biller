@@ -23,7 +23,7 @@ Then go through what it printed:
 2. **Uncommitted files**: ask whether they belong to this PR. The review and the tests see them
    either way, because the steps work on the working tree. Leave the ones that don't belong out
    with `bash .claude/skills/_pre-pr/scripts/pr-state.sh exclude <path>`, then run `scope.sh`
-   again. The ones that do belong get committed before the PR is opened (`_commit`).
+   again. The ones that do belong get committed before the PR is opened (`_open-pr`, step 1).
 3. **Other repos**: when `Same branch in:` lists repos, or the change touches contracts, endpoints
    or SQL, run `_sync-repos` and paste its output before you look at a sibling. Then run `scope.sh`
    for each repo in the PR.
