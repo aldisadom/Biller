@@ -88,7 +88,8 @@ Swagger examples: Swashbuckle.Filters doesn't apply request examples to query pa
 
 ## Step 6: Front end (BillerFrontEnd, branch `BIL-69-invoice-generate`, with BIL-97)
 
-- Add a language selector (LT/EN) next to the generate buttons instead of hard-coded `Language.LT`.
+- Replace the two generate buttons with a document type drop-down (Invoice, Job done act), a
+  language drop-down (LT/EN, instead of hard-coded `Language.LT`) and one Generate button.
 - BIL-97: `GeneratePdfClick` writes the PDF to `MyDocuments` on the server (inside the container in
   Docker), so the user gets nothing. Add `wwwroot/js/download.js` with
   `downloadFileFromStream(fileName, streamRef)`, load it in `App.razor` after `blazor.web.js`, and
