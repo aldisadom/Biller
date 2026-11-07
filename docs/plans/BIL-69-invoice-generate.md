@@ -1,6 +1,19 @@
-# Plan: update invoice generate (BIL-69)
+# Plan: update invoice generate (BIL-69, with BIL-97)
 
 Jira: [BIL-69](https://aldisadom.atlassian.net/browse/BIL-69). Epic: BIL-89 (Billeris).
+Done together with [BIL-97](https://aldisadom.atlassian.net/browse/BIL-97) (download the PDFs in
+the browser), which only changes BillerFrontEnd. See Step 6.
+
+## Changes since the plan was written (checked at master @ 9ff9fb1)
+
+- BIL-65 is done. `GenerateFileLocation()` is now `{SeriesName}-{000005}.pdf` (series name, not
+  the customer's invoice name), and `file_path` is gone, so Step 2's last bullet needs nothing.
+- BIL-73 is done, so BIL-97's `GeneratePdfClick` change no longer collides with it.
+- `InvoiceDocumentFactory.GeneratePdf` still computes an unused `path` from `GenerateFileLocation()`.
+  Remove it.
+- BillerContracts is at 4.2.0. No contracts change is needed: `InvoiceGenerateRequest`,
+  `DocumentType`, `Language` and `IInvoiceClient.GeneratePDF` stay as they are.
+- Front end page is `src/FrontEnd/Components/Pages/Invoice/Invoices_id.razor`.
 
 ## Goal (from the ticket)
 
@@ -75,10 +88,17 @@ Swagger examples: Swashbuckle.Filters doesn't apply request examples to query pa
 - `InvoiceControllerTest`: update the existing test if the signature changes.
 - Integration test: generate both types, check `Content-Disposition` has the expected names.
 
-## Step 6: Front end (BillerFrontEnd, separate PR)
+## Step 6: Front end (BillerFrontEnd, branch `BIL-69-invoice-generate`, with BIL-97)
 
 - Add a language selector (LT/EN) next to the generate buttons instead of hard-coded `Language.LT`.
-- Nothing else is needed: the file name comes from `Content-Disposition`, so the overwrite problem is fixed by the API change.
+- The file name comes from `Content-Disposition`, so the API change fixes the overwrite problem.
+- BIL-97: `GeneratePdfClick` writes the PDF to `MyDocuments` on the server (inside the container in
+  Docker), so the user gets nothing. Add `wwwroot/js/download.js` with
+  `downloadFileFromStream(fileName, streamRef)` (read the `DotNetStreamReference` into a `Blob`,
+  click a temporary `<a download>`, revoke the URL), load it in `App.razor` after `blazor.web.js`,
+  and have `GeneratePdfClick` pass `new DotNetStreamReference(fileResult.Content)` to it through
+  `IJSRuntime`.
+- Check in the browser: both buttons, LT and EN, download PDFs that open, with different names.
 
 ## Out of scope
 
@@ -87,7 +107,13 @@ Swagger examples: Swashbuckle.Filters doesn't apply request examples to query pa
 
 ## Order of work
 
-1. BIL-65 first.
-2. Check Swagger (Step 1).
-3. API change and tests in one PR, then the integration test.
-4. Front end language selector.
+1. BIL-65 first. **Done.**
+2. Check Swagger (Step 1). **Done:** `LanguageCode` and `DocumentType` already are string enums
+   (`LT`/`EN`, `Invoice`/`JobDoneAct`) in `swagger.json`, so nothing changed there.
+3. API change and tests in one PR, then the integration test. **Done** (Steps 2 to 5). Model binding
+   already answers an undefined enum value (`999`) with 400 "The value '999' is invalid." before the
+   validator runs, so the validator rules and the service checks are both guards. Integration
+   tests on BillioIntegrationTest branch `BIL-69-invoice-generate`: the four file names, undefined
+   language and document type, empty id, not found.
+4. Front end language selector and BIL-97 download. **Done** on BillerFrontEnd branch
+   `BIL-69-invoice-generate`. Still to check by hand in a browser: both buttons, LT and EN.
