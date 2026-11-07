@@ -16,7 +16,7 @@ public class InvoiceModelUpdateValidator : AbstractValidator<InvoiceModel>
         RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify invoice id");
         RuleFor(x => x.SellerId).NotEmpty().WithMessage("Please specify seller Id");
         RuleFor(x => x.CustomerId).NotEmpty().WithMessage("Please specify customer id");
-        RuleFor(x => x.Items).NotNull().WithMessage("Please provide at least one item");
+        RuleFor(x => x.Items).NotEmpty().WithMessage("Please provide at least one item");
         RuleForEach(x => x.Items).Must(i => i.Id != Guid.Empty).WithMessage("Please specify item Id");
         RuleForEach(x => x.Items).Must(i => i.Quantity > 0).WithMessage((_, i) => $"Please provide quantity that should > 0 for {i.Id}");
     }

@@ -35,6 +35,7 @@ public class InvoiceModelUpdateValidatorTest
         yield return new(m => m.SellerId = Guid.Empty, nameof(InvoiceModel.SellerId)) { Label = "empty seller id is rejected" };
         yield return new(m => m.CustomerId = Guid.Empty, nameof(InvoiceModel.CustomerId)) { Label = "empty customer id is rejected" };
         yield return new(m => m.Items = null, nameof(InvoiceModel.Items)) { Label = "missing item list is rejected" };
+        yield return new(m => m.Items = [], nameof(InvoiceModel.Items)) { Label = "empty item list is rejected" };
         yield return new(m => m.Items![0].Id = Guid.Empty, $"{nameof(InvoiceModel.Items)}[0]") { Label = "empty item id is rejected" };
     }
 
