@@ -65,12 +65,12 @@ public class InvoiceService : IInvoiceService
         return invoice.ToFull(user, seller, customer);
     }
 
-    public async Task<(IEnumerable<InvoiceModelFull>, int)> Get(InvoiceGetRequest? query)
+    public async Task<(IEnumerable<InvoiceModelFull> Items, int TotalCount, int Page)> Get(InvoiceGetRequest? query)
     {
         int page = query?.Page ?? 1;
         var pageSize = query?.PageSize ?? PageSize.p25;
 
-        var (entities, totalCount) = await _invoiceRepository.Get(
+        var (entities, totalCount, returnedPage) = await _invoiceRepository.Get(
             query?.UserId, query?.SellerId, query?.CustomerId, page, (int)pageSize);
 
         List<InvoiceModel> invoices = entities.Select(i => i.ToModel()).ToList();
@@ -79,7 +79,7 @@ public class InvoiceService : IInvoiceService
         Dictionary<Guid, SellerModel> sellers = await GetEach(invoices.Select(i => i.SellerId), _sellerService.Get);
         Dictionary<Guid, CustomerModel> customers = await GetEach(invoices.Select(i => i.CustomerId), _customerService.Get);
 
-        return (invoices.Select(i => i.ToFull(users[i.UserId], sellers[i.SellerId], customers[i.CustomerId])).ToList(), totalCount);
+        return (invoices.Select(i => i.ToFull(users[i.UserId], sellers[i.SellerId], customers[i.CustomerId])).ToList(), totalCount, returnedPage);
     }
 
     private static async Task<Dictionary<Guid, T>> GetEach<T>(IEnumerable<Guid> ids, Func<Guid, Task<T>> get)

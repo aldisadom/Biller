@@ -77,12 +77,12 @@ public class SeriesController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        var (series, totalCount) = await _seriesService.Get(query);
+        var (series, totalCount, page) = await _seriesService.Get(query);
 
         SeriesListResponse result = new SeriesListResponse
         {
             Series = series.Select(s => s.ToResponse()).ToList()
-        }.WithPaging(query, totalCount);
+        }.WithPaging(query, totalCount, page);
 
         return Ok(result);
     }

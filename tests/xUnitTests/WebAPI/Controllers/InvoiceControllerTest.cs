@@ -89,7 +89,7 @@ public class InvoiceControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _invoiceServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync((invoices, 102));
+            .ReturnsAsync((invoices, 102, 2));
 
         //Act
         var result = await _invoiceController.Get(query);
@@ -100,7 +100,7 @@ public class InvoiceControllerTest
             {
                 Invoices = invoices.Select(i => i.ToResponse()).ToList(),
                 TotalCount = 102,
-                Page = 3,
+                Page = 2,
                 PageSize = PageSize.p50
             });
 
@@ -114,10 +114,10 @@ public class InvoiceControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new InvoiceGetRequest { Page = 42949673 };
+        var query = new InvoiceGetRequest { PageSize = (PageSize)7 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
-            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.PageSize), "invalid value")]));
 
         //Act
         Func<Task> act = () => _invoiceController.Get(query);

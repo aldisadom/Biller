@@ -28,14 +28,14 @@ public class SellerService : ISellerService
         return sellerEntity.ToModel();
     }
 
-    public async Task<(IEnumerable<SellerModel>, int)> Get(SellerGetRequest? query)
+    public async Task<(IEnumerable<SellerModel> Items, int TotalCount, int Page)> Get(SellerGetRequest? query)
     {
         int page = query?.Page ?? 1;
         var pageSize = query?.PageSize ?? PageSize.p25;
 
-        var (entities, totalCount) = await _sellerRepository.Get(query?.UserId, page, (int)pageSize);
+        var (entities, totalCount, returnedPage) = await _sellerRepository.Get(query?.UserId, page, (int)pageSize);
 
-        return (entities.Select(s => s.ToModel()), totalCount);
+        return (entities.Select(s => s.ToModel()), totalCount, returnedPage);
     }
 
     public async Task<Result<SellerModel>> GetWithValidation(Guid id, Guid userId)

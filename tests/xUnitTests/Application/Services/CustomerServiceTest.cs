@@ -164,33 +164,36 @@ public class CustomerServiceTest
         List<CustomerEntity> customers = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         _customerRepositoryMock.Setup(m => m.Get(sellerId, page, pageSize))
-                        .ReturnsAsync((customers, 9));
+                        .ReturnsAsync((customers, 9, page));
 
         //Act
-        var (result, totalCount) = await _customerService.Get(query);
+        var (result, totalCount, returnedPage) = await _customerService.Get(query);
 
         //Assert
         result.Select(c => c.Id).Should().Equal(customers.Select(c => c.Id));
         totalCount.Should().Be(9);
+        returnedPage.Should().Be(page);
 
         _customerRepositoryMock.Verify(m => m.Get(sellerId, page, pageSize), Times.Once());
     }
 
     [Fact]
-    public async Task Get_GivenPagePastTheEnd_ReturnsEmptyListWithTotal()
+    public async Task Get_GivenPagePastTheEnd_ReturnsPageTheRepositoryReturned()
     {
         //Arrange
         CustomerGetRequest query = new() { Page = 5 };
+        List<CustomerEntity> customers = [new() { Id = Guid.NewGuid() }];
 
         _customerRepositoryMock.Setup(m => m.Get(null, 5, 25))
-                        .ReturnsAsync((new List<CustomerEntity>(), 4));
+                        .ReturnsAsync((customers, 4, 1));
 
         //Act
-        var (result, totalCount) = await _customerService.Get(query);
+        var (result, totalCount, returnedPage) = await _customerService.Get(query);
 
         //Assert
-        result.Should().BeEmpty();
+        result.Select(c => c.Id).Should().Equal(customers.Select(c => c.Id));
         totalCount.Should().Be(4);
+        returnedPage.Should().Be(1);
 
         _customerRepositoryMock.Verify(m => m.Get(null, 5, 25), Times.Once());
     }

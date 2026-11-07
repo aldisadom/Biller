@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Domain.Entities;
-using Domain.Helpers;
 using Domain.Repositories;
 using System.Data;
 
@@ -31,21 +30,14 @@ public class UserRepository : IUserRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { email });
     }
 
-    public async Task<(IEnumerable<UserEntity>, int)> Get(int page, int pageSize)
+    public async Task<(IEnumerable<UserEntity> Items, int TotalCount, int Page)> Get(int page, int pageSize)
     {
         string countSql = "SELECT COUNT(*) FROM users";
-        string dataSql = @"SELECT * FROM users
+        string dataSql = @"SELECT *, COUNT(*) OVER() AS total_count FROM users
                             ORDER BY last_name, name, id
                             LIMIT @PageSize OFFSET @Offset";
 
-        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql);
-
-        page = Paging.PageInBounds(page, pageSize, totalCount);
-        var parameters = new { PageSize = pageSize, Offset = (page - 1) * pageSize };
-
-        IEnumerable<UserEntity> users = await _dbConnection.QueryAsync<UserEntity>(dataSql, parameters);
-
-        return (users, totalCount);
+        return await _dbConnection.QueryPage<UserEntity>(dataSql, countSql, new { }, page, pageSize);
     }
 
     public async Task<Guid> Add(UserEntity item)

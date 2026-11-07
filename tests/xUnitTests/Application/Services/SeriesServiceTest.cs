@@ -80,14 +80,15 @@ public class SeriesServiceTest
         List<SeriesEntity> series = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         _seriesRepositoryMock.Setup(m => m.Get(sellerId, page, pageSize))
-                        .ReturnsAsync((series, 9));
+                        .ReturnsAsync((series, 9, page));
 
         //Act
-        var (result, totalCount) = await _seriesService.Get(query);
+        var (result, totalCount, returnedPage) = await _seriesService.Get(query);
 
         //Assert
         result.Select(s => s.Id).Should().Equal(series.Select(s => s.Id));
         totalCount.Should().Be(9);
+        returnedPage.Should().Be(page);
 
         _seriesRepositoryMock.Verify(m => m.Get(sellerId, page, pageSize), Times.Once());
     }

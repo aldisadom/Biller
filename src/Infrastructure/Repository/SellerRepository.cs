@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Domain.Entities;
-using Domain.Helpers;
 using Domain.Repositories;
 using System.Data;
 
@@ -23,23 +22,16 @@ public class SellerRepository : ISellerRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<SellerEntity>(sql, new { id });
     }
 
-    public async Task<(IEnumerable<SellerEntity>, int)> Get(Guid? userId, int page, int pageSize)
+    public async Task<(IEnumerable<SellerEntity> Items, int TotalCount, int Page)> Get(Guid? userId, int page, int pageSize)
     {
         string filter = @"WHERE (@UserId IS NULL OR user_id = @UserId)";
 
         string countSql = $"SELECT COUNT(*) FROM sellers {filter}";
-        string dataSql = $@"SELECT * FROM sellers {filter}
+        string dataSql = $@"SELECT *, COUNT(*) OVER() AS total_count FROM sellers {filter}
                             ORDER BY company_name, id
                             LIMIT @PageSize OFFSET @Offset";
 
-        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { UserId = userId });
-
-        page = Paging.PageInBounds(page, pageSize, totalCount);
-        var parameters = new { UserId = userId, PageSize = pageSize, Offset = (page - 1) * pageSize };
-
-        IEnumerable<SellerEntity> sellers = await _dbConnection.QueryAsync<SellerEntity>(dataSql, parameters);
-
-        return (sellers, totalCount);
+        return await _dbConnection.QueryPage<SellerEntity>(dataSql, countSql, new { UserId = userId }, page, pageSize);
     }
 
     public async Task<Guid> Add(SellerEntity item)

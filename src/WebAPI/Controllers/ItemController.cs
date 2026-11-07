@@ -77,12 +77,12 @@ public class ItemController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        var (items, totalCount) = await _itemService.Get(query);
+        var (items, totalCount, page) = await _itemService.Get(query);
 
         ItemListResponse result = new ItemListResponse
         {
             Items = items.Select(i => i.ToResponse()).ToList()
-        }.WithPaging(query, totalCount);
+        }.WithPaging(query, totalCount, page);
 
         return Ok(result);
     }

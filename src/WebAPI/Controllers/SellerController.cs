@@ -77,12 +77,12 @@ public class SellerController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        var (sellers, totalCount) = await _sellerService.Get(query);
+        var (sellers, totalCount, page) = await _sellerService.Get(query);
 
         SellerListResponse result = new SellerListResponse
         {
             Sellers = sellers.Select(s => s.ToResponse()).ToList()
-        }.WithPaging(query, totalCount);
+        }.WithPaging(query, totalCount, page);
 
         return Ok(result);
     }

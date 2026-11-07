@@ -27,13 +27,13 @@ public class PagedRequestValidatorTest
     }
 
     [Theory]
-    [InlineData(1, true, Label = "first page is accepted")]
-    [InlineData(42949672, true, Label = "highest page whose offset fits in an int is accepted")]
-    [InlineData(0, true, Label = "page 0 is accepted, the repositories answer it with page 1")]
-    [InlineData(-1, true, Label = "negative page is accepted, the repositories answer it with page 1")]
-    [InlineData(int.MinValue, true, Label = "lowest int page is accepted, the repositories answer it with page 1")]
-    [InlineData(42949673, false, Label = "page whose offset overflows an int is rejected")]
-    public void Validate_GivenPage_ReturnsExpected(int page, bool expected)
+    [InlineData(1, Label = "first page is accepted")]
+    [InlineData(0, Label = "page 0 is accepted, the repositories answer it with page 1")]
+    [InlineData(-1, Label = "negative page is accepted, the repositories answer it with page 1")]
+    [InlineData(int.MinValue, Label = "lowest int page is accepted, the repositories answer it with page 1")]
+    [InlineData(42949673, Label = "page whose offset would overflow an int is accepted, the repositories answer it with the last page")]
+    [InlineData(int.MaxValue, Label = "highest int page is accepted, the repositories answer it with the last page")]
+    public void Validate_GivenAnyPage_IsValid(int page)
     {
         //Arrange
         var request = new TestPagedRequest { Page = page, PageSize = PageSize.p50 };
@@ -42,21 +42,7 @@ public class PagedRequestValidatorTest
         var result = _validator.Validate(request);
 
         //Assert
-        result.IsValid.Should().Be(expected);
-    }
-
-    [Fact]
-    public void Validate_GivenPageAboveMaximum_ReturnsMaxPageMessage()
-    {
-        //Arrange
-        var request = new TestPagedRequest { Page = 42949673 };
-
-        //Act
-        var result = _validator.Validate(request);
-
-        //Assert
-        result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.Page))
-            .Which.ErrorMessage.Should().Be("Please specify page up to 42949672");
+        result.IsValid.Should().BeTrue();
     }
 
     [Fact]
@@ -71,15 +57,5 @@ public class PagedRequestValidatorTest
         //Assert
         result.Errors.Should().ContainSingle(e => e.PropertyName == nameof(request.PageSize))
             .Which.ErrorMessage.Should().Be("Please specify valid page size");
-    }
-
-    [Fact]
-    public void MaxPage_IsHighestPageWhoseOffsetFitsInAnIntAtTheLargestPageSize()
-    {
-        //Act
-        int maxPage = PagedRequestValidator.MaxPage;
-
-        //Assert
-        maxPage.Should().Be(int.MaxValue / (int)PageSize.p50);
     }
 }

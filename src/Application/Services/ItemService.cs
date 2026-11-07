@@ -37,14 +37,14 @@ public class ItemService : IItemService
         return itemEntities.Select(i => i.ToModel());
     }
 
-    public async Task<(IEnumerable<ItemModel>, int)> Get(ItemGetRequest? query)
+    public async Task<(IEnumerable<ItemModel> Items, int TotalCount, int Page)> Get(ItemGetRequest? query)
     {
         int page = query?.Page ?? 1;
         var pageSize = query?.PageSize ?? PageSize.p25;
 
-        var (entities, totalCount) = await _itemRepository.Get(query?.CustomerId, page, (int)pageSize);
+        var (entities, totalCount, returnedPage) = await _itemRepository.Get(query?.CustomerId, page, (int)pageSize);
 
-        return (entities.Select(i => i.ToModel()), totalCount);
+        return (entities.Select(i => i.ToModel()), totalCount, returnedPage);
     }
 
     public async Task<Result<IEnumerable<ItemModel>>> GetWithValidation(List<Guid> ids, Guid customerId)

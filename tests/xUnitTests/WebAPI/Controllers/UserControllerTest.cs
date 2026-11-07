@@ -109,7 +109,7 @@ public class UserControllerTest
         _validatorGetMock.Setup(v => v.Validate(query))
             .Returns(new ValidationResult());
         _userServiceMock.Setup(s => s.Get(query))
-            .ReturnsAsync((users, 102));
+            .ReturnsAsync((users, 102, 2));
 
         //Act
         var result = await _userController.Get(query);
@@ -120,7 +120,7 @@ public class UserControllerTest
             {
                 Users = users.Select(u => u.ToResponse()).ToList(),
                 TotalCount = 102,
-                Page = 3,
+                Page = 2,
                 PageSize = PageSize.p50
             });
 
@@ -134,10 +134,10 @@ public class UserControllerTest
     public async Task Get_GivenInvalidQuery_ThrowsValidationException()
     {
         //Arrange
-        var query = new UserGetRequest { Page = 42949673 };
+        var query = new UserGetRequest { PageSize = (PageSize)7 };
 
         _validatorGetMock.Setup(v => v.Validate(query))
-            .Returns(new ValidationResult([new ValidationFailure(nameof(query.Page), "invalid value")]));
+            .Returns(new ValidationResult([new ValidationFailure(nameof(query.PageSize), "invalid value")]));
 
         //Act
         Func<Task> act = () => _userController.Get(query);

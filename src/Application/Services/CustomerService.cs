@@ -31,14 +31,14 @@ public class CustomerService : ICustomerService
         return customerEntity.ToModel();
     }
 
-    public async Task<(IEnumerable<CustomerModel>, int)> Get(CustomerGetRequest? query)
+    public async Task<(IEnumerable<CustomerModel> Items, int TotalCount, int Page)> Get(CustomerGetRequest? query)
     {
         int page = query?.Page ?? 1;
         var pageSize = query?.PageSize ?? PageSize.p25;
 
-        var (entities, totalCount) = await _customerRepository.Get(query?.SellerId, page, (int)pageSize);
+        var (entities, totalCount, returnedPage) = await _customerRepository.Get(query?.SellerId, page, (int)pageSize);
 
-        return (entities.Select(c => c.ToModel()), totalCount);
+        return (entities.Select(c => c.ToModel()), totalCount, returnedPage);
     }
 
     public async Task<Result<CustomerModel>> GetWithValidation(Guid id, Guid sellerId)

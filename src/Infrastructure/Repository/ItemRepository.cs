@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Domain.Entities;
-using Domain.Helpers;
 using Domain.Repositories;
 using System.Data;
 
@@ -31,23 +30,16 @@ public class ItemRepository : IItemRepository
         return await _dbConnection.QueryAsync<ItemEntity>(sql, new { ids });
     }
 
-    public async Task<(IEnumerable<ItemEntity>, int)> Get(Guid? customerId, int page, int pageSize)
+    public async Task<(IEnumerable<ItemEntity> Items, int TotalCount, int Page)> Get(Guid? customerId, int page, int pageSize)
     {
         string filter = @"WHERE (@CustomerId IS NULL OR customer_id = @CustomerId)";
 
         string countSql = $"SELECT COUNT(*) FROM items {filter}";
-        string dataSql = $@"SELECT * FROM items {filter}
+        string dataSql = $@"SELECT *, COUNT(*) OVER() AS total_count FROM items {filter}
                             ORDER BY name, id
                             LIMIT @PageSize OFFSET @Offset";
 
-        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { CustomerId = customerId });
-
-        page = Paging.PageInBounds(page, pageSize, totalCount);
-        var parameters = new { CustomerId = customerId, PageSize = pageSize, Offset = (page - 1) * pageSize };
-
-        IEnumerable<ItemEntity> items = await _dbConnection.QueryAsync<ItemEntity>(dataSql, parameters);
-
-        return (items, totalCount);
+        return await _dbConnection.QueryPage<ItemEntity>(dataSql, countSql, new { CustomerId = customerId }, page, pageSize);
     }
 
     public async Task<Guid> Add(ItemEntity item)

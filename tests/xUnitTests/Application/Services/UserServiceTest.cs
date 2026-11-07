@@ -147,33 +147,36 @@ public class UserServiceTest
         List<UserEntity> users = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         _userRepositoryMock.Setup(m => m.Get(page, pageSize))
-                        .ReturnsAsync((users, 9));
+                        .ReturnsAsync((users, 9, page));
 
         //Act
-        var (result, totalCount) = await _userService.Get(query);
+        var (result, totalCount, returnedPage) = await _userService.Get(query);
 
         //Assert
         result.Select(u => u.Id).Should().Equal(users.Select(u => u.Id));
         totalCount.Should().Be(9);
+        returnedPage.Should().Be(page);
 
         _userRepositoryMock.Verify(m => m.Get(page, pageSize), Times.Once());
     }
 
     [Fact]
-    public async Task Get_GivenPagePastTheEnd_ReturnsEmptyListWithTotal()
+    public async Task Get_GivenPagePastTheEnd_ReturnsPageTheRepositoryReturned()
     {
         //Arrange
         UserGetRequest query = new() { Page = 5 };
+        List<UserEntity> users = [new() { Id = Guid.NewGuid() }];
 
         _userRepositoryMock.Setup(m => m.Get(5, 25))
-                        .ReturnsAsync((new List<UserEntity>(), 4));
+                        .ReturnsAsync((users, 4, 1));
 
         //Act
-        var (result, totalCount) = await _userService.Get(query);
+        var (result, totalCount, returnedPage) = await _userService.Get(query);
 
         //Assert
-        result.Should().BeEmpty();
+        result.Select(u => u.Id).Should().Equal(users.Select(u => u.Id));
         totalCount.Should().Be(4);
+        returnedPage.Should().Be(1);
 
         _userRepositoryMock.Verify(m => m.Get(5, 25), Times.Once());
     }

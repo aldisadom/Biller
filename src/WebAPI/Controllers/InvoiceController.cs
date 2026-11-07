@@ -83,12 +83,12 @@ public class InvoiceController : ControllerBase
     {
         _validatorGet.CheckValidation(query);
 
-        var (invoicesData, totalCount) = await _invoiceService.Get(query);
+        var (invoicesData, totalCount, page) = await _invoiceService.Get(query);
 
         InvoiceListResponse result = new InvoiceListResponse
         {
             Invoices = invoicesData.Select(i => i.ToResponse()).ToList()
-        }.WithPaging(query, totalCount);
+        }.WithPaging(query, totalCount, page);
 
         return Ok(result);
     }
