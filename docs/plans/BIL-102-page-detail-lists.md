@@ -72,14 +72,21 @@ Jira: [BIL-102](https://aldisadom.atlassian.net/browse/BIL-102). Epic: BIL-89 (B
     BIL-102 to page it). `IUserRepository.Get(int page, int pageSize)` replaces `Get()`, ordered
     `last_name, name, id`; `IUserService.Get(UserGetRequest? query)` and `UserController.Get` return
     the paging fields; `/users` (`Users.razor`) moves to the `ItemsProvider` grid.
-11. **A page past the last one returns the last page** (the user's decision). Every paged repository
-    runs the count first, then `Domain.Helpers.Paging.PageInBounds` clamps the page (page 1 when
-    there are no rows) before the data query. `WithPaging` uses the same helper, so the response's
-    `Page` names the page that was returned. The `*Get_LastAllowedPage_Success` integration tests
-    now expect the last page instead of an empty list. A page below 1 returns page 1 the same way:
-    `PagedRequestValidator` only keeps the upper bound ("Please specify page up to 42949672"),
-    which stops `(page - 1) * pageSize` overflowing, and the `*Get_PageZero_Fail` integration tests
-    became `*Get_NegativePage_ReturnsFirstPage`.
+11. **A page past the last one returns the last page, a page below 1 returns page 1** (the user's
+    decision). No page is rejected: `PagedRequestValidator` keeps only the page size rule.
+    - Every paged repository goes through `Infrastructure.Repository.PagedQuery.QueryPage`: one
+      query with `COUNT(*) OVER() AS total_count` when the page has rows. Only an empty page asks
+      for the count, then a page past the last one is read again as the last page
+      (`Domain.Helpers.Paging.PageInBounds`). The offset is a long, so any page fits.
+    - Repositories and services return `(Items, TotalCount, Page)`, the page they actually used, and
+      `WithPaging(query, totalCount, page)` puts it in the response.
+    - Front end: `GridPaging` keeps `MaxPage` (int.MaxValue / 50) because QuickGrid works out
+      `CurrentPageIndex * ItemsPerPage` as an int. The load-every-page helpers share
+      `PagedClientExtensions.GetAllPages`, which stops when the API answers with another page and
+      keeps each id once (a row added meanwhile can come back on two pages).
+    - Integration tests: the past-the-last and negative-page tests run on the two rows left after the
+      delete and update tests, with page size 1, next to each second-page test, and check every
+      field. `*Get_PageAboveMaximum_Fail` and `PageOutOfRangeMessage` are removed.
 
 ## Dependencies
 
