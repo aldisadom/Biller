@@ -80,11 +80,16 @@ BIL-92, BIL-96: Done. BIL-91 (AutoMapper) can go before or after this.
 ## Steps
 
 ### 1. BillerContracts
-**Done on the branch (48d700b, 2cfd545, 937eb08), not merged or published yet.** Build: 0 warnings.
+**Done on the branch, not merged or published yet.** Build: 0 warnings.
 Tests: 83 passed, the same 83 `[Fact]`/`[InlineData]` cases as master. Only the `using` lines needed
 changing for AwesomeAssertions and xUnit v3.
-- Update the Microsoft.Extensions packages and Newtonsoft.Json; tests to xUnit v3, FluentAssertions
-  → AwesomeAssertions, Moq pinned.
+- Newtonsoft.Json 13.0.4; tests to xUnit v3, FluentAssertions → AwesomeAssertions, Moq pinned.
+- **Changed in review (F1):** the `Clients` package keeps Microsoft.Extensions.Http 8.0.1,
+  .Options 8.0.2 and .Options.ConfigurationExtensions 8.0.0 (the newest 8.0.x). A library's
+  references are the floor for every consumer: 10.0.14 there gave NU1605 for any consumer pinning
+  8.x (the FE pins DependencyInjection 8.0.1). `Clients.Tests` pins Microsoft.Extensions.Configuration
+  8.0.0, which fails the build with NU1605 if the floor goes up. So FE and IT can take
+  `BillerContracts.Clients` 4.2.1 on its own; their own Microsoft.Extensions updates are separate.
 - Package limits in `CLAUDE.md`. Build, tests.
 - The owner merges and runs `Publish` with the next version (4.2.1, no API change).
 
@@ -125,6 +130,7 @@ changing for AwesomeAssertions and xUnit v3.
 |---|---|---|---|
 | all | Moq | 4.18.4 | Decision 2 |
 | FE | AutoMapper | 13.0.1 | Decision 5 |
+| Contracts | Microsoft.Extensions.Http, .Options, .Options.ConfigurationExtensions (Clients), .Configuration (tests) | 8.0.x | Library floor, see step 1 (F1) |
 
 ## Out of scope
 
