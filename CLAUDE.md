@@ -6,7 +6,7 @@ on a small Linux PC.
 ## Stack
 - .NET 8 Web API, Dapper with raw SQL on PostgreSQL 16, Liquibase SQL changesets in `migrations/sql/`.
 - QuestPDF, FluentValidation, Serilog, Swagger with examples.
-- Tests: xUnit v3, strict Moq mocks, FluentAssertions in `tests/xUnitTests`.
+- Tests: xUnit v3, strict Moq mocks, AwesomeAssertions in `tests/xUnitTests`.
 - Sibling repos, each with its own `CLAUDE.md`: `BillerContracts` (request/response records, enums
   and typed HTTP clients, published as the `BillerContracts` and `BillerContracts.Clients` NuGet
   packages), `BillerFrontEnd` (Blazor), `BillioIntegrationTest` (API tests; CI uses its branch with
@@ -42,6 +42,21 @@ on a small Linux PC.
 - No AutoMapper or any other mapping library, in any Biller repo. Map with hand-written extension methods.
 - No AutoFixture or shared test-data builders.
 - No seed data in migrations.
+
+## Package limits
+Every Biller repo has these limits. Keep them when updating packages.
+- Target `net8.0`. A package whose newest version needs a newer .NET stays on the last version that
+  supports `net8.0`. Moving .NET is its own task.
+- QuestPDF: Community licence only (`LicenseType.Community`). Before an update, check that the
+  business still qualifies (under USD 1M revenue, not public sector or publicly traded) and read the
+  new version's licence.
+- Assertions: AwesomeAssertions (Apache 2.0). Don't add FluentAssertions back: v8+ needs a paid
+  licence for commercial use.
+- Moq: below 4.20.0, pinned as `[4.18.4,4.20.0)` (4.20.0 added SponsorLink build-time telemetry).
+- Before taking a new major version, read its release notes and check its licence.
+- This repo only: `AddPdfGenerator` pins the QuestPDF settings whose defaults changed in 2026.9; look
+  for new ones in the release notes. For a major update, compare `swagger.json` and the LT/EN invoice
+  and act PDFs before and after (BIL-94 plan, step 6).
 
 ## Commands
 - Tests and coverage: `bash .claude/skills/_test-coverage/scripts/run-coverage.sh`

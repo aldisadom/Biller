@@ -8,7 +8,8 @@ description: Write or fix unit tests in Biller's xUnit project (tests/xUnitTests
 One test project, `tests/xUnitTests`, mirrors `src` folder by folder and file by file
 (`src/Validators/Invoice/X.cs` → `tests/xUnitTests/Validators/Invoice/XTest.cs`): one test file
 per source file, never one per class.
-Stack: xUnit v3 (`xunit.v3`), Moq, FluentAssertions. AutoFixture has been removed from the project.
+Stack: xUnit v3 (`xunit.v3`), Moq, AwesomeAssertions (`using AwesomeAssertions;`). AutoFixture
+has been removed from the project. Don't add FluentAssertions back: v8+ needs a paid licence.
 
 Before writing, open the code under test **and** a neighboring test in the same folder, and
 mirror its layout. The rules below win where older tests disagree.
@@ -46,7 +47,7 @@ mirror its layout. The rules below win where older tests disagree.
 - Names: `Method_GivenCondition_ExpectedResult`, e.g. `IsValidSellerId_GivenOtherSeller_ReturnsFalse`.
   A theory that covers several conditions uses `Method_GivenX_ReturnsExpected`.
 - Body sections are marked `//Arrange`, `//Act`, `//Assert`.
-- Assert with FluentAssertions: `Should().Be`, `Should().BeEquivalentTo` for objects,
+- Assert with AwesomeAssertions: `Should().Be`, `Should().BeEquivalentTo` for objects,
   `await act.Should().ThrowAsync<NotFoundException>()` for exceptions.
 
 ## Facts vs. theories
