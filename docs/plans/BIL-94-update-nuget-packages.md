@@ -106,8 +106,12 @@ What the updates needed:
   2026.9 also changed defaults; `AddPdfGenerator` sets the old behaviour (`UseSystemFonts = true`,
   `ThrowOnMissingTextGlyphs = false`, `EnableDetailedLayoutErrors = false`), checked by
   `DependencyInjectionTests`. `ThrowOnMissingFontFamilies` keeps its new default (on): the app
-  registers Calibri at startup and fails there if the file is missing. That made
-  `InvoiceDocumentFactoryTest` depend on test order (it never registered the font); it now registers it.
+  registers Calibri at startup and fails there if the file is missing, or (review F2, F8, F9) if no
+  registered font has the family the documents use (`InvoiceDocumentFont.Family`, shared by both
+  documents and the check). That made `InvoiceDocumentFactoryTest` depend on
+  test order (it never registered the font); it now calls `AddPdfGenerator`, so the PDF tests get the
+  app's font and settings. The tests find `Fonts/calibri.ttf` from the test dll; it isn't copied next
+  to the dll, because QuestPDF registers fonts it finds in the app directory by itself.
 - BCrypt 4.2.0: same hashes (`PasswordEncryptionServiceTest` checks an exact hash).
 - Npgsql 10 reads `date` as `DateOnly` for untyped reads; `created_date`/`due_date` into `DateTime`
   still work through Dapper (invoice GET and the integration tests).

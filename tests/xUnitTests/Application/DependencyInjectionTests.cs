@@ -1,6 +1,7 @@
 ﻿using Application;
 using Application.Helpers.PriceToWords;
 using Application.Interfaces;
+using Application.Models.Invoice.Documents;
 using Application.Services;
 using Domain.IOptions;
 using Domain.Repositories;
@@ -111,11 +112,10 @@ public class DependencyInjectionTests
         //Arrange
         var services = new ServiceCollection();
 
-        var fontPath = Path.Combine("..", "..", "..", "..", "..", "Fonts", "calibri.ttf");
         var fontSettings = Options.Create(new FontSettings
         {
             Fonts = [
-                new FontSetting { Name = "calibri", Path = fontPath }
+                new FontSetting { Name = "calibri", Path = RepoFonts.CalibriPath }
                 ]
         });
 
@@ -126,12 +126,70 @@ public class DependencyInjectionTests
         using var _ = new AssertionScope();
 
         result.Should().BeSameAs(services);
-        FontManager.GetRegisteredFonts().Should().Contain(f => string.Equals(f.FamilyName, "calibri", StringComparison.OrdinalIgnoreCase),
-            "the documents use the font family \"calibri\"");
+        // AddPdfGenerator is the only place the test process registers fonts (InvoiceDocumentFactoryTest
+        // calls it too), and GetRegisteredFonts doesn't list system fonts.
+        FontManager.GetRegisteredFonts().Should().Contain(f => string.Equals(f.FamilyName, InvoiceDocumentFont.Family, StringComparison.OrdinalIgnoreCase),
+            "the documents use this font family");
         QuestPDF.Settings.License.Should().Be(LicenseType.Community);
         QuestPDF.Settings.UseSystemFonts.Should().BeTrue("system fonts stay a fallback, as before QuestPDF 2026.9");
         QuestPDF.Settings.ThrowOnMissingTextGlyphs.Should().BeFalse("a missing glyph shows a placeholder, as before QuestPDF 2026.9");
         QuestPDF.Settings.EnableDetailedLayoutErrors.Should().BeFalse("layout errors must not log document text");
+    }
+
+    public static IEnumerable<TheoryDataRow<string[]>> GetRegisteredFamiliesTestData()
+    {
+        yield return new(["Lato", "Calibri"]) { Label = "family registered under another case passes" };
+        yield return new(["calibri"]) { Label = "family registered with the same case passes" };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetRegisteredFamiliesTestData))]
+    public void EnsureFontFamilyRegistered_GivenFamilyRegistered_DoesNotThrow(string[] registeredFamilies)
+    {
+        //Act
+        Action act = () => DependencyInjectionInvoiceGeneration.EnsureFontFamilyRegistered(registeredFamilies, InvoiceDocumentFont.Family);
+
+        //Assert
+        act.Should().NotThrow();
+    }
+
+    public static IEnumerable<TheoryDataRow<string[]>> GetMissingFamilyTestData()
+    {
+        yield return new(["Lato", "Arial"]) { Label = "other families only throws" };
+        yield return new([]) { Label = "no families throws" };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetMissingFamilyTestData))]
+    public void EnsureFontFamilyRegistered_GivenFamilyMissing_ThrowsArgumentException(string[] registeredFamilies)
+    {
+        //Act
+        Action act = () => DependencyInjectionInvoiceGeneration.EnsureFontFamilyRegistered(registeredFamilies, InvoiceDocumentFont.Family);
+
+        //Assert
+        act.Should().Throw<ArgumentException>()
+            .WithMessage($"*font family {InvoiceDocumentFont.Family} that the documents use*");
+    }
+
+    [Fact]
+    public void AddPdfGenerator_GivenRequiredFamilyNotInFontFiles_ThrowsArgumentException()
+    {
+        //Arrange
+        var services = new ServiceCollection();
+        var fontSettings = Options.Create(new FontSettings
+        {
+            Fonts = [
+                new FontSetting { Name = "calibri", Path = RepoFonts.CalibriPath }
+            ]
+        });
+
+        //Act
+        // A family no test registers: the process-wide registry may already hold the documents' family.
+        Action act = () => services.AddPdfGenerator(fontSettings, "Winterfell Sans");
+
+        //Assert
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*font family Winterfell Sans that the documents use*");
     }
 
     [Fact]

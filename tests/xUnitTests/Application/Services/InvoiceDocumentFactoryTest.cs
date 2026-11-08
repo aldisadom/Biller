@@ -3,9 +3,11 @@ using Application.Models;
 using Application.Services;
 using BillerContracts.Enums;
 using AwesomeAssertions;
+using Domain.IOptions;
+using Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
-using QuestPDF.Drawing;
-using QuestPDF.Infrastructure;
 
 namespace xUnitTests.Application.Services;
 
@@ -16,17 +18,18 @@ public class InvoiceDocumentFactoryTest
 
     private readonly InvoiceDocumentFactory _invoiceDocumentFactory;
 
-    // The documents use the font family "calibri", which the app registers at startup
-    // (AddPdfGenerator). Since QuestPDF 2026.9 a missing font family throws, so register it here too.
+    // Same font and QuestPDF settings as the app: the documents use the font family "calibri", and
+    // since QuestPDF 2026.9 a missing family throws.
     static InvoiceDocumentFactoryTest()
     {
-        FontManager.RegisterFontFromFile(Path.Combine("..", "..", "..", "..", "..", "Fonts", "calibri.ttf"));
+        new ServiceCollection().AddPdfGenerator(Options.Create(new FontSettings
+        {
+            Fonts = [new FontSetting { Name = "calibri", Path = RepoFonts.CalibriPath }]
+        }));
     }
 
     public InvoiceDocumentFactoryTest()
     {
-        QuestPDF.Settings.License = LicenseType.Community;
-
         _priceToWordsFactoryMock = new Mock<IPriceToWordsFactory>(MockBehavior.Strict);
         _priceToWordsMock = new Mock<IPriceToWords>(MockBehavior.Strict);
 

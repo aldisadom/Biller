@@ -1,4 +1,5 @@
-﻿using Domain.IOptions;
+﻿using Application.Models.Invoice.Documents;
+using Domain.IOptions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using QuestPDF.Drawing;
@@ -9,6 +10,14 @@ namespace Infrastructure;
 public static class DependencyInjectionInvoiceGeneration
 {
     public static IServiceCollection AddPdfGenerator(this IServiceCollection services, IOptions<FontSettings> fontSettings)
+        => services.AddPdfGenerator(fontSettings, InvoiceDocumentFont.Family);
+
+    /// <summary>
+    /// AddPdfGenerator with the font family that must be registered afterwards. Tests pass a family
+    /// nobody registers: QuestPDF's font registry is process-wide, so the documents' family may
+    /// already be there from another test.
+    /// </summary>
+    internal static IServiceCollection AddPdfGenerator(this IServiceCollection services, IOptions<FontSettings> fontSettings, string requiredFamily)
     {
         QuestPDF.Settings.License = LicenseType.Community;
         // QuestPDF 2026.9 changed these defaults. Keep the behaviour from before it: system fonts as a
@@ -38,6 +47,18 @@ public static class DependencyInjectionInvoiceGeneration
             FontManager.RegisterFontFromStream(fontStream);
         }
 
+        // Fail at startup, not on every PDF, when no configured file holds the documents' font family.
+        EnsureFontFamilyRegistered(FontManager.GetRegisteredFonts().Select(f => f.FamilyName), requiredFamily);
+
         return services;
+    }
+
+    /// <summary>
+    /// Throws when <paramref name="family"/> isn't among the registered font families (compared ignoring case, as QuestPDF does).
+    /// </summary>
+    public static void EnsureFontFamilyRegistered(IEnumerable<string> registeredFamilies, string family)
+    {
+        if (!registeredFamilies.Any(f => string.Equals(f, family, StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException($"No configured font file contains the font family {family} that the documents use");
     }
 }
