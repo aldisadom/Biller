@@ -94,7 +94,8 @@ changing for AwesomeAssertions and xUnit v3.
 - The owner merges and runs `Publish` with the next version (4.2.1, no API change).
 
 ### 2. Biller
-**Done on the branch except the BillerContracts bump (waits for 4.2.1).** Every package is on its
+**Done on the branch**, BillerContracts 4.2.1 included (contracts PR #16 merged, published
+2026-11-08). `dotnet list package --outdated` lists only Moq (pinned). Every package is on its
 newest version; all support `net8.0` (BCrypt 4.2.0 through netstandard2.1). Build: 0 warnings.
 Unit tests: 800 passed. Integration tests (BillioIntegrationTest master): 219/219, 3 runs.
 What the updates needed:
