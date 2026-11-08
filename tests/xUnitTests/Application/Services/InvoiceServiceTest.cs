@@ -515,8 +515,10 @@ public class InvoiceServiceTest
             .WithMessage($"Invalid document type: {invalidDocumentType}");
     }
 
-    [Fact]
-    public async Task GeneratePDF_GivenValidId_ReturnsPdfNamedWithInvoicesSeriesAndNumber()
+    [Theory]
+    [InlineData(DocumentType.Invoice, Language.LT, Label = "LT invoice is named with the invoice's series and number")]
+    [InlineData(DocumentType.JobDoneAct, Language.EN, Label = "EN job done act gets the same name as the invoice")]
+    public async Task GeneratePDF_GivenValidId_ReturnsPdfNamedWithInvoicesSeriesAndNumber(DocumentType documentType, Language languageCode)
     {
         //Arrange
         InvoiceModel storedInvoice = NewInvoiceModel();
@@ -527,8 +529,6 @@ public class InvoiceServiceTest
         SellerModel seller = new() { Id = storedInvoice.SellerId };
         CustomerModel customer = new() { Id = storedInvoice.CustomerId, SeriesName = "KL" };
 
-        Language languageCode = Language.LT;
-        DocumentType documentType = DocumentType.Invoice;
         var memoryStream = new MemoryStream("dummy pdf content"u8.ToArray());
 
         Expression<Func<InvoiceModelFull, bool>> matchesInvoice = i =>

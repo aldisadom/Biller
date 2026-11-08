@@ -1,12 +1,26 @@
-# Plan: update invoice generate (BIL-69)
+# Plan: update invoice generate (BIL-69, with BIL-97)
 
 Jira: [BIL-69](https://aldisadom.atlassian.net/browse/BIL-69). Epic: BIL-89 (Billeris).
+Done together with [BIL-97](https://aldisadom.atlassian.net/browse/BIL-97) (download the PDFs in
+the browser), which only changes BillerFrontEnd. See Step 6.
+
+## Changes since the plan was written (checked at master @ 9ff9fb1)
+
+- BIL-65 is done. `GenerateFileLocation()` is now `{SeriesName}-{000005}.pdf` (series name, not
+  the customer's invoice name), and `file_path` is gone, so Step 2's last bullet needs nothing.
+- BIL-73 is done, so BIL-97's `GeneratePdfClick` change no longer collides with it.
+- `InvoiceDocumentFactory.GeneratePdf` still computes an unused `path` from `GenerateFileLocation()`.
+  Remove it.
+- BillerContracts is at 4.2.0. No contracts change is needed: `InvoiceGenerateRequest`,
+  `DocumentType`, `Language` and `IInvoiceClient.GeneratePDF` stay as they are.
+- Front end page is `src/FrontEnd/Components/Pages/Invoice/Invoices_id.razor`.
 
 ## Goal (from the ticket)
 
 - In Swagger, the document type and language are drop-downs built from the enums.
 - The caller chooses what to generate.
-- The file name gets a prefix that depends on the document type.
+- ~~The file name gets a prefix that depends on the document type.~~ Dropped: the name stays
+  `{series}-{number}.pdf`, and the front end lets the user edit it when saving (decision 1).
 - Swagger examples and their tests are updated.
 
 ## Current state (master @ 125ae5e)
@@ -25,11 +39,13 @@ Jira: [BIL-69](https://aldisadom.atlassian.net/browse/BIL-69). Epic: BIL-89 (Bil
 
 ## Design decisions
 
-1. **File name: `{prefix}-{series}-{number}[-{LANG}].pdf`.**
-   - Prefix by document type: `SF` (invoice, "sąskaita faktūra") and `ADA` (job done act, "atliktų darbų aktas"). These match the document class names.
-   - The language is added only when it isn't LT, e.g. `SF-ABC-000005.pdf` and `ADA-ABC-000005-EN.pdf`. Existing LT downloads keep a short name, and an EN copy doesn't overwrite the LT one.
-2. **The prefix lives in one place:** a `DocumentType` → prefix map in Application (e.g. `DocumentTypeExtensions.FilePrefix()`). A new document type without a prefix fails a test, not at runtime.
-3. **`GenerateFileLocation` takes the document type and language** instead of guessing. It moves next to the factory, since the name now depends on what is generated.
+1. **File name stays `{series}-{number}.pdf`** (e.g. `ABC-000005.pdf`) for every document type and
+   language: no `SF`/`ADA` prefix, no language suffix (owner's decision, 2026-11-07). The overwrite
+   problem is solved in the front end instead: clicking a generate button opens a save dialog with
+   this name suggested, and the user can edit it before saving (Step 6).
+2. ~~Prefix map~~: dropped with decision 1.
+3. ~~`GenerateFileLocation` takes the document type and language~~: dropped with decision 1.
+   `GenerateFileLocation()` is unchanged.
 4. **Keep `POST` and `[FromQuery]`.** `GET` would fit better, but changing it breaks the front end client for no user-visible gain.
 5. **Enum validation moves to the validator** (`IsInEnum()` for both fields). The controller then returns 400 through the normal validation path, and the service checks become a guard only.
 
@@ -45,10 +61,7 @@ Jira: [BIL-69](https://aldisadom.atlassian.net/browse/BIL-69). Epic: BIL-89 (Bil
 
 ## Step 2: Application
 
-- `DocumentTypeExtensions.FilePrefix(this DocumentType)`: `Invoice` → `"SF"`, `JobDoneAct` → `"ADA"`, anything else throws `ArgumentOutOfRangeException`.
-- `InvoiceModel.GenerateFileLocation(DocumentType documentType, Language language)` builds the name from decision 1.
-- `InvoiceService.GeneratePDF` passes both values through.
-- `InvoiceModelExtensions.ToEntity` uses `GenerateFileLocation()` for `FilePath`. BIL-65 drops `file_path`. If BIL-65 is done first (recommended), nothing to do here. If not, pass `DocumentType.Invoice, Language.LT`.
+- No file name change (decision 1). Only remove the unused `path` line in `InvoiceDocumentFactory`.
 
 ## Step 3: Validators
 
@@ -68,17 +81,27 @@ Swagger examples: Swashbuckle.Filters doesn't apply request examples to query pa
 
 ## Step 5: Tests (`write-tests` skill)
 
-- `DocumentTypeExtensions`: a theory over **every** `DocumentType` value (`Enum.GetValues`) so a new type without a prefix fails. Plus an out-of-range value throws.
-- `InvoiceModel.GenerateFileLocation`: theory with labels, e.g. SF/LT → `SF-ABC-000005.pdf`, ADA/EN → `ADA-ABC-000005-EN.pdf`, number padding at 9, 10, 99999, 100000.
 - `InvoiceGenerateValidator`: invalid language and document type values fail. Valid ones pass.
-- `InvoiceServiceTest`: `GeneratePDF` returns the name for the requested type and language.
+- `InvoiceServiceTest`: `GeneratePDF` returns `{series}-{number}.pdf` for an LT invoice and an EN act alike.
 - `InvoiceControllerTest`: update the existing test if the signature changes.
 - Integration test: generate both types, check `Content-Disposition` has the expected names.
 
-## Step 6: Front end (BillerFrontEnd, separate PR)
+## Step 6: Front end (BillerFrontEnd, branch `BIL-69-invoice-generate`, with BIL-97)
 
-- Add a language selector (LT/EN) next to the generate buttons instead of hard-coded `Language.LT`.
-- Nothing else is needed: the file name comes from `Content-Disposition`, so the overwrite problem is fixed by the API change.
+- Replace the two generate buttons with a document type drop-down (Invoice, Job done act), a
+  language drop-down (LT/EN, instead of hard-coded `Language.LT`) and one Generate button.
+- BIL-97: `GeneratePdfClick` writes the PDF to `MyDocuments` on the server (inside the container in
+  Docker), so the user gets nothing. Add `wwwroot/js/download.js` with
+  `downloadFileFromStream(fileName, streamRef)`, load it in `App.razor` after `blazor.web.js`, and
+  have `GeneratePdfClick` pass `new DotNetStreamReference(fileResult.Content)` to it through
+  `IJSRuntime`.
+- The download suggests the `Content-Disposition` name and lets the user edit it:
+  `showSaveFilePicker({ suggestedName })` (Chrome, Edge) opens the system save dialog; cancelling
+  saves nothing. Where it's missing (Firefox, Safari) or refused (the click's user activation
+  expired while the PDF was generated), `prompt("Save as", name)` asks for the name, then a
+  temporary `<a download>` saves it.
+- Check in the browser: both buttons, LT and EN: the dialog shows `{series}-{number}.pdf`, an edited
+  name is used, cancel saves nothing, and the PDF opens.
 
 ## Out of scope
 
@@ -87,7 +110,13 @@ Swagger examples: Swashbuckle.Filters doesn't apply request examples to query pa
 
 ## Order of work
 
-1. BIL-65 first.
-2. Check Swagger (Step 1).
-3. API change and tests in one PR, then the integration test.
-4. Front end language selector.
+1. BIL-65 first. **Done.**
+2. Check Swagger (Step 1). **Done:** `LanguageCode` and `DocumentType` already are string enums
+   (`LT`/`EN`, `Invoice`/`JobDoneAct`) in `swagger.json`, so nothing changed there.
+3. API change and tests in one PR, then the integration test. **Done** (Steps 2 to 5). Model binding
+   already answers an undefined enum value (`999`) with 400 "The value '999' is invalid." before the
+   validator runs, so the validator rules and the service checks are both guards. Integration
+   tests on BillioIntegrationTest branch `BIL-69-invoice-generate`: every type and language gets
+   `{series}-{number}.pdf`, undefined language and document type, empty id, not found.
+4. Front end language selector and BIL-97 download. **Done** on BillerFrontEnd branch
+   `BIL-69-invoice-generate`. Still to check by hand in a browser: both buttons, LT and EN.
