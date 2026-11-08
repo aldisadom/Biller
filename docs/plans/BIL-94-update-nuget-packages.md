@@ -80,6 +80,9 @@ BIL-92, BIL-96: Done. BIL-91 (AutoMapper) can go before or after this.
 ## Steps
 
 ### 1. BillerContracts
+**Done on the branch (48d700b, 2cfd545, 937eb08), not merged or published yet.** Build: 0 warnings.
+Tests: 83 passed, the same 83 `[Fact]`/`[InlineData]` cases as master. Only the `using` lines needed
+changing for AwesomeAssertions and xUnit v3.
 - Update the Microsoft.Extensions packages and Newtonsoft.Json; tests to xUnit v3, FluentAssertions
   → AwesomeAssertions, Moq pinned.
 - Package limits in `CLAUDE.md`. Build, tests.
