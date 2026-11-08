@@ -94,6 +94,25 @@ changing for AwesomeAssertions and xUnit v3.
 - The owner merges and runs `Publish` with the next version (4.2.1, no API change).
 
 ### 2. Biller
+**Done on the branch except the BillerContracts bump (waits for 4.2.1).** Every package is on its
+newest version; all support `net8.0` (BCrypt 4.2.0 through netstandard2.1). Build: 0 warnings.
+Unit tests: 800 passed. Integration tests (BillioIntegrationTest master): 219/219, 3 runs.
+What the updates needed:
+- Swashbuckle 10: only `StartupSwagger.cs` used `Microsoft.OpenApi.Models` (namespace is now
+  `Microsoft.OpenApi`). No filter or example changes.
+- QuestPDF 2026.9: `RegisterFontWithCustomName` is obsolete. Calibri is registered with
+  `RegisterFontFromStream` under the file's family name; family names match case-insensitively.
+  2026.9 also changed defaults; `AddPdfGenerator` sets the old behaviour (`UseSystemFonts = true`,
+  `ThrowOnMissingTextGlyphs = false`, `EnableDetailedLayoutErrors = false`), checked by
+  `DependencyInjectionTests`. `ThrowOnMissingFontFamilies` keeps its new default (on): the app
+  registers Calibri at startup and fails there if the file is missing. That made
+  `InvoiceDocumentFactoryTest` depend on test order (it never registered the font); it now registers it.
+- BCrypt 4.2.0: same hashes (`PasswordEncryptionServiceTest` checks an exact hash).
+- Npgsql 10 reads `date` as `DateOnly` for untyped reads; `created_date`/`due_date` into `DateTime`
+  still work through Dapper (invoice GET and the integration tests).
+- AwesomeAssertions: only the `using` lines changed (58 files).
+- Removed: Microsoft.Data.Sqlite, SkiaSharp and HarfBuzzSharp native assets. PDFs still render in the
+  Linux container.
 - Snapshot first, from master: `swagger.json` and an invoice and act PDF in LT and EN from the
   `_test-stack` stack (same seeded invoice).
 - Update every package in the table, remove the unused ones, BillerContracts to the new version.
@@ -123,6 +142,15 @@ changing for AwesomeAssertions and xUnit v3.
 - `swagger.json` diff against the snapshot.
 - Render the same invoice and act in LT and EN and compare with the snapshot PDFs page by page
   (images, not text).
+
+**Biller result (2026-11-08):** master @ 3b81a8e against the branch, same data (the seed's POSTs
+replayed with the same tag and dates), PyMuPDF in a throwaway container.
+- API responses (invoice, users, sellers, customers, items, series): identical apart from ids.
+- `swagger.json`: OpenAPI 3.0.4 both, same 16 paths and 36 schemas. Only difference: Swashbuckle 10
+  adds a top-level `tags` list (Customer, Health, Invoice, Item, Seller, Series, User).
+- PDFs (4): one page each, same text, fonts (Calibri), sizes and x positions. Some lines sit up to
+  0.32 pt (0.1 mm) lower: new QuestPDF/Skia baseline placement, not visible. Files about 2% smaller
+  (QuestPDF 2026.8 compression level).
 
 ## Versions kept back (fill in while working)
 
