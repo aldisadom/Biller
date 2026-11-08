@@ -11,6 +11,8 @@ using Infrastructure.Repository;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using QuestPDF.Drawing;
+using QuestPDF.Infrastructure;
 using System.Data;
 
 namespace xUnitTests.Application;
@@ -121,7 +123,15 @@ public class DependencyInjectionTests
         var result = services.AddPdfGenerator(fontSettings);
 
         //Assert
+        using var _ = new AssertionScope();
+
         result.Should().BeSameAs(services);
+        FontManager.GetRegisteredFonts().Should().Contain(f => string.Equals(f.FamilyName, "calibri", StringComparison.OrdinalIgnoreCase),
+            "the documents use the font family \"calibri\"");
+        QuestPDF.Settings.License.Should().Be(LicenseType.Community);
+        QuestPDF.Settings.UseSystemFonts.Should().BeTrue("system fonts stay a fallback, as before QuestPDF 2026.9");
+        QuestPDF.Settings.ThrowOnMissingTextGlyphs.Should().BeFalse("a missing glyph shows a placeholder, as before QuestPDF 2026.9");
+        QuestPDF.Settings.EnableDetailedLayoutErrors.Should().BeFalse("layout errors must not log document text");
     }
 
     [Fact]
