@@ -7,7 +7,7 @@ using BillerContracts.Requests.Seller;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
-using FluentAssertions;
+using AwesomeAssertions;
 using Moq;
 using System.Net;
 

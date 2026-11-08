@@ -1,6 +1,6 @@
 ﻿using Application.Services;
 using Domain.IOptions;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Options;
 using Moq;
 

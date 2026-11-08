@@ -3,7 +3,7 @@ using Application.Models;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Invoice;
 using Domain.Entities;
-using FluentAssertions;
+using AwesomeAssertions;
 using Newtonsoft.Json;
 using static xUnitTests.Application.MappingProfiles.MappingTestHelper;
 

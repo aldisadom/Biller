@@ -2,7 +2,7 @@ using Application.MappingProfiles;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Series;
 using BillerContracts.Responses.Series;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace xUnitTests.Application.MappingProfiles;
 

@@ -1,7 +1,7 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
 using BillerContracts.Enums;
-using FluentAssertions;
+using AwesomeAssertions;
 using static xUnitTests.Application.MappingProfiles.MappingTestHelper;
 
 namespace xUnitTests.Application.MappingProfiles;

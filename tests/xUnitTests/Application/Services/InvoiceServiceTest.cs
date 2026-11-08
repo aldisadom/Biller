@@ -8,7 +8,7 @@ using BillerContracts.Requests.Invoice;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
-using FluentAssertions;
+using AwesomeAssertions;
 using Moq;
 using Newtonsoft.Json;
 using System.Linq.Expressions;

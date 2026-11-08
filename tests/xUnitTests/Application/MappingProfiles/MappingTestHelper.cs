@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+﻿using AwesomeAssertions;
 using System.Reflection;
 
 namespace xUnitTests.Application.MappingProfiles;

@@ -1,5 +1,5 @@
 using Domain.Helpers;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace xUnitTests.Domain.Helpers;
 

@@ -7,7 +7,7 @@ using BillerContracts.Requests.Series;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
-using FluentAssertions;
+using AwesomeAssertions;
 using FluentValidation;
 using Moq;
 using System.Net;

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+﻿using AwesomeAssertions;
 using WebAPI.SwaggerExamples.Seller;
 using xUnitTests.Helpers;
 

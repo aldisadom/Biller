@@ -7,7 +7,7 @@ using BillerContracts.Requests.User;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
-using FluentAssertions;
+using AwesomeAssertions;
 using Moq;
 
 namespace xUnitTests.Application.Services;

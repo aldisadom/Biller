@@ -1,5 +1,5 @@
 ﻿using Application.Helpers.NumberToWords;
-using FluentAssertions;
+using AwesomeAssertions;
 using Moq;
 
 namespace xUnitTests.Application.Helpers.NumberToWords;

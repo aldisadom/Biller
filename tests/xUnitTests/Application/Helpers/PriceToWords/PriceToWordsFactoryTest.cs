@@ -1,6 +1,6 @@
 ﻿using Application.Helpers.PriceToWords;
 using BillerContracts.Enums;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace xUnitTests.Application.Helpers.PriceToWords;
 

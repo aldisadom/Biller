@@ -1,5 +1,5 @@
 using Application.Models;
-using FluentAssertions;
+using AwesomeAssertions;
 using Validators.Invoice;
 
 namespace xUnitTests.Validators.Invoice;

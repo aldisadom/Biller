@@ -1,5 +1,5 @@
 ﻿using Application.Models;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace xUnitTests.Application.Models;
 
