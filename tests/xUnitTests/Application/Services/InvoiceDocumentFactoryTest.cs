@@ -8,6 +8,7 @@ using Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using QuestPDF.Drawing.Exceptions;
 
 namespace xUnitTests.Application.Services;
 
@@ -18,8 +19,8 @@ public class InvoiceDocumentFactoryTest
 
     private readonly InvoiceDocumentFactory _invoiceDocumentFactory;
 
-    // Same font and QuestPDF settings as the app: the documents use the font family "calibri", and
-    // since QuestPDF 2026.9 a missing family throws.
+    // Same font and QuestPDF settings as the app: the documents use the font family "calibri", and a
+    // missing family or a character Calibri can't draw throws.
     static InvoiceDocumentFactoryTest()
     {
         new ServiceCollection().AddPdfGenerator(Options.Create(new FontSettings
@@ -71,6 +72,73 @@ public class InvoiceDocumentFactoryTest
         header.Should().Equal("%PDF-"u8.ToArray());
 
         _priceToWordsFactoryMock.Verify(m => m.GetConverter(languageCode), Times.Once());
+        _priceToWordsMock.Verify(m => m.Decode(20m), Times.Once());
+    }
+
+    [Theory]
+    [InlineData(DocumentType.Invoice, Language.LT, Label = "lithuanian letters and the euro sign render in the invoice")]
+    [InlineData(DocumentType.JobDoneAct, Language.LT, Label = "lithuanian letters and the euro sign render in the job done act")]
+    public void GeneratePdf_GivenLithuanianLetters_ReturnsPdf(DocumentType documentType, Language languageCode)
+    {
+        //Arrange
+        const string letters = "ĄČĘĖĮŠŲŪŽ ąčęėįšųūž €";
+        InvoiceModelFull invoice = new()
+        {
+            SeriesName = "WF",
+            InvoiceNumber = 5,
+            CreatedDate = new DateOnly(2026, 10, 1),
+            DueDate = new DateOnly(2026, 10, 11),
+            Items = [new() { Name = letters, Price = 10m, Quantity = 2 }],
+            User = new() { Name = "Tyrion", LastName = "Lannister" },
+            Seller = new() { CompanyName = letters },
+            Customer = new() { CompanyName = "Winterfell" }
+        };
+
+        _priceToWordsFactoryMock.Setup(m => m.GetConverter(languageCode))
+            .Returns(_priceToWordsMock.Object);
+        _priceToWordsMock.Setup(m => m.Decode(20m))
+            .Returns("dvidešimt");
+
+        //Act
+        MemoryStream result = _invoiceDocumentFactory.GeneratePdf(documentType, languageCode, invoice);
+
+        //Assert
+        result.Length.Should().BeGreaterThan(0);
+
+        _priceToWordsFactoryMock.Verify(m => m.GetConverter(languageCode), Times.Once());
+        _priceToWordsMock.Verify(m => m.Decode(20m), Times.Once());
+    }
+
+    [Theory]
+    [InlineData("Dragon 🐉", Label = "emoji in an item name throws")]
+    [InlineData("Iron throne 鐵王座", Label = "chinese characters in an item name throw")]
+    public void GeneratePdf_GivenCharacterCalibriCannotDraw_ThrowsDocumentDrawingException(string itemName)
+    {
+        //Arrange
+        InvoiceModelFull invoice = new()
+        {
+            SeriesName = "WF",
+            InvoiceNumber = 5,
+            CreatedDate = new DateOnly(2026, 10, 1),
+            DueDate = new DateOnly(2026, 10, 11),
+            Items = [new() { Name = itemName, Price = 10m, Quantity = 2 }],
+            User = new() { Name = "Tyrion", LastName = "Lannister" },
+            Seller = new() { CompanyName = "Lannister gold" },
+            Customer = new() { CompanyName = "Winterfell" }
+        };
+
+        _priceToWordsFactoryMock.Setup(m => m.GetConverter(Language.EN))
+            .Returns(_priceToWordsMock.Object);
+        _priceToWordsMock.Setup(m => m.Decode(20m))
+            .Returns("twenty");
+
+        //Act
+        Action act = () => _invoiceDocumentFactory.GeneratePdf(DocumentType.Invoice, Language.EN, invoice);
+
+        //Assert
+        act.Should().Throw<DocumentDrawingException>();
+
+        _priceToWordsFactoryMock.Verify(m => m.GetConverter(Language.EN), Times.Once());
         _priceToWordsMock.Verify(m => m.Decode(20m), Times.Once());
     }
 }

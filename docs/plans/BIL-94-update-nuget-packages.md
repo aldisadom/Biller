@@ -169,9 +169,16 @@ What the updates needed:
   `Microsoft.OpenApi`). No filter or example changes.
 - QuestPDF 2026.9: `RegisterFontWithCustomName` is obsolete. Calibri is registered with
   `RegisterFontFromStream` under the file's family name; family names match case-insensitively.
-  2026.9 also changed defaults; `AddPdfGenerator` sets the old behaviour (`UseSystemFonts = true`,
-  `ThrowOnMissingTextGlyphs = false`, `EnableDetailedLayoutErrors = false`), checked by
-  `DependencyInjectionTests`. `ThrowOnMissingFontFamilies` keeps its new default (on): the app
+  2026.9 also changed defaults. **Changed 2026-11-09 (owner: "it should throw if QuestPDF is missing
+  something"):** `AddPdfGenerator` is strict instead of restoring the old behaviour: `UseSystemFonts =
+  false`, `ThrowOnMissingFontFamilies = true`, `ThrowOnMissingTextGlyphs = true`, set explicitly;
+  `EnableDetailedLayoutErrors = false` (no document text in the logs). A character Calibri can't draw
+  (an emoji, Chinese) now fails `POST /invoices/generate` with 500 and the missing glyph in the
+  message, instead of a placeholder box. Tests: every Lithuanian letter and `€` render; an emoji and
+  Chinese characters throw; relaxing any of the three settings fails a test (revert-check). Checked
+  on the 10.0 image: the 4 sample PDFs unchanged in size, an emoji item gives 500. (Before this
+  change `UseSystemFonts = true` and `ThrowOnMissingTextGlyphs = false` were set to keep the
+  pre-2026.9 behaviour.) Checked by `DependencyInjectionTests`. On missing font families: the app
   registers Calibri at startup and fails there if the file is missing, or (review F2, F8, F9) if no
   registered font has the family the documents use (`InvoiceDocumentFont.Family`, shared by both
   documents and the check). That made `InvoiceDocumentFactoryTest` depend on

@@ -167,8 +167,9 @@ public class DependencyInjectionTests
         FontManager.GetRegisteredFonts().Should().Contain(f => string.Equals(f.FamilyName, InvoiceDocumentFont.Family, StringComparison.OrdinalIgnoreCase),
             "the documents use this font family");
         QuestPDF.Settings.License.Should().Be(LicenseType.Community);
-        QuestPDF.Settings.UseSystemFonts.Should().BeTrue("system fonts stay a fallback, as before QuestPDF 2026.9");
-        QuestPDF.Settings.ThrowOnMissingTextGlyphs.Should().BeFalse("a missing glyph shows a placeholder, as before QuestPDF 2026.9");
+        QuestPDF.Settings.UseSystemFonts.Should().BeFalse("only the registered fonts count, whatever the machine has");
+        QuestPDF.Settings.ThrowOnMissingFontFamilies.Should().BeTrue("a missing font family fails the PDF");
+        QuestPDF.Settings.ThrowOnMissingTextGlyphs.Should().BeTrue("a character the font can't draw fails the PDF");
         QuestPDF.Settings.EnableDetailedLayoutErrors.Should().BeFalse("layout errors must not log document text");
     }
 

@@ -56,9 +56,10 @@ Every Biller repo has these limits. Keep them when updating packages.
 - xUnit: `xunit.v3.mtp-off`, not `xunit.v3`. The .NET 10 SDK's `dotnet test` doesn't run xUnit's
   default Microsoft.Testing.Platform runner through VSTest, and the test scripts rely on VSTest.
 - Before taking a new major version, read its release notes and check its licence.
-- This repo only: `AddPdfGenerator` pins the QuestPDF settings whose defaults changed in 2026.9; look
-  for new ones in the release notes. For a major update, compare `swagger.json` and the LT/EN invoice
-  and act PDFs before and after (BIL-94 plan, step 6).
+- This repo only: PDFs are strict. `AddPdfGenerator` sets QuestPDF to use only the registered fonts
+  and to throw on a missing font family or a character the font can't draw; keep it that way, and
+  look for new such settings in the release notes. For a major update, compare `swagger.json` and the
+  LT/EN invoice and act PDFs before and after (BIL-94 plan, step 6).
 
 ## Commands
 - Tests and coverage: `bash .claude/skills/_test-coverage/scripts/run-coverage.sh`

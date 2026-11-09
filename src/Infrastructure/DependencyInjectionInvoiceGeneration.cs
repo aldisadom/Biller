@@ -20,11 +20,13 @@ public static class DependencyInjectionInvoiceGeneration
     internal static IServiceCollection AddPdfGenerator(this IServiceCollection services, IOptions<FontSettings> fontSettings, string requiredFamily)
     {
         QuestPDF.Settings.License = LicenseType.Community;
-        // QuestPDF 2026.9 changed these defaults. Keep the behaviour from before it: system fonts as a
-        // fallback, a placeholder instead of an exception for a missing glyph, and no document text
-        // in layout exception messages (they end up in the logs).
-        QuestPDF.Settings.UseSystemFonts = true;
-        QuestPDF.Settings.ThrowOnMissingTextGlyphs = false;
+        // Strict: a PDF fails instead of quietly substituting. Only the registered fonts are used (no
+        // system fonts, so the output doesn't depend on the machine), and a missing font family or a
+        // character the font can't draw throws. Set explicitly so a change of QuestPDF's defaults can't
+        // relax it. Layout error messages leave out document text, because they end up in the logs.
+        QuestPDF.Settings.UseSystemFonts = false;
+        QuestPDF.Settings.ThrowOnMissingFontFamilies = true;
+        QuestPDF.Settings.ThrowOnMissingTextGlyphs = true;
         QuestPDF.Settings.EnableDetailedLayoutErrors = false;
 
         if (fontSettings == null)
