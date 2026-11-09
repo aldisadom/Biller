@@ -26,6 +26,7 @@ commit that introduced it, and the fix (commit, or the Jira key while it's open)
 | 12 | The rollback of migration 034 leaves invoices made after deploy without `InvoiceName`/`InvoiceNumber` in their customer copy, so the old code prints them with an empty series and number 000000. | cc845e2 | BIL-65 |
 | 13 | Migration 034 inserts the series name from old invoices' customer copy into `series.name` (`varchar(10)`), but `PUT /invoices` saved that copy from the request and only checked that the name wasn't empty, so a longer name makes the changeset fail on deploy. No pre-check looked for it. | cc845e2 | BIL-65 (pre-check query) |
 | 14 | `PUT /series` accepts any `NextNumber`. With `int.MaxValue`, reserving the next number (`next_number + 1`) overflows and every later invoice in that series returns 500. | e5ff9b8 | BIL-65 |
+| 15 | BillioIntegrationTest: new read-only tests `InvoiceGetAllForSeller_PagePastTheLast_ReturnsLastPage` and `_NegativePage_ReturnsFirstPage` were not added to the `[DependsOn]` lists of the 9 tests that change or add invoices after the list tests, so `InvoiceUpdateChangeItems_Valid_Success` can change the invoice while they read it. Passed locally for weeks; failed once in CI after TUnit 1.x changed the scheduling (TotalPrice 199980.00 instead of 50.00). | BillioIntegrationTest c6735d0 | BillioIntegrationTest 16f23a6 (BIL-94) |
 
 For an open bug, review the introducing commit. Once it's fixed, also check that reverting the
 fix's source change makes a test fail.
