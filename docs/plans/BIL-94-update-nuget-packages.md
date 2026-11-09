@@ -115,6 +115,13 @@ Differences from the issue: BillerContracts is at 4.2.0, not 2.0.0. BIL-92 and B
     SDK"). The `mtp-off` variant keeps VSTest, so `dotnet test`, `coverlet.collector`,
     `run-coverage.sh` and the `FullyQualifiedName~` filters in `revert-check.sh` work as before. Moving
     to the new `dotnet test` experience (a `global.json` test runner setting) is a separate change.
+17. **BillioIntegrationTest opts in to the Microsoft.Testing.Platform runner** (added 2026-11-09,
+    step 4). TUnit 1.x runs only on Microsoft.Testing.Platform and has no `mtp-off` variant; on the
+    .NET 10 SDK `dotnet test` then fails with the same error as decision 16 (TUnit 0.57 still ran).
+    Its `global.json` has only `"test": { "runner": "Microsoft.Testing.Platform" }` (no SDK pin, so
+    decision 14 holds). TRX output becomes `--report-trx --report-trx-filename`, not `--logger trx`.
+    Biller's CI checks the checked-out BillioIntegrationTest's `global.json` and picks the arguments,
+    so either PR can merge first. `run-integration.sh` reads the new runner's summary unchanged.
 
 ## Dependencies
 
@@ -203,6 +210,11 @@ Integration tests (BillioIntegrationTest master): 219/219, 3 runs.
 - Update the PR #80 description.
 
 ### 3. BillerFrontEnd (packages and .NET 10)
+**Done on its branch (6dd85c6, 8e3e946), not pushed yet.** Build: 4 warnings, the same 4 as master
+(2 nullable warnings in pages, and NU1903 for AutoMapper 13.0.1 in both projects: a known
+high-severity advisory, GHSA-rvv3-g6hj-g44x; AutoMapper stays per decision 5 until BIL-91 removes it).
+No NU1510. All 24 pages rendered (`render-page.sh`) against the step 2b stack with the same data,
+master (`net8.0`) and the branch (`net10.0`, Ubuntu 24.04 image): identical.
 - `net10.0` in 2 projects; Dockerfile 10.0; `build.yml` `10.0.x`.
 - QuickGrid 10.x, Serilog packages, container tools, `BillerContracts.Clients` 5.0.0; remove
   Microsoft.Fast.Components.FluentUI, the second Serilog.Sinks.File version and what NU1510 names.
@@ -211,6 +223,10 @@ Integration tests (BillioIntegrationTest master): 219/219, 3 runs.
   (`render-page.sh`): same values.
 
 ### 4. BillioIntegrationTest (packages and .NET 10)
+**Done on its branch (94bbe5e, 37ca2d1, b4d905a), not pushed yet.** TUnit 1.81.16 needed the runner
+opt-in (decision 17) and replacing the obsolete `HasCount().EqualTo(n)` with `Count().IsEqualTo(n)`
+(26 places). Build: the same 50 TUnit0046 warnings as master. Against the step 2b stack: 219/219,
+3 runs, also with CI's `--report-trx` arguments.
 - `net10.0`; `ci.yml` `10.0.x`; the two Dockerfiles' `FROM` lines to 10.0 (decision 15).
 - TUnit 1.x (read its migration notes), configuration packages, Newtonsoft.Json, container tools,
   `BillerContracts.Clients` 5.0.0; remove System.Collections.Concurrent and what NU1510 names.
