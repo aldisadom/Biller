@@ -215,8 +215,14 @@ What the updates needed:
 - Assertions: AwesomeAssertions (Apache 2.0). Don't add FluentAssertions back: v8+ needs a paid
   licence for commercial use.
 - Moq: below 4.20.0, pinned as `[4.18.4,4.20.0)` (4.20.0 added SponsorLink build-time telemetry).
-- Target `net10.0` (was `net8.0` in steps 1 and 2; steps 1b and 2b change it). A package whose newest
-  version needs a newer .NET stays on the last one that supports `net10.0`.
+- Target `net10.0` (was `net8.0` in steps 1 and 2; steps 1b and 2b change it). Text: "A package whose
+  newest version needs a newer .NET stays on the last version that supports `net10.0`, until all four
+  repos move .NET together."
+- xUnit: "`xunit.v3.mtp-off`, not `xunit.v3`. The .NET 10 SDK's `dotnet test` doesn't run xUnit's
+  default Microsoft.Testing.Platform runner through VSTest, and the test scripts rely on VSTest."
+  (Contracts review F7.) BillioIntegrationTest uses TUnit, so it copies this line only as a rule for
+  later.
+- Contracts' copy is the reference text (BIL-94 contracts PR on .NET 10); the others match it word for word.
 
 ### 6. Check nothing changed
 - `swagger.json` diff against the snapshot.
