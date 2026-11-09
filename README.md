@@ -69,7 +69,7 @@ Biller is a modular, multi-layered billing and invoicing platform. It features a
 
 ### Prerequisites
 
-- [.NET 8+ SDK](https://dotnet.microsoft.com/download)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Docker](https://www.docker.com/get-started)
 
 <p align="right">(<a href="#Biller">back to top</a>)</p>

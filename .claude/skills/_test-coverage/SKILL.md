@@ -5,8 +5,9 @@ description: Run Biller's xUnit test suite with code coverage, generate the HTML
 
 # Test + coverage for Biller
 
-The repo is a .NET 8 solution (`Billio.sln`) with one unit-test project, `tests/xUnitTests`
-(xUnit v3 + Moq + AwesomeAssertions, coverage via `coverlet.collector`).
+The repo is a .NET 10 solution (`Billio.sln`) with one unit-test project, `tests/xUnitTests`
+(xUnit v3 through `xunit.v3.mtp-off`, so `dotnet test` runs on VSTest + Moq + AwesomeAssertions,
+coverage via `coverlet.collector`).
 There is no `make test` target; use the bundled script.
 
 ## Run it
