@@ -109,6 +109,12 @@ Differences from the issue: BillerContracts is at 4.2.0, not 2.0.0. BIL-92 and B
 15. **Out-of-place files stay as they are** unless they block the build: the `wasm-tools` workload line
     in Biller's `Dockerfile`, and the two IntegrationTest Dockerfiles that don't build. Their `FROM`
     lines move to 10.0 so a later fix starts from the right version; repairing them is a separate task.
+16. **Test projects use `xunit.v3.mtp-off`** (added 2026-11-09, step 1b). xUnit v3 4.x runs on
+    Microsoft.Testing.Platform, and the .NET 10 SDK no longer runs it through VSTest (`dotnet test`
+    fails: "Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10
+    SDK"). The `mtp-off` variant keeps VSTest, so `dotnet test`, `coverlet.collector`,
+    `run-coverage.sh` and the `FullyQualifiedName~` filters in `revert-check.sh` work as before. Moving
+    to the new `dotnet test` experience (a `global.json` test runner setting) is a separate change.
 
 ## Dependencies
 
@@ -135,6 +141,11 @@ changing for AwesomeAssertions and xUnit v3.
 - The owner merges and runs `Publish` with the next version (4.2.1, no API change).
 
 ### 1b. BillerContracts on .NET 10
+**Done on the branch (263184e, f471bac), not pushed yet.** SDK 10.0.402. Build: 0 warnings, no NU1510
+(the Microsoft.Extensions packages aren't in the base framework of a class library, so nothing is
+pruned). Tests: 83 passed on `net10.0`. The floor guard still works on `net10.0`: Options raised to
+10.0.14 in `Clients` fails with NU1605. Tests moved to `xunit.v3.mtp-off` 4.0.3 (decision 16;
+4.0.3 came out 2026-11-09).
 - New branch `BIL-94-update-nuget-packages` from master (the first one is merged).
 - `net10.0` in the 3 projects; CI and Publish `DOTNET_VERSION: 10.0.x`, `setup-dotnet@v4`.
 - Floors stay 8.0.x (decision 11); remove only what NU1510 names (decision 12).
@@ -176,7 +187,8 @@ What the updates needed:
 - Snapshot from the step 2 tree first (`net8.0`): `swagger.json`, the 4 PDFs and the GET responses,
   with the same data (step 6).
 - `net10.0` in the 6 projects; `Dockerfile` and `DockerfileLocal` to 10.0; CI `10.0.x`.
-- Remove the references NU1510 names; BillerContracts 5.0.0.
+- Remove the references NU1510 names; BillerContracts 5.0.0; `xunit.v3.mtp-off` 4.0.3 instead of
+  `xunit.v3` 4.0.2 (decision 16).
 - `CLAUDE.md`: package limits `net10.0`; Stack line ".NET 10 Web API".
 - `_test-coverage`, `_test-stack` + integration tests (BillioIntegrationTest branch
   `BIL-94-update-nuget-packages` once step 4 is pushed, else master), then step 6 against the snapshot.
