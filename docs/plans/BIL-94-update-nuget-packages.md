@@ -1,15 +1,22 @@
-# Plan: update NuGet packages in every repo (BIL-94)
+# Plan: update NuGet packages and move to .NET 10 in every repo (BIL-94)
 
 Jira: [BIL-94](https://aldisadom.atlassian.net/browse/BIL-94). Epic: BIL-89 (Billeris). Repos:
 BillerContracts (step 1), Biller (step 2), BillerFrontEnd (step 3), BillioIntegrationTest (step 4).
 It changes several repos, so it lives in Biller. Branch `BIL-94-update-nuget-packages` in each.
 
+**Changed 2026-11-09:** the owner asked to move to .NET 10 in this task too (it was drafted
+separately as BIL-104). Steps 1 and 2 were done on `net8.0` first; each repo now also gets a
+.NET 10 part (steps 1b and 2b, and inside steps 3 and 4). Decision 1 changed from "stay on
+`net8.0`" to "move to `net10.0`"; decisions 10–15 are new.
+
 ## Goal
 
-- Every package is on its newest stable version that fits the limits below and `net8.0`.
+- All four repos build, test and run on .NET 10 (LTS until November 2028; .NET 8 support ends
+  November 2026).
+- Every package is on its newest stable version that fits the limits below and `net10.0`.
 - Packages shared between repos are on the same version.
 - The package limits are in every repo's `CLAUDE.md`.
-- Nothing changes for the user: same API responses, same Swagger, same PDFs, all tests pass.
+- Nothing changes for the user: same API responses, same Swagger, same PDFs, same pages, all tests pass.
 
 ## Current state (Biller master @ 3b81a8e, BillerContracts @ be7d36c, BillerFrontEnd @ a96800f, BillioIntegrationTest @ 8542785)
 
@@ -47,11 +54,25 @@ All four repos target `net8.0`. `dotnet list package --outdated` on 2026-11-08:
 
 Differences from the issue: BillerContracts is at 4.2.0, not 2.0.0. BIL-92 and BIL-96 are Done.
 
+**.NET state (2026-11-09; Biller master @ 3b81a8e, BillerContracts @ fa09b83, BillerFrontEnd @ a96800f, BillioIntegrationTest @ 8542785):**
+
+| Repo | Where | What |
+|---|---|---|
+| all | `*.csproj` | `<TargetFramework>net8.0` (Biller 6, Contracts 3, FrontEnd 2, IntegrationTest 1). No `global.json` |
+| Biller | `src/WebAPI/Dockerfile`, `src/WebAPI/DockerfileLocal` | `aspnet:8.0`, `sdk:8.0`. `Dockerfile` also runs `dotnet workload install wasm-tools`, which the API doesn't use. `DockerfileLocal` is what docker compose, CI and `_test-stack` build |
+| Biller | `.github/workflows/CI.yaml` | `DOTNET_VERSION: '8.0.x'`, `setup-dotnet@v4` |
+| Contracts | `.github/workflows/CI.yaml`, `Publish.yaml` | `DOTNET_VERSION: 8.0.x`, `setup-dotnet@v2` |
+| FrontEnd | `src/FrontEnd/Dockerfile`, `.github/workflows/build.yml` | `aspnet:8.0`, `sdk:8.0`; `dotnet-version: 8.0.x` hard-coded |
+| IntegrationTest | `Dockerfile`, `src/IntegrationTests/Dockerfile` | `runtime:8.0`, `sdk:8.0`. Both build `BillioIntegrationTest.csproj`, which doesn't exist (the project is `IntegrationTests.csproj`), so neither builds today. CI runs the tests with `dotnet`, not these files |
+| IntegrationTest | `.github/workflows/ci.yml` | `DOTNET_VERSION: '8.0.x'` |
+| this PC | Windows `dotnet.exe` | SDK 9.0.313 only. No .NET 10 SDK |
+| aldisMini | `/home/aldis/Biller`, `/home/aldis/BillerFrontEnd` | Billio is built there from the checkouts with docker compose, so the 10.0 images are pulled on the next deploy |
+
 ## Design decisions
 
-1. **Stay on `net8.0`.** For each package take the newest stable version whose package still has a
-   `net8.0` (or `netstandard2.x`) target. Where the newest needs .NET 9/10 (likely QuickGrid 10),
-   take the newest 8.x/9.x and write the reason in the table below. Moving .NET is a separate task.
+1. **Move to `net10.0`** (changed 2026-11-09; was "stay on `net8.0`"). `net10.0` only, no
+   multi-targeting: every consumer is one of our four repos and moves together. Packages take their
+   newest stable version with a `net10.0`, `net8.0` or `netstandard2.x` target.
 2. **Moq stays 4.18.4**, pinned as `[4.18.4,4.20.0)` in every test project (SponsorLink in 4.20.0).
 3. **FluentAssertions is replaced by AwesomeAssertions** (owner, 2026-11-08). FluentAssertions v8+
    needs a paid licence for commercial use. AwesomeAssertions is its Apache-2.0 fork: 9.6.0 on
@@ -71,16 +92,36 @@ Differences from the issue: BillerContracts is at 4.2.0, not 2.0.0. BIL-92 and B
    Serilog.AspNetCore 10): read the release notes and licence first. Swagger: compare
    `swagger/v1/swagger.json` before and after; any difference other than formatting is a bug.
 9. **One commit per repo for the versions**, separate from code changes a bump needs, so a revert is
-   one commit.
+   one commit. The .NET 10 move is its own commit in each repo.
+10. **BillerContracts 5.0.0.** Dropping `net8.0` is breaking for any .NET 8 consumer (its
+    `CLAUDE.md`: breaking → major). No contract change otherwise.
+11. **Contracts keeps its Microsoft.Extensions floor at 8.0.x.** Those packages have a `net8.0` asset
+    that `net10.0` uses, and .NET 10 apps get 10.x from the shared framework anyway. The floor stays
+    the lowest version needed (step 1, F1); the `Clients.Tests` pins stay.
+12. **Remove direct references the framework already provides.** The .NET 10 SDK prunes them and
+    warns NU1510 for each (for example Microsoft.Extensions.DependencyInjection/Options in Biller's
+    projects and the FrontEnd). Remove exactly the ones NU1510 names, so the build has no new warnings.
+13. **Docker images `aspnet:10.0` / `sdk:10.0` / `runtime:10.0`.** Check which OS the 10.0 images use
+    (`/etc/os-release`) and that PDFs still render in it (QuestPDF needs glibc 2.28+); write the
+    result in step 2b.
+14. **CI `DOTNET_VERSION: 10.0.x`**, no `global.json` (CI and the images pin the major, as today).
+    Contracts' `setup-dotnet@v2` goes to `@v4` like the other repos.
+15. **Out-of-place files stay as they are** unless they block the build: the `wasm-tools` workload line
+    in Biller's `Dockerfile`, and the two IntegrationTest Dockerfiles that don't build. Their `FROM`
+    lines move to 10.0 so a later fix starts from the right version; repairing them is a separate task.
 
 ## Dependencies
 
 BIL-92, BIL-96: Done. BIL-91 (AutoMapper) can go before or after this.
 
+**The .NET 10 SDK on this PC** (the owner installs it, e.g. `winget install Microsoft.DotNet.SDK.10`),
+so `build.sh` and `run-coverage.sh` can build `net10.0`. Without it, the .NET 10 parts can only be
+built in Docker (`sdk:10.0`).
+
 ## Steps
 
 ### 1. BillerContracts
-**Done on the branch, not merged or published yet.** Build: 0 warnings.
+**Done: PR #16 merged, published as 4.2.1 (2026-11-08).** Build: 0 warnings.
 Tests: 83 passed, the same 83 `[Fact]`/`[InlineData]` cases as master. Only the `using` lines needed
 changing for AwesomeAssertions and xUnit v3.
 - Newtonsoft.Json 13.0.4; tests to xUnit v3, FluentAssertions → AwesomeAssertions, Moq pinned.
@@ -92,6 +133,13 @@ changing for AwesomeAssertions and xUnit v3.
   `BillerContracts.Clients` 4.2.1 on its own; their own Microsoft.Extensions updates are separate.
 - Package limits in `CLAUDE.md`. Build, tests.
 - The owner merges and runs `Publish` with the next version (4.2.1, no API change).
+
+### 1b. BillerContracts on .NET 10
+- New branch `BIL-94-update-nuget-packages` from master (the first one is merged).
+- `net10.0` in the 3 projects; CI and Publish `DOTNET_VERSION: 10.0.x`, `setup-dotnet@v4`.
+- Floors stay 8.0.x (decision 11); remove only what NU1510 names (decision 12).
+- `CLAUDE.md` package limits: `net10.0`.
+- Build, tests (83). The owner merges and publishes **5.0.0** (decision 10).
 
 ### 2. Biller
 **Done on the branch**, BillerContracts 4.2.1 included (contracts PR #16 merged, published
@@ -124,15 +172,29 @@ What the updates needed:
 - Swashbuckle 10: fix the 3 files using `Microsoft.OpenApi` and any filter/example API changes.
 - Package limits in `CLAUDE.md`. `_test-coverage`, then `_test-stack` + integration tests.
 
-### 3. BillerFrontEnd
-- Update QuickGrid, DI, Serilog packages, container tools, BillerContracts.Clients; remove
-  Microsoft.Fast.Components.FluentUI and the second Serilog.Sinks.File version.
-- Package limits in `CLAUDE.md`. Build; start it with `_test-stack` and open the main pages.
+### 2b. Biller on .NET 10 (same branch, PR #80)
+- Snapshot from the step 2 tree first (`net8.0`): `swagger.json`, the 4 PDFs and the GET responses,
+  with the same data (step 6).
+- `net10.0` in the 6 projects; `Dockerfile` and `DockerfileLocal` to 10.0; CI `10.0.x`.
+- Remove the references NU1510 names; BillerContracts 5.0.0.
+- `CLAUDE.md`: package limits `net10.0`; Stack line ".NET 10 Web API".
+- `_test-coverage`, `_test-stack` + integration tests (BillioIntegrationTest branch
+  `BIL-94-update-nuget-packages` once step 4 is pushed, else master), then step 6 against the snapshot.
+- Update the PR #80 description.
 
-### 4. BillioIntegrationTest
+### 3. BillerFrontEnd (packages and .NET 10)
+- `net10.0` in 2 projects; Dockerfile 10.0; `build.yml` `10.0.x`.
+- QuickGrid 10.x, Serilog packages, container tools, `BillerContracts.Clients` 5.0.0; remove
+  Microsoft.Fast.Components.FluentUI, the second Serilog.Sinks.File version and what NU1510 names.
+- `CLAUDE.md`: ".NET 8 Blazor" → ".NET 10 Blazor", the Fluent UI line, package limits.
+- Build; start it with `_test-stack --frontend` and render the main pages before and after
+  (`render-page.sh`): same values.
+
+### 4. BillioIntegrationTest (packages and .NET 10)
+- `net10.0`; `ci.yml` `10.0.x`; the two Dockerfiles' `FROM` lines to 10.0 (decision 15).
 - TUnit 1.x (read its migration notes), configuration packages, Newtonsoft.Json, container tools,
-  BillerContracts.Clients; remove System.Collections.Concurrent.
-- Package limits in `CLAUDE.md`. Run against the step 2 stack, `--repeat 3`.
+  `BillerContracts.Clients` 5.0.0; remove System.Collections.Concurrent and what NU1510 names.
+- Package limits in `CLAUDE.md`. Run against the step 2b stack, `--repeat 3`.
 
 ### 5. Package limits text (each repo's `CLAUDE.md`)
 - QuestPDF: Community licence only (`LicenseType.Community`). Before an update, check that the
@@ -141,7 +203,8 @@ What the updates needed:
 - Assertions: AwesomeAssertions (Apache 2.0). Don't add FluentAssertions back: v8+ needs a paid
   licence for commercial use.
 - Moq: below 4.20.0, pinned as `[4.18.4,4.20.0)` (4.20.0 added SponsorLink build-time telemetry).
-- Stay on `net8.0`; a package whose newest version needs a newer .NET stays on the last one that doesn't.
+- Target `net10.0` (was `net8.0` in steps 1 and 2; steps 1b and 2b change it). A package whose newest
+  version needs a newer .NET stays on the last one that supports `net10.0`.
 
 ### 6. Check nothing changed
 - `swagger.json` diff against the snapshot.
@@ -157,6 +220,10 @@ replayed with the same tag and dates), PyMuPDF in a throwaway container.
   0.32 pt (0.1 mm) lower: new QuestPDF/Skia baseline placement, not visible. Files about 2% smaller
   (QuestPDF 2026.8 compression level).
 
+### 7. Deploy (the owner)
+- On aldisMini, pull the merged masters and rebuild with `docker compose up -d --build` (compose v2).
+  The first build pulls the 10.0 images. Check `/health`, Swagger and one invoice PDF.
+
 ## Versions kept back (fill in while working)
 
 | Repo | Package | Kept at | Why |
@@ -167,12 +234,18 @@ replayed with the same tag and dates), PyMuPDF in a throwaway container.
 
 ## Out of scope
 
-- Moving to .NET 9/10.
+- Using new C# 14 / .NET 10 features, or refactoring for them.
+- Fixing the IntegrationTest Dockerfiles and the `wasm-tools` line (decision 15).
 - Removing AutoMapper (BIL-91).
 - Central package management (`Directory.Packages.props`).
 
 ## Order of work
 
-1. Contracts (step 1), merged and published.
-2. Biller (step 2), with steps 5 and 6.
-3. BillerFrontEnd and BillioIntegrationTest (steps 3, 4), on the published contracts version.
+1. Contracts (step 1), merged and published as 4.2.1. Done.
+2. Biller (step 2), with steps 5 and 6. Done on the branch (PR #80 open).
+3. The .NET 10 SDK on this PC.
+4. Contracts on .NET 10 (step 1b), merged and published as 5.0.0.
+5. Biller on .NET 10 (step 2b, same PR #80) and BillioIntegrationTest (step 4) together: CI pairs
+   them by branch name.
+6. BillerFrontEnd (step 3).
+7. Deploy (step 7).
