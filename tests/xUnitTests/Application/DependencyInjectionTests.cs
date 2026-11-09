@@ -81,6 +81,42 @@ public class DependencyInjectionTests
     }
 
     [Fact]
+    public void AddInfrastructure_GivenConnectionStringWithoutGssSetting_RegistersConnectionWithGssEncryptionDisabled()
+    {
+        //Arrange
+        var services = new ServiceCollection();
+
+        //Act
+        services.AddInfrastructure(_dbConnectionString);
+        using var serviceProvider = services.BuildServiceProvider();
+        using var scope = serviceProvider.CreateScope();
+        IDbConnection connection = scope.ServiceProvider.GetRequiredService<IDbConnection>();
+
+        //Assert
+        NpgsqlConnectionStringBuilder actual = new(connection.ConnectionString);
+
+        using var _ = new AssertionScope();
+
+        actual.GssEncryptionMode.Should().Be(GssEncryptionMode.Disable);
+        actual.Host.Should().Be("db");
+        actual.Database.Should().Be("Data");
+        actual.Username.Should().Be("postgres");
+    }
+
+    [Theory]
+    [InlineData("Host=db;Database=Data;GSS Encryption Mode=Require", GssEncryptionMode.Require, Label = "explicit Require is kept")]
+    [InlineData("Host=db;Database=Data;gss encryption mode=prefer", GssEncryptionMode.Prefer, Label = "explicit setting in another case is kept")]
+    [InlineData("Host=db;Database=Data", GssEncryptionMode.Disable, Label = "no setting becomes Disable")]
+    public void WithoutGssEncryption_GivenConnectionString_ReturnsExpectedMode(string connectionString, GssEncryptionMode expected)
+    {
+        //Act
+        string result = global::Infrastructure.DependencyInjection.WithoutGssEncryption(connectionString);
+
+        //Assert
+        new NpgsqlConnectionStringBuilder(result).GssEncryptionMode.Should().Be(expected);
+    }
+
+    [Fact]
     public void AddApplication_GivenServiceCollection_RegistersExactlyAllServices()
     {
         //Arrange
