@@ -36,7 +36,9 @@ public static class DependencyInjection
     /// </summary>
     internal static string WithoutGssEncryption(string connectionString)
     {
-        if (new DbConnectionStringBuilder { ConnectionString = connectionString }.ContainsKey("GSS Encryption Mode"))
+        // Npgsql accepts the keyword with and without spaces.
+        DbConnectionStringBuilder given = new() { ConnectionString = connectionString };
+        if (given.ContainsKey("GSS Encryption Mode") || given.ContainsKey("GssEncryptionMode"))
             return connectionString;
 
         return new NpgsqlConnectionStringBuilder(connectionString) { GssEncryptionMode = GssEncryptionMode.Disable }.ConnectionString;

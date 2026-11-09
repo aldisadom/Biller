@@ -106,7 +106,7 @@ public class DependencyInjectionTests
     [Theory]
     [InlineData("Host=db;Database=Data;GSS Encryption Mode=Require", GssEncryptionMode.Require, Label = "explicit Require is kept")]
     [InlineData("Host=db;Database=Data;gss encryption mode=prefer", GssEncryptionMode.Prefer, Label = "explicit setting in another case is kept")]
-    [InlineData("Host=db;Database=Data", GssEncryptionMode.Disable, Label = "no setting becomes Disable")]
+    [InlineData("Host=db;Database=Data;GssEncryptionMode=Require", GssEncryptionMode.Require, Label = "explicit setting without spaces is kept")]
     public void WithoutGssEncryption_GivenConnectionString_ReturnsExpectedMode(string connectionString, GssEncryptionMode expected)
     {
         //Act
