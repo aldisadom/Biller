@@ -110,9 +110,10 @@ public class InvoiceDocumentFactoryTest
     }
 
     [Theory]
-    [InlineData("Dragon 🐉", Label = "emoji in an item name throws")]
-    [InlineData("Iron throne 鐵王座", Label = "chinese characters in an item name throw")]
-    public void GeneratePdf_GivenCharacterCalibriCannotDraw_ThrowsDocumentDrawingException(string itemName)
+    [InlineData(DocumentType.Invoice, "Dragon 🐉", Label = "emoji in an invoice item name throws")]
+    [InlineData(DocumentType.Invoice, "Iron throne 鐵王座", Label = "chinese characters in an invoice item name throw")]
+    [InlineData(DocumentType.JobDoneAct, "Dragon 🐉", Label = "emoji in a job done act item name throws")]
+    public void GeneratePdf_GivenCharacterCalibriCannotDraw_ThrowsDocumentDrawingException(DocumentType documentType, string itemName)
     {
         //Arrange
         InvoiceModelFull invoice = new()
@@ -133,10 +134,11 @@ public class InvoiceDocumentFactoryTest
             .Returns("twenty");
 
         //Act
-        Action act = () => _invoiceDocumentFactory.GeneratePdf(DocumentType.Invoice, Language.EN, invoice);
+        Action act = () => _invoiceDocumentFactory.GeneratePdf(documentType, Language.EN, invoice);
 
         //Assert
-        act.Should().Throw<DocumentDrawingException>();
+        act.Should().Throw<DocumentDrawingException>()
+            .WithMessage("*Missing glyphs*");
 
         _priceToWordsFactoryMock.Verify(m => m.GetConverter(Language.EN), Times.Once());
         _priceToWordsMock.Verify(m => m.Decode(20m), Times.Once());
