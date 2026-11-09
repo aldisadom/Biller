@@ -184,6 +184,14 @@ What the updates needed:
 - Package limits in `CLAUDE.md`. `_test-coverage`, then `_test-stack` + integration tests.
 
 ### 2b. Biller on .NET 10 (same branch, PR #80)
+**Done on the branch (2026-11-09), not pushed yet.** BillerContracts 5.0.0 (contracts PR #17 merged
+and published). Build: 0 warnings. NU1510 named one reference, Microsoft.Extensions.DependencyInjection
+in WebAPI (ASP.NET Core provides it); removed. The class libraries' Microsoft.Extensions references
+aren't pruned (no shared framework there) and stay. `dotnet list package --outdated`: only Moq.
+Unit tests: 805 passed on `net10.0` (3 runs), coverage 92.6% line / 85.8% branch, as on `net8.0`.
+Integration tests (BillioIntegrationTest master): 219/219, 3 runs.
+- **Image OS (decision 13):** `aspnet:10.0` is Ubuntu 24.04.5 (glibc 2.39), runtime 10.0.14;
+  `aspnet:8.0` was Debian 12. PDFs render the same in it (step 6).
 - Snapshot from the step 2 tree first (`net8.0`): `swagger.json`, the 4 PDFs and the GET responses,
   with the same data (step 6).
 - `net10.0` in the 6 projects; `Dockerfile` and `DockerfileLocal` to 10.0; CI `10.0.x`.
@@ -237,6 +245,12 @@ replayed with the same tag and dates), PyMuPDF in a throwaway container.
 - PDFs (4): one page each, same text, fonts (Calibri), sizes and x positions. Some lines sit up to
   0.32 pt (0.1 mm) lower: new QuestPDF/Skia baseline placement, not visible. Files about 2% smaller
   (QuestPDF 2026.8 compression level).
+
+**Biller .NET 10 result (2026-11-09):** the step 2 tree on `net8.0` (Debian 12 image) against the step
+2b tree on `net10.0` (Ubuntu 24.04 image), same data.
+- API responses and `swagger.json`: identical apart from ids.
+- PDFs (4): same text, fonts, sizes and positions (0.000 pt shift), same file sizes; the bytes differ
+  only in the creation time each render embeds.
 
 ### 7. Deploy (the owner)
 - On aldisMini, pull the merged masters and rebuild with `docker compose up -d --build` (compose v2).
