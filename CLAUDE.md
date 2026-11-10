@@ -71,4 +71,6 @@ Every Biller repo has these limits. Keep them when updating packages.
 - Plans: `docs/plans/BIL-<n>-<slug>.md` (Jira project BIL), in the repo the work is in. Only plans
   that change several repos, or Biller itself, live here.
 - Review rules: `REVIEW.md`. Past bugs to test reviews against: `docs/review-evals.md`.
-- Before opening a PR, use the `_pre-pr` skill.
+- Before opening a PR, use the `_pre-pr` skill. The build and tests must pass: don't open a PR, or
+  push code to one, with a build error or a failing test. A failure this change didn't cause is fixed
+  on master first. CI also runs a Release build and the integration tests.
