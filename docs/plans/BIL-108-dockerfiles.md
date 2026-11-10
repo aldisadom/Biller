@@ -34,31 +34,37 @@ Jira: [BIL-108](https://aldisadom.atlassian.net/browse/BIL-108). Epic: BIL-89 (B
    the test job as an artifact: jobs run on separate runners, so an artifact means an upload and a
    download for a build that takes seconds. The integration job restores and builds **before**
    starting Biller's compose stack, so a compile error fails fast, without waiting for the API.
-3. **Biller keeps one API Dockerfile, `DockerfileLocal`.** `src/WebAPI/Dockerfile` and the
-   `Docker` launch profile go: the owner doesn't use the profile, it was misconfigured (ports), and the
-   file only differed by the unused `wasm-tools` workload. `DockerfileLocal` keeps its name, because
-   compose, CI and `_test-stack` build it by that name. The `http`, `https` and `IIS Express` profiles
-   stay (F5 and `dotnet run`).
+3. **Biller keeps one API Dockerfile, renamed from `DockerfileLocal` to `Dockerfile`.** The old
+   `src/WebAPI/Dockerfile` and the `Docker` launch profile go: the owner doesn't use the profile, it
+   was misconfigured (ports), and the file only differed by the unused `wasm-tools` workload. With
+   one file left, the `Local` suffix means nothing, so it takes the standard name (owner's call).
+   `docker-compose.yml` builds the new name. `_test-stack` builds `DockerfileLocal` when a checkout
+   has one and `Dockerfile` otherwise, because `--biller` can point at a branch from before this
+   change, whose `Dockerfile` is still the Visual Studio one. The `http`, `https` and
+   `IIS Express` profiles stay (F5 and `dotnet run`).
 4. **The Visual Studio container tooling in `WebAPI.csproj` stays** (`DockerDefaultTargetOS`,
    `DockerfileContext`, `DockerComposeProjectPath`, the `Containers.Tools.Targets` package):
    `docker-compose.dcproj` in `Billio.sln` uses it too, and whether that compose profile is still
    wanted is a separate question.
 5. **Copy every project file the API references before the restore**: add
-   `src/Validators/Validators.csproj` to `DockerfileLocal`. The restore layer then caches all
+   `src/Validators/Validators.csproj` to the API Dockerfile. The restore layer then caches all
    packages, and the warning goes.
 
 ## Dependencies
 
 None. BIL-94 (Done) moved these files to .NET 10 and left the fixes to this issue.
 
-## Step 1: Biller Dockerfiles (branch `BIL-108-dockerfiles`)
+## Step 1: Biller Dockerfiles (branch `BIL-108-dockerfiles`) — done
 
 - Delete `src/WebAPI/Dockerfile` (and with it the `wasm-tools` line).
 - `src/WebAPI/Properties/launchSettings.json`: remove the `Docker` profile.
 - `src/WebAPI/DockerfileLocal`: after the `Domain.csproj` copy, add
   `COPY ["src/Validators/Validators.csproj", "src/Validators/"]`.
+- Rename `src/WebAPI/DockerfileLocal` to `src/WebAPI/Dockerfile`; `docker-compose.yml` builds the new
+  name; `_test-stack/scripts/test-stack.sh` picks `DockerfileLocal` if the checkout has it, else
+  `Dockerfile`.
 
-## Step 2: BillioIntegrationTest (branch `BIL-108-dockerfiles`)
+## Step 2: BillioIntegrationTest (branch `BIL-108-dockerfiles`) — done
 
 - Delete `Dockerfile`, `src/IntegrationTests/Dockerfile` and `.dockerignore`.
 - `IntegrationTests.csproj`: remove `DockerDefaultTargetOS` and the
@@ -70,19 +76,26 @@ None. BIL-94 (Done) moved these files to .NET 10 and left the fixes to this issu
 
 ## Step 3: Check
 
-- Biller: `docker build -f src/WebAPI/DockerfileLocal .` succeeds, and the restore output has no
-  `Skipping project` line. `grep -rn "WebAPI/Dockerfile\b"` finds no reference to the deleted file.
-- `_test-stack`: `test-stack.sh up` (builds `DockerfileLocal`), then `run-integration.sh --repeat 3`
+- Biller: `docker build -f src/WebAPI/Dockerfile .` succeeds, and the restore output has no
+  `Skipping project` line. `grep -rn DockerfileLocal` finds it only in `test-stack.sh`'s fallback and
+  in older plans.
+- `_test-stack`: `test-stack.sh up` (builds `Dockerfile`), then `run-integration.sh --repeat 3`
   with BillioIntegrationTest on `BIL-108-dockerfiles`; all pass. `test-stack.sh down`.
+  `test-stack.sh up --biller` on a master checkout still builds its `DockerfileLocal`.
 - BillioIntegrationTest: `dotnet build BillioIntegrationTest.sln -c Release` passes without the
   containers package; `grep -rn Dockerfile` finds nothing outside `bin`/`obj`.
 - CI: Biller's PR runs the integration tests against BillioIntegrationTest's branch with the same
   name; BillioIntegrationTest's PR shows one job that builds once.
 
+Done locally before the rename: the image builds with `Validators.csproj` restored and no
+`Skipping project` line; `run-integration.sh --repeat 3` passed 219 of 219 three times;
+BillioIntegrationTest builds in Release; the CI YAML parses to one job with `Build` before
+`Start services`. CI is checked on the PRs.
+
 ## Out of scope
 
 - Running the integration tests in a container in CI.
-- Renaming `DockerfileLocal`, the Visual Studio compose project (`docker-compose.dcproj`) and its
+- The Visual Studio compose project (`docker-compose.dcproj`) and its
   tooling in `WebAPI.csproj`, and BillerFrontEnd's Dockerfile.
 - Biller's own CI (`CI.yaml`), which already builds BillioIntegrationTest once.
 

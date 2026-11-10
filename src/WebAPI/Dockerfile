@@ -8,12 +8,12 @@ EXPOSE 8071
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet workload install wasm-tools
 WORKDIR /src
 COPY ["src/WebAPI/WebAPI.csproj", "src/WebAPI/"]
 COPY ["src/Infrastructure/Infrastructure.csproj", "src/Infrastructure/"]
 COPY ["src/Application/Application.csproj", "src/Application/"]
 COPY ["src/Domain/Domain.csproj", "src/Domain/"]
+COPY ["src/Validators/Validators.csproj", "src/Validators/"]
 RUN dotnet restore "./src/WebAPI/./WebAPI.csproj"
 COPY . .
 WORKDIR "/src/src/WebAPI"

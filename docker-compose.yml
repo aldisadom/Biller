@@ -57,7 +57,7 @@ services:
       - ./Fonts:/Fonts
     build:
       context: .
-      dockerfile: src/WebAPI/DockerfileLocal
+      dockerfile: src/WebAPI/Dockerfile
     ports:
      - "8090:8070"
     networks:
