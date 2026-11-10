@@ -11,7 +11,9 @@ bash $P status [repo]
 ```
 
 `scope`, `tests` and `findings` must be `ok`, and `integration` too unless it's `not needed`. When
-one is missing or `STALE`, run that step first, or tell the user which one is missing. Never write
+one is missing, `STALE` or `FAILED`, run that step first, or tell the user which one and why.
+Don't write a description over a `FAILED` build or test run: fix it first (`_pre-pr`, step 2 for
+`tests`, step 3 for `integration`). Never write
 the Testing section from a stale result: it would describe code that has changed since.
 `findings` is `ok` when none is open and no code changed since the last review snapshot. It shows
 `STALE` after a fix made since then: review that change (`_pr-review`, a new round), or say in the

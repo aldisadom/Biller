@@ -26,7 +26,7 @@ pastes the command and the output lines that show its result. Don't say a step p
 
 ```bash
 P=.claude/skills/_pre-pr/scripts/pr-state.sh
-bash $P status [repo]              # each step: ok, STALE, missing or not needed
+bash $P status [repo]              # each step: ok, STALE, FAILED, missing or not needed
 bash $P read [repo] <step>         # exit 1 when missing, 3 when stale
 bash $P write [repo] <step>        # stdin becomes <step>.md, stamped with the working tree
 bash $P note [repo] <step> "text"  # a decision or detail for the later steps
@@ -44,10 +44,13 @@ change the tree, so results stay valid. The trees are pinned under `refs/pre-pr/
 
 ## Run
 
-1. `bash $P status`. Start at the first step that is missing or `STALE`, and reuse the ones that
-   are `ok`. On a new branch that is step 1.
-2. Steps 1 to 3. Stop at a blocker in `scope.md`, a failed build, or a red test this change caused:
-   fix it, or report it and ask, before going on.
+1. `bash $P status`. Start at the first step that is missing, `STALE` or `FAILED`, and reuse the
+   ones that are `ok`. On a new branch that is step 1. A `FAILED` step runs again even when the code
+   hasn't changed (for example after fixing the environment).
+2. Steps 1 to 3. Stop at a blocker in `scope.md`, a failed build or any red test, and fix it before
+   going on: a PR is opened only with a passing build and tests (`CLAUDE.md`), and `status` shows a
+   failed run as `FAILED`. When this change didn't cause the failure (it fails on master too),
+   report it and ask; it gets fixed on master first.
 3. Steps 4 and 5 are the review loop: review, fix, then step 2 again (and step 3 when a fix touched
    what it tests), then review again. Every round runs at medium effort. A later round runs only
    when the round before had an Important finding that got fixed. At most 3 rounds. After round 3,

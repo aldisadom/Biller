@@ -11,7 +11,8 @@ bash $P status [repo]
 ```
 
 Every step must be `ok` (or `not needed`). When one is missing or `STALE`, run `_pre-pr` from that
-step, show the new description, and continue only once the user has seen it.
+step, show the new description, and continue only once the user has seen it. `FAILED` means the
+saved build or test run failed: don't push, fix it first (`_pre-pr`, step 2).
 
 1. **Commit what belongs.** A PR only has commits. When `git status` shows changes that are part
    of the PR (see `scope.md`), stage them by path and commit with a `BIL-<n> <what is true now>`

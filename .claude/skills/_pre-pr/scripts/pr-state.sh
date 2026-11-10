@@ -20,8 +20,10 @@
 #                 add a "- <text>" line to <step>.md, keeping its stamp
 #   read <step>   print <step>.md; exit 1 when missing, 3 when code changed since it was written
 #                 (when only docs changed it prints a note and exits 0)
-#   status        one line per step: ok, docs changed, STALE, missing or not needed; findings is
-#                 ok when none is open and no code changed since the last review snapshot
+#   status        one line per step: ok, docs changed, STALE, FAILED, missing or not needed; findings
+#                 is ok when none is open and no code changed since the last review snapshot; tests
+#                 and integration are FAILED when the saved run failed (exit code, failed count,
+#                 build failure or compiler error), even with the tree unchanged
 #   has-code      read a file list on stdin; exit 0 when it holds code (see Docs below), 1 if not
 #   pin <name> <tree>
 #                 keep a tree from git gc as refs/pre-pr/<branch>/<name> (snapshots and stamps
@@ -182,6 +184,17 @@ case "$COMMAND" in
         case "$(freshness "$(stamp_of "$file")" "$now")" in
           ok) state=ok ;; docs) state="ok (docs changed since)" ;; stale) state="STALE (code changed since)" ;;
         esac
+        # A saved run that failed is not ok: no PR is opened or pushed to with a failing build or test.
+        # Only the lines the step wrote count, not the "- " lines added by note. One awk process, not
+        # grep -v | grep -q: under pipefail an early grep -q exit SIGPIPEs the first grep (141).
+        if [[ "$step" == tests || "$step" == integration ]] && [[ "$state" != STALE* ]] \
+          && awk '!/^- / && tolower($0) ~ /\(exit [1-9][0-9]*\)|failed: *[1-9]|build failed|: error / { f = 1 } END { exit !f }' "$file"; then
+          if [[ "$state" == "ok (docs changed since)" ]]; then
+            state="FAILED (the saved run failed; docs changed since)"
+          else
+            state="FAILED (the saved run failed)"
+          fi
+        fi
       fi
       printf '  %-12s %s\n' "$step" "$state"
     done
