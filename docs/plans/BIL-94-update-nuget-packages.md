@@ -238,8 +238,10 @@ opt-in (decision 17) and replacing the obsolete `HasCount().EqualTo(n)` with `Co
 - TUnit 1.x (read its migration notes), configuration packages, Newtonsoft.Json, container tools,
   `BillerContracts.Clients` 5.0.0; remove System.Collections.Concurrent and what NU1510 names.
 - Package limits in `CLAUDE.md`. Run against the step 2b stack, `--repeat 3`.
-- After it is merged: remove `8.0.x` from the integration job's `setup-dotnet` in Biller's `CI.yaml`
-  (added in round 4, F16, while BillioIntegrationTest master is still `net8.0`).
+- **Done 2026-11-10 (owner), before #27 merged:** `8.0.x` removed again from the integration job's
+  `setup-dotnet` in Biller's `CI.yaml` (added in round 4, F16). So BillioIntegrationTest PR #27 must
+  merge before or together with Biller PR #80: Biller master's CI runs BillioIntegrationTest master,
+  which is `net8.0` until #27 merges, and then has only the .NET 10 SDK.
 
 ### 5. Package limits text (each repo's `CLAUDE.md`)
 - QuestPDF: Community licence only (`LicenseType.Community`). Before an update, check that the

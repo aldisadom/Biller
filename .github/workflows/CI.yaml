@@ -60,11 +60,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          # 8.0.x as well while BillioIntegrationTest master targets net8.0 (BIL-94 step 4 moves it
-          # to net10.0); its testhost needs the .NET 8 runtime. Remove it once that is merged.
-          dotnet-version: |
-            8.0.x
-            ${{ env.DOTNET_VERSION }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Start services
         run: docker compose -f docker-compose.yml up -d --build
