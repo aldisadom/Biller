@@ -1,4 +1,5 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+# The API image. Built by docker-compose.yml (the local stack, Biller's CI and BillioIntegrationTest's CI)
+# and by the _test-stack skill.
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER app
