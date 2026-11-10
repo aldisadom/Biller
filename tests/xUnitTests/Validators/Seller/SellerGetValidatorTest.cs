@@ -1,5 +1,5 @@
 using BillerContracts.Requests.Seller;
-using FluentAssertions;
+using AwesomeAssertions;
 using Validators;
 using Validators.Seller;
 

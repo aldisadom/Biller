@@ -1,5 +1,5 @@
 ﻿using BillerContracts.Requests.Customer;
-using FluentAssertions;
+using AwesomeAssertions;
 using Validators.Customer;
 
 namespace xUnitTests.Validators.Customer;

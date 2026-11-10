@@ -1,6 +1,6 @@
 ﻿using Application.Helpers.NumberToWords;
 using Application.Helpers.PriceToWords;
-using FluentAssertions;
+using AwesomeAssertions;
 using Moq;
 
 namespace xUnitTests.Application.Helpers.PriceToWords;

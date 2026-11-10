@@ -1,6 +1,6 @@
 using BillerContracts.Enums;
 using BillerContracts.Requests;
-using FluentAssertions;
+using AwesomeAssertions;
 using Validators;
 
 namespace xUnitTests.Validators;

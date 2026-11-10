@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 env:
-  DOTNET_VERSION: '8.0.x'
+  DOTNET_VERSION: '10.0.x'
   DOTNET_CONFIGURATION: Release
   TESTS_LOCATION: tests/xUnitTests
   PROJECT_NAME: Billio.sln
@@ -85,9 +85,15 @@ jobs:
         run: |
           dotnet restore BillioIntegrationTest.sln
           dotnet build BillioIntegrationTest.sln --configuration ${{ env.DOTNET_CONFIGURATION }} --no-restore
+          # A BillioIntegrationTest checkout whose global.json opts in to the Microsoft.Testing.Platform
+          # runner (TUnit 1.x, BIL-94) takes --report-trx; an older one still takes VSTest's --logger.
+          if grep -q '"Microsoft.Testing.Platform"' global.json 2>/dev/null; then
+            TRX="--report-trx --report-trx-filename integration-results.trx"
+          else
+            TRX="--logger trx;LogFileName=integration-results.trx"
+          fi
           dotnet test BillioIntegrationTest.sln --configuration ${{ env.DOTNET_CONFIGURATION }} --no-build \
-            --logger "trx;LogFileName=integration-results.trx" \
-            --results-directory ./TestResults
+            $TRX --results-directory ./TestResults
 
       - name: Upload test results
         if: always()

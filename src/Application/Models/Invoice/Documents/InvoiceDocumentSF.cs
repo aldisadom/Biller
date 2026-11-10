@@ -194,7 +194,7 @@ public class InvoiceDocumentSF : IDocument
         container
             .Page(page =>
             {
-                page.DefaultTextStyle(x => x.FontFamily("calibri"));
+                page.DefaultTextStyle(x => x.FontFamily(InvoiceDocumentFont.Family));
                 page.Margin(50);
 
                 page.Header().Element(ComposeHeader);

@@ -3,7 +3,7 @@ using Application.Models;
 using BillerContracts.Requests.Series;
 using BillerContracts.Responses.Series;
 using Domain.Entities;
-using FluentAssertions;
+using AwesomeAssertions;
 using static xUnitTests.Application.MappingProfiles.MappingTestHelper;
 
 namespace xUnitTests.Application.MappingProfiles;

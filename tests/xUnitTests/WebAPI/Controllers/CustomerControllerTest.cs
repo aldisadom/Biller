@@ -5,7 +5,7 @@ using BillerContracts.Enums;
 using BillerContracts.Requests.Customer;
 using BillerContracts.Responses;
 using BillerContracts.Responses.Customer;
-using FluentAssertions;
+using AwesomeAssertions;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
