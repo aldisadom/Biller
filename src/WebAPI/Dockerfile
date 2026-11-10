@@ -1,5 +1,5 @@
 # The API image. Built by docker-compose.yml (the local stack, Biller's CI and BillioIntegrationTest's CI)
-# and by the _test-stack skill.
+# and by the _test-stack skill. Build context: the repo root (docker build -f src/WebAPI/Dockerfile .).
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER app

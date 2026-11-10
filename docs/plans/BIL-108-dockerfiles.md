@@ -42,10 +42,11 @@ Jira: [BIL-108](https://aldisadom.atlassian.net/browse/BIL-108). Epic: BIL-89 (B
    has one and `Dockerfile` otherwise, because `--biller` can point at a branch from before this
    change, whose `Dockerfile` is still the Visual Studio one. The `http`, `https` and
    `IIS Express` profiles stay (F5 and `dotnet run`).
-4. **The Visual Studio container tooling in `WebAPI.csproj` stays** (`DockerDefaultTargetOS`,
-   `DockerfileContext`, `DockerComposeProjectPath`, the `Containers.Tools.Targets` package):
-   `docker-compose.dcproj` in `Billio.sln` uses it too, and whether that compose profile is still
-   wanted is a separate question.
+4. **Only the single-container settings leave `WebAPI.csproj`** (review F3, done in this PR):
+   `DockerfileContext` and `DockerDefaultTargetOS` served only the removed `Docker` profile.
+   `DockerComposeProjectPath` and the `Containers.Tools.Targets` package stay, because Visual
+   Studio's compose project (`docker-compose.dcproj`, which sets its own `DockerTargetOS`) uses them;
+   whether that compose profile is still wanted is a separate question.
 5. **Copy every project file the API references before the restore**: add
    `src/Validators/Validators.csproj` to the API Dockerfile. The restore layer then caches all
    packages, and the warning goes.
@@ -63,6 +64,7 @@ None. BIL-94 (Done) moved these files to .NET 10 and left the fixes to this issu
 - Rename `src/WebAPI/DockerfileLocal` to `src/WebAPI/Dockerfile`; `docker-compose.yml` builds the new
   name; `_test-stack/scripts/test-stack.sh` picks `DockerfileLocal` if the checkout has it, else
   `Dockerfile`.
+- `src/WebAPI/WebAPI.csproj`: remove `DockerfileContext` and `DockerDefaultTargetOS` (decision 4).
 
 ## Step 2: BillioIntegrationTest (branch `BIL-108-dockerfiles`) — done
 
@@ -95,8 +97,8 @@ BillioIntegrationTest builds in Release; the CI YAML parses to one job with `Bui
 ## Out of scope
 
 - Running the integration tests in a container in CI.
-- The Visual Studio compose project (`docker-compose.dcproj`) and its
-  tooling in `WebAPI.csproj`, and BillerFrontEnd's Dockerfile.
+- The Visual Studio compose project (`docker-compose.dcproj`) and the tooling in `WebAPI.csproj` it
+  uses (`DockerComposeProjectPath`, `Containers.Tools.Targets`), and BillerFrontEnd's Dockerfile.
 - Biller's own CI (`CI.yaml`), which already builds BillioIntegrationTest once.
 
 ## Order of work
