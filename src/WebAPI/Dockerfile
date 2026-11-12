@@ -1,4 +1,5 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+# The API image. Built by docker-compose.yml (the local stack, Biller's CI and BillioIntegrationTest's CI)
+# and by the _test-stack skill. Build context: the repo root (docker build -f src/WebAPI/Dockerfile .).
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER app
@@ -8,12 +9,12 @@ EXPOSE 8071
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet workload install wasm-tools
 WORKDIR /src
 COPY ["src/WebAPI/WebAPI.csproj", "src/WebAPI/"]
 COPY ["src/Infrastructure/Infrastructure.csproj", "src/Infrastructure/"]
 COPY ["src/Application/Application.csproj", "src/Application/"]
 COPY ["src/Domain/Domain.csproj", "src/Domain/"]
+COPY ["src/Validators/Validators.csproj", "src/Validators/"]
 RUN dotnet restore "./src/WebAPI/./WebAPI.csproj"
 COPY . .
 WORKDIR "/src/src/WebAPI"

@@ -64,7 +64,11 @@ cmd_up() {
       *) die "unknown option for up: $1" ;;
     esac
   done
-  [[ -f "$biller/src/WebAPI/DockerfileLocal" ]] || die "$biller is not a Biller checkout"
+  # The API Dockerfile is src/WebAPI/Dockerfile since BIL-108. Older checkouts build DockerfileLocal
+  # (their Dockerfile was Visual Studio's, with an unused wasm-tools workload).
+  local dockerfile="$biller/src/WebAPI/Dockerfile"
+  [[ -f "$biller/src/WebAPI/DockerfileLocal" ]] && dockerfile="$biller/src/WebAPI/DockerfileLocal"
+  [[ -f "$dockerfile" ]] || die "$biller is not a Biller checkout"
 
   if docker ps -a --format '{{.Names}}' | grep -qx "$DB\|$API\|$FRONTEND"; then
     die "the test stack is already there. Run: test-stack.sh down"
@@ -87,8 +91,8 @@ cmd_up() {
   echo "$out" | grep -E "Run:|Previously run:|Update has been successful|ERROR"
 
   echo ">> API image"
-  docker build -q -t "$API_IMAGE" -f "$biller/src/WebAPI/DockerfileLocal" "$biller" >/dev/null \
-    || die "API image build failed (run: docker build -f $biller/src/WebAPI/DockerfileLocal $biller)"
+  docker build -q -t "$API_IMAGE" -f "$dockerfile" "$biller" >/dev/null \
+    || die "API image build failed (run: docker build -f $dockerfile $biller)"
   docker run -d --name "$API" --network "$NET" -e ASPNETCORE_ENVIRONMENT=LocalDocker \
     -e ASPNETCORE_HTTP_PORTS=8070 -e ASPNETCORE_HTTPS_PORTS= -v "$biller/Fonts:/Fonts" \
     -p "$API_PORT:8070" "$API_IMAGE" >/dev/null || die "could not start $API"
