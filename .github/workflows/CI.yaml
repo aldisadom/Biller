@@ -55,8 +55,11 @@ jobs:
             TestResults/*/coverage.cobertura.xml
       - name: Coverage gate
         run: |
-          line=$(jq '.summary.linecoverage' coveragereport/Summary.json)
-          branch=$(jq '.summary.branchcoverage' coveragereport/Summary.json)
+          # Numbers only: awk compares a null or missing value as text, and 'null' >= '91.6' is true
+          line=$(jq -e '.summary.linecoverage | numbers' coveragereport/Summary.json) \
+            || { echo "::error::Summary.json has no line coverage number"; exit 1; }
+          branch=$(jq -e '.summary.branchcoverage | numbers' coveragereport/Summary.json) \
+            || { echo "::error::Summary.json has no branch coverage number"; exit 1; }
           echo "Line $line% (minimum $COVERAGE_MIN_LINE%), branch $branch% (minimum $COVERAGE_MIN_BRANCH%)"
           awk -v l="$line" -v b="$branch" -v ml="$COVERAGE_MIN_LINE" -v mb="$COVERAGE_MIN_BRANCH" \
             'BEGIN { exit !(l >= ml && b >= mb) }' || { echo "::error::Coverage is below the minimum"; exit 1; }
