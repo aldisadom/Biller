@@ -49,13 +49,49 @@ if ! grep -q "Build succeeded" <<< "$BUILD"; then
   exit 1
 fi
 
+# The failed tests come from a TRX report: in the console text, log lines can look like failed tests.
+# Relative to the repo, because Windows dotnet.exe can't write to /mnt/... paths.
+TRX_DIR="TestResults/run-integration"
+TRX_FILE="run-integration.trx"
+
+# Print the first 10 failed tests of a TRX report, each with its message and first stack frame.
+failed_tests() {
+python3 -I - "$1" <<'EOF'
+import sys
+import xml.etree.ElementTree as ET
+
+ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
+try:
+    results = ET.parse(sys.argv[1]).getroot().iter(ns + "UnitTestResult")
+except ET.ParseError as error:
+    sys.exit(f"Unreadable TRX report {sys.argv[1]}: {error}")
+# The outcomes of a test that failed, or didn't finish or run.
+failing = ("Failed", "Error", "Timeout", "Aborted", "Disconnected", "NotRunnable", "InProgress")
+failed = [r for r in results if r.get("outcome") in failing]
+for result in failed[:10]:
+    outcome = result.get("outcome")
+    print(f"failed {result.get('testName')}" + ("" if outcome == "Failed" else f" ({outcome})"))
+    message = result.findtext(f"{ns}Output/{ns}ErrorInfo/{ns}Message") or ""
+    stack = result.findtext(f"{ns}Output/{ns}ErrorInfo/{ns}StackTrace") or ""
+    lines = [line.strip() for line in message.splitlines() if line.strip()]
+    frames = [line.strip() for line in stack.splitlines() if line.strip()]
+    # TUnit leaves its own frames out; a package frame, such as the API client's, has no source line.
+    frame = ([f for f in frames if ":line " in f] or frames)[:1]
+    for line in lines[:5] + frame:
+        print("  " + line)
+if len(failed) > 10:
+    print(f"... and {len(failed) - 10} more failed tests")
+EOF
+}
+
 FAILED=0
 for run in $(seq 1 "$REPEAT"); do
-  OUT="$("$DOTNET" test "$SLN" -c Release --no-build 2>&1)"
+  # A report left from the run before must not be read as this run's.
+  rm -rf -- "$TRX_DIR"
+  OUT="$("$DOTNET" test "$SLN" -c Release --no-build \
+    --report-trx --report-trx-filename "$TRX_FILE" --results-directory "$TRX_DIR" 2>&1)"
   CODE=$?
-  # Failed test names with the next lines (assertion, value received and the failing assert), then the totals.
-  # TUnit starts that line with "failed <name>", not indented.
-  grep -E -A4 "^\s*failed " <<< "$OUT" | grep -v "^--$" | head -40
+  if [[ -f "$TRX_DIR/$TRX_FILE" ]]; then failed_tests "$TRX_DIR/$TRX_FILE"; else echo "No TRX report at $REPO/$TRX_DIR/$TRX_FILE"; fi
   TOTALS="$(grep -E "^\s+(total|failed|succeeded|skipped):" <<< "$OUT" | tr -s ' ' | tr '\n' ' ')"
   echo "Run $run/$REPEAT: ${TOTALS:-no summary (see: $DOTNET test $SLN -c Release --no-build)}"
   [[ $CODE -ne 0 ]] && FAILED=1
