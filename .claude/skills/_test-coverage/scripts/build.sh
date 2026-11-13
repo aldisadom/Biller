@@ -3,11 +3,11 @@
 # warnings in files changed against the base branch, so old warnings elsewhere don't hide new ones.
 # Works from WSL (Windows dotnet.exe) or native Linux/CI.
 #
-# Usage: build.sh [repo-dir] [--release] [--base <branch>]
+# Usage: build.sh [repo-dir] [--base <branch>]
 #   repo-dir   any Biller repo (default: this repo); a sibling name such as BillerFrontEnd also works
-#   --release  build Release (default Debug)
 #   --base     branch to compare against for "changed files" (default master)
-# The build is --no-incremental: an incremental build skips unchanged projects and hides their warnings.
+# The build is Release, as CI builds, and --no-incremental: an incremental build skips unchanged
+# projects and hides their warnings.
 # Exit code: the build's exit code.
 set -uo pipefail
 
@@ -16,11 +16,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 PARENT="$(common="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" && dirname "$(dirname "$common")" || dirname "$REPO_ROOT")"
 
 DIR="$REPO_ROOT"
-CONFIG=Debug
+CONFIG=Release
 BASE=master
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --release) CONFIG=Release; shift ;;
     --base) BASE="$2"; shift 2 ;;
     -*) echo "Unknown argument: $1" >&2; exit 2 ;;
     *) if [[ -d "$1" ]]; then DIR="$(cd "$1" && pwd)"; elif [[ -d "$PARENT/$1" ]]; then DIR="$PARENT/$1"; else echo "No such repo: $1" >&2; exit 2; fi; shift ;;

@@ -29,7 +29,9 @@ DOTNET="$(pick dotnet dotnet.exe)" || { echo "ERROR: neither dotnet nor dotnet.e
 RESULTS_DIR="tests/xUnitTests/TestResults/latest"
 rm -rf "$RESULTS_DIR"
 
+# Release, as CI builds: Debug gives other coverage numbers (BIL-106).
 TEST_ARGS=(test tests/xUnitTests/xUnitTests.csproj
+  --configuration Release
   --collect:"XPlat Code Coverage"
   --results-directory "$RESULTS_DIR"
   --logger "trx;LogFileName=results.trx"

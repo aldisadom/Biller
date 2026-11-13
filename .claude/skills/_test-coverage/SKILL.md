@@ -16,11 +16,12 @@ There is no `make test` target; use the bundled script.
 bash .claude/skills/_test-coverage/scripts/run-coverage.sh                  # full suite + report
 bash .claude/skills/_test-coverage/scripts/run-coverage.sh --filter "FullyQualifiedName~ItemService"   # subset
 bash .claude/skills/_test-coverage/scripts/run-coverage.sh --no-report      # tests only, faster
-bash .claude/skills/_test-coverage/scripts/build.sh [repo] [--release]      # build only: errors, warnings in changed files
+bash .claude/skills/_test-coverage/scripts/build.sh [repo]                  # build only: errors, warnings in changed files
 ```
 
-`build.sh` also builds a sibling (`build.sh BillerFrontEnd --release`). It compares against
-`master`, so old warnings elsewhere don't hide new ones.
+Both scripts build Release, as CI does: Debug gives other coverage numbers. `build.sh` also builds a
+sibling (`build.sh BillerFrontEnd`). It compares against `master`, so old warnings elsewhere don't
+hide new ones.
 
 The script picks `dotnet` or, from WSL, Windows `dotnet.exe` / `reportgenerator.exe`
 (`C:\Users\<user>\.dotnet\tools`). It writes results to
@@ -49,8 +50,10 @@ Keep it short and useful:
    If a class that should be covered shows 0%, either it has no test at all or a copy-pasted test
    instantiates the wrong class (e.g. an `Item...` test building an `Invoice...` example). Check
    which, and point it out.
-4. If you made the code change being tested, compare against the previous numbers when you know
-   them, and say whether new code is covered.
+4. If you made the code change being tested, say whether new code is covered, and compare the overall
+   line and branch coverage with `COVERAGE_MIN_LINE` / `COVERAGE_MIN_BRANCH` + 1 in
+   `.github/workflows/CI.yaml` (master's numbers). Coverage never goes down (`CLAUDE.md`): lower means
+   write tests; higher means raise the minimums to the new numbers minus 1 in the same branch.
 
 **Always end with a clickable link to the HTML report.** Use the exact `HTML report:` URL the script
 printed (a `file:///C:/.../coveragereport/index.html` URL on WSL/Windows), formatted as a markdown
@@ -70,7 +73,7 @@ OUT="$(bash .claude/skills/_test-coverage/scripts/run-coverage.sh 2>&1)"; CODE=$
   grep -E 'Passed!|Failed!|Line coverage|Branch coverage|: error ' <<< "$OUT"; } | bash $P write tests
 ```
 
-For a sibling repo, save `build.sh <repo> --release` the same way, with its `Warnings:` and
+For a sibling repo, save `build.sh <repo>` the same way, with its `Warnings:` and
 `Build succeeded.`/`Build FAILED` lines, as `bash $P write <repo> tests`.
 
 ## Writing missing tests

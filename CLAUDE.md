@@ -36,6 +36,10 @@ on a small Linux PC.
   on the branch with Biller's branch name, else on up-to-date master.
 - Working copies on Windows have CRLF line endings (`.gitattributes` stores LF). Change files with
   the Edit tool, which keeps them. Don't rewrite source files with sed or Python scripts.
+- Coverage never goes down. CI fails below `COVERAGE_MIN_LINE` / `COVERAGE_MIN_BRANCH` in
+  `.github/workflows/CI.yaml`, which are master's coverage minus 1 point (Release, Infrastructure left
+  out). After each PR's CI run, compare its numbers with the minimums + 1: lower means add tests in the
+  same PR; higher means raise the minimums in the same PR to the new numbers minus 1. Never lower a minimum.
 
 ## Non-goals
 - No ORM.
@@ -64,6 +68,7 @@ Every Biller repo has these limits. Keep them when updating packages.
 ## Commands
 - Tests and coverage: `bash .claude/skills/_test-coverage/scripts/run-coverage.sh`
 - Build any repo, warnings in changed files only: `bash .claude/skills/_test-coverage/scripts/build.sh [repo]`
+- Both build Release only, as CI does: Debug gives other coverage numbers.
 - Throwaway stack and integration tests: the `_test-stack` skill (`test-stack.sh up`, `run-integration.sh`, `test-stack.sh down`).
 - The user's local stack: `docker compose up -d --build` (Swagger at http://localhost:8090/swagger, DB on port 5437). Don't use it for tests.
 
