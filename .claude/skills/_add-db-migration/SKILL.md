@@ -77,6 +77,8 @@ description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQ
    own Postgres. `test-stack.sh up --seed`, then `test-stack.sh rollback-check --table <table>`
    rolls the changeset back on a table with rows, prints `\d <table>` before and after, and runs
    `update` again. `test-stack.sh down` when done. This doesn't touch the user's local DB.
+   In a worktree, or while another feature's stack may be running, put
+   `TEST_STACK_NAME=<lowercase branch key>` on each of these commands, so it uses its own stack.
 
    **Or apply locally (ask first, it changes the user's local DB)**:
    `docker compose run --rm liquibase` starts the db and runs `liquibase update`, printing each

@@ -19,6 +19,23 @@ name: `TEST_STACK_NAME=<name>`, such as the branch's key `bil-101`, on **every**
 `up` and `status` print the ports, and `run-integration.sh` finds the API's port by itself. Without
 a name, a command works on the unnamed stack on the fixed ports.
 
+The integration tests need a BillioIntegrationTest checkout per stack when stacks test at the same
+time: two runs on one checkout share its `bin`/`obj` and its branch, so the second run waits for the
+first. Give each feature a worktree at the commit CI will test, and pass it with `--repo`. The
+paths start from the folder that holds the repos, so they also work from a Biller worktree:
+
+```bash
+R="$(dirname "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")")"   # holds the repos
+git -C "$R/BillioIntegrationTest" fetch
+git -C "$R/BillioIntegrationTest" worktree add --detach "$R/BillioIntegrationTest-bil-101" origin/BIL-101-<slug>   # or origin/master
+```
+
+`--detach` works even when another checkout has that branch. `_sync-repos` doesn't update the
+worktree, so before each run fetch and `git -C "$R/BillioIntegrationTest-bil-101" checkout --detach
+origin/<branch>`. The run's first line names the checkout, branch and commit it tested. To write
+tests there, add the worktree on the branch itself instead (no `--detach`; no other checkout may
+have it). Remove it when done: `git -C "$R/BillioIntegrationTest" worktree remove <path>`.
+
 ## Run it
 
 ```bash
@@ -52,15 +69,21 @@ the BillioIntegrationTest branch named there, so put the local checkout on that 
 (`_sync-repos`). Then save the result for the PR description:
 
 ```bash
+S=.claude/skills/_test-stack/scripts
 P=.claude/skills/_pre-pr/scripts/pr-state.sh
+R="$(dirname "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")")"   # holds the repos
+I=""   # this feature's own BillioIntegrationTest worktree ("$R/BillioIntegrationTest-bil-101"); empty: the main checkout
+# A stack named after the branch's key (bil-101), so it can't touch another feature's stack
+export TEST_STACK_NAME="$(git branch --show-current | grep -oiE '^bil-[0-9]+' | tr 'A-Z' 'a-z')"
 if bash $S/test-stack.sh up; then
-  OUT="$(bash $S/run-integration.sh --repeat 3 2>&1)"; CODE=$?; echo "$OUT"
+  OUT="$(bash $S/run-integration.sh --repeat 3 ${I:+--repo "$I"} 2>&1)"; CODE=$?; echo "$OUT"
   bash $S/test-stack.sh down
-  { echo "BillioIntegrationTest branch: $(git -C ../BillioIntegrationTest branch --show-current)"
-    echo "Command: run-integration.sh --repeat 3 (exit $CODE)"
-    grep -E '^Run [0-9]+/[0-9]+|Build FAILED' <<< "$OUT"; } | bash $P write integration
+  # The '>> <sln> in' line names the BillioIntegrationTest checkout, branch and commit that ran;
+  # ERROR and compile error lines say why a run stopped early
+  { echo "Command: ${TEST_STACK_NAME:+TEST_STACK_NAME=$TEST_STACK_NAME }run-integration.sh --repeat 3${I:+ --repo $I} (exit $CODE)"
+    grep -E '^>> .*\.sln in |^Run [0-9]+/[0-9]+|^ERROR: | error [A-Z]*[0-9]*:|Build FAILED' <<< "$OUT"; } | bash $P write integration
 else
-  echo "test-stack.sh up failed: nothing saved. Fix the error, run test-stack.sh down, then run this again."
+  echo "test-stack.sh up failed: nothing saved. Fix the error, run TEST_STACK_NAME=$TEST_STACK_NAME test-stack.sh down, then run this again."
 fi
 ```
 

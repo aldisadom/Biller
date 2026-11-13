@@ -52,11 +52,16 @@ POSTGRES_IMAGE=postgres:16
 
 port_in_use() { ss -ltn 2>/dev/null | grep -qE "[:.]$1\s"; }
 
-# The host port Docker published a container's port on: host_port <container> <port>.
-host_port() { docker port "$1" "$2" 2>/dev/null | head -n1 | sed 's/.*://'; }
+# Where Docker published a container's port on this host, as host:port: host_addr <container> <port>.
+# Docker can give the IPv4 and IPv6 bindings different random ports, so take the IPv4 one if there is one.
+host_addr() {
+  local bindings; bindings="$(docker port "$1" "$2" 2>/dev/null)"
+  { grep -m1 '^0\.0\.0\.0:' <<< "$bindings" || head -n1 <<< "$bindings"; } \
+    | sed 's/^0\.0\.0\.0:/127.0.0.1:/; s/^\[::\]:/localhost:/'
+}
 
 # The API's URL, or nothing when its container isn't running.
-api_url() { local port; port="$(host_port "$API" 8070)"; [[ -n "$port" ]] && echo "http://localhost:$port"; }
+api_url() { local addr; addr="$(host_addr "$API" 8070)"; [[ -n "$addr" ]] && echo "http://$addr"; }
 
 # This stack's containers that exist, one name per line.
 stack_containers() { docker ps -a --format '{{.Names}}' | grep -x "$DB\|$API\|$FRONTEND"; }
@@ -122,8 +127,9 @@ cmd_up() {
     -e ASPNETCORE_HTTP_PORTS=8070 -e ASPNETCORE_HTTPS_PORTS= -v "$biller/Fonts:/Fonts" \
     -p "${API_PORT:+$API_PORT:}8070" "$API_IMAGE" >/dev/null || die "could not start $API"
   API_URL="$(api_url)"
+  [[ -n "$API_URL" ]] || { docker logs --tail 30 "$API"; die "$API stopped right after it started. Run: $SELF down, then up again"; }
   wait_for 60 curl -sf "$API_URL/health" || { docker logs --tail 30 "$API"; die "API did not answer $API_URL/health"; }
-  echo "API: $API_URL (Swagger $API_URL/swagger), DB: localhost:$(host_port "$DB" 5432)"
+  echo "API: $API_URL (Swagger $API_URL/swagger), DB: $(host_addr "$DB" 5432)"
 
   if [[ $frontend -eq 1 ]]; then
     echo ">> Front end from $frontend_repo ($(git -C "$frontend_repo" branch --show-current))"
@@ -137,7 +143,7 @@ cmd_up() {
       -e "ClientsOptions__InvoiceUrl=$inner/invoices" -e "ClientsOptions__SeriesUrl=$inner/series" \
       -p "${FRONTEND_PORT:+$FRONTEND_PORT:}8080" "$FRONTEND_IMAGE" >/dev/null \
       || die "could not start $FRONTEND"
-    local frontend_url; frontend_url="http://localhost:$(host_port "$FRONTEND" 8080)"
+    local frontend_url; frontend_url="http://$(host_addr "$FRONTEND" 8080)"
     wait_for 60 curl -s -o /dev/null "$frontend_url/" || die "front end did not answer"
     echo "Front end: $frontend_url"
   fi
