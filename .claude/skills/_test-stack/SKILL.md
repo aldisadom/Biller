@@ -12,6 +12,30 @@ against it. The integration tests delete **all** data through the API.
 This stack has its own network, containers (`biller-test-*`) and ports: API 8091, DB 5439, front
 end 8092. Change them with `TEST_STACK_API_PORT`, `TEST_STACK_DB_PORT` and `TEST_STACK_FRONTEND_PORT`.
 
+To run several stacks at once (a worktree each, or agents working in parallel), give each one a
+name: `TEST_STACK_NAME=<name>`, such as the branch's key `bil-101`, on **every** `test-stack.sh`,
+`run-integration.sh` and `render-page.sh` command for it. Its containers, network and images are then
+`biller-test-<name>-*`, and Docker picks free ports unless the `TEST_STACK_*_PORT` variables set them.
+`up` and `status` print the ports, and `run-integration.sh` finds the API's port by itself. Without
+a name, a command works on the unnamed stack on the fixed ports.
+
+The integration tests need a BillioIntegrationTest checkout per stack when stacks test at the same
+time: two runs on one checkout share its `bin`/`obj` and its branch, so the second run waits for the
+first. Give each feature a worktree at the commit CI will test, and pass it with `--repo`. The
+paths start from the folder that holds the repos, so they also work from a Biller worktree:
+
+```bash
+R="$(dirname "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")")"   # holds the repos
+git -C "$R/BillioIntegrationTest" fetch
+git -C "$R/BillioIntegrationTest" worktree add --detach "$R/BillioIntegrationTest-bil-101" origin/BIL-101-<slug>   # or origin/master
+```
+
+`--detach` works even when another checkout has that branch. `_sync-repos` doesn't update the
+worktree, so before each run fetch and `git -C "$R/BillioIntegrationTest-bil-101" checkout --detach
+origin/<branch>`. The run's first line names the checkout, branch and commit it tested. To write
+tests there, add the worktree on the branch itself instead (no `--detach`; no other checkout may
+have it). Remove it when done: `git -C "$R/BillioIntegrationTest" worktree remove <path>`.
+
 ## Run it
 
 ```bash
@@ -22,6 +46,9 @@ bash $S/run-integration.sh --repeat 3        # BillioIntegrationTest against it,
 bash $S/test-stack.sh rollback-check --table invoices   # last changeset: roll back, \d, update again
 bash $S/render-page.sh http://localhost:8092/invoices/update/<invoice id>
 bash $S/test-stack.sh down                    # always, when done
+TEST_STACK_NAME=bil-101 bash $S/test-stack.sh up   # a second stack next to the first
+TEST_STACK_NAME=bil-101 bash $S/run-integration.sh --repeat 3
+TEST_STACK_NAME=bil-101 bash $S/test-stack.sh down
 ```
 
 - `up` builds the API image from the checkout's working tree, so uncommitted changes are included.
@@ -42,27 +69,34 @@ the BillioIntegrationTest branch named there, so put the local checkout on that 
 (`_sync-repos`). Then save the result for the PR description:
 
 ```bash
+S=.claude/skills/_test-stack/scripts
 P=.claude/skills/_pre-pr/scripts/pr-state.sh
+R="$(dirname "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")")"   # holds the repos
+I=""   # this feature's own BillioIntegrationTest worktree ("$R/BillioIntegrationTest-bil-101"); empty: the main checkout
+# A stack named after the branch's key (bil-101), so it can't touch another feature's stack
+export TEST_STACK_NAME="$(git branch --show-current | grep -oiE '^bil-[0-9]+' | tr 'A-Z' 'a-z')"
 if bash $S/test-stack.sh up; then
-  OUT="$(bash $S/run-integration.sh --repeat 3 2>&1)"; CODE=$?; echo "$OUT"
+  OUT="$(bash $S/run-integration.sh --repeat 3 ${I:+--repo "$I"} 2>&1)"; CODE=$?; echo "$OUT"
   bash $S/test-stack.sh down
-  { echo "BillioIntegrationTest branch: $(git -C ../BillioIntegrationTest branch --show-current)"
-    echo "Command: run-integration.sh --repeat 3 (exit $CODE)"
-    grep -E '^Run [0-9]+/[0-9]+|Build FAILED' <<< "$OUT"; } | bash $P write integration
+  # The '>> <sln> in' line names the BillioIntegrationTest checkout, branch and commit that ran;
+  # ERROR and compile error lines say why a run stopped early
+  { echo "Command: ${TEST_STACK_NAME:+TEST_STACK_NAME=$TEST_STACK_NAME }run-integration.sh --repeat 3${I:+ --repo $I} (exit $CODE)"
+    grep -E '^>> .*\.sln in |^Run [0-9]+/[0-9]+|^ERROR: | error [A-Z]*[0-9]*:|Build FAILED' <<< "$OUT"; } | bash $P write integration
 else
-  echo "test-stack.sh up failed: nothing saved. Fix the error, run test-stack.sh down, then run this again."
+  echo "test-stack.sh up failed: nothing saved. Fix the error, run TEST_STACK_NAME=$TEST_STACK_NAME test-stack.sh down, then run this again."
 fi
 ```
 
 Run the tests only when `up` succeeded. When it fails ("the test stack is already there", a build
-or migration error), an older stack may still answer on port 8091, and the tests would pass for code
-that isn't in it.
+or migration error), an older stack with the same name may still be running, and the tests would
+pass for code that isn't in it.
 
 ## When done
 
-Run `test-stack.sh down`, even after a failure, then check `docker ps -a` shows no `biller-test-*`
-container. Paste the result lines of each command (the `Run n/N` lines, the Liquibase lines, the
-page values). Don't say something passed without them.
+Run `test-stack.sh down` (with the same `TEST_STACK_NAME`), even after a failure, then check
+`docker ps -a` shows none of your stack's containers. A `biller-test-<name>-*` stack with another
+name may belong to another agent; leave it alone. Paste the result lines of each command (the
+`Run n/N` lines, the Liquibase lines, the page values). Don't say something passed without them.
 
 Containers you start yourself (a throwaway Postgres, the API) get removed with their volumes too:
 `docker rm -f -v <name>`, or start them with `docker run --rm`. Plain `docker rm` leaves the
