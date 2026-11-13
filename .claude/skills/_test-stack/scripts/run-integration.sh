@@ -53,8 +53,9 @@ FAILED=0
 for run in $(seq 1 "$REPEAT"); do
   OUT="$("$DOTNET" test "$SLN" -c Release --no-build 2>&1)"
   CODE=$?
-  # Failed test names with the next lines (assertion and first stack frame), then the totals.
-  grep -E -A3 "^\s+failed " <<< "$OUT" | grep -v "^--$" | head -40
+  # Failed test names with the next lines (assertion, value received and the failing assert), then the totals.
+  # TUnit starts that line with "failed <name>", not indented.
+  grep -E -A4 "^\s*failed " <<< "$OUT" | grep -v "^--$" | head -40
   TOTALS="$(grep -E "^\s+(total|failed|succeeded|skipped):" <<< "$OUT" | tr -s ' ' | tr '\n' ' ')"
   echo "Run $run/$REPEAT: ${TOTALS:-no summary (see: $DOTNET test $SLN -c Release --no-build)}"
   [[ $CODE -ne 0 ]] && FAILED=1
