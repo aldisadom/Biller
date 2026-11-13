@@ -10,6 +10,7 @@ Failure here looks like:
 - A validator or ownership check always passes or always fails.
 - A test passes whatever the code does (wrong class under test, missing `Verify`, expected value copied from the output).
 - A mapping library (AutoMapper or similar) is added, or a mapping method misses a property.
+- `COVERAGE_MIN_LINE` or `COVERAGE_MIN_BRANCH` in `.github/workflows/CI.yaml` is lowered (coverage never goes down, see `CLAUDE.md`).
 
 Don't report races that need concurrent requests on the same customer, series or invoice: there is
 one owner and at most about 1 request per second per customer (see `CLAUDE.md`). Don't ask for

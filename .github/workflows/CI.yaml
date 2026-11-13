@@ -11,6 +11,10 @@ env:
   DOTNET_CONFIGURATION: Release
   TESTS_LOCATION: tests/xUnitTests
   PROJECT_NAME: Billio.sln
+  # Master's coverage minus 1 point (Infrastructure left out). After each PR, raise them when coverage
+  # went up; never lower them (CLAUDE.md, Conventions).
+  COVERAGE_MIN_LINE: 91.6
+  COVERAGE_MIN_BRANCH: 84.4
 
 jobs:
   build:
@@ -35,7 +39,30 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Run tests
         run: |
-          dotnet test --configuration ${{ env.DOTNET_CONFIGURATION }} ${{ env.TESTS_LOCATION }} /p:CollectCoverage=true /p:CoverletOutputFormat="opencover"
+          dotnet test --configuration ${{ env.DOTNET_CONFIGURATION }} ${{ env.TESTS_LOCATION }} --collect "XPlat Code Coverage" --results-directory TestResults
+      - name: Coverage report
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool --version 5.5.12
+          reportgenerator -reports:"TestResults/*/coverage.cobertura.xml" -targetdir:coveragereport \
+            "-reporttypes:Html;MarkdownSummaryGithub;JsonSummary" "-assemblyfilters:-Infrastructure"
+          grep -v 'reportgenerator.io/pro' coveragereport/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coveragereport
+            TestResults/*/coverage.cobertura.xml
+      - name: Coverage gate
+        run: |
+          # Numbers only: awk compares a null or missing value as text, and 'null' >= '91.6' is true
+          line=$(jq -e '.summary.linecoverage | numbers' coveragereport/Summary.json) \
+            || { echo "::error::Summary.json has no line coverage number"; exit 1; }
+          branch=$(jq -e '.summary.branchcoverage | numbers' coveragereport/Summary.json) \
+            || { echo "::error::Summary.json has no branch coverage number"; exit 1; }
+          echo "Line $line% (minimum $COVERAGE_MIN_LINE%), branch $branch% (minimum $COVERAGE_MIN_BRANCH%)"
+          awk -v l="$line" -v b="$branch" -v ml="$COVERAGE_MIN_LINE" -v mb="$COVERAGE_MIN_BRANCH" \
+            'BEGIN { exit !(l >= ml && b >= mb) }' || { echo "::error::Coverage is below the minimum"; exit 1; }
 
   integration-tests:
     name: Integration tests
