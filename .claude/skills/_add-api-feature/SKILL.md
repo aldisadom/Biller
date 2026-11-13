@@ -212,7 +212,9 @@ tests show which files a feature needs. A new resource needs:
    The tests delete all data through the API first. `test-stack.sh down` when done. New endpoints
    need integration tests on a branch with the same name in BillioIntegrationTest; CI uses that
    branch. The user's own stack (`docker compose up -d --build`, port 8090) is theirs; ask before
-   using it.
+   using it. In a worktree, or while another feature's stack may be running, put
+   `TEST_STACK_NAME=<lowercase branch key>` (e.g. `bil-90`) on every `test-stack.sh` and
+   `run-integration.sh` command, so each feature gets its own stack and ports.
 3. Summarize for the user: the files touched per layer, the migration name, the plan steps that are
    done and any that are left, and any pending
    BillerContracts publish/version bump, including a reminder if the temporary ProjectReference is

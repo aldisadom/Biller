@@ -12,6 +12,13 @@ against it. The integration tests delete **all** data through the API.
 This stack has its own network, containers (`biller-test-*`) and ports: API 8091, DB 5439, front
 end 8092. Change them with `TEST_STACK_API_PORT`, `TEST_STACK_DB_PORT` and `TEST_STACK_FRONTEND_PORT`.
 
+To run several stacks at once (a worktree each, or agents working in parallel), give each one a
+name: `TEST_STACK_NAME=<name>`, such as the branch's key `bil-101`, on **every** `test-stack.sh`,
+`run-integration.sh` and `render-page.sh` command for it. Its containers, network and images are then
+`biller-test-<name>-*`, and Docker picks free ports unless the `TEST_STACK_*_PORT` variables set them.
+`up` and `status` print the ports, and `run-integration.sh` finds the API's port by itself. Without
+a name, a command works on the unnamed stack on the fixed ports.
+
 ## Run it
 
 ```bash
@@ -22,6 +29,9 @@ bash $S/run-integration.sh --repeat 3        # BillioIntegrationTest against it,
 bash $S/test-stack.sh rollback-check --table invoices   # last changeset: roll back, \d, update again
 bash $S/render-page.sh http://localhost:8092/invoices/update/<invoice id>
 bash $S/test-stack.sh down                    # always, when done
+TEST_STACK_NAME=bil-101 bash $S/test-stack.sh up   # a second stack next to the first
+TEST_STACK_NAME=bil-101 bash $S/run-integration.sh --repeat 3
+TEST_STACK_NAME=bil-101 bash $S/test-stack.sh down
 ```
 
 - `up` builds the API image from the checkout's working tree, so uncommitted changes are included.
@@ -55,14 +65,15 @@ fi
 ```
 
 Run the tests only when `up` succeeded. When it fails ("the test stack is already there", a build
-or migration error), an older stack may still answer on port 8091, and the tests would pass for code
-that isn't in it.
+or migration error), an older stack with the same name may still be running, and the tests would
+pass for code that isn't in it.
 
 ## When done
 
-Run `test-stack.sh down`, even after a failure, then check `docker ps -a` shows no `biller-test-*`
-container. Paste the result lines of each command (the `Run n/N` lines, the Liquibase lines, the
-page values). Don't say something passed without them.
+Run `test-stack.sh down` (with the same `TEST_STACK_NAME`), even after a failure, then check
+`docker ps -a` shows none of your stack's containers. A `biller-test-<name>-*` stack with another
+name may belong to another agent; leave it alone. Paste the result lines of each command (the
+`Run n/N` lines, the Liquibase lines, the page values). Don't say something passed without them.
 
 Containers you start yourself (a throwaway Postgres, the API) get removed with their volumes too:
 `docker rm -f -v <name>`, or start them with `docker run --rm`. Plain `docker rm` leaves the

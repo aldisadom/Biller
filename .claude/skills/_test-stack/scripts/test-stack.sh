@@ -13,29 +13,53 @@
 #   status     show the stack's containers and whether the API answers
 #   down       remove the containers, their volumes, the network and the images
 # Ports: TEST_STACK_API_PORT (8091), TEST_STACK_DB_PORT (5439), TEST_STACK_FRONTEND_PORT (8092).
+# More stacks at once: TEST_STACK_NAME=<name> (lowercase letters, digits and -) on every command, and
+#   on run-integration.sh. The stack's containers are biller-test-<name>-*, and Docker picks free ports
+#   for the ones the TEST_STACK_*_PORT variables don't set. `up` and `status` print them.
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 # The siblings sit next to the main checkout, also when this runs from a worktree inside it
 PARENT="$(common="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" && dirname "$(dirname "$common")" || dirname "$REPO_ROOT")"
 
-API_PORT="${TEST_STACK_API_PORT:-8091}"
-DB_PORT="${TEST_STACK_DB_PORT:-5439}"
-FRONTEND_PORT="${TEST_STACK_FRONTEND_PORT:-8092}"
-API_URL="http://localhost:$API_PORT"
+die() { echo "ERROR: $*" >&2; exit 1; }
 
-NET=biller-test-net
-DB=biller-test-db
-API=biller-test-api
-FRONTEND=biller-test-frontend
-API_IMAGE=biller-test-api
-FRONTEND_IMAGE=biller-test-frontend
+NAME="${TEST_STACK_NAME:-}"
+[[ -z "$NAME" || "$NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "TEST_STACK_NAME may have only lowercase letters, digits and -: $NAME"
+# How to run this script again for the same stack, for the messages.
+SELF="${NAME:+TEST_STACK_NAME=$NAME }test-stack.sh"
+
+# An empty port lets Docker pick a free one, so named stacks don't clash.
+if [[ -n "$NAME" ]]; then
+  API_PORT="${TEST_STACK_API_PORT:-}"
+  DB_PORT="${TEST_STACK_DB_PORT:-}"
+  FRONTEND_PORT="${TEST_STACK_FRONTEND_PORT:-}"
+else
+  API_PORT="${TEST_STACK_API_PORT:-8091}"
+  DB_PORT="${TEST_STACK_DB_PORT:-5439}"
+  FRONTEND_PORT="${TEST_STACK_FRONTEND_PORT:-8092}"
+fi
+
+PREFIX="biller-test${NAME:+-$NAME}"
+NET="$PREFIX-net"
+DB="$PREFIX-db"
+API="$PREFIX-api"
+FRONTEND="$PREFIX-frontend"
+API_IMAGE="$PREFIX-api"
+FRONTEND_IMAGE="$PREFIX-frontend"
 LIQUIBASE_IMAGE=liquibase/liquibase:4.26.0
 POSTGRES_IMAGE=postgres:16
 
-die() { echo "ERROR: $*" >&2; exit 1; }
-
 port_in_use() { ss -ltn 2>/dev/null | grep -qE "[:.]$1\s"; }
+
+# The host port Docker published a container's port on: host_port <container> <port>.
+host_port() { docker port "$1" "$2" 2>/dev/null | head -n1 | sed 's/.*://'; }
+
+# The API's URL, or nothing when its container isn't running.
+api_url() { local port; port="$(host_port "$API" 8070)"; [[ -n "$port" ]] && echo "http://localhost:$port"; }
+
+# This stack's containers that exist, one name per line.
+stack_containers() { docker ps -a --format '{{.Names}}' | grep -x "$DB\|$API\|$FRONTEND"; }
 
 wait_for() { # <seconds> <command...>
   local seconds="$1"; shift
@@ -70,19 +94,20 @@ cmd_up() {
   [[ -f "$biller/src/WebAPI/DockerfileLocal" ]] && dockerfile="$biller/src/WebAPI/DockerfileLocal"
   [[ -f "$dockerfile" ]] || die "$biller is not a Biller checkout"
 
-  if docker ps -a --format '{{.Names}}' | grep -qx "$DB\|$API\|$FRONTEND"; then
-    die "the test stack is already there. Run: test-stack.sh down"
+  if [[ -n "$(stack_containers)" ]]; then
+    die "the test stack $PREFIX is already there. Run: $SELF down"
   fi
   for port in "$API_PORT" "$DB_PORT"; do
-    port_in_use "$port" && die "port $port is in use. Set TEST_STACK_API_PORT / TEST_STACK_DB_PORT"
+    [[ -n "$port" ]] && port_in_use "$port" && die "port $port is in use. Set TEST_STACK_API_PORT / TEST_STACK_DB_PORT, or TEST_STACK_NAME"
   done
-  [[ $frontend -eq 1 ]] && port_in_use "$FRONTEND_PORT" && die "port $FRONTEND_PORT is in use. Set TEST_STACK_FRONTEND_PORT"
+  [[ $frontend -eq 1 && -n "$FRONTEND_PORT" ]] && port_in_use "$FRONTEND_PORT" \
+    && die "port $FRONTEND_PORT is in use. Set TEST_STACK_FRONTEND_PORT, or TEST_STACK_NAME"
 
-  echo ">> Biller from $biller ($(git -C "$biller" branch --show-current))"
+  echo ">> $PREFIX: Biller from $biller ($(git -C "$biller" branch --show-current))"
   docker network create "$NET" >/dev/null || die "could not create network $NET"
   docker run -d --name "$DB" --network "$NET" --network-alias db --label "biller-test.biller=$biller" \
     -e POSTGRES_DB=Data -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
-    -p "$DB_PORT:5432" "$POSTGRES_IMAGE" >/dev/null || die "could not start $DB"
+    -p "${DB_PORT:+$DB_PORT:}5432" "$POSTGRES_IMAGE" >/dev/null || die "could not start $DB"
   wait_for 60 docker exec "$DB" pg_isready -U postgres -d Data || die "Postgres did not start"
 
   echo ">> Migrations"
@@ -95,9 +120,10 @@ cmd_up() {
     || die "API image build failed (run: docker build -f $dockerfile $biller)"
   docker run -d --name "$API" --network "$NET" -e ASPNETCORE_ENVIRONMENT=LocalDocker \
     -e ASPNETCORE_HTTP_PORTS=8070 -e ASPNETCORE_HTTPS_PORTS= -v "$biller/Fonts:/Fonts" \
-    -p "$API_PORT:8070" "$API_IMAGE" >/dev/null || die "could not start $API"
+    -p "${API_PORT:+$API_PORT:}8070" "$API_IMAGE" >/dev/null || die "could not start $API"
+  API_URL="$(api_url)"
   wait_for 60 curl -sf "$API_URL/health" || { docker logs --tail 30 "$API"; die "API did not answer $API_URL/health"; }
-  echo "API: $API_URL (Swagger $API_URL/swagger), DB: localhost:$DB_PORT"
+  echo "API: $API_URL (Swagger $API_URL/swagger), DB: localhost:$(host_port "$DB" 5432)"
 
   if [[ $frontend -eq 1 ]]; then
     echo ">> Front end from $frontend_repo ($(git -C "$frontend_repo" branch --show-current))"
@@ -109,14 +135,15 @@ cmd_up() {
       -e "ClientsOptions__UserUrl=$inner/users" -e "ClientsOptions__SellerUrl=$inner/sellers" \
       -e "ClientsOptions__CustomerUrl=$inner/customers" -e "ClientsOptions__ItemUrl=$inner/items" \
       -e "ClientsOptions__InvoiceUrl=$inner/invoices" -e "ClientsOptions__SeriesUrl=$inner/series" \
-      -p "$FRONTEND_PORT:8080" "$FRONTEND_IMAGE" >/dev/null \
+      -p "${FRONTEND_PORT:+$FRONTEND_PORT:}8080" "$FRONTEND_IMAGE" >/dev/null \
       || die "could not start $FRONTEND"
-    wait_for 60 curl -s -o /dev/null "http://localhost:$FRONTEND_PORT/" || die "front end did not answer"
-    echo "Front end: http://localhost:$FRONTEND_PORT"
+    local frontend_url; frontend_url="http://localhost:$(host_port "$FRONTEND" 8080)"
+    wait_for 60 curl -s -o /dev/null "$frontend_url/" || die "front end did not answer"
+    echo "Front end: $frontend_url"
   fi
 
   [[ $seed -eq 1 ]] && cmd_seed
-  echo "Remove it when done: bash ${BASH_SOURCE[0]} down"
+  echo "Remove it when done: ${NAME:+TEST_STACK_NAME=$NAME }bash ${BASH_SOURCE[0]} down"
 }
 
 post() { # <path> <json>; prints the new id
@@ -125,7 +152,9 @@ post() { # <path> <json>; prints the new id
 }
 
 cmd_seed() {
-  curl -sf "$API_URL/health" >/dev/null || die "the API at $API_URL does not answer. Run: test-stack.sh up"
+  API_URL="$(api_url)"
+  [[ -n "$API_URL" ]] && curl -sf "$API_URL/health" >/dev/null \
+    || die "the API of $PREFIX${API_URL:+ at $API_URL} does not answer. Run: $SELF up"
   local tag user seller series customer item invoice today due
   tag="$(date +%s)"
   today="$(date +%F)"; due="$(date -d '+14 days' +%F)"
@@ -153,7 +182,7 @@ cmd_rollback_check() {
     esac
   done
   local biller; biller="$(stack_biller)"
-  [[ -n "$biller" ]] || die "the test stack is not running. Run: test-stack.sh up"
+  [[ -n "$biller" ]] || die "the test stack $PREFIX is not running. Run: $SELF up"
   describe() { [[ -n "$table" ]] && { echo "-- \\d $table ($1)"; docker exec "$DB" psql -U postgres -d Data -c "\\d $table" | sed -n '1,/^Indexes:/p'; }; }
 
   describe "before"
@@ -169,10 +198,13 @@ cmd_rollback_check() {
 }
 
 cmd_status() {
-  docker ps -a --filter "name=biller-test-" --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'
+  docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E "^($DB|$API|$FRONTEND)\s"
   local biller; biller="$(stack_biller)"
   [[ -n "$biller" ]] && echo "Built from: $biller"
-  if curl -sf "$API_URL/health" >/dev/null 2>&1; then echo "API: $API_URL answers"; else echo "API: $API_URL does not answer"; fi
+  local url; url="$(api_url)"
+  if [[ -z "$url" ]]; then echo "API: $API is not running"
+  elif curl -sf "$url/health" >/dev/null 2>&1; then echo "API: $url answers"
+  else echo "API: $url does not answer"; fi
 }
 
 cmd_down() {
@@ -183,9 +215,9 @@ cmd_down() {
   for image in "$API_IMAGE" "$FRONTEND_IMAGE"; do
     docker image inspect "$image" >/dev/null 2>&1 && docker rmi "$image" >/dev/null && echo "removed image $image"
   done
-  local left; left="$(docker ps -a -q --filter "name=biller-test-")"
+  local left; left="$(stack_containers)"
   [[ -z "$left" ]] || die "containers are left: $left"
-  echo "Test stack removed."
+  echo "Test stack $PREFIX removed."
 }
 
 command="${1:-}"; [[ $# -gt 0 ]] && shift
@@ -195,5 +227,5 @@ case "$command" in
   rollback-check) cmd_rollback_check "$@" ;;
   status) cmd_status ;;
   down) cmd_down ;;
-  *) sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

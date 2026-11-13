@@ -2,7 +2,7 @@
 # Run BillioIntegrationTest against any Biller API and print only the result lines.
 #
 # Usage: run-integration.sh [--url URL] [--repeat N] [--repo DIR]
-#   --url     API base URL (default: the test stack, http://localhost:${TEST_STACK_API_PORT:-8091})
+#   --url     API base URL (default: the test stack's API, or with TEST_STACK_NAME that named stack's)
 #   --repeat  run the suite N times (default 1). The tests run in parallel, so repeats catch races
 #   --repo    BillioIntegrationTest checkout (default: ../BillioIntegrationTest)
 # The tests delete ALL data through the API first. Never point --url at production.
@@ -13,7 +13,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 # The siblings sit next to the main checkout, also when this runs from a worktree inside it
 PARENT="$(common="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" && dirname "$(dirname "$common")" || dirname "$REPO_ROOT")"
 
-URL="http://localhost:${TEST_STACK_API_PORT:-8091}"
+URL=""
 REPEAT=1
 REPO="$PARENT/BillioIntegrationTest"
 while [[ $# -gt 0 ]]; do
@@ -24,6 +24,14 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
+
+# The test stack's API on the port Docker published it on (test-stack.sh names its containers so).
+if [[ -z "$URL" ]]; then
+  API="biller-test${TEST_STACK_NAME:+-$TEST_STACK_NAME}-api"
+  PORT="$(docker port "$API" 8070 2>/dev/null | head -n1 | sed 's/.*://')"
+  [[ -n "$PORT" ]] || { echo "ERROR: $API is not running. Run test-stack.sh up, or pass --url" >&2; exit 2; }
+  URL="http://localhost:$PORT"
+fi
 
 pick() { for c in "$@"; do command -v "$c" >/dev/null 2>&1 && { echo "$c"; return 0; }; done; return 1; }
 DOTNET="$(pick dotnet dotnet.exe)" || { echo "ERROR: neither dotnet nor dotnet.exe found on PATH" >&2; exit 2; }
