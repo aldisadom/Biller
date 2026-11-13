@@ -17,7 +17,7 @@ CODE="$(curl -s -o "$PAGE" -w '%{http_code}' "$URL")"
 echo "HTTP $CODE $URL"
 [[ "$CODE" == 200 ]] || exit 1
 
-python3 -I - "$PAGE" <<'EOF'
+python3 -I - "$PAGE" "biller-test${TEST_STACK_NAME:+-$TEST_STACK_NAME}-frontend" <<'EOF'
 import html, re, sys
 
 page = open(sys.argv[1], encoding="utf-8").read()
@@ -27,7 +27,7 @@ streamed = re.findall(r'<template blazor-component-id="[^"]*">(.*?)</template>',
 if streamed:
     page = "\n".join(streamed)
 elif "Loading..." in page:
-    print("STUCK at Loading...: the page's data didn't load. See: docker logs biller-test-frontend")
+    print(f"STUCK at Loading...: the page's data didn't load. See: docker logs {sys.argv[2]}")
     sys.exit(1)
 body = re.sub(r"<script.*?</script>|<style.*?</style>|<!--.*?-->", "", page, flags=re.S)
 body = re.sub(r'<div id="blazor-error-ui".*?</div>', "", body, flags=re.S)
