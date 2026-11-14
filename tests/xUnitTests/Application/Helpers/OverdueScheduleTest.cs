@@ -5,98 +5,54 @@ namespace xUnitTests.Application.Helpers;
 
 public class OverdueScheduleTest
 {
-    // Per test, not static: a failed lookup then fails each test with its own error
-    private readonly TimeZoneInfo _vilnius = OverdueSchedule.FindZone();
-
     private static DateTimeOffset Utc(string time) => DateTimeOffset.Parse(time + "Z");
-
-    // Windows ids are looked up only on Windows, so those tests run on one OS or the other
-    public static bool IsWindows => OperatingSystem.IsWindows();
-
-    private static void ShouldBeVilnius(TimeZoneInfo zone)
-    {
-        zone.GetUtcOffset(Utc("2026-01-15T12:00:00")).Should().Be(TimeSpan.FromHours(2));
-        zone.GetUtcOffset(Utc("2026-07-15T12:00:00")).Should().Be(TimeSpan.FromHours(3));
-    }
-
-    [Fact]
-    public void FindZone_GivenIanaId_ReturnsVilniusOffsets()
-    {
-        //Act
-        TimeZoneInfo zone = OverdueSchedule.FindZone("Europe/Vilnius", "No Such Zone");
-
-        //Assert
-        ShouldBeVilnius(zone);
-    }
-
-    [Fact(Skip = "Windows ids are looked up only on Windows", SkipUnless = nameof(IsWindows))]
-    public void FindZone_GivenUnknownIanaIdOnWindows_UsesWindowsId()
-    {
-        //Act
-        TimeZoneInfo zone = OverdueSchedule.FindZone("No/Such_Zone", "FLE Standard Time");
-
-        //Assert
-        ShouldBeVilnius(zone);
-    }
-
-    [Fact(Skip = "On Windows the Windows id is used", SkipWhen = nameof(IsWindows))]
-    public void FindZone_GivenUnknownIanaIdElsewhere_ThrowsTimeZoneNotFoundException()
-    {
-        //Act
-        Action act = () => OverdueSchedule.FindZone("No/Such_Zone", "FLE Standard Time");
-
-        //Assert
-        act.Should().Throw<TimeZoneNotFoundException>().WithMessage("The time zone No/Such_Zone was not found");
-    }
-
-    [Fact]
-    public void FindZone_GivenUnknownIds_ThrowsTimeZoneNotFoundException()
-    {
-        //Act
-        Action act = () => OverdueSchedule.FindZone("No/Such_Zone", "No Such Zone");
-
-        //Assert
-        act.Should().Throw<TimeZoneNotFoundException>();
-    }
 
     public static IEnumerable<TheoryDataRow<DateTimeOffset, DateOnly>> GetTodayTestData()
     {
-        yield return new(Utc("2026-01-15T21:59:00"), new DateOnly(2026, 1, 15)) { Label = "23:59 in Vilnius in winter (UTC+2) is still that date" };
-        yield return new(Utc("2026-01-15T22:00:00"), new DateOnly(2026, 1, 16)) { Label = "midnight in Vilnius in winter is already the next date in Vilnius, though not in UTC" };
-        yield return new(Utc("2026-07-15T20:59:00"), new DateOnly(2026, 7, 15)) { Label = "23:59 in Vilnius in summer (UTC+3) is still that date" };
-        yield return new(Utc("2026-07-15T21:00:00"), new DateOnly(2026, 7, 16)) { Label = "midnight in Vilnius in summer is already the next date" };
+        yield return new(Utc("2026-01-15T23:59:59"), new DateOnly(2026, 1, 15)) { Label = "a second before midnight UTC is still that date" };
+        yield return new(Utc("2026-01-16T00:00:00"), new DateOnly(2026, 1, 16)) { Label = "midnight UTC is the next date" };
     }
 
     [Theory]
     [MemberData(nameof(GetTodayTestData))]
-    public void Today_GivenUtcInstant_ReturnsVilniusDate(DateTimeOffset utcNow, DateOnly expected)
+    public void Today_GivenUtcInstant_ReturnsUtcDate(DateTimeOffset utcNow, DateOnly expected)
     {
         //Act
-        DateOnly result = OverdueSchedule.Today(utcNow, _vilnius);
+        DateOnly result = OverdueSchedule.Today(utcNow);
 
         //Assert
         result.Should().Be(expected);
     }
 
+    [Fact]
+    public void Today_GivenInstantWithOffset_ReturnsItsUtcDate()
+    {
+        //Arrange
+        // 01:00 on 16 January at UTC+2 is 23:00 on 15 January UTC
+        var utcNow = new DateTimeOffset(2026, 1, 16, 1, 0, 0, TimeSpan.FromHours(2));
+
+        //Act
+        DateOnly result = OverdueSchedule.Today(utcNow);
+
+        //Assert
+        result.Should().Be(new DateOnly(2026, 1, 15));
+    }
+
     public static IEnumerable<TheoryDataRow<DateTimeOffset, DateTimeOffset>> GetNextRunTestData()
     {
-        yield return new(Utc("2026-01-15T21:30:00"), Utc("2026-01-15T22:01:00")) { Label = "23:30 in Vilnius runs at 00:01 the same night" };
-        yield return new(Utc("2026-01-15T22:00:30"), Utc("2026-01-15T22:01:00")) { Label = "00:00:30 in Vilnius, before that day's 00:01, runs at 00:01 the same day" };
-        yield return new(Utc("2026-01-15T22:01:00"), Utc("2026-01-16T22:01:00")) { Label = "exactly 00:01 in Vilnius runs again the next night" };
-        yield return new(Utc("2026-01-16T10:00:00"), Utc("2026-01-16T22:01:00")) { Label = "midday in Vilnius in winter runs at 00:01 that night (22:01 UTC)" };
-        yield return new(Utc("2026-07-15T12:00:00"), Utc("2026-07-15T21:01:00")) { Label = "midday in Vilnius in summer runs at 00:01 that night (21:01 UTC)" };
-        yield return new(Utc("2026-10-24T12:00:00"), Utc("2026-10-24T21:01:00")) { Label = "the night the clocks go back, 00:01 is still summer time" };
-        yield return new(Utc("2026-10-25T12:00:00"), Utc("2026-10-25T22:01:00")) { Label = "the day after the clocks go back, 00:01 is winter time" };
-        yield return new(Utc("2027-03-27T12:00:00"), Utc("2027-03-27T22:01:00")) { Label = "the night the clocks go forward, 00:01 is still winter time" };
-        yield return new(Utc("2027-03-28T12:00:00"), Utc("2027-03-28T21:01:00")) { Label = "the day after the clocks go forward, 00:01 is summer time" };
+        yield return new(Utc("2026-01-16T02:59:00"), Utc("2026-01-16T03:00:00")) { Label = "before 03:00 UTC runs at 03:00 the same day" };
+        yield return new(Utc("2026-01-16T03:00:00"), Utc("2026-01-17T03:00:00")) { Label = "exactly 03:00 UTC runs again the next day" };
+        yield return new(Utc("2026-01-16T12:00:00"), Utc("2026-01-17T03:00:00")) { Label = "midday UTC runs at 03:00 the next day" };
+        yield return new(Utc("2026-01-15T22:30:00"), Utc("2026-01-16T03:00:00")) { Label = "late evening UTC runs at 03:00 after midnight" };
+        yield return new(Utc("2026-07-15T12:00:00"), Utc("2026-07-16T03:00:00")) { Label = "in summer it is still 03:00 UTC, with no daylight saving" };
     }
 
     [Theory]
     [MemberData(nameof(GetNextRunTestData))]
-    public void NextRun_GivenUtcInstant_ReturnsNext0001InVilnius(DateTimeOffset utcNow, DateTimeOffset expected)
+    public void NextRun_GivenUtcInstant_ReturnsNext0300Utc(DateTimeOffset utcNow, DateTimeOffset expected)
     {
         //Act
-        DateTimeOffset result = OverdueSchedule.NextRun(utcNow, _vilnius);
+        DateTimeOffset result = OverdueSchedule.NextRun(utcNow);
 
         //Assert
         result.Should().Be(expected);

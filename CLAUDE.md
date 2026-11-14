@@ -38,8 +38,10 @@ on a small Linux PC.
   the Edit tool, which keeps them. Don't rewrite source files with sed or Python scripts.
 - Coverage never goes down. CI fails below `COVERAGE_MIN_LINE` / `COVERAGE_MIN_BRANCH` in
   `.github/workflows/CI.yaml`, which are master's coverage minus 1 point (Release, Infrastructure left
-  out). After each PR's CI run, compare its numbers with the minimums + 1: lower means add tests in the
-  same PR; higher means raise the minimums in the same PR to the new numbers minus 1. Never lower a minimum.
+  out). Before opening a PR, compare the branch's numbers (`run-coverage.sh`, Release) with the
+  minimums + 1: lower means add tests; higher means raise the minimums in the branch to the new numbers
+  minus 1, so the PR carries them. If the PR's CI gate line shows other numbers, set the minimums from it
+  in the same PR. Never lower a minimum.
 
 ## Non-goals
 - No ORM.

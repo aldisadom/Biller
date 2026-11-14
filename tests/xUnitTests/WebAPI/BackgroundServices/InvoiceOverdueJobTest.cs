@@ -18,9 +18,11 @@ public class InvoiceOverdueJobTest
     private readonly Mock<ITimer> _timerMock = new(MockBehavior.Strict);
     private readonly InvoiceOverdueJob _job;
 
-    // 00:30 on 16 January in Vilnius (UTC+2), still 15 January in UTC
+    // 22:30 UTC on 15 January; the next run is 03:00 UTC on 16 January, 4 h 30 min later
     private readonly DateTimeOffset _utcNow = new(2026, 1, 15, 22, 30, 0, TimeSpan.Zero);
-    private readonly DateOnly _vilniusToday = new(2026, 1, 16);
+    private readonly DateOnly _today = new(2026, 1, 15);
+    private readonly DateTimeOffset _nextRun = new(2026, 1, 16, 3, 0, 0, TimeSpan.Zero);
+    private readonly DateOnly _nextDay = new(2026, 1, 16);
 
     public InvoiceOverdueJobTest()
     {
@@ -82,18 +84,18 @@ public class InvoiceOverdueJobTest
     public async Task RunOnce_GivenToday_MarksOverdueAndLogsCount()
     {
         //Arrange
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(_vilniusToday)).ReturnsAsync(3);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_today)).ReturnsAsync(3);
         SetupLog(LogLevel.Information);
 
         //Act
-        bool result = await _job.RunOnce(_vilniusToday);
+        bool result = await _job.RunOnce(_today);
 
         //Assert
         result.Should().BeTrue();
         VerifyRuns(1);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(_vilniusToday), Times.Once());
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_today), Times.Once());
         _loggerMock.Verify(l => l.Log(LogLevel.Information, It.IsAny<EventId>(),
-            It.Is<It.IsAnyType>((v, _) => v.ToString() == "Marked 3 invoices overdue, due before 2026-01-16"),
+            It.Is<It.IsAnyType>((v, _) => v.ToString() == "Marked 3 invoices overdue, due before 2026-01-15"),
             null, It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once());
         _loggerMock.VerifyNoOtherCalls();
         _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Never());
@@ -104,37 +106,37 @@ public class InvoiceOverdueJobTest
     {
         //Arrange
         var error = new InvalidOperationException("database is down");
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(_vilniusToday)).ThrowsAsync(error);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_today)).ThrowsAsync(error);
         SetupLog(LogLevel.Error, error);
 
         //Act
-        bool result = await _job.RunOnce(_vilniusToday);
+        bool result = await _job.RunOnce(_today);
 
         //Assert
         result.Should().BeFalse();
         VerifyRuns(1);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(_vilniusToday), Times.Once());
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_today), Times.Once());
         VerifyLog(LogLevel.Error, error, 1);
         _loggerMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task StartAsync_GivenStartAndStop_RunsForVilniusDateThenWaitsAnHourAtMostAndStopsQuietly()
+    public async Task StartAsync_GivenStartAndStop_RunsForUtcDateThenWaitsAnHourAtMostAndStopsQuietly()
     {
         //Arrange
-        // From 00:30 on 16 January in Vilnius the next run is 23 h 31 min away; the job reads the clock again after an hour
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(_vilniusToday)).ReturnsAsync(0);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_today)).ReturnsAsync(0);
         SetupLog(LogLevel.Information);
 
         //Act
         List<TimeSpan> waits = await StartAndStopAtWait();
 
         //Assert
+        // The next run is 4 h 30 min away; the job reads the clock again after an hour
         waits.Should().Equal(TimeSpan.FromHours(1));
         _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
         _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Once());
         VerifyRuns(1);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(_vilniusToday), Times.Once());
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_today), Times.Once());
         VerifyLog(LogLevel.Information, null, 1);
         _loggerMock.VerifyNoOtherCalls();
     }
@@ -145,7 +147,7 @@ public class InvoiceOverdueJobTest
         //Arrange
         // After a reboot the database may not take connections yet
         var error = new InvalidOperationException("database is starting up");
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(_vilniusToday)).ThrowsAsync(error);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_today)).ThrowsAsync(error);
         SetupLog(LogLevel.Error, error);
 
         //Act
@@ -156,7 +158,7 @@ public class InvoiceOverdueJobTest
         _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
         _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Once());
         VerifyRuns(1);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(_vilniusToday), Times.Once());
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_today), Times.Once());
         VerifyLog(LogLevel.Error, error, 1);
         _loggerMock.VerifyNoOtherCalls();
     }
@@ -166,7 +168,7 @@ public class InvoiceOverdueJobTest
     {
         //Arrange
         var error = new InvalidOperationException("database is down");
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(_vilniusToday)).ThrowsAsync(error);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_today)).ThrowsAsync(error);
         SetupLog(LogLevel.Error, error);
 
         //Act
@@ -179,24 +181,80 @@ public class InvoiceOverdueJobTest
         _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
         _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(6));
         VerifyRuns(6);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(_vilniusToday), Times.Exactly(6));
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_today), Times.Exactly(6));
         VerifyLog(LogLevel.Error, error, 6);
         _loggerMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task StartAsync_GivenOutagePastMidnight_StartsTheNewDayWithQuickRetries()
+    public async Task StartAsync_GivenWaitPasses0300_RunsAt0300AndNotAtMidnight()
     {
         //Arrange
-        // The database is down from 23:00 on 15 January in Vilnius: five failures, then the hourly wake at 00:40 on 16 January
-        var lastDay = new DateOnly(2026, 1, 15);
-        var lateEvening = new DateTimeOffset(2026, 1, 15, 21, 0, 0, TimeSpan.Zero);
+        // After the startup run the job wakes at 02:29 UTC on 16 January: a new UTC date, but no run
+        // before 03:00. After 31 more minutes it is 03:00, and the day's run goes.
+        _timeProviderMock.SetupSequence(t => t.GetUtcNow())
+            .Returns(_utcNow)
+            .Returns(_nextRun.AddMinutes(-31))
+            .Returns(_nextRun);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_today)).ReturnsAsync(0);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_nextDay)).ReturnsAsync(2);
+        SetupLog(LogLevel.Information);
+
+        //Act
+        List<TimeSpan> waits = await StartAndStopAtWait(waitsToPass: 2);
+
+        //Assert
+        waits.Should().Equal(TimeSpan.FromHours(1), TimeSpan.FromMinutes(31), TimeSpan.FromHours(1));
+        _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
+        _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(3));
+        VerifyRuns(2);
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_today), Times.Once());
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_nextDay), Times.Once());
+        VerifyLog(LogLevel.Information, null, 2);
+        _loggerMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task StartAsync_GivenRetryAfter0300_CountsAsThatDaysRun()
+    {
+        //Arrange
+        // The run at 02:59:50 UTC fails; the retry at 03:00:20 succeeds, so the next run is 03:00 the day after
+        var error = new InvalidOperationException("database is starting up");
+        _timeProviderMock.SetupSequence(t => t.GetUtcNow())
+            .Returns(_nextRun.AddSeconds(-10))
+            .Returns(_nextRun.AddSeconds(20));
+        _invoiceServiceMock.SetupSequence(s => s.MarkOverdue(_nextDay))
+            .ThrowsAsync(error)
+            .ReturnsAsync(4);
+        SetupLog(LogLevel.Error, error);
+        SetupLog(LogLevel.Information);
+
+        //Act
+        List<TimeSpan> waits = await StartAndStopAtWait(waitsToPass: 1);
+
+        //Assert
+        waits.Should().Equal(TimeSpan.FromSeconds(30), TimeSpan.FromHours(1));
+        _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
+        _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(2));
+        VerifyRuns(2);
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_nextDay), Times.Exactly(2));
+        VerifyLog(LogLevel.Error, error, 1);
+        VerifyLog(LogLevel.Information, null, 1);
+        _loggerMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task StartAsync_GivenOutagePastMidnight_StartsTheNewDateWithQuickRetries()
+    {
+        //Arrange
+        // The database is down from 23:00 UTC on 15 January: five failures, then the hourly wake at 00:40 on 16 January
+        var lateEvening = new DateTimeOffset(2026, 1, 15, 23, 0, 0, TimeSpan.Zero);
         var error = new InvalidOperationException("database is down");
         _timeProviderMock.SetupSequence(t => t.GetUtcNow())
             .Returns(lateEvening).Returns(lateEvening).Returns(lateEvening).Returns(lateEvening).Returns(lateEvening)
-            .Returns(new DateTimeOffset(2026, 1, 15, 22, 40, 0, TimeSpan.Zero));
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(lastDay)).ThrowsAsync(error);
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(_vilniusToday)).ThrowsAsync(error);
+            .Returns(new DateTimeOffset(2026, 1, 16, 0, 40, 0, TimeSpan.Zero));
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_today)).ThrowsAsync(error);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_nextDay)).ThrowsAsync(error);
         SetupLog(LogLevel.Error, error);
 
         //Act
@@ -208,8 +266,8 @@ public class InvoiceOverdueJobTest
         _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
         _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(6));
         VerifyRuns(6);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(lastDay), Times.Exactly(5));
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(_vilniusToday), Times.Once());
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_today), Times.Exactly(5));
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_nextDay), Times.Once());
         VerifyLog(LogLevel.Error, error, 6);
         _loggerMock.VerifyNoOtherCalls();
     }
@@ -218,16 +276,15 @@ public class InvoiceOverdueJobTest
     public async Task StartAsync_GivenFailureTheDayAfterASuccess_StartsWithQuickRetries()
     {
         //Arrange
-        // Five failures and then a success on 16 January in Vilnius; the run at 00:01 on 17 January fails
-        var nextDay = new DateOnly(2026, 1, 17);
+        // Five failures and then a success on 15 January; the run at 03:00 UTC on 16 January fails
         var error = new InvalidOperationException("database is down");
         _timeProviderMock.SetupSequence(t => t.GetUtcNow())
             .Returns(_utcNow).Returns(_utcNow).Returns(_utcNow).Returns(_utcNow).Returns(_utcNow).Returns(_utcNow)
-            .Returns(new DateTimeOffset(2026, 1, 16, 22, 1, 0, TimeSpan.Zero));
-        _invoiceServiceMock.SetupSequence(s => s.MarkOverdue(_vilniusToday))
+            .Returns(_nextRun);
+        _invoiceServiceMock.SetupSequence(s => s.MarkOverdue(_today))
             .ThrowsAsync(error).ThrowsAsync(error).ThrowsAsync(error).ThrowsAsync(error).ThrowsAsync(error)
             .ReturnsAsync(1);
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(nextDay)).ThrowsAsync(error);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_nextDay)).ThrowsAsync(error);
         SetupLog(LogLevel.Error, error);
         SetupLog(LogLevel.Information);
 
@@ -241,92 +298,10 @@ public class InvoiceOverdueJobTest
         _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
         _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(7));
         VerifyRuns(7);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(_vilniusToday), Times.Exactly(6));
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(nextDay), Times.Once());
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_today), Times.Exactly(6));
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_nextDay), Times.Once());
         VerifyLog(LogLevel.Error, error, 6);
         VerifyLog(LogLevel.Information, null, 1);
         _loggerMock.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task StartAsync_GivenWaitPassesNext0001_RunsForTheNewDay()
-    {
-        //Arrange
-        // Startup at 00:30 on 16 January in Vilnius; the next run is 00:01 on 17 January (22:01 UTC on 16 January).
-        // The job wakes at 23:30 that evening with 31 minutes left, and after them it is 00:01 on 17 January.
-        var nextRun = new DateTimeOffset(2026, 1, 16, 22, 1, 0, TimeSpan.Zero);
-        var nextDay = new DateOnly(2026, 1, 17);
-        _timeProviderMock.SetupSequence(t => t.GetUtcNow())
-            .Returns(_utcNow)
-            .Returns(nextRun.AddMinutes(-31))
-            .Returns(nextRun);
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(_vilniusToday)).ReturnsAsync(0);
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(nextDay)).ReturnsAsync(2);
-        SetupLog(LogLevel.Information);
-
-        //Act
-        List<TimeSpan> waits = await StartAndStopAtWait(waitsToPass: 2);
-
-        //Assert
-        waits.Should().Equal(TimeSpan.FromHours(1), TimeSpan.FromMinutes(31), TimeSpan.FromHours(1));
-        _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
-        _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(3));
-        VerifyRuns(2);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(_vilniusToday), Times.Once());
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(nextDay), Times.Once());
-        VerifyLog(LogLevel.Information, null, 2);
-        _loggerMock.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task StartAsync_GivenRetryPastMidnight_RunsForTheNewDate()
-    {
-        //Arrange
-        // Startup at 23:59:50 on 15 January in Vilnius with the database down; the retry 30 s later is on 16 January
-        var lastDay = new DateOnly(2026, 1, 15);
-        var error = new InvalidOperationException("database is starting up");
-        _timeProviderMock.SetupSequence(t => t.GetUtcNow())
-            .Returns(new DateTimeOffset(2026, 1, 15, 21, 59, 50, TimeSpan.Zero))
-            .Returns(new DateTimeOffset(2026, 1, 15, 22, 0, 20, TimeSpan.Zero));
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(lastDay)).ThrowsAsync(error);
-        _invoiceServiceMock.Setup(s => s.MarkOverdue(_vilniusToday)).ReturnsAsync(4);
-        SetupLog(LogLevel.Error, error);
-        SetupLog(LogLevel.Information);
-
-        //Act
-        List<TimeSpan> waits = await StartAndStopAtWait(waitsToPass: 1);
-
-        //Assert
-        // After the run for 16 January the job waits until 00:01 (40 s), where it finds that day done
-        waits.Should().Equal(TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(40));
-        _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
-        _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(2));
-        VerifyRuns(2);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(lastDay), Times.Once());
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(_vilniusToday), Times.Once());
-        VerifyLog(LogLevel.Error, error, 1);
-        VerifyLog(LogLevel.Information, null, 1);
-        _loggerMock.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task StartAsync_GivenNoTimeZone_LogsErrorAndKeepsTheApiRunning()
-    {
-        //Arrange
-        var error = new TimeZoneNotFoundException("no Europe/Vilnius");
-        var job = new InvoiceOverdueJob(_scopeFactoryMock.Object, _timeProviderMock.Object, _loggerMock.Object, () => throw error);
-        SetupLog(LogLevel.Error, error);
-
-        //Act
-        await job.StartAsync(CancellationToken.None);
-        await job.ExecuteTask!.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
-
-        //Assert
-        job.ExecuteTask.IsCompletedSuccessfully.Should().BeTrue();
-        VerifyLog(LogLevel.Error, error, 1);
-        _loggerMock.VerifyNoOtherCalls();
-        _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Never());
-        VerifyRuns(0);
-        _invoiceServiceMock.Verify(s => s.MarkOverdue(It.IsAny<DateOnly>()), Times.Never());
     }
 }
