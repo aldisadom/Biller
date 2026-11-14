@@ -47,6 +47,10 @@ public class InvoiceOverdueJob : BackgroundService
         {
             DateTimeOffset now = _timeProvider.GetUtcNow();
             DateOnly today = OverdueSchedule.Today(now);
+            // A run while the clock was ahead would put the next one days away once the clock steps back
+            if (nextRun > OverdueSchedule.NextRun(today))
+                nextRun = OverdueSchedule.NextRun(today);
+
             if (nextRun is null || now >= nextRun)
             {
                 if (await RunOnce(today))

@@ -240,6 +240,37 @@ public class InvoiceOverdueJobTest
     }
 
     [Fact]
+    public async Task StartAsync_GivenClockStepsBack_RunsAtTheRealNext0300()
+    {
+        //Arrange
+        // The clock is three days ahead at startup (it reads 22:30 UTC on 18 January), so the run is for 18 January
+        // and the next would be 03:00 on 19 January. Then the clock is put right to 02:30 on 16 January: the next
+        // run comes back to 03:00 on 17 January, and runs then, instead of skipping to 19 January.
+        var aheadDay = new DateOnly(2026, 1, 18);
+        var realNextDay = new DateOnly(2026, 1, 17);
+        _timeProviderMock.SetupSequence(t => t.GetUtcNow())
+            .Returns(_utcNow.AddDays(3))
+            .Returns(_nextRun.AddMinutes(-30))
+            .Returns(_nextRun.AddDays(1));
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(aheadDay)).ReturnsAsync(0);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(realNextDay)).ReturnsAsync(0);
+        SetupLog(LogLevel.Information);
+
+        //Act
+        List<TimeSpan> waits = await StartAndStopAtWait(waitsToPass: 2);
+
+        //Assert
+        waits.Should().Equal(TimeSpan.FromHours(1), TimeSpan.FromHours(1), TimeSpan.FromHours(1));
+        _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
+        _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(3));
+        VerifyRuns(2);
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(aheadDay), Times.Once());
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(realNextDay), Times.Once());
+        VerifyLog(LogLevel.Information, null, 2);
+        _loggerMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
     public async Task StartAsync_GivenRetryAfter0300_CountsAsThatDaysRun()
     {
         //Arrange
