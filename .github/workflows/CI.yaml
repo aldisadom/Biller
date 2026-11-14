@@ -11,8 +11,9 @@ env:
   DOTNET_CONFIGURATION: Release
   TESTS_LOCATION: tests/xUnitTests
   PROJECT_NAME: Billio.sln
-  # Master's coverage minus 1 point (Infrastructure left out). A branch that raises coverage raises
-  # them before its PR is opened; never lower them (CLAUDE.md, Conventions).
+  # Master's coverage minus 1 point, rounded down to one decimal (Infrastructure left out). A branch that
+  # raises coverage raises them before its PR is opened, and sets them from the PR's CI gate line if that
+  # differs; never below master's (CLAUDE.md, Conventions).
   COVERAGE_MIN_LINE: 91.6
   COVERAGE_MIN_BRANCH: 85.0
 

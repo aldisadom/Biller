@@ -53,10 +53,10 @@ Keep it short and useful:
 4. If you made the code change being tested, say whether new code is covered, and compare the overall
    line and branch coverage with `COVERAGE_MIN_LINE` / `COVERAGE_MIN_BRANCH` + 1 in
    `.github/workflows/CI.yaml` (master's numbers). Coverage never goes down (`CLAUDE.md`): lower means
-   write tests; when they are above the minimums + 1, raise the minimums to these numbers minus 1 in the
-   branch before the PR is opened. CI's Linux run can differ a little: if the PR's CI gate line shows
-   higher numbers, raise the minimums to them minus 1 in the same PR; lower CI numbers change nothing.
-   Never lower a minimum.
+   write tests; when they are above the minimums + 1, raise the minimums to these numbers minus 1
+   (rounded down to one decimal) in the branch before the PR is opened, after the last code change.
+   CI's Linux run can differ a little: if the PR's CI gate line shows other numbers, set the minimums
+   this branch raised from CI's numbers instead. Never go below master's minimums.
 
 **Always end with a clickable link to the HTML report.** Use the exact `HTML report:` URL the script
 printed (a `file:///C:/.../coveragereport/index.html` URL on WSL/Windows), formatted as a markdown
