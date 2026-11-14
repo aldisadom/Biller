@@ -147,6 +147,11 @@ public class InvoiceService : IInvoiceService
         await _invoiceRepository.UpdateStatus(invoiceData.Id, invoiceData.Status);
     }
 
+    public async Task<int> MarkOverdue(DateOnly today)
+    {
+        return await _invoiceRepository.MarkOverdue(today.ToDateTime(TimeOnly.MinValue));
+    }
+
     private async Task<(CustomerModel customer, IEnumerable<ItemModel> items)> Validate(InvoiceModel invoiceData)
     {
         var sellerResult = await _sellerService.GetWithValidation(invoiceData.SellerId, invoiceData.UserId);

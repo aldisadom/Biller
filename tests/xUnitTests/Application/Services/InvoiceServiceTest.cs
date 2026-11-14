@@ -820,4 +820,21 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Verify(m => m.Get(invoiceId), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.UpdateStatus(invoiceId, invalidStatus), Times.Never());
     }
+
+    [Fact]
+    public async Task MarkOverdue_GivenDate_PassesMidnightAndReturnsCount()
+    {
+        //Arrange
+        var today = new DateOnly(2026, 11, 13);
+        var midnight = new DateTime(2026, 11, 13, 0, 0, 0);
+
+        _invoiceDataRepositoryMock.Setup(m => m.MarkOverdue(midnight)).ReturnsAsync(3);
+
+        //Act
+        int result = await _invoiceService.MarkOverdue(today);
+
+        //Assert
+        result.Should().Be(3);
+        _invoiceDataRepositoryMock.Verify(m => m.MarkOverdue(midnight), Times.Once());
+    }
 }

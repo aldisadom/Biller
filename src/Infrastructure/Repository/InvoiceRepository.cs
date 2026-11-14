@@ -81,6 +81,24 @@ public class InvoiceRepository : IInvoiceRepository
         await _dbConnection.ExecuteAsync(sql, new { Id = id, Status = status });
     }
 
+    // Safe to repeat: it changes only Created and Send invoices, and nothing here sets them back.
+    // The statuses are parameters, so renumbering the enum changes only C#.
+    public async Task<int> MarkOverdue(DateTime today)
+    {
+        string sql = @"UPDATE invoices
+                        SET status=@OverDue
+                        WHERE status IN (@Created, @Send)
+                          AND due_date < @Today";
+
+        return await _dbConnection.ExecuteAsync(sql, new
+        {
+            Today = today,
+            OverDue = InvoiceStatus.OverDue,
+            Created = InvoiceStatus.Created,
+            Send = InvoiceStatus.Send
+        });
+    }
+
     // Gives the number back only when the invoice is the latest of its series. Invoices from before
     // migration 020 can have number 0, which is never given back: next_number stays >= 1.
     public async Task Delete(Guid id)

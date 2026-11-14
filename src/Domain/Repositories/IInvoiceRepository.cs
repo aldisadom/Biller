@@ -9,6 +9,7 @@ namespace Domain.Repositories
         Task Delete(Guid id);
         Task<(IEnumerable<InvoiceEntity> Items, int TotalCount, int Page)> Get(Guid? userId, Guid? sellerId, Guid? customerId, int page, int pageSize);
         Task<InvoiceEntity?> Get(Guid id);
+        Task<int> MarkOverdue(DateTime today);
         Task Update(InvoiceEntity invoice);
         Task UpdateStatus(Guid id, InvoiceStatus status);
     }
