@@ -10,6 +10,7 @@ public interface IInvoiceService
     Task Delete(Guid id);
     Task<(IEnumerable<InvoiceModelFull> Items, int TotalCount, int Page)> Get(InvoiceGetRequest? query);
     Task<InvoiceModelFull> Get(Guid id);
+    Task<int> MarkOverdue(DateOnly today);
     Task Update(InvoiceModel invoiceDetails);
     Task UpdateStatus(InvoiceUpdateStatusRequest invoiceDetails);
     Task<(MemoryStream, string)> GeneratePDF(Guid id, Language languageCode, DocumentType documentType);

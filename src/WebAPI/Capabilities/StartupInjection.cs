@@ -3,6 +3,7 @@ using Domain.IOptions;
 using Infrastructure;
 using Microsoft.Extensions.Options;
 using Validators;
+using WebAPI.BackgroundServices;
 
 namespace WebAPI.Capabilities;
 
@@ -30,7 +31,9 @@ public static class StartupInjection
                 .AddInfrastructure(dbConnectionString)
                 .Configure<FontSettings>(configuration.GetSection("FontSettings"))
                 .AddPdfGenerator(services.BuildServiceProvider().GetRequiredService<IOptions<FontSettings>>())
-                .AddValidations();
+                .AddValidations()
+                .AddSingleton(TimeProvider.System)
+                .AddHostedService<InvoiceOverdueJob>();
 
         return services;
     }
