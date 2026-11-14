@@ -31,7 +31,7 @@ Jira: [BIL-95](https://aldisadom.atlassian.net/browse/BIL-95). Epic: BIL-89 (Bil
 4. **UTC, no time zones** (owner, 2026-11-14). "Today" is the UTC date. The job runs once at startup and then every day at 03:00 UTC (05:00 or 06:00 in Lithuania), when the UTC date is the local date too. Because the update is safe to repeat, the startup run catches up on a day missed while the PC was off. A startup run late in the evening UTC uses the UTC date, a day behind Lithuania; the 03:00 run catches up. This replaces the Europe/Vilnius lookup the review asked to harden (F1, F3), and its Windows/Linux fallback that CI on PR #86 failed.
 5. **A hosted `BackgroundService` in WebAPI** (`src/WebAPI/BackgroundServices/InvoiceOverdueJob.cs`). The Web SDK has the hosting types, so there's no new package. Each run opens a DI scope (`IServiceScopeFactory`) because `IDbConnection` and `IInvoiceService` are scoped.
 6. **The schedule maths is a pure static class in Application** (`OverdueSchedule`: `Today(utcNow)` and `NextRun(utcNow)`). The job reads the time from the in-box `TimeProvider`, registered as `TimeProvider.System`. The tests call the pure functions with fixed instants, so no `FakeTimeProvider` package.
-7. **A failed run doesn't stop the API, and is tried again until one succeeds.** The job keeps the time the next run is due: none at startup, then the next 03:00 UTC after each successful run. A failure is logged and tried again 30 s later, 5 times, then every hour; the count is per UTC date, so a new date starts with quick retries again (review F15). After a reboot the DB can start after the API (compose's `depends_on` has no health condition). A retry that succeeds after 03:00 counts as that day's run. An unhandled `BackgroundService` exception would stop the host (review F2, F9, F10).
+7. **A failed run doesn't stop the API, and is tried again until one succeeds.** The job keeps the time the next run is due: none at startup, then, after a successful run for a UTC date, 03:00 UTC the day after. So a date is run once, even when its run came before its 03:00 (a startup at 01:00, review F19). A failure is logged and tried again 30 s later, 5 times, then every hour; a success resets the count, so the first failure after one gets quick retries again (review F15, F16, F17). After a reboot the DB can start after the API (compose's `depends_on` has no health condition). A retry that succeeds after 03:00 counts as that day's run. An unhandled `BackgroundService` exception would stop the host (review F2, F9, F10).
 8. **Each run logs one line** at Information with Serilog: how many invoices it marked overdue and the date, also when the count is 0, so the log shows that the job ran.
 9. **Unit tests only** (answered 2026-11-13). No integration test and no endpoint to trigger the job, so `OverDue` stays something only the job sets.
 10. **A wait is at most an hour**, then the job reads the clock again and runs once the next run's time has passed: a timer doesn't count time while the machine sleeps (review F4). A wake between midnight and 03:00 UTC doesn't run: the date has changed, but the run is due at 03:00.
@@ -68,7 +68,7 @@ WHERE status IN (@Created, @Send)
 - `IInvoiceService.MarkOverdue(DateOnly today)` returns `Task<int>`. It calls the repository with `today.ToDateTime(TimeOnly.MinValue)`, the same midnight `DateTime` that `InvoiceEntity` uses.
 - `OverdueSchedule` (static, `src/Application/Helpers/OverdueSchedule.cs`, also holding `RunTime` = 03:00):
   - `DateOnly Today(DateTimeOffset utcNow)`: the UTC date.
-  - `DateTimeOffset NextRun(DateTimeOffset utcNow)`: the next 03:00 UTC after `utcNow`; at 03:00 exactly, the next day's.
+  - `DateTimeOffset NextRun(DateOnly lastRunDate)`: 03:00 UTC on the day after the date that just had its run.
 
 ## Step 5: Validators
 
@@ -78,7 +78,7 @@ WHERE status IN (@Created, @Send)
 
 - `InvoiceOverdueJob : BackgroundService`. Its constructor takes `IServiceScopeFactory`, `TimeProvider` and `ILogger<InvoiceOverdueJob>`.
   - `RunOnce(today)`: opens a scope, gets `IInvoiceService`, calls `MarkOverdue(today)` and logs the count, with the date as `yyyy-MM-dd`. An exception is logged as an error, not thrown; it returns whether the run succeeded. It takes no token, because `MarkOverdue` takes none (review F6: no repository method does).
-  - `ExecuteAsync`: loops: read the clock, run for today's UTC date when no run has succeeded yet or the next run's time has passed, and wait (`Task.Delay(delay, timeProvider, stoppingToken)`): after a success until `NextRun`, at most an hour (decision 10); after a failure 30 s, or an hour after 5 failures that date (decision 7). It ends quietly when the token is cancelled.
+  - `ExecuteAsync`: loops: read the clock, run for today's UTC date when no run has succeeded yet or the next run's time has passed, and wait (`Task.Delay(delay, timeProvider, stoppingToken)`): after a success until `NextRun(today)`, at most an hour (decision 10); after a failure 30 s, or an hour after 5 failures since the last success (decision 7). It ends quietly when the token is cancelled.
 - `StartupInjection.ConfigureInjection`: `services.AddSingleton(TimeProvider.System)` and `services.AddHostedService<InvoiceOverdueJob>()`.
 
 ## Step 7: Tests (`_write-tests` skill) (done)
@@ -86,7 +86,7 @@ WHERE status IN (@Created, @Send)
 - `InvoiceServiceTest.MarkOverdue_...`: with a strict mock, the repository gets midnight of the given date, and the service returns the repository's count.
 - `OverdueScheduleTest` (theories, with a `Label` per case):
   - `Today`: a second before midnight UTC is that date, midnight is the next; an instant with another offset gives its UTC date.
-  - `NextRun`: before 03:00 UTC it's the same day; at exactly 03:00 and after, the next day; in summer it's still 03:00 UTC.
+  - `NextRun`: 03:00 UTC the day after the given date, across a year end and a leap day; in summer it's still 03:00 UTC.
 - `InvoiceOverdueJobTest`:
   - `RunOnce` calls `MarkOverdue` once with the date it is given; when the service throws, it logs and doesn't throw.
   - The mocks are strict: `IServiceScopeFactory`, `IServiceScope`, `IServiceProvider`, `TimeProvider`, `ITimer`. `CreateTimer`'s timers fire at once when a test needs the wait to pass (still no `FakeTimeProvider` package), and each test asserts the list of waits:
@@ -94,7 +94,8 @@ WHERE status IN (@Created, @Send)
     - A failed run waits 30 s; every run failing gives 30 s four times, then an hour.
     - A wake at 02:29 UTC (a new date) doesn't run; at 03:00 the day's run goes.
     - A run failing at 02:59:50 and succeeding at 03:00:20 counts as that day's run (the next wait is to 03:00 the day after).
-    - An outage past midnight, and a failure the day after a success, both start with 30 s retries (F15).
+    - A startup run at 01:00 isn't repeated at 03:00 for the same date (F19).
+    - An outage past midnight keeps retrying hourly, now with the new date (F17); a failure the day after a success starts with 30 s retries (F16).
 - Each behaviour's test fails with it undone (`revert-check.sh`): running when the UTC date changes instead of at 03:00, counting failures across dates, no hourly wake-up, and earlier `>` instead of `>=` at the run time and no retry.
 - No integration test (decision 9).
 

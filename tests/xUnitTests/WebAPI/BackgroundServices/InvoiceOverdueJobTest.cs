@@ -215,6 +215,31 @@ public class InvoiceOverdueJobTest
     }
 
     [Fact]
+    public async Task StartAsync_GivenStartupBefore0300_DoesNotRunThatDateAgainAt0300()
+    {
+        //Arrange
+        // Startup at 01:00 UTC on 16 January runs for that date; the next run is 03:00 on 17 January, so the
+        // wake at 03:00 on 16 January doesn't repeat it
+        _timeProviderMock.SetupSequence(t => t.GetUtcNow())
+            .Returns(_nextRun.AddHours(-2))
+            .Returns(_nextRun);
+        _invoiceServiceMock.Setup(s => s.MarkOverdue(_nextDay)).ReturnsAsync(0);
+        SetupLog(LogLevel.Information);
+
+        //Act
+        List<TimeSpan> waits = await StartAndStopAtWait(waitsToPass: 1);
+
+        //Assert
+        waits.Should().Equal(TimeSpan.FromHours(1), TimeSpan.FromHours(1));
+        _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
+        _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(2));
+        VerifyRuns(1);
+        _invoiceServiceMock.Verify(s => s.MarkOverdue(_nextDay), Times.Once());
+        VerifyLog(LogLevel.Information, null, 1);
+        _loggerMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
     public async Task StartAsync_GivenRetryAfter0300_CountsAsThatDaysRun()
     {
         //Arrange
@@ -244,10 +269,11 @@ public class InvoiceOverdueJobTest
     }
 
     [Fact]
-    public async Task StartAsync_GivenOutagePastMidnight_StartsTheNewDateWithQuickRetries()
+    public async Task StartAsync_GivenOutagePastMidnight_KeepsRetryingHourlyWithTheNewDate()
     {
         //Arrange
-        // The database is down from 23:00 UTC on 15 January: five failures, then the hourly wake at 00:40 on 16 January
+        // The database is down from 23:00 UTC on 15 January: five failures, then the hourly wake at 00:40 on
+        // 16 January tries again with that date. Midnight doesn't reset the count; only a success does.
         var lateEvening = new DateTimeOffset(2026, 1, 15, 23, 0, 0, TimeSpan.Zero);
         var error = new InvalidOperationException("database is down");
         _timeProviderMock.SetupSequence(t => t.GetUtcNow())
@@ -262,7 +288,8 @@ public class InvoiceOverdueJobTest
 
         //Assert
         var retry = TimeSpan.FromSeconds(30);
-        waits.Should().Equal(retry, retry, retry, retry, TimeSpan.FromHours(1), retry);
+        var hour = TimeSpan.FromHours(1);
+        waits.Should().Equal(retry, retry, retry, retry, hour, hour);
         _job.ExecuteTask!.IsCompletedSuccessfully.Should().BeTrue();
         _timeProviderMock.Verify(t => t.GetUtcNow(), Times.Exactly(6));
         VerifyRuns(6);

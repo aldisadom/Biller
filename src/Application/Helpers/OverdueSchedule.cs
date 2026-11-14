@@ -16,15 +16,11 @@ public static class OverdueSchedule
     }
 
     /// <summary>
-    /// The next 03:00 UTC after the given instant. At 03:00 exactly it is the next day's.
+    /// When the run after a successful run for the given UTC date is due: 03:00 UTC the next day.
+    /// A date that has had its run isn't run again, even when it ran before its own 03:00.
     /// </summary>
-    public static DateTimeOffset NextRun(DateTimeOffset utcNow)
+    public static DateTimeOffset NextRun(DateOnly lastRunDate)
     {
-        DateTime now = utcNow.UtcDateTime;
-        DateTime run = now.Date.Add(RunTime.ToTimeSpan());
-        if (now >= run)
-            run = run.AddDays(1);
-
-        return new DateTimeOffset(run, TimeSpan.Zero);
+        return new DateTimeOffset(lastRunDate.AddDays(1).ToDateTime(RunTime), TimeSpan.Zero);
     }
 }

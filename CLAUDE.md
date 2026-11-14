@@ -40,8 +40,8 @@ on a small Linux PC.
   `.github/workflows/CI.yaml`, which are master's coverage minus 1 point (Release, Infrastructure left
   out). Before opening a PR, compare the branch's numbers (`run-coverage.sh`, Release) with the
   minimums + 1: lower means add tests; higher means raise the minimums in the branch to the new numbers
-  minus 1, so the PR carries them. If the PR's CI gate line shows other numbers, set the minimums from it
-  in the same PR. Never lower a minimum.
+  minus 1, so the PR carries them. If the PR's CI gate line shows higher numbers, raise the minimums to
+  them minus 1 in the same PR; lower CI numbers change nothing. Never lower a minimum.
 
 ## Non-goals
 - No ORM.

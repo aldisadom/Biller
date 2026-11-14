@@ -38,21 +38,20 @@ public class OverdueScheduleTest
         result.Should().Be(new DateOnly(2026, 1, 15));
     }
 
-    public static IEnumerable<TheoryDataRow<DateTimeOffset, DateTimeOffset>> GetNextRunTestData()
+    public static IEnumerable<TheoryDataRow<DateOnly, DateTimeOffset>> GetNextRunTestData()
     {
-        yield return new(Utc("2026-01-16T02:59:00"), Utc("2026-01-16T03:00:00")) { Label = "before 03:00 UTC runs at 03:00 the same day" };
-        yield return new(Utc("2026-01-16T03:00:00"), Utc("2026-01-17T03:00:00")) { Label = "exactly 03:00 UTC runs again the next day" };
-        yield return new(Utc("2026-01-16T12:00:00"), Utc("2026-01-17T03:00:00")) { Label = "midday UTC runs at 03:00 the next day" };
-        yield return new(Utc("2026-01-15T22:30:00"), Utc("2026-01-16T03:00:00")) { Label = "late evening UTC runs at 03:00 after midnight" };
-        yield return new(Utc("2026-07-15T12:00:00"), Utc("2026-07-16T03:00:00")) { Label = "in summer it is still 03:00 UTC, with no daylight saving" };
+        yield return new(new DateOnly(2026, 1, 15), Utc("2026-01-16T03:00:00")) { Label = "after the run for a date, the next is 03:00 UTC the day after" };
+        yield return new(new DateOnly(2026, 12, 31), Utc("2027-01-01T03:00:00")) { Label = "after the last day of the year, 03:00 on 1 January" };
+        yield return new(new DateOnly(2028, 2, 28), Utc("2028-02-29T03:00:00")) { Label = "in a leap year, 28 February is followed by 29 February" };
+        yield return new(new DateOnly(2026, 7, 15), Utc("2026-07-16T03:00:00")) { Label = "in summer it is still 03:00 UTC, with no daylight saving" };
     }
 
     [Theory]
     [MemberData(nameof(GetNextRunTestData))]
-    public void NextRun_GivenUtcInstant_ReturnsNext0300Utc(DateTimeOffset utcNow, DateTimeOffset expected)
+    public void NextRun_GivenLastRunDate_Returns0300UtcTheNextDay(DateOnly lastRunDate, DateTimeOffset expected)
     {
         //Act
-        DateTimeOffset result = OverdueSchedule.NextRun(utcNow);
+        DateTimeOffset result = OverdueSchedule.NextRun(lastRunDate);
 
         //Assert
         result.Should().Be(expected);

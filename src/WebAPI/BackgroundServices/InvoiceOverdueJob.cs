@@ -42,8 +42,7 @@ public class InvoiceOverdueJob : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         DateTimeOffset? nextRun = null;   // when the next run is due; none yet: run now
-        DateOnly? failedDay = null;       // the UTC date of the last failed run
-        int failures = 0;                 // failed runs that date, so each day starts with quick retries
+        int failures = 0;                 // failed runs since the last success
         while (true)
         {
             DateTimeOffset now = _timeProvider.GetUtcNow();
@@ -52,12 +51,12 @@ public class InvoiceOverdueJob : BackgroundService
             {
                 if (await RunOnce(today))
                 {
-                    nextRun = OverdueSchedule.NextRun(now);
+                    nextRun = OverdueSchedule.NextRun(today);
+                    failures = 0;
                 }
                 else
                 {
-                    failures = failedDay == today ? failures + 1 : 1;
-                    failedDay = today;
+                    failures++;
                 }
             }
 
