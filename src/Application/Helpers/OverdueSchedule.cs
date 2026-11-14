@@ -9,15 +9,21 @@ public static class OverdueSchedule
     public static readonly TimeOnly RunTime = new(0, 1);
 
     /// <summary>
-    /// The Vilnius time zone, by its IANA id (Linux, and Windows with ICU), else by its Windows id:
-    /// WebAPI runs with InvariantGlobalization, so on Windows the IANA id can't be converted.
-    /// Throws TimeZoneNotFoundException when neither is there.
+    /// The Vilnius time zone, by its IANA id (Linux, and Windows with ICU), else on Windows by its
+    /// Windows id: WebAPI runs with InvariantGlobalization, so Windows can't convert the IANA id.
+    /// Throws TimeZoneNotFoundException when it isn't found.
     /// </summary>
     public static TimeZoneInfo FindZone(string ianaId = "Europe/Vilnius", string windowsId = "FLE Standard Time")
     {
-        return TimeZoneInfo.TryFindSystemTimeZoneById(ianaId, out TimeZoneInfo? zone)
-            ? zone
-            : TimeZoneInfo.FindSystemTimeZoneById(windowsId);
+        if (TimeZoneInfo.TryFindSystemTimeZoneById(ianaId, out TimeZoneInfo? zone))
+            return zone;
+
+        // Only Windows has Windows ids in its registry. Linux turns one back into an IANA id
+        // (Europe/Kiev for this one, which Ubuntu 24.04 no longer ships) and finds nothing better.
+        if (OperatingSystem.IsWindows())
+            return TimeZoneInfo.FindSystemTimeZoneById(windowsId);
+
+        throw new TimeZoneNotFoundException($"The time zone {ianaId} was not found");
     }
 
     /// <summary>

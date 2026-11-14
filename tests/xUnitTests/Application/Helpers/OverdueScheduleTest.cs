@@ -10,22 +10,43 @@ public class OverdueScheduleTest
 
     private static DateTimeOffset Utc(string time) => DateTimeOffset.Parse(time + "Z");
 
-    public static IEnumerable<TheoryDataRow<string, string>> GetFindZoneTestData()
-    {
-        yield return new("Europe/Vilnius", "No Such Zone") { Label = "the IANA id is found" };
-        yield return new("No/Such_Zone", "FLE Standard Time") { Label = "without the IANA id, the Windows id is used" };
-    }
+    // Windows ids are looked up only on Windows, so those tests run on one OS or the other
+    public static bool IsWindows => OperatingSystem.IsWindows();
 
-    [Theory]
-    [MemberData(nameof(GetFindZoneTestData))]
-    public void FindZone_GivenIds_ReturnsVilniusOffsets(string ianaId, string windowsId)
+    private static void ShouldBeVilnius(TimeZoneInfo zone)
     {
-        //Act
-        TimeZoneInfo zone = OverdueSchedule.FindZone(ianaId, windowsId);
-
-        //Assert
         zone.GetUtcOffset(Utc("2026-01-15T12:00:00")).Should().Be(TimeSpan.FromHours(2));
         zone.GetUtcOffset(Utc("2026-07-15T12:00:00")).Should().Be(TimeSpan.FromHours(3));
+    }
+
+    [Fact]
+    public void FindZone_GivenIanaId_ReturnsVilniusOffsets()
+    {
+        //Act
+        TimeZoneInfo zone = OverdueSchedule.FindZone("Europe/Vilnius", "No Such Zone");
+
+        //Assert
+        ShouldBeVilnius(zone);
+    }
+
+    [Fact(Skip = "Windows ids are looked up only on Windows", SkipUnless = nameof(IsWindows))]
+    public void FindZone_GivenUnknownIanaIdOnWindows_UsesWindowsId()
+    {
+        //Act
+        TimeZoneInfo zone = OverdueSchedule.FindZone("No/Such_Zone", "FLE Standard Time");
+
+        //Assert
+        ShouldBeVilnius(zone);
+    }
+
+    [Fact(Skip = "On Windows the Windows id is used", SkipWhen = nameof(IsWindows))]
+    public void FindZone_GivenUnknownIanaIdElsewhere_ThrowsTimeZoneNotFoundException()
+    {
+        //Act
+        Action act = () => OverdueSchedule.FindZone("No/Such_Zone", "FLE Standard Time");
+
+        //Assert
+        act.Should().Throw<TimeZoneNotFoundException>().WithMessage("The time zone No/Such_Zone was not found");
     }
 
     [Fact]
