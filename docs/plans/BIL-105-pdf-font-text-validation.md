@@ -10,6 +10,39 @@ Jira: [BIL-105](https://aldisadom.atlassian.net/browse/BIL-105). Epic: BIL-89 (B
 3. Decisions 7 and 8 are the right reading of F7, F12 and F14.
 4. **`State` gets no rule**: it isn't printed.
 
+## Done on the branch (2026-11-15)
+
+Steps 3 to 8 are done; nothing is committed or pushed yet. Unit tests: 949 passed, line 93.7%,
+branch 88.4% (the CI minimums are raised to 92.7 and 87.4). Integration tests on the
+`BIL-105-pdf-font-text-validation` branch of BillioIntegrationTest: 232 of 232, 3 runs, against a
+throwaway stack (13 new error cases, add and update, and a seller saved with Lithuanian letters). On that stack: `POST /items` with `Dragon 🐉 鐵` gives 400 naming both characters;
+`POST /invoices/generate` for an invoice whose seller name and comment were given an emoji in the
+database gives 400 naming both fields, logged as a warning without a stack trace; with clean data it
+gives the PDF.
+
+Done differently from the plan below:
+
+- Decision 3: a character must be in **every configured font file**, not every file of the documents'
+  family. Telling a file's family needs the font's name table; every configured file is simpler and
+  stricter, and the same thing today (one file).
+- A tab is not allowed: Calibri has no glyph for it. Line feed and carriage return are.
+- `EnsureFontFamilyRegistered` stays in `DependencyInjectionInvoiceGeneration`; `PdfGeneratorSetup` calls it.
+- The generate-time message names the line number, not the item's name ("Item name on line 2"),
+  so no document text reaches the log.
+- The classes that touch QuestPDF's global settings share one xUnit collection, so they don't run in
+  parallel.
+- After the review (2 rounds): every control character except line feed and carriage return is
+  rejected whatever the font maps (Calibri maps U+0000); the reader uses the format 12 tables when
+  a font has one, else format 4; startup fails when the configured files don't all have A-Z, a-z
+  and 0-9; the generate-time exception carries no inner exception.
+- Decision 2 names the zero-width joiner and the soft hyphen as rejected. Calibri has both, so they
+  are allowed, and the render test shows they draw.
+- Step 7 has no "agreement" test for a tab; the render test covers every character the checker allows.
+
+Not done: step 9's look at a front-end page in the browser, and the comparison of the LT and EN
+sample PDFs with master's (the document code and QuestPDF settings are unchanged; one LT invoice
+rendered on the stack).
+
 ## Goal
 
 - Saving an item, seller, customer, user, series or invoice with a character Calibri can't draw (an
@@ -95,60 +128,60 @@ None.
 
 ## Step 3: Domain and Infrastructure
 
-- [ ] `Domain/Exceptions/DocumentTextException`.
-- [ ] `Domain/IOptions/FontSettings.cs`: remove `Name`.
-- [ ] `Infrastructure/FontCharacterReader`: reads a `.ttf` stream's `cmap` (format 12 when present,
+- [x] `Domain/Exceptions/DocumentTextException`.
+- [x] `Domain/IOptions/FontSettings.cs`: remove `Name`.
+- [x] `Infrastructure/FontCharacterReader`: reads a `.ttf` stream's `cmap` (format 12 when present,
       else format 4) into a set of code points. Throws `ArgumentException` naming the path for a file
       without a usable `cmap`.
-- [ ] `Infrastructure/DocumentTextChecker : IDocumentTextChecker`: the set, plus `\n` and `\r`.
+- [x] `Infrastructure/DocumentTextChecker : IDocumentTextChecker`: the set, plus `\n` and `\r`.
       Whether a tab is allowed is decided by the render test in step 7.
-- [ ] `Infrastructure/PdfGeneratorSetup.Apply` (decision 7), without the `ReadAllBytes`.
-- [ ] `AddPdfGenerator`: call it, `services.AddSingleton<IDocumentTextChecker>(...)`.
+- [x] `Infrastructure/PdfGeneratorSetup.Apply` (decision 7), without the `ReadAllBytes`.
+- [x] `AddPdfGenerator`: call it, `services.AddSingleton<IDocumentTextChecker>(...)`.
 
 ## Step 4: Application
 
-- [ ] `Application/Interfaces/IDocumentTextChecker`.
-- [ ] `InvoiceService` (PDF generation): check the printed texts first, throw `DocumentTextException`.
-- [ ] `InvoiceDocumentFactory.GeneratePdf`: missing-glyph `DocumentDrawingException` →
+- [x] `Application/Interfaces/IDocumentTextChecker`.
+- [x] `InvoiceService` (PDF generation): check the printed texts first, throw `DocumentTextException`.
+- [x] `InvoiceDocumentFactory.GeneratePdf`: missing-glyph `DocumentDrawingException` →
       `DocumentTextException`.
 
 ## Step 5: Validators
 
-- [ ] `Validators/DocumentTextRule.cs`: the `DrawableOnPdf` extension.
-- [ ] The validators in decision 5: constructor parameter and one rule per printed field.
-- [ ] `Validators/DependencyInjection.cs`: no change (constructor injection). `InvoiceItemValidator`
+- [x] `Validators/DocumentTextRule.cs`: the `DrawableOnPdf` extension.
+- [x] The validators in decision 5: constructor parameter and one rule per printed field.
+- [x] `Validators/DependencyInjection.cs`: no change (constructor injection). `InvoiceItemValidator`
       is registered there and also built by hand in two validators; both get the checker.
 
 ## Step 6: WebAPI
 
-- [ ] `ErrorChecking`: `case DocumentTextException` → 400 "Validation failure".
-- [ ] `appsettings.LocalDocker.json`: remove `Name`.
-- [ ] `StartupInjection.cs`: no change beyond what compiles.
+- [x] `ErrorChecking`: `case DocumentTextException` → 400 "Validation failure".
+- [x] `appsettings.LocalDocker.json`: remove `Name`.
+- [x] `StartupInjection.cs`: no change beyond what compiles.
 
 ## Step 7: Tests (`_write-tests`)
 
-- [ ] `FontCharacterReaderTest`: Calibri has every Lithuanian letter and `€`; it has no emoji and no
+- [x] `FontCharacterReaderTest`: Calibri has every Lithuanian letter and `€`; it has no emoji and no
       Chinese; a file that isn't a font throws.
-- [ ] `DocumentTextCheckerTest`: null, empty, plain text, a line break, an emoji (a surrogate pair is
+- [x] `DocumentTextCheckerTest`: null, empty, plain text, a line break, an emoji (a surrogate pair is
       one character in the result), a lone surrogate, the same character twice listed once.
-- [ ] **Agreement with QuestPDF:** a document with every allowed character renders without an
+- [x] **Agreement with QuestPDF:** a document with every allowed character renders without an
       exception; `\t` is tried and then allowed or not, with the result written here.
-- [ ] Validator tests: per validator, one theory case per printed field with an emoji, checking the
+- [x] Validator tests: per validator, one theory case per printed field with an emoji, checking the
       message; a case that passes with Lithuanian text.
-- [ ] `InvoiceServiceTest`: a stored emoji throws `DocumentTextException` and the factory is not called.
-- [ ] `InvoiceDocumentFactoryTest`: the three existing missing-glyph cases expect
+- [x] `InvoiceServiceTest`: a stored emoji throws `DocumentTextException` and the factory is not called.
+- [x] `InvoiceDocumentFactoryTest`: the three existing missing-glyph cases expect
       `DocumentTextException` and a message without the item name.
-- [ ] `ErrorCheckingTest` (new file): `DocumentTextException` gives 400, "Validation failure" and the
+- [x] `ErrorCheckingTest` (new file): `DocumentTextException` gives 400, "Validation failure" and the
       message, and logs a warning.
-- [ ] `DependencyInjectionTests`: the checker is registered; a bad argument leaves the QuestPDF
+- [x] `DependencyInjectionTests`: the checker is registered; a bad argument leaves the QuestPDF
       settings as they were (revert-check for decision 7); the `Name` cases go.
-- [ ] Coverage: compare with the CI minimums (`CLAUDE.md`).
+- [x] Coverage: compare with the CI minimums (`CLAUDE.md`).
 
 ## Step 8: Integration tests (BillioIntegrationTest, branch with the same name)
 
-- [ ] One error case per resource: add an item, seller, customer, user and series with an emoji, and
+- [x] One error case per resource: add an item, seller, customer, user and series with an emoji, and
       an invoice with an emoji comment: 400, "Validation failure", the extended message.
-- [ ] No test for the generate-time 400: the API can't store such text any more.
+- No test for the generate-time 400: the API can't store such text any more.
 
 ## Step 9: Front end
 

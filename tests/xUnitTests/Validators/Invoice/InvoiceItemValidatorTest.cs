@@ -6,7 +6,7 @@ namespace xUnitTests.Validators.Invoice;
 
 public class InvoiceItemValidatorTest
 {
-    private readonly InvoiceItemValidator _validator = new();
+    private readonly InvoiceItemValidator _validator = new(RepoFonts.CalibriChecker);
 
     [Fact]
     public void Validate_GivenValidRequest_IsValid()
@@ -60,6 +60,34 @@ public class InvoiceItemValidatorTest
     {
         //Arrange
         var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = quantity };
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validate_GivenCommentThePdfCannotShow_IsInvalid()
+    {
+        //Arrange
+        var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 2, Comments = "Dragon 🐉" };
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Comments) &&
+            e.ErrorMessage == "Please use only characters the invoice PDF can show in Comments. Can't show: 🐉 (U+1F409)");
+    }
+
+    [Fact]
+    public void Validate_GivenLithuanianComment_IsValid()
+    {
+        //Arrange
+        var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 2, Comments = "Ąžuolų šėtra €5" };
 
         //Act
         var result = _validator.Validate(request);

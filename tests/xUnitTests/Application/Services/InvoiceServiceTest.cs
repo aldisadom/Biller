@@ -38,7 +38,8 @@ public class InvoiceServiceTest
         _invoiceDocumentFactory = new Mock<IInvoiceDocumentFactory>(MockBehavior.Strict);
 
         _invoiceService = new InvoiceService(_userServiceMock.Object, _customerServiceMock.Object,
-            _itemServiceMock.Object, _sellerServiceMock.Object, _invoiceDataRepositoryMock.Object, _invoiceDocumentFactory.Object);
+            _itemServiceMock.Object, _sellerServiceMock.Object, _invoiceDataRepositoryMock.Object, _invoiceDocumentFactory.Object,
+            RepoFonts.CalibriChecker);
     }
 
     private static InvoiceModel NewInvoiceModel() => new()
@@ -562,6 +563,103 @@ public class InvoiceServiceTest
         _sellerServiceMock.Verify(m => m.Get(seller.Id), Times.Once());
         _customerServiceMock.Verify(m => m.Get(customer.Id), Times.Once());
         _invoiceDocumentFactory.Verify(x => x.GeneratePdf(documentType, languageCode, It.Is(matchesInvoice)), Times.Once());
+    }
+
+    public static IEnumerable<TheoryDataRow<Action<InvoiceModel, UserModel, SellerModel, CustomerModel>, string>> GetPrintedTextTestData()
+    {
+        yield return new((i, u, s, c) => i.SeriesName = "Dragon 🐉", "Series name has characters the invoice PDF can't show: 🐉 (U+1F409). A series with invoices can't be renamed through the API: its name has to be fixed in the database") { Label = "emoji in the series name is named with how to fix it" };
+        yield return new((i, u, s, c) => u.Name = "Dragon 🐉", "User name has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the user") { Label = "emoji in the user name is named with how to fix it" };
+        yield return new((i, u, s, c) => u.LastName = "Dragon 🐉", "User last name has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the user") { Label = "emoji in the user last name is named with how to fix it" };
+        yield return new((i, u, s, c) => s.CompanyName = "Dragon 🐉", "Seller company name has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the seller") { Label = "emoji in the seller company name is named with how to fix it" };
+        yield return new((i, u, s, c) => s.CompanyNumber = "Dragon 🐉", "Seller company number has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the seller") { Label = "emoji in the seller company number is named with how to fix it" };
+        yield return new((i, u, s, c) => s.Street = "Dragon 🐉", "Seller street has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the seller") { Label = "emoji in the seller street is named with how to fix it" };
+        yield return new((i, u, s, c) => s.City = "Dragon 🐉", "Seller city has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the seller") { Label = "emoji in the seller city is named with how to fix it" };
+        yield return new((i, u, s, c) => s.Phone = "Dragon 🐉", "Seller phone has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the seller") { Label = "emoji in the seller phone is named with how to fix it" };
+        yield return new((i, u, s, c) => s.Email = "Dragon 🐉", "Seller email has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the seller") { Label = "emoji in the seller email is named with how to fix it" };
+        yield return new((i, u, s, c) => s.BankName = "Dragon 🐉", "Seller bank name has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the seller") { Label = "emoji in the seller bank name is named with how to fix it" };
+        yield return new((i, u, s, c) => s.BankNumber = "Dragon 🐉", "Seller bank number has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the seller") { Label = "emoji in the seller bank number is named with how to fix it" };
+        yield return new((i, u, s, c) => c.CompanyName = "Dragon 🐉", "Customer company name has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the customer") { Label = "emoji in the customer company name is named with how to fix it" };
+        yield return new((i, u, s, c) => c.CompanyNumber = "Dragon 🐉", "Customer company number has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the customer") { Label = "emoji in the customer company number is named with how to fix it" };
+        yield return new((i, u, s, c) => c.Street = "Dragon 🐉", "Customer street has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the customer") { Label = "emoji in the customer street is named with how to fix it" };
+        yield return new((i, u, s, c) => c.City = "Dragon 🐉", "Customer city has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the customer") { Label = "emoji in the customer city is named with how to fix it" };
+        yield return new((i, u, s, c) => c.Phone = "Dragon 🐉", "Customer phone has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the customer") { Label = "emoji in the customer phone is named with how to fix it" };
+        yield return new((i, u, s, c) => c.Email = "Dragon 🐉", "Customer email has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the customer") { Label = "emoji in the customer email is named with how to fix it" };
+        yield return new((i, u, s, c) => i.Items![0].Name = "Dragon 🐉", "Item name on line 1 has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the item, then save the invoice again") { Label = "emoji in the item name on the first line is named with how to fix it" };
+        yield return new((i, u, s, c) => i.Items![1].Comments = "Dragon 🐉", "Comment on line 2 has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the invoice") { Label = "emoji in the comment on the second line is named with how to fix it" };
+        yield return new((i, u, s, c) => i.Comments = "Dragon 🐉", "Invoice comment has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the invoice") { Label = "emoji in the invoice comment is named with how to fix it" };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetPrintedTextTestData))]
+    public async Task GeneratePDF_GivenOnePrintedTextThePdfCannotShow_ThrowsDocumentTextExceptionNamingIt(
+        Action<InvoiceModel, UserModel, SellerModel, CustomerModel> setText, string expectedMessage)
+    {
+        //Arrange
+        InvoiceModel storedInvoice = NewInvoiceModel();
+        UserModel user = new() { Id = storedInvoice.UserId };
+        SellerModel seller = new() { Id = storedInvoice.SellerId };
+        CustomerModel customer = new() { Id = storedInvoice.CustomerId };
+        setText(storedInvoice, user, seller, customer);
+
+        _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
+                        .ReturnsAsync(storedInvoice.ToEntity());
+        _userServiceMock.Setup(m => m.Get(user.Id))
+                .ReturnsAsync(user);
+        _sellerServiceMock.Setup(m => m.Get(seller.Id))
+                .ReturnsAsync(seller);
+        _customerServiceMock.Setup(m => m.Get(customer.Id))
+                .ReturnsAsync(customer);
+
+        //Act
+        Func<Task> act = () => _invoiceService.GeneratePDF(storedInvoice.Id, Language.LT, DocumentType.Invoice);
+
+        //Assert
+        // The strict document factory mock has no setup: generating would fail the test
+        await act.Should().ThrowAsync<DocumentTextException>()
+            .WithMessage(expectedMessage);
+
+        _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
+        _userServiceMock.Verify(m => m.Get(user.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.Get(seller.Id), Times.Once());
+        _customerServiceMock.Verify(m => m.Get(customer.Id), Times.Once());
+    }
+
+    [Fact]
+    public async Task GeneratePDF_GivenStoredTextThePdfCannotShow_ThrowsDocumentTextExceptionNamingEveryFieldAndDoesNotGenerate()
+    {
+        //Arrange
+        InvoiceModel storedInvoice = NewInvoiceModel();
+        storedInvoice.Comments = "Fire 🔥";
+        storedInvoice.Items = [new() { Name = "Iron throne" }, new() { Name = "Dragon 🐉", Comments = "鐵" }];
+
+        UserModel user = new() { Id = storedInvoice.UserId };
+        SellerModel seller = new() { Id = storedInvoice.SellerId, CompanyName = "Lannister gold 🦁" };
+        CustomerModel customer = new() { Id = storedInvoice.CustomerId };
+
+        _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
+                        .ReturnsAsync(storedInvoice.ToEntity());
+        _userServiceMock.Setup(m => m.Get(user.Id))
+                .ReturnsAsync(user);
+        _sellerServiceMock.Setup(m => m.Get(seller.Id))
+                .ReturnsAsync(seller);
+        _customerServiceMock.Setup(m => m.Get(customer.Id))
+                .ReturnsAsync(customer);
+
+        //Act
+        Func<Task> act = () => _invoiceService.GeneratePDF(storedInvoice.Id, Language.LT, DocumentType.Invoice);
+
+        //Assert
+        // The strict document factory mock has no setup: generating would fail the test
+        await act.Should().ThrowAsync<DocumentTextException>()
+            .WithMessage("Seller company name has characters the invoice PDF can't show: 🦁 (U+1F981). Edit the seller\n" +
+                         "Item name on line 2 has characters the invoice PDF can't show: 🐉 (U+1F409). Edit the item, then save the invoice again\n" +
+                         "Comment on line 2 has characters the invoice PDF can't show: 鐵 (U+9435). Edit the invoice\n" +
+                         "Invoice comment has characters the invoice PDF can't show: 🔥 (U+1F525). Edit the invoice");
+
+        _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
+        _userServiceMock.Verify(m => m.Get(user.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.Get(seller.Id), Times.Once());
+        _customerServiceMock.Verify(m => m.Get(customer.Id), Times.Once());
     }
 
     [Fact]

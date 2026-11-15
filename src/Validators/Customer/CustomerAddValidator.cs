@@ -1,4 +1,5 @@
-﻿using BillerContracts.Requests.Customer;
+﻿using Application.Interfaces;
+using BillerContracts.Requests.Customer;
 using FluentValidation;
 
 namespace Validators.Customer;
@@ -11,7 +12,8 @@ public class CustomerAddValidator : AbstractValidator<CustomerAddRequest>
     /// <summary>
     /// Validation
     /// </summary>
-    public CustomerAddValidator()
+    /// <param name="documentTextChecker">knows which characters the invoice PDF can show</param>
+    public CustomerAddValidator(IDocumentTextChecker documentTextChecker)
     {
         RuleFor(x => x.SellerId).NotEmpty().WithMessage("Please specify seller Id");
         RuleFor(x => x.CompanyNumber).NotEmpty().WithMessage("Please specify company number");
@@ -22,5 +24,12 @@ public class CustomerAddValidator : AbstractValidator<CustomerAddRequest>
         RuleFor(x => x.Email).Must(EmailValidator.IsValidEmail).WithMessage("Please provide valid email address");
         RuleFor(x => x.Phone).NotEmpty().WithMessage("Please provide phone number");
         RuleFor(x => x.SeriesId).NotEmpty().WithMessage("Please specify series Id");
+
+        RuleFor(x => x.CompanyNumber).DrawableOnPdf(documentTextChecker);
+        RuleFor(x => x.CompanyName).DrawableOnPdf(documentTextChecker);
+        RuleFor(x => x.Street).DrawableOnPdf(documentTextChecker);
+        RuleFor(x => x.City).DrawableOnPdf(documentTextChecker);
+        RuleFor(x => x.Email).DrawableOnPdf(documentTextChecker);
+        RuleFor(x => x.Phone).DrawableOnPdf(documentTextChecker);
     }
 }

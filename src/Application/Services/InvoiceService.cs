@@ -1,4 +1,5 @@
-﻿using Application.Interfaces;
+﻿using Application.Helpers;
+using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
 using BillerContracts.Enums;
@@ -18,10 +19,13 @@ public class InvoiceService : IInvoiceService
     private readonly IUserService _userService;
     private readonly IInvoiceRepository _invoiceRepository;
     private readonly IInvoiceDocumentFactory _invoiceDocumentFactory;
+    private readonly IDocumentTextChecker _documentTextChecker;
 
     public InvoiceService(IUserService userService, ICustomerService CustomerService,
-                        IItemService itemService, ISellerService sellerService, IInvoiceRepository invoiceRepository, IInvoiceDocumentFactory invoiceDocumentFactory)
+                        IItemService itemService, ISellerService sellerService, IInvoiceRepository invoiceRepository, IInvoiceDocumentFactory invoiceDocumentFactory,
+                        IDocumentTextChecker documentTextChecker)
     {
+        _documentTextChecker = documentTextChecker;
         _userService = userService;
         _itemService = itemService;
         _customerService = CustomerService;
@@ -189,6 +193,59 @@ public class InvoiceService : IInvoiceService
             throw new ValidationException($"Invalid document type: {documentType}");
 
         InvoiceModelFull invoiceData = await Get(id);
+        CheckDocumentTexts(invoiceData);
+
         return (_invoiceDocumentFactory.GeneratePdf(documentType, languageCode, invoiceData), invoiceData.GenerateFileLocation());
+    }
+
+    // Text saved before the validators checked it can still have a character the PDF font can't
+    // draw. The message names every such field and its characters, not the text: it is logged.
+    private void CheckDocumentTexts(InvoiceModelFull invoice)
+    {
+        List<string> errors = [];
+
+        void Check(string field, string? text, string howToFix)
+        {
+            IReadOnlyList<string> missing = _documentTextChecker.MissingCharacters(text);
+            if (missing.Count != 0)
+                errors.Add($"{field} has characters the invoice PDF can't show: {DocumentTextFormat.Describe(missing)}. {howToFix}");
+        }
+
+        const string editSeller = "Edit the seller";
+        const string editCustomer = "Edit the customer";
+        const string editUser = "Edit the user";
+        const string editInvoice = "Edit the invoice";
+
+        Check("Series name", invoice.SeriesName, "A series with invoices can't be renamed through the API: its name has to be fixed in the database");
+        Check("User name", invoice.User.Name, editUser);
+        Check("User last name", invoice.User.LastName, editUser);
+
+        Check("Seller company name", invoice.Seller.CompanyName, editSeller);
+        Check("Seller company number", invoice.Seller.CompanyNumber, editSeller);
+        Check("Seller street", invoice.Seller.Street, editSeller);
+        Check("Seller city", invoice.Seller.City, editSeller);
+        Check("Seller phone", invoice.Seller.Phone, editSeller);
+        Check("Seller email", invoice.Seller.Email, editSeller);
+        Check("Seller bank name", invoice.Seller.BankName, editSeller);
+        Check("Seller bank number", invoice.Seller.BankNumber, editSeller);
+
+        Check("Customer company name", invoice.Customer.CompanyName, editCustomer);
+        Check("Customer company number", invoice.Customer.CompanyNumber, editCustomer);
+        Check("Customer street", invoice.Customer.Street, editCustomer);
+        Check("Customer city", invoice.Customer.City, editCustomer);
+        Check("Customer phone", invoice.Customer.Phone, editCustomer);
+        Check("Customer email", invoice.Customer.Email, editCustomer);
+
+        List<InvoiceItemModel> items = invoice.Items ?? [];
+        for (int i = 0; i < items.Count; i++)
+        {
+            Check($"Item name on line {i + 1}", items[i].Name, "Edit the item, then save the invoice again");
+            Check($"Comment on line {i + 1}", items[i].Comments, editInvoice);
+        }
+
+        Check("Invoice comment", invoice.Comments, editInvoice);
+
+        if (errors.Count != 0)
+            throw new DocumentTextException(string.Join("\n", errors));
     }
 }

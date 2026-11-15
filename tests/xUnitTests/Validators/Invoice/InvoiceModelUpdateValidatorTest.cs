@@ -6,7 +6,7 @@ namespace xUnitTests.Validators.Invoice;
 
 public class InvoiceModelUpdateValidatorTest
 {
-    private readonly InvoiceModelUpdateValidator _validator = new();
+    private readonly InvoiceModelUpdateValidator _validator = new(RepoFonts.CalibriChecker);
 
     private static InvoiceModel ValidModel() => new()
     {
@@ -87,5 +87,57 @@ public class InvoiceModelUpdateValidatorTest
 
         //Assert
         result.IsValid.Should().BeTrue();
+    }
+
+    public static IEnumerable<TheoryDataRow<Action<InvoiceModel>, string, string>> GetPdfTextFieldTestData()
+    {
+        yield return new(r => r.Comments = "Dragon 🐉", nameof(InvoiceModel.Comments), "Comments") { Label = "emoji in invoice comment is rejected and named" };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetPdfTextFieldTestData))]
+    public void Validate_GivenCharacterThePdfCannotShow_IsInvalid(Action<InvoiceModel> setField, string propertyName, string displayName)
+    {
+        //Arrange
+        var model = ValidModel();
+        setField(model);
+
+        //Act
+        var result = _validator.Validate(model);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName &&
+            e.ErrorMessage == $"Please use only characters the invoice PDF can show in {displayName}. Can't show: 🐉 (U+1F409)");
+    }
+
+    [Fact]
+    public void Validate_GivenLithuanianText_IsValid()
+    {
+        //Arrange
+        var model = ValidModel();
+        model.Comments = "Ąžuolų šėtra €5";
+
+        //Act
+        var result = _validator.Validate(model);
+
+        //Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validate_GivenItemCommentThePdfCannotShow_IsInvalid()
+    {
+        //Arrange
+        InvoiceModel model = ValidModel();
+        model.Items![0].Comments = "Dragon 🐉";
+
+        //Act
+        var result = _validator.Validate(model);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == $"{nameof(InvoiceModel.Items)}[0].{nameof(InvoiceItemModel.Comments)}" &&
+            e.ErrorMessage == "Please use only characters the invoice PDF can show in Comments. Can't show: 🐉 (U+1F409)");
     }
 }

@@ -55,7 +55,14 @@ public class DependencyInjectionTests
 
         //Act
         var result = services.AddValidations();
-        using var serviceProvider = services.BuildServiceProvider();
+
+        // the validators need AddPdfGenerator's text checker to be resolved
+        IServiceCollection resolvable = new ServiceCollection();
+        resolvable.AddSingleton(RepoFonts.CalibriChecker);
+        foreach (var descriptor in services)
+            resolvable.Add(descriptor);
+
+        using var serviceProvider = resolvable.BuildServiceProvider();
         using var scope = serviceProvider.CreateScope();
 
         //Assert
