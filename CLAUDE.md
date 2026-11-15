@@ -36,6 +36,9 @@ on a small Linux PC.
   on the branch with Biller's branch name, else on up-to-date master.
 - Working copies on Windows have CRLF line endings (`.gitattributes` stores LF). Change files with
   the Edit tool, which keeps them. Don't rewrite source files with sed or Python scripts.
+- Update `README.md` in the same change when the change makes it wrong: a new or changed command,
+  setting, port, endpoint group, package, or project layout. And `docs/README_lt.md`, its Lithuanian
+  translation, with it.
 - Coverage never goes down. CI fails below `COVERAGE_MIN_LINE` / `COVERAGE_MIN_BRANCH` in
   `.github/workflows/CI.yaml`, which are master's coverage minus 1 point, rounded down to one decimal
   (Release, Infrastructure left out). Before opening a PR, after the last code change, compare the
@@ -77,7 +80,10 @@ Every Biller repo has these limits. Keep them when updating packages.
 
 ## More
 - Plans: `docs/plans/BIL-<n>-<slug>.md` (Jira project BIL), in the repo the work is in. Only plans
-  that change several repos, or Biller itself, live here.
+  that change several repos, or Biller itself, live here. The `_write-plan` skill writes and checks them.
+- Skills set their model and effort in their frontmatter: Sonnet at high effort by default,
+  `_write-plan` on Fable (medium, in its own context), `_pr-review` on Opus (high). A new skill gets
+  `model:` and `effort:` lines too.
 - Review rules: `REVIEW.md`. Past bugs to test reviews against: `docs/review-evals.md`.
 - Before opening a PR, use the `_pre-pr` skill. The build and tests must pass: don't open a PR, or
   push code to one, with a build error or a failing test. A failure this change didn't cause is fixed

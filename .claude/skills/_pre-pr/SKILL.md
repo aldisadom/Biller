@@ -1,5 +1,7 @@
 ---
 name: _pre-pr
+model: sonnet
+effort: high
 description: Get a Biller change ready for a pull request by running the PR steps in order — _pr-scope, _test-coverage, _test-stack when needed, _pr-review and _pr-fix (at most 3 rounds), then _pr-description — where each step leaves its result in the branch's PR state folder for the next one and runs again only when the code changed since. Use this whenever the user wants to prepare a PR, asks "is this ready?" or "can I merge this?", or has finished a feature or fix in any Biller repo and is about to push, even if they don't say "PR". For one step alone ("just review it", "write the PR text", "open the PR"), use that step's skill.
 ---
 
@@ -52,7 +54,8 @@ change the tree, so results stay valid. The trees are pinned under `refs/pre-pr/
    failed run as `FAILED`. When this change didn't cause the failure (it fails on master too),
    report it and ask; it gets fixed on master first.
 3. Steps 4 and 5 are the review loop: review, fix, then step 2 again (and step 3 when a fix touched
-   what it tests), then review again. Every round runs at medium effort. A later round runs only
+   what it tests), then review again. Every round runs on Opus at high effort (`_pr-review` sets
+   both; the other steps run on Sonnet at high effort). A later round runs only
    when the round before had an Important finding that got fixed. At most 3 rounds. After round 3,
    stop even if findings remain. Tell the user what keeps coming back and
    whether the approach should change.

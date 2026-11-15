@@ -1,5 +1,7 @@
 ---
 name: _pr-fix
+model: sonnet
+effort: high
 description: PR step — work through every open finding in a Biller branch's findings.md (fix important bugs with a test that fails without the fix, fix or answer nits, list pre-existing problems for Jira, answer findings that are wrong with the reason) and record each outcome, so the next review round doesn't report it again and the PR description can count it. Use it as step 5 of _pre-pr, or alone when the user asks to work through or fix review findings.
 ---
 

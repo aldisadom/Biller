@@ -1,129 +1,108 @@
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+# Biller
 
-## Biller
+[Lietuviškai](docs/README_lt.md)
 
-<!-- PROJECT LOGO -->
-<div align="center">
-  <a href="https://github.com/aldisadom/Biller">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a>
-  <p align="center">
-    <a href="/docs/README_en.md">English</a>
-  </p>
-</div>
+Biller is an invoicing backend: a REST API that keeps users, sellers, customers, items, invoice
+series and invoices, and makes invoice and job-done-act PDFs in Lithuanian and English. It has one
+owner and runs in Docker Compose on a small Linux PC.
 
-Biller is a modular, multi-layered billing and invoicing platform. It features a .NET-based backend (WebAPI), domain-driven design, PostgreSQL database, and Dockerized deployment, making it suitable for modern cloud-native or on-premises environments.
+## The four repos
 
-<!-- TABLE OF CONTENTS -->
-<details open>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li><a href="#features">Features</a></li>
-    <li><a href="#project-structure">Project Structure</a></li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#running-with-docker">Running with Docker</a></li>
-        <li><a href="#development">Development</a></li>
-      </ul>
-    </li>
-    <li><a href="#configuration">Configuration</a></li>
-    <li><a href="#migrations">Migrations</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-  </ol>
-</details>
+| Repo | What it is |
+|---|---|
+| Biller (this one) | The API, the database migrations and the PDFs |
+| [BillerContracts](https://github.com/aldisadom/BillerContracts) | Request and response records, enums and typed HTTP clients, published as the `BillerContracts` and `BillerContracts.Clients` NuGet packages |
+| [BillerFrontEnd](https://github.com/aldisadom/BillerFrontEnd) | The Blazor UI. It calls this API through `BillerContracts.Clients` |
+| [BillioIntegrationTest](https://github.com/aldisadom/BillioIntegrationTest) | Tests that call a running API over HTTP |
 
-## Features
+A change to a request or response goes into BillerContracts first. It reaches the other repos after
+a new package version is published and each repo's package reference is updated.
 
-- **Modular architecture**: Separation of Application, Domain, Infrastructure, Client, and WebAPI layers.
-- **RESTful Web API**: Built with ASP.NET Core, using controllers and middleware for extensibility.
-- **PostgreSQL database**: Managed via Docker and migrations (Liquibase).
-- **Integrated logging**: Uses Serilog for flexible, structured log management.
-- **Swagger UI**: API documentation and exploration out of the box.
-- **Docker-based deployment**: Rapid local or cloud deployment with `docker-compose`.
-- **Certificate support**: Prepares for HTTPS endpoints with local development certificates.
-- **Admin interface**: Includes pgAdmin for managing the PostgreSQL instance.
-
-<p align="right">(<a href="#Biller">back to top</a>)</p>
-
-## Project Structure
-
-- `src/Application` – Business logic, use cases, and application services.
-- `src/Common` – Shared types and utilities.
-- `src/Contracts` – Interfaces and data contracts for API and domain exchange.
-- `src/Domain` – Core domain models, aggregates, and logic.
-- `src/Infrastructure` – Implementation of persistence, external integrations, etc.
-- `src/Validators` – Input validation logic.
-- `src/WebAPI` – ASP.NET Core Web API entry point and infrastructure.
-- `tests/xUnitTests` – Unit and integration tests.
-
-<p align="right">(<a href="#Biller">back to top</a>)</p>
-
-## Getting Started
-
-### Prerequisites
+## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Docker](https://www.docker.com/get-started)
+- [Docker](https://www.docker.com/get-started) with Docker Compose
+- For the coverage report: `dotnet tool install -g dotnet-reportgenerator-globaltool`
 
-<p align="right">(<a href="#Biller">back to top</a>)</p>
-
-### Running with Docker
-
-To run the backend, database, and admin tools with Docker:
+## Run
 
 ```sh
-docker-compose up --build
+docker compose up -d --build    # or: make run
 ```
 
-This starts:
-- PostgreSQL database (`db`)
-- pgAdmin web UI (`pgadmin`)
-- Web API service (`webapi`)
-- Liquibase for database migrations (`liquibase`)
+| Container | What | Where |
+|---|---|---|
+| `billio-webapi` | The API | http://localhost:8090, Swagger at http://localhost:8090/swagger |
+| `billio-db` | PostgreSQL 16, database `Data` | localhost:5437 |
+| `billio-liquibase` | Applies the migrations, then stops | |
+| `billio-pgadmin4` | pgAdmin | http://localhost:8888 |
 
-Access:
-- API: [http://localhost:8090](http://localhost:8090)
-- Swagger UI: [http://localhost:8090/swagger](http://localhost:8090/swagger)
-- pgAdmin: [http://localhost:8888](http://localhost:8888)
+`make update` is for the PC the app is deployed on, with `master` checked out: it takes a backup,
+then resets the checked-out branch to `origin/master` (changes to tracked files and local commits
+are lost; files git doesn't track stay and are built in), switches to `master` and starts the
+containers again. Known problem: it resets before it
+fetches, so it deploys the master that was fetched the time before, and only a second run gets the
+newest one. On another branch, the first run resets that branch and deploys the local `master` as it is.
 
-<p align="right">(<a href="#Biller">back to top</a>)</p>
-
-### Development
-
-To run the backend without Docker:
+## Test
 
 ```sh
-cd src/WebAPI
-dotnet run
+bash .claude/skills/_test-coverage/scripts/run-coverage.sh    # unit tests and the coverage report
+bash .claude/skills/_test-coverage/scripts/build.sh           # build only
 ```
 
-To run the tests:
+Both build Release, as CI does. The coverage report goes to `coveragereport/`.
+
+The integration tests are in BillioIntegrationTest and delete all data through the API, so they run
+against a throwaway stack, never against the containers above. `run-integration.sh` takes the tests
+from a BillioIntegrationTest checkout next to this one (`../BillioIntegrationTest`), or from the
+folder given with `--repo`:
 
 ```sh
-dotnet test tests/xUnitTests
+bash .claude/skills/_test-stack/scripts/test-stack.sh up
+bash .claude/skills/_test-stack/scripts/run-integration.sh
+bash .claude/skills/_test-stack/scripts/test-stack.sh down
 ```
 
-<p align="right">(<a href="#Biller">back to top</a>)</p>
+CI (`.github/workflows/CI.yaml`) builds, then runs two jobs side by side: the unit tests, which fail
+when coverage drops below its minimums, and the integration tests from the BillioIntegrationTest
+branch with the same name as this branch, or from its master.
 
 ## Configuration
 
-- Database connection and credentials are defined in `docker-compose.yml`.
-- Environment variables and ASP.NET Core settings can be adjusted in Docker or via `launchSettings.json`.
+Docker Compose runs the API with `ASPNETCORE_ENVIRONMENT=LocalDocker`, so the settings come from
+`src/WebAPI/appsettings.json` and `src/WebAPI/appsettings.LocalDocker.json`:
 
-<p align="right">(<a href="#Biller">back to top</a>)</p>
+- `ConnectionStrings:PostgreConnection`: the database.
+- `FontSettings`: the font files for the PDFs. Compose mounts `./Fonts` at `/Fonts`. The API doesn't
+  start when a file is missing or none of them holds the documents' font family (Calibri).
+- `PasswordEncryption:Pepper`: mixed into password hashes. Changing it makes every stored password wrong.
+- `Serilog`: logging.
+
+Ports, database name and credentials are in `docker-compose.yml`.
+
+Invoices that are past their due date become overdue when the API starts and every day at 03:00 UTC.
+
+## Where things go
+
+- `src/WebAPI`: controllers, Swagger examples, middleware, background jobs.
+- `src/Validators`: request validators.
+- `src/Application`: services, models, mapping methods, PDF documents, amounts in words.
+- `src/Domain`: entities, repository interfaces, exceptions.
+- `src/Infrastructure`: Dapper repositories, registration of the database and the PDF generator.
+- `tests/xUnitTests`: unit tests, in the same folders as `src`.
+- `migrations/sql`: Liquibase changesets.
+- `docs/plans`: one plan per Jira issue.
+
+The conventions, package limits and review rules are in [CLAUDE.md](CLAUDE.md) and [REVIEW.md](REVIEW.md).
 
 ## Migrations
 
-Database schema is managed by Liquibase. Migration scripts are located in the `migrations` directory and are automatically applied by the `liquibase` container.
-
-<p align="right">(<a href="#Biller">back to top</a>)</p>
+The schema is managed by Liquibase. Every `.sql` file in `migrations/sql/` is a changeset:
+`migrations/dbChangeLog.yaml` includes the whole folder, and the `billio-liquibase` container applies
+the files in file-name order (the number at the start) each time the stack starts. A changeset that
+is on master is never edited; a fix is a new changeset. A new changeset has a `-- rollback` line.
+Four old ones (023, 024, 026 and 027) have none, so a rollback can't go back past them.
 
 ## Backup and restore
 
@@ -179,29 +158,6 @@ docker start billio-webapi
 Keep a copy of the backups off the PC (USB drive or cloud folder). A backup on the same disk does
 not survive a disk failure.
 
-<p align="right">(<a href="#Biller">back to top</a>)</p>
+## Licence
 
-## Contributing
-
-Issues and pull requests are welcome! Please see the [LICENSE.txt](LICENSE.txt) for license information.
-
-<p align="right">(<a href="#Biller">back to top</a>)</p>
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-<!-- git -->
-[contributors-shield]: https://img.shields.io/github/contributors/aldisadom/Biller.svg?style=for-the-badge
-[contributors-url]: https://github.com/aldisadom/Biller/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/aldisadom/Biller.svg?style=for-the-badge
-[forks-url]: https://github.com/aldisadom/Biller/network/members
-[stars-shield]: https://img.shields.io/github/stars/aldisadom/Biller.svg?style=for-the-badge
-[stars-url]: https://github.com/aldisadom/Biller/stargazers
-[issues-shield]: https://img.shields.io/github/issues/aldisadom/Biller.svg?style=for-the-badge
-[issues-url]: https://github.com/aldisadom/Biller/issues
-[license-shield]: https://img.shields.io/github/license/aldisadom/Biller.svg?style=for-the-badge
-[license-url]: https://github.com/aldisadom/Biller/blob/master/LICENSE.txt
-
-<!-- my links -->
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/aldis-adomavicius/
-
+MIT, see [LICENSE.txt](LICENSE.txt).

@@ -1,5 +1,7 @@
 ---
 name: _sync-repos
+model: sonnet
+effort: high
 description: Put Biller's sibling repos (BillerContracts, BillerFrontEnd, BillioIntegrationTest) on the right branch before reading, comparing, building or changing them — the branch with the same name as Biller's current branch, or up-to-date master when there is none. Use this before any step that looks at or uses another repo — checking contracts or clients, bumping package versions, running integration tests, comparing code or conventions across repos — and whenever the user asks whether the repos are in sync, even if they don't mention branches.
 ---
 

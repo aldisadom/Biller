@@ -13,6 +13,40 @@ don't apply. The steps below are per repo.
    the main (English) README, in Biller and BillerContracts, the two repos that have the file.
 3. The shields and the logo block are **removed**.
 
+## Done on the branches (2026-11-15)
+
+Steps 1 to 4 are done on `BIL-93-readme` in all four repos; nothing is committed or pushed yet.
+
+Commands run and their result:
+
+- Biller: `run-coverage.sh` and `build.sh` (on the BIL-105 branch the same day: build succeeded,
+  923 tests passed), `test-stack.sh up`, `run-integration.sh` and `test-stack.sh down` (226 of 226).
+- BillerContracts: `dotnet build -c Release` (0 warnings, 0 errors), `dotnet test -c Release` (83 passed).
+- BillerFrontEnd: `dotnet build BillerFrontEnd.sln -c Release` (succeeded),
+  `dotnet test BillerFrontEnd.sln --no-build -c Release` (8 passed).
+- Every relative link and file path in the six README files exists.
+
+Not run: `docker compose up -d --build` and `make run` in Biller and BillerFrontEnd (they start the
+owner's own stack; the test stack builds the same API image), `make update`, `make backup`,
+`make restore`, and a bare `dotnet test BillioIntegrationTest.sln` (it needs an API on port 8090;
+the same tests ran through `run-integration.sh`).
+
+Added on the owner's request (2026-11-15), beyond the issue: every skill sets its model and effort
+in its frontmatter. Sonnet at high effort by default; planning on Fable at medium effort, in a new
+`_write-plan` skill that runs in its own context and takes over `_add-api-feature`'s issue review
+and plan writing; code review on Opus at high effort (`_pr-review`, and `/code-review high` instead
+of `medium`). `CLAUDE.md` says new skills set both too, and the siblings' "Before a PR" review step
+runs `/code-review high` on Opus. `/.claude/` is in this clone's `.git/info/exclude`, so the new
+skill file is added with `git add -f`.
+
+Done differently from the plan below:
+
+- Decision 8: `scope.sh` is unchanged. `_pr-scope` got a step 5 that records a `README:` note with
+  `pr-state.sh note scope`, and `_pr-description` reports that note.
+- `images/logo.png` and `images/screenshot.png` are removed in Biller and BillerContracts: no README
+  uses them any more.
+- Step 5's `_pre-pr` run on this branch is left for the PR step.
+
 ## Goal
 
 - Every repo's README says what the repo is, how it fits with the other three, and how to build, run
@@ -65,7 +99,7 @@ don't apply. The steps below are per repo.
 
 ## Step 1: Biller
 
-- [ ] Rewrite `README.md`:
+- [x] Rewrite `README.md`:
   - What it is: invoicing REST API with invoice and act PDFs (LT, EN), one owner, docker compose.
   - The four repos and how a change travels (contracts → publish → version bump).
   - Prerequisites: .NET 10 SDK, Docker.
@@ -79,39 +113,39 @@ don't apply. The steps below are per repo.
   - Migrations: Liquibase changesets, applied by the `liquibase` container.
   - Backup and restore: unchanged.
   - CI: build, unit tests with the coverage gate, integration tests.
-- [ ] `git mv docs/README_en.md docs/README_lt.md` and write the translation. Remove `images/` files no README uses.
-- [ ] `CLAUDE.md`: the rule (decision 6), under Conventions.
-- [ ] `REVIEW.md`: the failure line (decision 7).
-- [ ] `_pr-scope` and `_pr-description`: the `README:` line (decision 8).
-- [ ] `docs/review-evals.md`: no entry, there is no past bug to test against.
+- [x] `git mv docs/README_en.md docs/README_lt.md` and write the translation. Remove `images/` files no README uses.
+- [x] `CLAUDE.md`: the rule (decision 6), under Conventions.
+- [x] `REVIEW.md`: the failure line (decision 7).
+- [x] `_pr-scope` and `_pr-description`: the `README:` line (decision 8).
+- [x] `docs/review-evals.md`: no entry, there is no past bug to test against.
 
 ## Step 2: BillerContracts
 
-- [ ] Replace `README.md`: the two packages and what is in each, who uses them, build and test
+- [x] Replace `README.md`: the two packages and what is in each, who uses them, build and test
       commands, how to publish (the `Publish` workflow, preview versions from a branch), and that a
       change reaches the other repos only after a publish and a version bump.
-- [ ] `git mv docs/README_en.md docs/README_lt.md` and write the translation. Remove unused `images/`.
-- [ ] `CLAUDE.md` rule and "Before a PR" line; `REVIEW.md` line.
+- [x] `git mv docs/README_en.md docs/README_lt.md` and write the translation. Remove unused `images/`.
+- [x] `CLAUDE.md` rule and "Before a PR" line; `REVIEW.md` line.
 
 ## Step 3: BillerFrontEnd
 
-- [ ] Write `README.md`: Blazor Server UI for the API, start Biller first, `make run` or
+- [x] Write `README.md`: Blazor Server UI for the API, start Biller first, `make run` or
       `docker compose up -d --build`, UI at http://localhost:8080, `ClientsOptions` per environment,
       build and test commands, where pages go.
-- [ ] `CLAUDE.md` rule and "Before a PR" line; `REVIEW.md` line.
+- [x] `CLAUDE.md` rule and "Before a PR" line; `REVIEW.md` line.
 
 ## Step 4: BillioIntegrationTest
 
-- [ ] Write `README.md`: what the tests cover, the warning that they delete all data through the
+- [x] Write `README.md`: what the tests cover, the warning that they delete all data through the
       API, how to run them against a Biller stack, how the URL is set (`ClientsOptions` and the
       environment variables), how CI pairs branches by name.
-- [ ] `CLAUDE.md` rule and "Before a PR" line; `REVIEW.md` line.
+- [x] `CLAUDE.md` rule and "Before a PR" line; `REVIEW.md` line.
 
 ## Step 5: Check
 
-- [ ] Run every command each README shows (decision 4) and paste the result lines into the PR.
-- [ ] Every link and file path in each README exists (a grep over the paths).
-- [ ] Biller: `_pre-pr` on the branch shows the new `README:` line in `scope.md`.
+- [x] Run every command each README shows (decision 4) and paste the result lines into the PR.
+- [x] Every link and file path in each README exists (a grep over the paths).
+- [ ] Biller: `_pre-pr` on the branch shows the new `README:` note in `scope.md`.
 
 ## Out of scope
 

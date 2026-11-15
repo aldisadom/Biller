@@ -1,6 +1,8 @@
 ---
 name: _pr-review
-description: PR step — review a Biller branch in a fresh context against REVIEW.md, handing the reviewer one pack (scope.md, REVIEW.md, earlier findings, the diff) instead of letting it explore. Round 1 reviews the whole branch; later rounds review only what changed since the last snapshot, and run only when the round before had an Important finding that got fixed, or code changed for another reason. Every round runs at medium effort. Every finding goes into findings.md for _pr-fix. Use it as step 4 of _pre-pr, or alone when the user asks to review their branch or changes before a PR.
+model: opus
+effort: high
+description: PR step — review a Biller branch in a fresh context against REVIEW.md, handing the reviewer one pack (scope.md, REVIEW.md, earlier findings, the diff) instead of letting it explore. Round 1 reviews the whole branch; later rounds review only what changed since the last snapshot, and run only when the round before had an Important finding that got fixed, or code changed for another reason. Every round runs on Opus at high effort. Every finding goes into findings.md for _pr-fix. Use it as step 4 of _pre-pr, or alone when the user asks to review their branch or changes before a PR.
 ---
 
 # Review in a fresh context
@@ -38,13 +40,14 @@ changed. If one isn't part of the PR, leave it out with
 pack takes the plan from `scope.md`; pass `--plan <file>` when there is no `scope.md`. Skill
 files, `CLAUDE.md` and `REVIEW.md` count as code: a fix that only changes them is still reviewed.
 
-Then run `/code-review medium` (the `code-review` skill) in every round. Higher levels are told to
-surface more findings, which pads later rounds with Nits against REVIEW.md's "at most 2 Nits".
+Then run `/code-review high` (the `code-review` skill) in every round. This skill runs on Opus at
+high effort (its frontmatter), and the review runs on the same model. A higher level surfaces more
+Nits; REVIEW.md's "at most 2 Nits" still caps them, so tell the reviewer to keep to it.
 Tell it to read the pack first, to follow the `REVIEW.md` in it, and to open other files only to
 check a finding. For
 a sibling repo, name the repo folder as the target. Reviews of different repos can run at the
-same time. If that skill isn't available, start a general-purpose subagent with the same prompt
-and the same effort.
+same time. If that skill isn't available, start a general-purpose subagent with the same prompt,
+`model: opus` and `effort: high`.
 
 ## Record the findings
 

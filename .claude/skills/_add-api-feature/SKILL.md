@@ -1,6 +1,8 @@
 ---
 name: _add-api-feature
-description: Add or extend a Biller REST API feature end-to-end across every layer — BillerContracts request/response records, FluentValidation validator, Swagger examples, controller, application service + model + mapping extensions, domain entity + repository interface, Dapper repository, Liquibase migration, DI registrations, and unit tests. Use this whenever the user wants a new entity/resource (e.g. "add payments", "CRUD for products"), a new endpoint, or a new field exposed through the API in the Biller repo, even if they only mention one layer ("add a Currency field to invoices", "new GET by seller endpoint") — fields and endpoints almost always ripple through several layers. Also use it when the user gives a Jira issue (BIL-<n> key or link) for API work: it reviews the issue, then works from its plan in docs/plans or writes one first. With no issue, it asks for the details and creates the BIL issue in Jira before starting.
+model: sonnet
+effort: high
+description: Add or extend a Biller REST API feature end-to-end across every layer — BillerContracts request/response records, FluentValidation validator, Swagger examples, controller, application service + model + mapping extensions, domain entity + repository interface, Dapper repository, Liquibase migration, DI registrations, and unit tests. Use this whenever the user wants a new entity/resource (e.g. "add payments", "CRUD for products"), a new endpoint, or a new field exposed through the API in the Biller repo, even if they only mention one layer ("add a Currency field to invoices", "new GET by seller endpoint") — fields and endpoints almost always ripple through several layers. Also use it when the user gives a Jira issue (BIL-<n> key or link) for API work: it has _write-plan review the issue and check or write its plan in docs/plans first. With no issue, it asks for the details and creates the BIL issue in Jira before starting.
 ---
 
 # Add an API feature end-to-end
@@ -28,47 +30,41 @@ key and go to step 1. If not, create it first:
 - **Draft it short:** a summary, and a description of at most two short paragraphs. The first says
   what the user can do afterwards and why. The second gives the scope: the resource, fields or
   endpoints, the repos it touches and what is out of scope. No headings, step lists or risk
-  sections. The details go in the plan (step 5), and blockers go in as issue links, not text.
+  sections. The details go in the plan (`_write-plan`, 4b), and blockers go in as issue links, not text.
 - **Show the draft and create it once the user agrees:** `createJiraIssue` in project `BIL`, type
   `Task`, `parent` = the epic, plus any priority the user gives. Link each blocker with
   `createJiraIssueLink` (`linkType: "Blocks"`, the blocker as `inwardIssue`).
-- Then start again at step 1 with the new key. It has no plan yet, so step 5 writes one.
+- Then go on at step 1 with the new key. It has no plan yet, so `_write-plan` writes one.
 
-1. **Read the issue** with the Atlassian MCP tools (`getAccessibleAtlassianResources` once for the
-   cloudId, then `getJiraIssue` with `view: "evidence"` for links and parent). Read the comments too
-   (`discover` "list jira issue comments"). Note the summary, description, status, parent epic and
-   every linked issue.
-2. **Review it before writing anything.** Tell the user:
-   - **Blockers:** each "is blocked by" issue and its status. If one isn't Done, ask before going on.
-   - **Gaps:** what the issue doesn't say that the code needs (field types, required fields,
-     relationships, status codes, error messages, which documents or languages are affected).
-   - **Conflicts:** anything that breaks `CLAUDE.md` or `REVIEW.md` (invoices keep their own number,
-     dates and lines, one SQL statement per write, no mapping library), or that clashes with another open
-     issue or plan touching the same tables or requests.
-3. **Find the plan.** Look, in order, for: a `Plan:` line in the description, then
-   `docs/plans/BIL-<n>-*.md` in Biller. A plan that lives in a sibling repo needs `_sync-repos` first.
-4. **There is a plan: work with it.**
-   - Read all of it. Compare its "Current state" with the code now (it names the master commit it
-     was written at; `git log <commit>..master` shows what changed since). Report the differences.
-   - Follow its design decisions and step order. Don't re-decide them. If the code makes a decision
-     wrong or a step impossible, stop, tell the user, and update the plan once they agree.
+1. **Plan on Fable.** First run `_sync-repos` here, where the user can be asked: `_write-plan`
+   can't ask, and reads only repos that are `ok`. Then run `_write-plan BIL-<n>`. It runs in its
+   own context, doesn't see this conversation and remembers nothing between runs, so keep a list
+   of what the user has decided (details, answers, "go on despite the blocker", "leave <repo> out")
+   and pass **all of it on every run**. It reads and reviews the issue, checks the existing plan
+   against the code or writes a new one, and returns the plan's path, the blockers, gaps and
+   conflicts, the open questions and any repo it couldn't read.
+2. **Tell the user** what it returned, before writing anything else, and gather their answers:
+   - A blocker that isn't Done: `_write-plan` stops there without a plan. Ask whether to go on.
+   - A repo it couldn't read: sort it out with `_sync-repos` (ask the user on `BLOCKED` or
+     `MISSING`), or the user chooses to go on without it ("leave <repo> out"): its steps then stay
+     in the plan, marked as not checked against the code.
+   - Open questions: ask them together.
+
+   Then add the answers to the list and run `_write-plan` once more with the whole list. Don't
+   start another run while answers are still missing, and stop when the user doesn't want to go on.
+3. **Approval:** when `_write-plan` returned anything but `unchanged`, or the plan file isn't
+   committed yet (`git status --porcelain docs/plans/BIL-<n>-*` shows it), show the plan and wait
+   for approval before writing code. Offer to add
+   `Plan: docs/plans/BIL-<n>-<slug>.md in the Biller repo.` to the top of the issue description.
+   Edit Jira only after the user agrees.
+4. **An approved plan:** report the differences `_write-plan` found. Follow the plan's design
+   decisions and step order; don't re-decide them. If the code makes a decision wrong or a step
+   impossible, stop and tell the user; once they agree, add the change to the list, run
+   `_write-plan`, then step 3.
    - Migration numbers in a plan are guesses; take the next free one (`_add-db-migration`).
    - When the plan names other repos (BillerContracts, BillerFrontEnd, BillioIntegrationTest),
      those steps go on branches with Biller's branch name there.
-5. **There is no plan: write one, then stop for approval.**
-   - Path: `docs/plans/BIL-<n>-<slug>.md` in Biller (an API feature always changes Biller).
-   - Mirror an existing plan, e.g. `docs/plans/BIL-90-seller-invoice-summary.md`: title with the key,
-     `Jira:` link and epic, **Goal**, **Current state (master @ <short hash>)** as a table of the
-     files, tables and endpoints involved, **Design decisions** (numbered, each with its reason),
-     **Dependencies**, one **Step** per layer in the order of this skill (contracts, migration with
-     its SQL and rollback, domain and infrastructure with the SQL, application, validators, WebAPI,
-     tests, integration tests, front end), **Out of scope**, **Order of work**.
-   - Fill "Current state" from the code, not from the issue. Put open questions at the top and ask
-     them; don't guess the answers into decisions.
-   - Show the user the plan and wait for approval before writing code.
-   - Offer to add `Plan: docs/plans/BIL-<n>-<slug>.md in the Biller repo.` to the top of the issue
-     description. Edit Jira only after the user agrees.
-6. **Branch:** if on master, create `BIL-<n>-<slug>` (same slug as the plan) before changing files.
+5. **Branch:** if on master, create `BIL-<n>-<slug>` (same slug as the plan) before changing files.
    Commit the plan on that branch, so the PR carries it.
 
 As you work, tick off finished steps in the plan, or note what was done differently and why, so the
