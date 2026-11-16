@@ -5,7 +5,8 @@ Jira: [BIL-105](https://aldisadom.atlassian.net/browse/BIL-105). Epic: BIL-89 (B
 ## Answers from the owner (2026-11-14)
 
 1. A PDF that still hits a missing glyph returns **400 "Validation failure"**, with as much detail as
-   possible: which record and field, and which characters (decision 6).
+   possible: which record and field, and which characters (decision 6). *Changed on 2026-11-16:
+   still 400, but the message names only the characters, see below.*
 2. **Integration tests are added** (step 8), on a BillioIntegrationTest branch with the same name.
 3. Decisions 7 and 8 are the right reading of F7, F12 and F14.
 4. **`State` gets no rule**: it isn't printed. *Replaced on 2026-11-16, see below.*
@@ -16,7 +17,10 @@ Jira: [BIL-105](https://aldisadom.atlassian.net/browse/BIL-105). Epic: BIL-89 (B
   `CheckDocumentTexts` and no checker again (as on master). The integration tests download every
   PDF, so a download that succeeds is enough. Decision 6's first paragraph is dropped; the
   `InvoiceDocumentFactory` safety net (a missing-glyph `DocumentDrawingException` becomes
-  `DocumentTextException`, 400) stays, as it doesn't check anything itself.
+  `DocumentTextException`, 400) stays, as it doesn't check anything itself. Its message names the
+  characters, not the record or field ("The invoice has characters the invoice PDF can't show:
+  🦁"): accepted, as production has no such character (BIL-94 pre-check) and the API can't store
+  one any more. Step 4's `InvoiceService` line and step 7's `InvoiceServiceTest` line are undone.
 - **Every string field of the user, customer, seller, item and series requests gets the rule**,
   printed or not: also customer and seller `State` and user `Email`. Not `Password`: it is only
   hashed. Invoice and line comments keep the rule.
@@ -32,7 +36,8 @@ branch 88.4% (the CI minimums are raised to 92.7 and 87.4). Integration tests on
 throwaway stack (13 new error cases, add and update, and a seller saved with Lithuanian letters). On that stack: `POST /items` with `Dragon 🐉 鐵` gives 400 naming both characters;
 `POST /invoices/generate` for an invoice whose seller name and comment were given an emoji in the
 database gives 400 naming both fields, logged as a warning without a stack trace; with clean data it
-gives the PDF.
+gives the PDF. (Since 2026-11-16 that 400 comes from the factory's safety net and names only the
+characters.)
 
 Done differently from the plan below:
 
@@ -155,7 +160,8 @@ None.
 ## Step 4: Application
 
 - [x] `Application/Interfaces/IDocumentTextChecker`.
-- [x] `InvoiceService` (PDF generation): check the printed texts first, throw `DocumentTextException`.
+- [x] ~~`InvoiceService` (PDF generation): check the printed texts first, throw `DocumentTextException`.~~
+      Undone on 2026-11-16 (owner): `InvoiceService` is as on master.
 - [x] `InvoiceDocumentFactory.GeneratePdf`: missing-glyph `DocumentDrawingException` →
       `DocumentTextException`.
 
@@ -182,7 +188,8 @@ None.
       exception; `\t` is tried and then allowed or not, with the result written here.
 - [x] Validator tests: per validator, one theory case per printed field with an emoji, checking the
       message; a case that passes with Lithuanian text.
-- [x] `InvoiceServiceTest`: a stored emoji throws `DocumentTextException` and the factory is not called.
+- [x] ~~`InvoiceServiceTest`: a stored emoji throws `DocumentTextException` and the factory is not called.~~
+      Undone on 2026-11-16 with the check.
 - [x] `InvoiceDocumentFactoryTest`: the three existing missing-glyph cases expect
       `DocumentTextException` and a message without the item name.
 - [x] `ErrorCheckingTest` (new file): `DocumentTextException` gives 400, "Validation failure" and the
