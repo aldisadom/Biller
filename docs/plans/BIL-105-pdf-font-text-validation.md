@@ -5,8 +5,8 @@ Jira: [BIL-105](https://aldisadom.atlassian.net/browse/BIL-105). Epic: BIL-89 (B
 ## Answers from the owner (2026-11-14)
 
 1. A PDF that still hits a missing glyph returns **400 "Validation failure"**, with as much detail as
-   possible: which record and field, and which characters (decision 6). *Changed on 2026-11-16:
-   still 400, but the message names only the characters, see below.*
+   possible: which record and field, and which characters (decision 6). *Replaced on 2026-11-16:
+   PDF generation checks nothing, see below.*
 2. **Integration tests are added** (step 8), on a BillioIntegrationTest branch with the same name.
 3. Decisions 7 and 8 are the right reading of F7, F12 and F14.
 4. **`State` gets no rule**: it isn't printed. *Replaced on 2026-11-16, see below.*
@@ -15,17 +15,20 @@ Jira: [BIL-105](https://aldisadom.atlassian.net/browse/BIL-105). Epic: BIL-89 (B
 
 - **No check of the whole invoice before its PDF is generated.** `InvoiceService` has no
   `CheckDocumentTexts` and no checker again (as on master). The integration tests download every
-  PDF, so a download that succeeds is enough. Decision 6's first paragraph is dropped; the
-  `InvoiceDocumentFactory` safety net (a missing-glyph `DocumentDrawingException` becomes
-  `DocumentTextException`, 400) stays, as it doesn't check anything itself. Its message names the
-  characters, not the record or field ("The invoice has characters the invoice PDF can't show:
-  🦁"): accepted, as production has no such character (BIL-94 pre-check) and the API can't store
-  one any more. Step 4's `InvoiceService` line and step 7's `InvoiceServiceTest` line are undone.
+  PDF, so a download that succeeds is enough. Step 4's `InvoiceService` line and step 7's
+  `InvoiceServiceTest` line are undone.
+- **No safety net at PDF generation either** (second change that day). Decision 6 is dropped:
+  `InvoiceDocumentFactory` and `ErrorChecking` are as on master, and `DocumentTextException` is
+  gone. A PDF that still hits a missing glyph (only data changed by hand in the database: production
+  has no such character, BIL-94 pre-check, and the API can't store one any more) fails with
+  QuestPDF's `DocumentDrawingException`, a 500 "General error", as on master. Step 3's
+  `DocumentTextException`, step 4's factory line, step 6's `ErrorChecking` line and step 7's
+  `InvoiceDocumentFactoryTest` line are undone; `ErrorCheckingTest` tests a `ValidationException`
+  instead.
 - **Every string field of the user, customer, seller, item and series requests gets the rule**,
   printed or not: also customer and seller `State` and user `Email`. Not `Password`: it is only
   hashed. Invoice and line comments keep the rule.
-- Unit tests: 934 passed, line 93.6%, branch 88.4% (line minimum lowered to 92.6, still above
-  master's 91.6). Integration tests: 3 new error cases (customer add `State`, seller update
+- Unit tests: 934 passed, line 93.8%, branch 89.4% (minimums 92.8 and 88.4). Integration tests: 3 new error cases (customer add `State`, seller update
   `State`, user add `Email`).
 
 ## Done on the branch (2026-11-15)
@@ -36,8 +39,8 @@ branch 88.4% (the CI minimums are raised to 92.7 and 87.4). Integration tests on
 throwaway stack (13 new error cases, add and update, and a seller saved with Lithuanian letters). On that stack: `POST /items` with `Dragon 🐉 鐵` gives 400 naming both characters;
 `POST /invoices/generate` for an invoice whose seller name and comment were given an emoji in the
 database gives 400 naming both fields, logged as a warning without a stack trace; with clean data it
-gives the PDF. (Since 2026-11-16 that 400 comes from the factory's safety net and names only the
-characters.)
+gives the PDF. (Since 2026-11-16 PDF generation checks nothing: such data gives QuestPDF's 500
+"General error", as on master.)
 
 Done differently from the plan below:
 
@@ -109,7 +112,9 @@ rendered on the stack).
    `InvoiceAddValidator`, `InvoiceUpdateValidator`, `InvoiceItemValidator` and
    `InvoiceModelUpdateValidator`. Validators take the checker in the constructor; the two invoice
    validators pass it on to `InvoiceItemValidator`.
-6. **A PDF that still hits a missing glyph returns 400 "Validation failure".**
+6. *Dropped on 2026-11-16 (owner): PDF generation checks nothing and a missing glyph stays
+   QuestPDF's 500, as on master. Kept below for the record.*
+   **A PDF that still hits a missing glyph returns 400 "Validation failure".**
    `InvoiceService` checks the invoice's printed texts with the same checker before generating and
    throws `DocumentTextException` (new, `Domain/Exceptions`). Its message names the record, the field
    and the characters, and says how to fix it, e.g. `Item "Dragon" name has characters the invoice PDF
@@ -129,7 +134,7 @@ rendered on the stack).
    the small PC needs no change before the deploy. The "file not found" message names the path.
 9. **F4: delete the unused `File.ReadAllBytes`.**
 10. **No data change.** Production has no such character (BIL-94 pre-check). Old rows are not
-    cleaned; decision 6 covers them.
+    cleaned.
 
 ## Dependencies
 
@@ -147,7 +152,7 @@ None.
 
 ## Step 3: Domain and Infrastructure
 
-- [x] `Domain/Exceptions/DocumentTextException`.
+- [x] ~~`Domain/Exceptions/DocumentTextException`.~~ Removed on 2026-11-16 (owner).
 - [x] `Domain/IOptions/FontSettings.cs`: remove `Name`.
 - [x] `Infrastructure/FontCharacterReader`: reads a `.ttf` stream's `cmap` (format 12 when present,
       else format 4) into a set of code points. Throws `ArgumentException` naming the path for a file
@@ -162,8 +167,8 @@ None.
 - [x] `Application/Interfaces/IDocumentTextChecker`.
 - [x] ~~`InvoiceService` (PDF generation): check the printed texts first, throw `DocumentTextException`.~~
       Undone on 2026-11-16 (owner): `InvoiceService` is as on master.
-- [x] `InvoiceDocumentFactory.GeneratePdf`: missing-glyph `DocumentDrawingException` →
-      `DocumentTextException`.
+- [x] ~~`InvoiceDocumentFactory.GeneratePdf`: missing-glyph `DocumentDrawingException` →
+      `DocumentTextException`.~~ Undone on 2026-11-16 (owner): as on master.
 
 ## Step 5: Validators
 
@@ -174,7 +179,8 @@ None.
 
 ## Step 6: WebAPI
 
-- [x] `ErrorChecking`: `case DocumentTextException` → 400 "Validation failure".
+- [x] ~~`ErrorChecking`: `case DocumentTextException` → 400 "Validation failure".~~ Undone on
+      2026-11-16 (owner): as on master.
 - [x] `appsettings.LocalDocker.json`: remove `Name`.
 - [x] `StartupInjection.cs`: no change beyond what compiles.
 
@@ -190,10 +196,12 @@ None.
       message; a case that passes with Lithuanian text.
 - [x] ~~`InvoiceServiceTest`: a stored emoji throws `DocumentTextException` and the factory is not called.~~
       Undone on 2026-11-16 with the check.
-- [x] `InvoiceDocumentFactoryTest`: the three existing missing-glyph cases expect
-      `DocumentTextException` and a message without the item name.
-- [x] `ErrorCheckingTest` (new file): `DocumentTextException` gives 400, "Validation failure" and the
-      message, and logs a warning.
+- [x] ~~`InvoiceDocumentFactoryTest`: the three existing missing-glyph cases expect
+      `DocumentTextException` and a message without the item name.~~ Undone on 2026-11-16: they
+      expect `DocumentDrawingException`, as on master.
+- [x] `ErrorCheckingTest` (new file): ~~`DocumentTextException`~~ a `ValidationException` (since
+      2026-11-16) gives 400, "Validation failure" and the message, and logs a warning; an unknown
+      exception gives 500 "General error".
 - [x] `DependencyInjectionTests`: the checker is registered; a bad argument leaves the QuestPDF
       settings as they were (revert-check for decision 7); the `Name` cases go.
 - [x] Coverage: compare with the CI minimums (`CLAUDE.md`).

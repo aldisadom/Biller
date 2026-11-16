@@ -1,6 +1,6 @@
 using AwesomeAssertions;
 using BillerContracts.Responses;
-using Domain.Exceptions;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -28,11 +28,11 @@ public class ErrorCheckingTest
     }
 
     [Fact]
-    public async Task InvokeAsync_GivenDocumentTextException_ReturnsBadRequestAndLogsWarningWithoutStackTrace()
+    public async Task InvokeAsync_GivenValidationException_ReturnsBadRequestAndLogsWarningWithoutStackTrace()
     {
         //Arrange
         DefaultHttpContext context = NewContext();
-        ErrorChecking middleware = new(_ => throw new DocumentTextException("Invoice comment has characters the invoice PDF can't show: 🔥 (U+1F525). Edit the invoice"),
+        ErrorChecking middleware = new(_ => throw new ValidationException("Please use only characters the invoice PDF can show in Name. Can't show: 🔥 (U+1F525)"),
             _loggerMock.Object);
 
         _loggerMock.Setup(l => l.Log(LogLevel.Warning, It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(), null, It.IsAny<Func<It.IsAnyType, Exception?, string>>()));
@@ -45,7 +45,7 @@ public class ErrorCheckingTest
         ReadResponse(context).Should().BeEquivalentTo(new ErrorResponse
         {
             Message = "Validation failure",
-            ExtendedMessage = "Invoice comment has characters the invoice PDF can't show: 🔥 (U+1F525). Edit the invoice"
+            ExtendedMessage = "Please use only characters the invoice PDF can show in Name. Can't show: 🔥 (U+1F525)"
         });
 
         _loggerMock.Verify(l => l.Log(LogLevel.Warning, It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(), null, It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once());

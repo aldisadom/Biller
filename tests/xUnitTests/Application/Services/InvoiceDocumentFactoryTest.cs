@@ -8,7 +8,7 @@ using Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
-using Domain.Exceptions;
+using QuestPDF.Drawing.Exceptions;
 
 namespace xUnitTests.Application.Services;
 
@@ -111,10 +111,10 @@ public class InvoiceDocumentFactoryTest
     }
 
     [Theory]
-    [InlineData(DocumentType.Invoice, "Dragon 🐉", "🐉", Label = "emoji in an invoice item name throws and is named")]
-    [InlineData(DocumentType.Invoice, "Iron throne 鐵王座", "鐵", Label = "chinese characters in an invoice item name throw and are named")]
-    [InlineData(DocumentType.JobDoneAct, "Dragon 🐉", "🐉", Label = "emoji in a job done act item name throws and is named")]
-    public void GeneratePdf_GivenCharacterCalibriCannotDraw_ThrowsDocumentTextExceptionWithoutTheText(DocumentType documentType, string itemName, string missingCharacter)
+    [InlineData(DocumentType.Invoice, "Dragon 🐉", Label = "emoji in an invoice item name throws")]
+    [InlineData(DocumentType.Invoice, "Iron throne 鐵王座", Label = "chinese characters in an invoice item name throw")]
+    [InlineData(DocumentType.JobDoneAct, "Dragon 🐉", Label = "emoji in a job done act item name throws")]
+    public void GeneratePdf_GivenCharacterCalibriCannotDraw_ThrowsDocumentDrawingException(DocumentType documentType, string itemName)
     {
         //Arrange
         InvoiceModelFull invoice = new()
@@ -138,11 +138,8 @@ public class InvoiceDocumentFactoryTest
         Action act = () => _invoiceDocumentFactory.GeneratePdf(documentType, Language.EN, invoice);
 
         //Assert
-        DocumentTextException exception = act.Should().Throw<DocumentTextException>()
-            .WithMessage("The invoice has characters the invoice PDF can't show: *").Which;
-        exception.Message.Should().Contain(missingCharacter, "the user has to know which character to remove");
-        exception.Message.Should().NotContainAny(["Dragon", "Iron throne"], "the message is logged, so it leaves the document text out");
-        exception.InnerException.Should().BeNull("QuestPDF's exception holds the whole document text");
+        act.Should().Throw<DocumentDrawingException>()
+            .WithMessage("*Missing glyphs*");
 
         _priceToWordsFactoryMock.Verify(m => m.GetConverter(Language.EN), Times.Once());
         _priceToWordsMock.Verify(m => m.Decode(20m), Times.Once());

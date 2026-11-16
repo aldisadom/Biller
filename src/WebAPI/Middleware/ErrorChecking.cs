@@ -53,12 +53,6 @@ public class ErrorChecking
                     statusCode = HttpStatusCode.BadRequest;
                     break;
 
-                case DocumentTextException:
-                    message = "Validation failure";
-                    extendedMessage = e.Message;
-                    statusCode = HttpStatusCode.BadRequest;
-                    break;
-
                 case UnauthorizedAccessException:
                     message = "Unauthorized";
                     extendedMessage = e.Message;
