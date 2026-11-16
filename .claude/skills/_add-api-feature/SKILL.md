@@ -50,8 +50,11 @@ key and go to step 1. If not, create it first:
      in the plan, marked as not checked against the code.
    - Open questions: ask them together.
 
-   Then add the answers to the list and run `_write-plan` once more with the whole list. Don't
-   start another run while answers are still missing, and stop when the user doesn't want to go on.
+   When it returned a plan and nothing the user still has to decide (every blocker and unread
+   repo it lists is one the list already says to go on despite or to leave out, and there are no
+   open questions), go to step 3. Otherwise add the answers to the list, run `_write-plan` again with
+   the whole list, and repeat this step with what that run returns. Don't start another run while
+   answers are still missing, and stop when the user doesn't want to go on.
 3. **Approval:** when `_write-plan` returned anything but `unchanged`, or the plan file isn't
    committed yet (`git status --porcelain docs/plans/BIL-<n>-*` shows it), show the plan and wait
    for approval before writing code. Offer to add

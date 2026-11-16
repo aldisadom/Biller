@@ -43,10 +43,14 @@ docker compose up -d --build    # or: make run
 
 `make update` skirta kompiuteriui, kuriame sistema įdiegta ir kuriame aktyvi `master` šaka: ji
 padaro atsarginę kopiją, tada atstato aktyvią šaką į `origin/master` (sekamų failų pakeitimai ir
-vietiniai įrašai (commit) prarandami; git nesekami failai lieka ir patenka į kompiliavimą),
-persijungia į `master` ir iš naujo paleidžia konteinerius.
-Žinoma problema: ji atstato prieš atsisiųsdama (fetch), todėl įdiegia tą master, kuris buvo
-atsisiųstas praėjusį kartą, ir tik antras paleidimas gauna naujausią. Kitoje šakoje pirmas
+vietiniai įrašai (commit) prarandami, kaip ir failas, kurio git neseka, jei jo kelią seka
+`origin/master` arba vietinė `master`), persijungia į `master` ir iš naujo paleidžia konteinerius.
+Kiti failai, kurių git neseka, lieka. Toks failas projekte aplanke `src/` įtraukiamas į API (pvz.,
+`.cs` failas sukompiliuojamas), nebent `.dockerignore` jį praleidžia (`bin/`, `obj/` ir kt.).
+Pakeitimų rinkinio (changeset) failas, kurio git neseka, aplanke `migrations/sql/` (`.sql`,
+`.yaml`, `.yml`, `.xml` ar `.json`) paleidžiamas duomenų bazėje, todėl jo ten nepalikite.
+Žinoma problema: ji atstato prieš atsisiųsdama (fetch), todėl įdiegia tą `master` šaką, kuri buvo
+atsisiųsta praėjusį kartą, ir tik antras paleidimas gauna naujausią. Kitoje šakoje pirmas
 paleidimas atstato tą šaką ir įdiegia vietinę `master` tokią, kokia ji yra.
 
 ## Testavimas

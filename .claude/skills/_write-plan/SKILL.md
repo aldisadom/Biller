@@ -3,7 +3,7 @@ name: _write-plan
 model: fable
 effort: medium
 context: fork
-description: Plan a Biller Jira issue on Fable, in its own context — read the BIL issue with its links and comments, review it (blockers, gaps, conflicts with CLAUDE.md, REVIEW.md and other open plans), then check its existing plan against the code or write a new one in docs/plans/BIL-<n>-<slug>.md with the open questions at the top, and return the review, the plan's path and the questions. Use it whenever a BIL issue needs a plan, an existing plan needs checking against the code, or a plan needs the user's answers or a changed decision folded in — from _add-api-feature step 0, before any other change across several layers or repos, or alone when the user asks to plan an issue.
+description: Plan a Biller Jira issue on Fable, in its own context — read the BIL issue with its links and comments, review it (blockers, gaps, conflicts with CLAUDE.md, REVIEW.md and other open plans), then check its existing plan against the code or write a new one in docs/plans/BIL-<n>-<slug>.md with the open questions at the top, and return the review, the plan's path and the questions. Use it whenever a BIL issue needs a plan, an existing plan needs checking against the code, or a plan needs the user's answers or a changed decision folded in — from _add-api-feature step 1, before any other change across several layers or repos, or alone when the user asks to plan an issue.
 ---
 
 # Plan a Jira issue
@@ -41,9 +41,13 @@ In order: a `Plan:` line in the issue description, then `docs/plans/BIL-<n>-*.md
 
 Sibling repos: check only the ones the issue or plan touches, with
 `bash .claude/skills/_sync-repos/scripts/sync-repos.sh <repo> ...` (check mode only: switching may
-need the user, and the caller runs `_sync-repos` for that). Read only the repos it reports `ok`. For
-any other, don't read it and list it in the result; when the arguments say to leave it out, keep
-its steps in the plan, marked "not checked against the code", instead of dropping them.
+need the user, and the caller runs `_sync-repos` for that). With no plan yet, "the plan" is the one
+4b will write: also check each sibling its steps need (BillerContracts for a new field or request,
+BillioIntegrationTest for an endpoint or rule, BillerFrontEnd for a page), before 4b reads it.
+Read only the repos it reports `ok`. For any other, don't read it and list it in the result. When
+the arguments say to leave it out, its steps stay in the plan, marked "not checked against the
+code", instead of being dropped: an existing plan keeps them; a new plan writes them from the
+issue and the repos that were read, and its "Current state" says that repo wasn't read.
 
 ## 4a. There is a plan: check it
 
@@ -53,6 +57,8 @@ its steps in the plan, marked "not checked against the code", instead of droppin
   re-decide the plan: change a decision only when the arguments say the user agreed to the change.
 - Migration numbers in a plan are guesses; the next free one is taken when the migration is written
   (`_add-db-migration`).
+- A sibling that is `ok` now but has no steps although the issue needs them (the plan was written
+  while it couldn't be read): add its steps, as 4b would write them, and list that as a difference.
 
 ## 4b. There is no plan: write one
 
@@ -85,8 +91,8 @@ Reply with, in this order:
 3. **Gaps** and **conflicts** from step 2.
 4. For an existing plan: the differences from step 4a, and every decision the code makes wrong.
 5. **Open questions** the user has to answer, numbered as in the plan.
-6. **Repos not read:** each sibling the issue touches that the check didn't report `ok`, with its
-   line, and whether the arguments said to leave it out.
+6. **Repos not read:** each sibling the issue or plan touches (step 3) that the check didn't report
+   `ok`, with its line, and whether the arguments said to leave it out.
 
 The caller tells the user, gathers the answers, and runs this skill again with everything the user
 has decided so far, not only the new answers: this skill keeps nothing between runs.

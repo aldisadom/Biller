@@ -39,8 +39,11 @@ docker compose up -d --build    # or: make run
 
 `make update` is for the PC the app is deployed on, with `master` checked out: it takes a backup,
 then resets the checked-out branch to `origin/master` (changes to tracked files and local commits
-are lost; files git doesn't track stay and are built in), switches to `master` and starts the
-containers again. Known problem: it resets before it
+are lost, and so is an untracked file at a path `origin/master` or the local `master` tracks),
+switches to `master` and starts the containers again. Other untracked files stay. One in a project
+under `src/` is built into the API (an untracked `.cs` file is compiled in), unless `.dockerignore`
+leaves it out (`bin/`, `obj/` and others). An untracked changeset file in `migrations/sql/`
+(`.sql`, `.yaml`, `.yml`, `.xml` or `.json`) is run against the database, so don't leave one there. Known problem: it resets before it
 fetches, so it deploys the master that was fetched the time before, and only a second run gets the
 newest one. On another branch, the first run resets that branch and deploys the local `master` as it is.
 
