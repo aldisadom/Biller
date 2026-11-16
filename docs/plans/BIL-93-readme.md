@@ -47,6 +47,12 @@ Done differently from the plan below:
   uses them any more.
 - Step 5's `_pre-pr` run on this branch is left for the PR step.
 
+Added on the owner's request (2026-11-16): every repo has a Lithuanian README (decision 3).
+BillerFrontEnd and BillioIntegrationTest got `docs/README_lt.md`, a "Lietuviškai" link in
+`README.md`, and the Lithuanian file in their `CLAUDE.md` rule, "Before a PR" line and `REVIEW.md`
+line. Biller's and BillerContracts' translations were checked against their current English README:
+every section is there and matches, no change needed.
+
 ## Goal
 
 - Every repo's README says what the repo is, how it fits with the other three, and how to build, run
@@ -74,19 +80,20 @@ Done differently from the plan below:
 2. **The same sections in every README**, left out when empty: what it is (2 or 3 sentences), how it
    fits with the other repos, prerequisites, run, test, configuration, where things go, deploy or
    publish. Plain Markdown: no HTML blocks, no table of contents, no "back to top" links.
-3. **`README.md` is English; `docs/README_lt.md` is its Lithuanian translation** in Biller and
-   BillerContracts, linked from the top of `README.md` ("Lietuviškai"). Commands, paths and names stay
-   as they are; only the prose is translated. The README rule (decision 6) covers both files: a change
-   to one changes the other. BillerFrontEnd and BillioIntegrationTest have no such file and get none.
+3. **`README.md` is English; `docs/README_lt.md` is its Lithuanian translation** in all four repos,
+   linked from the top of `README.md` ("Lietuviškai") and linking back ("English"). Commands, paths
+   and names stay as they are; only the prose is translated. The README rule (decision 6) covers both
+   files: a change to one changes the other. (Changed 2026-11-16: BillerFrontEnd and
+   BillioIntegrationTest first had no such file; the owner asked for one in every repo.)
 4. **Only commands that were run go in.** Each README command is run on the branch and its result
    noted in the PR. `make update`, `make backup` and `make restore` are described, not run.
 5. **Biller's backup and restore section stays as it is**: it is current and was tested in BIL-84.
 6. **One rule, the same wording in all four `CLAUDE.md` files:** "Update `README.md` in the same
    change when the change makes it wrong: a new or changed command, setting, port, endpoint group,
-   package, or project layout." Biller and BillerContracts add: "and `docs/README_lt.md`, its
-   Lithuanian translation, with it."
-7. **`REVIEW.md` in all four repos** gets "A change makes the README wrong and doesn't update it" in
-   its failure list.
+   package, or project layout." followed by: "And `docs/README_lt.md`, its Lithuanian translation,
+   with it." The siblings' "Before a PR" line checks both files.
+7. **`REVIEW.md` in all four repos** gets "A change makes the README wrong and doesn't update it, or
+   updates it without `docs/README_lt.md`" in its failure list.
 8. **The pre-PR check goes where the diff is already read.** Biller: `_pr-scope` adds a `README:`
    line to `scope.md` (needs an update: yes or no, and why), and `_pr-description` reports it.
    Siblings: one more line in their "Before a PR" list. No new skill and no new script.
@@ -132,6 +139,7 @@ Done differently from the plan below:
 - [x] Write `README.md`: Blazor Server UI for the API, start Biller first, `make run` or
       `docker compose up -d --build`, UI at http://localhost:8080, `ClientsOptions` per environment,
       build and test commands, where pages go.
+- [x] `docs/README_lt.md`, the translation, linked both ways.
 - [x] `CLAUDE.md` rule and "Before a PR" line; `REVIEW.md` line.
 
 ## Step 4: BillioIntegrationTest
@@ -139,6 +147,7 @@ Done differently from the plan below:
 - [x] Write `README.md`: what the tests cover, the warning that they delete all data through the
       API, how to run them against a Biller stack, how the URL is set (`ClientsOptions` and the
       environment variables), how CI pairs branches by name.
+- [x] `docs/README_lt.md`, the translation, linked both ways.
 - [x] `CLAUDE.md` rule and "Before a PR" line; `REVIEW.md` line.
 
 ## Step 5: Check
