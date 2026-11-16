@@ -22,6 +22,7 @@ public class UserAddValidator : AbstractValidator<UserAddRequest>
 
         RuleFor(x => x.Name).DrawableOnPdf(documentTextChecker);
         RuleFor(x => x.LastName).DrawableOnPdf(documentTextChecker);
+        RuleFor(x => x.Email).DrawableOnPdf(documentTextChecker);
     }
 
     private bool BeValidPassword(string password)

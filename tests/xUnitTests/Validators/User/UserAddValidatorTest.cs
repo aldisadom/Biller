@@ -109,6 +109,7 @@ public class UserAddValidatorTest
     {
         yield return new(r => r.Name = "Dragon 🐉", nameof(UserAddRequest.Name), "Name") { Label = "emoji in name is rejected and named" };
         yield return new(r => r.LastName = "Dragon 🐉", nameof(UserAddRequest.LastName), "Last Name") { Label = "emoji in last name is rejected and named" };
+        yield return new(r => r.Email = "Dragon 🐉", nameof(UserAddRequest.Email), "Email") { Label = "emoji in email is rejected and named" };
     }
 
     [Theory]
@@ -126,6 +127,21 @@ public class UserAddValidatorTest
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == propertyName &&
             e.ErrorMessage == $"Please use only characters the invoice PDF can show in {displayName}. Can't show: 🐉 (U+1F409)");
+    }
+
+    [Fact]
+    public void Validate_GivenWellFormedEmailWithCharacterThePdfCannotShow_HasOnlyThatError()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.Email = "drogon🐉@example.com";
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.Errors.Should().ContainSingle().Which.ErrorMessage.Should()
+            .Be("Please use only characters the invoice PDF can show in Email. Can't show: 🐉 (U+1F409)");
     }
 
     [Fact]

@@ -29,6 +29,7 @@ public class CustomerAddValidator : AbstractValidator<CustomerAddRequest>
         RuleFor(x => x.CompanyName).DrawableOnPdf(documentTextChecker);
         RuleFor(x => x.Street).DrawableOnPdf(documentTextChecker);
         RuleFor(x => x.City).DrawableOnPdf(documentTextChecker);
+        RuleFor(x => x.State).DrawableOnPdf(documentTextChecker);
         RuleFor(x => x.Email).DrawableOnPdf(documentTextChecker);
         RuleFor(x => x.Phone).DrawableOnPdf(documentTextChecker);
     }

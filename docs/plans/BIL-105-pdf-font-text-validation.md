@@ -8,7 +8,21 @@ Jira: [BIL-105](https://aldisadom.atlassian.net/browse/BIL-105). Epic: BIL-89 (B
    possible: which record and field, and which characters (decision 6).
 2. **Integration tests are added** (step 8), on a BillioIntegrationTest branch with the same name.
 3. Decisions 7 and 8 are the right reading of F7, F12 and F14.
-4. **`State` gets no rule**: it isn't printed.
+4. **`State` gets no rule**: it isn't printed. *Replaced on 2026-11-16, see below.*
+
+## Change from the owner (2026-11-16)
+
+- **No check of the whole invoice before its PDF is generated.** `InvoiceService` has no
+  `CheckDocumentTexts` and no checker again (as on master). The integration tests download every
+  PDF, so a download that succeeds is enough. Decision 6's first paragraph is dropped; the
+  `InvoiceDocumentFactory` safety net (a missing-glyph `DocumentDrawingException` becomes
+  `DocumentTextException`, 400) stays, as it doesn't check anything itself.
+- **Every string field of the user, customer, seller, item and series requests gets the rule**,
+  printed or not: also customer and seller `State` and user `Email`. Not `Password`: it is only
+  hashed. Invoice and line comments keep the rule.
+- Unit tests: 934 passed, line 93.6%, branch 88.4% (line minimum lowered to 92.6, still above
+  master's 91.6). Integration tests: 3 new error cases (customer add `State`, seller update
+  `State`, user add `Email`).
 
 ## Done on the branch (2026-11-15)
 

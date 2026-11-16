@@ -89,6 +89,7 @@ public class SellerUpdateValidatorTest
         yield return new(r => r.CompanyName = "Dragon 🐉", nameof(SellerUpdateRequest.CompanyName), "Company Name") { Label = "emoji in company name is rejected and named" };
         yield return new(r => r.Street = "Dragon 🐉", nameof(SellerUpdateRequest.Street), "Street") { Label = "emoji in street is rejected and named" };
         yield return new(r => r.City = "Dragon 🐉", nameof(SellerUpdateRequest.City), "City") { Label = "emoji in city is rejected and named" };
+        yield return new(r => r.State = "Dragon 🐉", nameof(SellerUpdateRequest.State), "State") { Label = "emoji in state is rejected and named" };
         yield return new(r => r.Email = "Dragon 🐉", nameof(SellerUpdateRequest.Email), "Email") { Label = "emoji in email is rejected and named" };
         yield return new(r => r.Phone = "Dragon 🐉", nameof(SellerUpdateRequest.Phone), "Phone") { Label = "emoji in phone is rejected and named" };
         yield return new(r => r.BankName = "Dragon 🐉", nameof(SellerUpdateRequest.BankName), "Bank Name") { Label = "emoji in bank name is rejected and named" };

@@ -87,6 +87,7 @@ public class CustomerAddValidatorTest
         yield return new(r => r.CompanyName = "Dragon 🐉", nameof(CustomerAddRequest.CompanyName), "Company Name") { Label = "emoji in company name is rejected and named" };
         yield return new(r => r.Street = "Dragon 🐉", nameof(CustomerAddRequest.Street), "Street") { Label = "emoji in street is rejected and named" };
         yield return new(r => r.City = "Dragon 🐉", nameof(CustomerAddRequest.City), "City") { Label = "emoji in city is rejected and named" };
+        yield return new(r => r.State = "Dragon 🐉", nameof(CustomerAddRequest.State), "State") { Label = "emoji in state is rejected and named" };
         yield return new(r => r.Email = "Dragon 🐉", nameof(CustomerAddRequest.Email), "Email") { Label = "emoji in email is rejected and named" };
         yield return new(r => r.Phone = "Dragon 🐉", nameof(CustomerAddRequest.Phone), "Phone") { Label = "emoji in phone is rejected and named" };
     }
