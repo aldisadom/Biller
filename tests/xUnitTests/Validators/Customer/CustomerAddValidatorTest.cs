@@ -6,7 +6,7 @@ namespace xUnitTests.Validators.Customer;
 
 public class CustomerAddValidatorTest
 {
-    private readonly CustomerAddValidator _validator = new();
+    private readonly CustomerAddValidator _validator = new(RepoFonts.CalibriChecker);
 
     private static CustomerAddRequest ValidRequest() => new()
     {
@@ -79,5 +79,47 @@ public class CustomerAddValidatorTest
         //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Email));
+    }
+
+    public static IEnumerable<TheoryDataRow<Action<CustomerAddRequest>, string, string>> GetPdfTextFieldTestData()
+    {
+        yield return new(r => r.CompanyNumber = "Dragon 🐉", nameof(CustomerAddRequest.CompanyNumber), "Company Number") { Label = "emoji in company number is rejected and named" };
+        yield return new(r => r.CompanyName = "Dragon 🐉", nameof(CustomerAddRequest.CompanyName), "Company Name") { Label = "emoji in company name is rejected and named" };
+        yield return new(r => r.Street = "Dragon 🐉", nameof(CustomerAddRequest.Street), "Street") { Label = "emoji in street is rejected and named" };
+        yield return new(r => r.City = "Dragon 🐉", nameof(CustomerAddRequest.City), "City") { Label = "emoji in city is rejected and named" };
+        yield return new(r => r.State = "Dragon 🐉", nameof(CustomerAddRequest.State), "State") { Label = "emoji in state is rejected and named" };
+        yield return new(r => r.Email = "Dragon 🐉", nameof(CustomerAddRequest.Email), "Email") { Label = "emoji in email is rejected and named" };
+        yield return new(r => r.Phone = "Dragon 🐉", nameof(CustomerAddRequest.Phone), "Phone") { Label = "emoji in phone is rejected and named" };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetPdfTextFieldTestData))]
+    public void Validate_GivenCharacterThePdfCannotShow_IsInvalid(Action<CustomerAddRequest> setField, string propertyName, string displayName)
+    {
+        //Arrange
+        var request = ValidRequest();
+        setField(request);
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName &&
+            e.ErrorMessage == $"Please use only characters the invoice PDF can show in {displayName}. Can't show: 🐉 (U+1F409)");
+    }
+
+    [Fact]
+    public void Validate_GivenLithuanianText_IsValid()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.CompanyNumber = "Ąžuolų šėtra €5";
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeTrue();
     }
 }

@@ -8,5 +8,4 @@ public class FontSettings
 public class FontSetting
 {
     public string Path { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
 }

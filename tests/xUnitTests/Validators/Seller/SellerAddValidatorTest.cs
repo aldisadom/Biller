@@ -6,7 +6,7 @@ namespace xUnitTests.Validators.Seller;
 
 public class SellerAddValidatorTest
 {
-    private readonly SellerAddValidator _validator = new();
+    private readonly SellerAddValidator _validator = new(RepoFonts.CalibriChecker);
 
     private static SellerAddRequest ValidRequest() => new()
     {
@@ -81,5 +81,49 @@ public class SellerAddValidatorTest
         //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Email));
+    }
+
+    public static IEnumerable<TheoryDataRow<Action<SellerAddRequest>, string, string>> GetPdfTextFieldTestData()
+    {
+        yield return new(r => r.CompanyNumber = "Dragon 🐉", nameof(SellerAddRequest.CompanyNumber), "Company Number") { Label = "emoji in company number is rejected and named" };
+        yield return new(r => r.CompanyName = "Dragon 🐉", nameof(SellerAddRequest.CompanyName), "Company Name") { Label = "emoji in company name is rejected and named" };
+        yield return new(r => r.Street = "Dragon 🐉", nameof(SellerAddRequest.Street), "Street") { Label = "emoji in street is rejected and named" };
+        yield return new(r => r.City = "Dragon 🐉", nameof(SellerAddRequest.City), "City") { Label = "emoji in city is rejected and named" };
+        yield return new(r => r.State = "Dragon 🐉", nameof(SellerAddRequest.State), "State") { Label = "emoji in state is rejected and named" };
+        yield return new(r => r.Email = "Dragon 🐉", nameof(SellerAddRequest.Email), "Email") { Label = "emoji in email is rejected and named" };
+        yield return new(r => r.Phone = "Dragon 🐉", nameof(SellerAddRequest.Phone), "Phone") { Label = "emoji in phone is rejected and named" };
+        yield return new(r => r.BankName = "Dragon 🐉", nameof(SellerAddRequest.BankName), "Bank Name") { Label = "emoji in bank name is rejected and named" };
+        yield return new(r => r.BankNumber = "Dragon 🐉", nameof(SellerAddRequest.BankNumber), "Bank Number") { Label = "emoji in bank number is rejected and named" };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetPdfTextFieldTestData))]
+    public void Validate_GivenCharacterThePdfCannotShow_IsInvalid(Action<SellerAddRequest> setField, string propertyName, string displayName)
+    {
+        //Arrange
+        var request = ValidRequest();
+        setField(request);
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName &&
+            e.ErrorMessage == $"Please use only characters the invoice PDF can show in {displayName}. Can't show: 🐉 (U+1F409)");
+    }
+
+    [Fact]
+    public void Validate_GivenLithuanianText_IsValid()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.CompanyNumber = "Ąžuolų šėtra €5";
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeTrue();
     }
 }

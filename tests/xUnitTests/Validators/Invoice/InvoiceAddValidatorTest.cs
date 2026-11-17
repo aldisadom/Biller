@@ -7,7 +7,7 @@ namespace xUnitTests.Validators.Invoice;
 
 public class InvoiceAddValidatorTest
 {
-    private readonly InvoiceAddValidator _validator = new();
+    private readonly InvoiceAddValidator _validator = new(RepoFonts.CalibriChecker);
 
     private static InvoiceAddRequest ValidRequest() => new()
     {
@@ -108,5 +108,56 @@ public class InvoiceAddValidatorTest
         //Act
         //Assert
         Assert.Throws<ValidationException>(() => _validator.Validate(request));
+    }
+
+    public static IEnumerable<TheoryDataRow<Action<InvoiceAddRequest>, string, string>> GetPdfTextFieldTestData()
+    {
+        yield return new(r => r.Comments = "Dragon 🐉", nameof(InvoiceAddRequest.Comments), "Comments") { Label = "emoji in invoice comment is rejected and named" };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetPdfTextFieldTestData))]
+    public void Validate_GivenCharacterThePdfCannotShow_IsInvalid(Action<InvoiceAddRequest> setField, string propertyName, string displayName)
+    {
+        //Arrange
+        var request = ValidRequest();
+        setField(request);
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName &&
+            e.ErrorMessage == $"Please use only characters the invoice PDF can show in {displayName}. Can't show: 🐉 (U+1F409)");
+    }
+
+    [Fact]
+    public void Validate_GivenLithuanianText_IsValid()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.Comments = "Ąžuolų šėtra €5";
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validate_GivenItemCommentThePdfCannotShow_ThrowsValidationExceptionNamingTheCharacter()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.Items = [new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 2, Comments = "Dragon 🐉" }];
+
+        //Act
+        Action act = () => _validator.Validate(request);
+
+        //Assert
+        act.Should().Throw<ValidationException>()
+            .WithMessage("Please use only characters the invoice PDF can show in Comments. Can't show: 🐉 (U+1F409)");
     }
 }

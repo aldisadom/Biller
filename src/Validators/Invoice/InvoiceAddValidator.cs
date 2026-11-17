@@ -1,4 +1,5 @@
-﻿using BillerContracts.Requests.Invoice;
+﻿using Application.Interfaces;
+using BillerContracts.Requests.Invoice;
 using FluentValidation;
 using FluentValidation.Results;
 
@@ -9,11 +10,16 @@ namespace Validators.Invoice;
 /// </summary>
 public class InvoiceAddValidator : AbstractValidator<InvoiceAddRequest>
 {
+    private readonly IDocumentTextChecker _documentTextChecker;
+
     /// <summary>
     /// Validation
     /// </summary>
-    public InvoiceAddValidator()
+    /// <param name="documentTextChecker">knows which characters the invoice PDF can show</param>
+    public InvoiceAddValidator(IDocumentTextChecker documentTextChecker)
     {
+        _documentTextChecker = documentTextChecker;
+
         RuleFor(x => x.UserId).NotEmpty().WithMessage("Please specify user id");
         RuleFor(x => x.SellerId).NotEmpty().WithMessage("Please specify seller Id");
         RuleFor(x => x.CustomerId).NotEmpty().WithMessage("Please specify customer id");
@@ -21,11 +27,13 @@ public class InvoiceAddValidator : AbstractValidator<InvoiceAddRequest>
         RuleFor(x => x.DueDate).GreaterThanOrEqualTo(x => x.CreatedDate).WithMessage("Please specify due date >= create date");
 
         RuleFor(x => x.Items).Must(ValidateInvoiceItems);
+
+        RuleFor(x => x.Comments).DrawableOnPdf(documentTextChecker);
     }
 
     private bool ValidateInvoiceItems(List<InvoiceItemRequest> items)
     {
-        InvoiceItemValidator validator = new();
+        InvoiceItemValidator validator = new(_documentTextChecker);
 
         string errorMessage = string.Empty;
 
