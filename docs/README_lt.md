@@ -85,8 +85,13 @@ Docker Compose paleidžia API su `ASPNETCORE_ENVIRONMENT=LocalDocker`, todėl nu
 `src/WebAPI/appsettings.json` ir `src/WebAPI/appsettings.LocalDocker.json`:
 
 - `ConnectionStrings:PostgreConnection`: duomenų bazė.
-- `FontSettings`: PDF dokumentų šriftų failai. Compose prijungia `./Fonts` kaip `/Fonts`. API
-  nepasileidžia, jei failo nėra arba nė viename nėra dokumentų šrifto šeimos (Calibri).
+- `FontSettings`: PDF dokumentų šriftų failai, kiekvienas tik su `Path`. Compose prijungia `./Fonts`
+  kaip `/Fonts`. API nepasileidžia, jei failo nėra arba jis nėra nuskaitomas šriftas, jei nė viename
+  nėra dokumentų šrifto šeimos (Calibri) arba jei ne visuose yra A-Z, a-z ir 0-9. Failai taip pat
+  lemia, kokį tekstą galima išsaugoti: simbolis, kurio nėra kiekviename nurodytame faile (jaustukas,
+  kinų rašmuo), gauna 400 „Validation failure“, o pranešime nurodomas tas simbolis. Tai taikoma
+  visiems tekstiniams laukams, su kuriais išsaugomas naudotojas, pirkėjas, pardavėjas, prekė ar
+  serija (išskyrus slaptažodį), ir sąskaitų komentarams.
 - `PasswordEncryption:Pepper`: įmaišoma į slaptažodžių maišos reikšmes. Ją pakeitus visi išsaugoti
   slaptažodžiai nebetinka.
 - `Serilog`: žurnalai.
