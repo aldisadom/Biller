@@ -1,5 +1,7 @@
 ---
 name: _pr-description
+model: sonnet
+effort: high
 description: PR step — write a Biller PR's description from .github/pull_request_template.md using what the earlier steps left in the PR state folder (scope.md for Jira, plan and risk; tests.md and integration.md for Testing; findings.md for the review), after checking that none of them is missing or stale, and save it as description.md. Use it as step 6 of _pre-pr, or alone when the user asks for the PR text, description or summary of a branch.
 ---
 
@@ -22,7 +24,8 @@ description which fixes no review round saw.
 Read them with `bash $P read [repo] <step>`, then fill `.github/pull_request_template.md`:
 
 - **Jira**: the key from `scope.md`.
-- **What and why**: two to four lines, from the plan and the commits.
+- **What and why**: two to four lines, from the plan and the commits. Then the `README:` note from
+  `scope.md` as one line (updated, or not needed and why). No such note: go back to `_pr-scope`, step 5.
 - **Testing**: the command and result lines from `tests.md` and `integration.md` (or "not needed"
   and why, from `scope.md`), and the BillioIntegrationTest branch CI will use. Then the review:
   rounds run and how many findings were fixed, answered, and pre-existing, from `findings.md`.

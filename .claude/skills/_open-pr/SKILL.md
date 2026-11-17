@@ -1,5 +1,7 @@
 ---
 name: _open-pr
+model: sonnet
+effort: high
 description: Last PR step, only when the user asks — push a Biller branch and create its GitHub pull request with the description saved by _pr-description, or update an open PR's description, after checking that the PR steps' results are there and not stale. Use it whenever the user asks to push, open, create or update the PR in any Biller repo; if the steps haven't run or the code changed since, run _pre-pr first.
 ---
 

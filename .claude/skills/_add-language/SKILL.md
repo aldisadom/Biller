@@ -1,5 +1,7 @@
 ---
 name: _add-language
+model: sonnet
+effort: high
 description: Add a new document language to Biller's PDF generation (e.g. Latvian, Polish, German) — the Language enum value, invoice label translations (IInvoiceTexts), the number/amount-to-words converter with correct grammar, factory registrations, currency wording, and thorough tests — then render sample PDFs. Use this whenever the user wants invoices or acts in another language, asks to translate invoice texts, fix how amounts are spelled out in words ("suma žodžiais", "amount in words"), or fix number-to-words grammar in LT/EN, even if they don't say "language".
 ---
 

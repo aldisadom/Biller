@@ -1,5 +1,7 @@
 ---
 name: _pr-scope
+model: sonnet
+effort: high
 description: First PR step — work out what a Biller branch's PR contains and needs (Jira key and plan, commits and uncommitted files, risk from migrations, data changes, the BillerContracts version, invoice numbering and PDFs, blockers, sibling repos with the same branch, whether integration tests are needed and from which branch) and save it as scope.md for the later steps. Use it as step 1 of _pre-pr, or alone when the user asks what a branch changes, how risky a change is, or which repos and tests a PR needs.
 ---
 
@@ -33,6 +35,16 @@ Then go through what it printed:
    ```bash
    bash .claude/skills/_pre-pr/scripts/pr-state.sh note scope "035 pre-check: SELECT ... returns 0 rows on a copy of production"
    bash .claude/skills/_pre-pr/scripts/pr-state.sh note scope "docs/plans/BIL-65-series.md progress stays out of this PR (user)"
+   ```
+
+5. **README**: read the diff against `README.md`. It needs an update when the change adds or changes
+   a command, setting, port, endpoint group, package or project layout that the README names, or
+   makes a sentence in it untrue. Update `README.md` and its translation `docs/README_lt.md` in this
+   branch, then record the answer either way, so the review and the PR description have it:
+
+   ```bash
+   bash .claude/skills/_pre-pr/scripts/pr-state.sh note scope "README: updated (new FontSettings key in Configuration), README_lt.md with it"
+   bash .claude/skills/_pre-pr/scripts/pr-state.sh note scope "README: no update needed (validator rule only)"
    ```
 
 The notes go into the review pack and the PR description.

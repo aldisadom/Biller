@@ -1,5 +1,7 @@
 ---
 name: _write-tests
+model: sonnet
+effort: high
 description: Write or fix unit tests in Biller's xUnit project (tests/xUnitTests) following the repo's conventions — hand-built test data with object initializers (no AutoFixture, no shared TestData builders), strict Moq mocks with Verify, xUnit v3 theories with a Label per case, and the per-layer patterns for services, controllers, validators, mapping extensions, Swagger examples and DI registrations. Use this whenever the user wants tests added, extended, converted, reviewed or cleaned up in the Biller repo ("add tests for X", "cover this method", "close the coverage gap", "review this test file", "remove AutoData"), and whenever another skill reaches its testing step.
 ---
 
