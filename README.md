@@ -78,11 +78,13 @@ Docker Compose runs the API with `ASPNETCORE_ENVIRONMENT=LocalDocker`, so the se
 
 - `ConnectionStrings:PostgreConnection`: the database.
 - `FontSettings`: the font files for the PDFs, each with only a `Path`. Compose mounts `./Fonts` at
-  `/Fonts`. The API doesn't start when a file is missing or isn't a readable font, when none of them
-  holds the documents' font family (Calibri), or when they don't all have A-Z, a-z and 0-9. The
-  files also decide what text can be saved: a character that isn't in every configured file (an
-  emoji, Chinese) gets 400 "Validation failure" naming it, in any string a user, customer, seller,
-  item or series is saved with (except the password) and in invoice comments.
+  `/Fonts`. The API doesn't start when the section has no font, when a file is missing or isn't a
+  readable font, when none of them holds the documents' font family (Calibri), or when they don't
+  all have A-Z, a-z and 0-9. The files also decide what text can be saved: a request with a
+  character that isn't in every configured file (an emoji, Chinese), or with a control character
+  other than a line break, is rejected with 400 "Validation failure" naming the character. That
+  covers every string a user, customer, seller, item or series is saved with (except the password)
+  and the comments of an invoice and of its lines.
 - `PasswordEncryption:Pepper`: mixed into password hashes. Changing it makes every stored password wrong.
 - `Serilog`: logging.
 

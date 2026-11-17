@@ -15,7 +15,7 @@ kokie yra angliškame faile.
 | Repozitorija | Kas tai |
 |---|---|
 | Biller (ši) | API, duomenų bazės migracijos ir PDF dokumentai |
-| [BillerContracts](https://github.com/aldisadom/BillerContracts) | Užklausų ir atsakymų įrašai, išvardijimai (enum) ir tipizuoti HTTP klientai, skelbiami kaip NuGet paketai `BillerContracts` ir `BillerContracts.Clients` |
+| [BillerContracts](https://github.com/aldisadom/BillerContracts) | Užklausų ir atsakymų įrašai, išvardijimai (enum) ir tipizuoti HTTP klientai, skelbiami NuGet paketais `BillerContracts` ir `BillerContracts.Clients` |
 | [BillerFrontEnd](https://github.com/aldisadom/BillerFrontEnd) | Blazor naudotojo sąsaja. Šią API ji kviečia per `BillerContracts.Clients` |
 | [BillioIntegrationTest](https://github.com/aldisadom/BillioIntegrationTest) | Testai, kurie kviečia veikiančią API per HTTP |
 
@@ -76,7 +76,7 @@ bash .claude/skills/_test-stack/scripts/test-stack.sh down
 
 CI (`.github/workflows/CI.yaml`) sukompiliuoja projektą, tada lygiagrečiai paleidžia du darbus:
 modulinius testus, kurie nutrūksta, jei padengimas nukrenta žemiau nustatytų minimumų, ir
-integracinius testus iš BillioIntegrationTest šakos tokiu pačiu pavadinimu kaip ši šaka, o jei
+integracinius testus iš BillioIntegrationTest šakos, kurios pavadinimas toks pat kaip šios šakos, o jei
 tokios nėra, iš jos master.
 
 ## Konfigūracija
@@ -86,12 +86,13 @@ Docker Compose paleidžia API su `ASPNETCORE_ENVIRONMENT=LocalDocker`, todėl nu
 
 - `ConnectionStrings:PostgreConnection`: duomenų bazė.
 - `FontSettings`: PDF dokumentų šriftų failai, kiekvienas tik su `Path`. Compose prijungia `./Fonts`
-  kaip `/Fonts`. API nepasileidžia, jei failo nėra arba jis nėra nuskaitomas šriftas, jei nė viename
-  nėra dokumentų šrifto šeimos (Calibri) arba jei ne visuose yra A-Z, a-z ir 0-9. Failai taip pat
-  lemia, kokį tekstą galima išsaugoti: simbolis, kurio nėra kiekviename nurodytame faile (jaustukas,
-  kinų rašmuo), gauna 400 „Validation failure“, o pranešime nurodomas tas simbolis. Tai taikoma
+  kaip `/Fonts`. API nepasileidžia, jei skiltyje nėra nė vieno šrifto, jei failo nėra arba jis nėra
+  nuskaitomas šriftas, jei nė viename nėra dokumentų šrifto šeimos (Calibri) arba jei ne visuose yra
+  A-Z, a-z ir 0-9. Failai taip pat lemia, kokį tekstą galima išsaugoti: užklausa su simboliu, kurio
+  nėra kiekviename nurodytame faile (jaustukas, kinų rašmuo), arba su valdymo simboliu, išskyrus
+  eilutės lūžį, atmetama su 400 „Validation failure“, o pranešime nurodomas tas simbolis. Tai taikoma
   visiems tekstiniams laukams, su kuriais išsaugomas naudotojas, pirkėjas, pardavėjas, prekė ar
-  serija (išskyrus slaptažodį), ir sąskaitų komentarams.
+  serija (išskyrus slaptažodį), ir sąskaitos bei jos eilučių komentarams.
 - `PasswordEncryption:Pepper`: įmaišoma į slaptažodžių maišos reikšmes. Ją pakeitus visi išsaugoti
   slaptažodžiai nebetinka.
 - `Serilog`: žurnalai.

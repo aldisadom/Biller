@@ -39,15 +39,20 @@ plan, and return only the review (step 5).
 
 In order: a `Plan:` line in the issue description, then `docs/plans/BIL-<n>-*.md` in Biller.
 
-Sibling repos: check only the ones the issue or plan touches, with
-`bash .claude/skills/_sync-repos/scripts/sync-repos.sh <repo> ...` (check mode only: switching may
-need the user, and the caller runs `_sync-repos` for that). With no plan yet, "the plan" is the one
-4b will write: also check each sibling its steps need (BillerContracts for a new field or request,
-BillioIntegrationTest for an endpoint or rule, BillerFrontEnd for a page), before 4b reads it.
-Read only the repos it reports `ok`. For any other, don't read it and list it in the result. When
-the arguments say to leave it out, its steps stay in the plan, marked "not checked against the
-code", instead of being dropped: an existing plan keeps them; a new plan writes them from the
-issue and the repos that were read, and its "Current state" says that repo wasn't read.
+Sibling repos, on every run: check all three (BillerContracts, BillerFrontEnd,
+BillioIntegrationTest) with `bash .claude/skills/_sync-repos/scripts/sync-repos.sh BillerContracts
+BillerFrontEnd BillioIntegrationTest` (check mode only: switching may need the user, and the caller
+runs `_sync-repos` for that), and decide for each whether the plan **needs** it: it already has
+steps there, or the issue needs them (BillerContracts for a new field or request,
+BillioIntegrationTest for an endpoint or rule, BillerFrontEnd for a page). Read only the repos the
+check reports `ok`. The rules for a needed repo, whichever of 4a or 4b runs:
+
+- `ok`: its steps are checked against the code like the rest. Steps marked "not checked against
+  the code" are checked now and lose the marker; missing steps are written now.
+- Not `ok`: don't read it. When the arguments say to leave it out, the plan has its steps anyway,
+  marked "not checked against the code": existing ones are kept, missing ones are written from the
+  issue and the repos that were read, and "Current state" says that repo wasn't read. Otherwise
+  write no steps for it yet; the result asks the user (step 5, item 6).
 
 ## 4a. There is a plan: check it
 
@@ -57,8 +62,8 @@ issue and the repos that were read, and its "Current state" says that repo wasn'
   re-decide the plan: change a decision only when the arguments say the user agreed to the change.
 - Migration numbers in a plan are guesses; the next free one is taken when the migration is written
   (`_add-db-migration`).
-- A sibling that is `ok` now but has no steps although the issue needs them (the plan was written
-  while it couldn't be read): add its steps, as 4b would write them, and list that as a difference.
+- Apply step 3's rules for needed siblings: steps added or no longer marked "not checked" are
+  differences too.
 
 ## 4b. There is no plan: write one
 
@@ -91,8 +96,8 @@ Reply with, in this order:
 3. **Gaps** and **conflicts** from step 2.
 4. For an existing plan: the differences from step 4a, and every decision the code makes wrong.
 5. **Open questions** the user has to answer, numbered as in the plan.
-6. **Repos not read:** each sibling the issue or plan touches (step 3) that the check didn't report
-   `ok`, with its line, and whether the arguments said to leave it out.
+6. **Repos not read:** each sibling the check didn't report `ok`, with its line, whether the plan
+   needs it (step 3), and whether the arguments said to leave it out.
 
 The caller tells the user, gathers the answers, and runs this skill again with everything the user
 has decided so far, not only the new answers: this skill keeps nothing between runs.

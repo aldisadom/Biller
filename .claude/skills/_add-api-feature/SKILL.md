@@ -45,14 +45,15 @@ key and go to step 1. If not, create it first:
    conflicts, the open questions and any repo it couldn't read.
 2. **Tell the user** what it returned, before writing anything else, and gather their answers:
    - A blocker that isn't Done: `_write-plan` stops there without a plan. Ask whether to go on.
-   - A repo it couldn't read: sort it out with `_sync-repos` (ask the user on `BLOCKED` or
-     `MISSING`), or the user chooses to go on without it ("leave <repo> out"): its steps then stay
-     in the plan, marked as not checked against the code.
+   - A repo it couldn't read that the plan needs: sort it out with `_sync-repos` (ask the user on
+     `BLOCKED` or `MISSING`), or the user chooses to go on without it ("leave <repo> out"): the
+     plan then has its steps, marked as not checked against the code. A repo the plan doesn't
+     need is only reported.
    - Open questions: ask them together.
 
-   When it returned a plan and nothing the user still has to decide (every blocker and unread
-   repo it lists is one the list already says to go on despite or to leave out, and there are no
-   open questions), go to step 3. Otherwise add the answers to the list, run `_write-plan` again with
+   Go to step 3 when it returned a plan and the user has nothing left to decide: every blocker that
+   isn't Done is one the list says to go on despite, every unread repo the plan needs is one the
+   list leaves out, and there are no open questions. Otherwise add the answers to the list, run `_write-plan` again with
    the whole list, and repeat this step with what that run returns. Don't start another run while
    answers are still missing, and stop when the user doesn't want to go on.
 3. **Approval:** when `_write-plan` returned anything but `unchanged`, or the plan file isn't
