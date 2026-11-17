@@ -12,6 +12,7 @@ using QuestPDF.Drawing.Exceptions;
 
 namespace xUnitTests.Application.Services;
 
+[Collection(QuestPdfCollection.Name)]
 public class InvoiceDocumentFactoryTest
 {
     private readonly Mock<IPriceToWordsFactory> _priceToWordsFactoryMock;
@@ -25,7 +26,7 @@ public class InvoiceDocumentFactoryTest
     {
         new ServiceCollection().AddPdfGenerator(Options.Create(new FontSettings
         {
-            Fonts = [new FontSetting { Name = "calibri", Path = RepoFonts.CalibriPath }]
+            Fonts = [new FontSetting { Path = RepoFonts.CalibriPath }]
         }));
     }
 

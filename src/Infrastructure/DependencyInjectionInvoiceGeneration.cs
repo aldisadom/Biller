@@ -1,9 +1,8 @@
-﻿using Application.Models.Invoice.Documents;
+﻿using Application.Interfaces;
+using Application.Models.Invoice.Documents;
 using Domain.IOptions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using QuestPDF.Drawing;
-using QuestPDF.Infrastructure;
 
 namespace Infrastructure;
 
@@ -19,40 +18,14 @@ public static class DependencyInjectionInvoiceGeneration
     /// </summary>
     internal static IServiceCollection AddPdfGenerator(this IServiceCollection services, IOptions<FontSettings> fontSettings, string requiredFamily)
     {
-        QuestPDF.Settings.License = LicenseType.Community;
-        // Strict: a PDF fails instead of quietly substituting. Only the registered fonts are used (no
-        // system fonts, so the output doesn't depend on the machine), and a missing font family or a
-        // character the font can't draw throws. Set explicitly so a change of QuestPDF's defaults can't
-        // relax it. Layout error messages leave out document text, because they end up in the logs.
-        QuestPDF.Settings.UseSystemFonts = false;
-        QuestPDF.Settings.ThrowOnMissingFontFamilies = true;
-        QuestPDF.Settings.ThrowOnMissingTextGlyphs = true;
-        QuestPDF.Settings.EnableDetailedLayoutErrors = false;
-
         if (fontSettings == null)
             throw new ArgumentNullException(nameof(fontSettings), "Font settings cannot be null");
 
-        if (fontSettings.Value == null || fontSettings.Value.Fonts == null || fontSettings.Value.Fonts.Length == 0)
-            throw new ArgumentException("Font settings must contain at least one font");
+        // The QuestPDF settings and fonts are process-wide, so they are set up here, once at startup,
+        // and not when a service is first resolved.
+        IDocumentTextChecker documentTextChecker = PdfGeneratorSetup.Apply(fontSettings.Value, requiredFamily);
 
-        foreach (var font in fontSettings.Value.Fonts)
-        {
-            if (string.IsNullOrEmpty(font.Path) || string.IsNullOrEmpty(font.Name))
-                throw new ArgumentException("Font path or name cannot be null or empty");
-
-            if (!File.Exists(font.Path))
-                throw new FileNotFoundException($"Font {font.Name} file not found at path: {font.Path}");
-            var aa = File.ReadAllBytes(font.Path);
-            // Registered under the family name stored in the file (Calibri); QuestPDF matches family
-            // names case-insensitively, so the documents' "calibri" finds it.
-            using FileStream fontStream = File.OpenRead(font.Path);
-            FontManager.RegisterFontFromStream(fontStream);
-        }
-
-        // Fail at startup, not on every PDF, when no configured file holds the documents' font family.
-        EnsureFontFamilyRegistered(FontManager.GetRegisteredFonts().Select(f => f.FamilyName), requiredFamily);
-
-        return services;
+        return services.AddSingleton(documentTextChecker);
     }
 
     /// <summary>
