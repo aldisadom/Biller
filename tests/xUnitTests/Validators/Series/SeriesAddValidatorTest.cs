@@ -6,7 +6,7 @@ namespace xUnitTests.Validators.Series;
 
 public class SeriesAddValidatorTest
 {
-    private readonly SeriesAddValidator _validator = new();
+    private readonly SeriesAddValidator _validator = new(RepoFonts.CalibriChecker);
 
     private static SeriesAddRequest ValidRequest() => new()
     {
@@ -79,5 +79,41 @@ public class SeriesAddValidatorTest
         //Assert
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(SeriesAddRequest.Name));
+    }
+
+    public static IEnumerable<TheoryDataRow<Action<SeriesAddRequest>, string, string>> GetPdfTextFieldTestData()
+    {
+        yield return new(r => r.Name = "Dragon 🐉", nameof(SeriesAddRequest.Name), "Name") { Label = "emoji in name is rejected and named" };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetPdfTextFieldTestData))]
+    public void Validate_GivenCharacterThePdfCannotShow_IsInvalid(Action<SeriesAddRequest> setField, string propertyName, string displayName)
+    {
+        //Arrange
+        var request = ValidRequest();
+        setField(request);
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName &&
+            e.ErrorMessage == $"Please use only characters the invoice PDF can show in {displayName}. Can't show: 🐉 (U+1F409)");
+    }
+
+    [Fact]
+    public void Validate_GivenLithuanianText_IsValid()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.Name = "ĄŽ-€5";
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeTrue();
     }
 }

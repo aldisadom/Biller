@@ -18,6 +18,8 @@ using System.Data;
 
 namespace xUnitTests.Application;
 
+// QuestPDF's settings are process-wide: the classes that set or rely on them don't run in parallel
+[Collection(QuestPdfCollection.Name)]
 public class DependencyInjectionTests
 {
     const string _dbConnectionString = "Host=db;Username=postgres;Password=postgres;Database=Data";
@@ -125,9 +127,10 @@ public class DependencyInjectionTests
         //Act
         var result = services.AddApplication();
 
-        // the services need the password options and the repositories to be resolved
+        // the services need the password options, the repositories and AddPdfGenerator's text checker to be resolved
         IServiceCollection resolvable = new ServiceCollection();
         resolvable.Configure<PasswordEncryption>(options => { options.Pepper = "pepper"; });
+        resolvable.AddSingleton(RepoFonts.CalibriChecker);
         resolvable.AddInfrastructure(_dbConnectionString);
         foreach (var descriptor in services)
             resolvable.Add(descriptor);
@@ -151,7 +154,7 @@ public class DependencyInjectionTests
         var fontSettings = Options.Create(new FontSettings
         {
             Fonts = [
-                new FontSetting { Name = "calibri", Path = RepoFonts.CalibriPath }
+                new FontSetting { Path = RepoFonts.CalibriPath }
                 ]
         });
 
@@ -162,6 +165,8 @@ public class DependencyInjectionTests
         using var _ = new AssertionScope();
 
         result.Should().BeSameAs(services);
+        services.Should().ContainSingle(d => d.ServiceType == typeof(IDocumentTextChecker))
+            .Which.Lifetime.Should().Be(ServiceLifetime.Singleton, "the font's characters are read once, at startup");
         // AddPdfGenerator is the only place the test process registers fonts (InvoiceDocumentFactoryTest
         // calls it too), and GetRegisteredFonts doesn't list system fonts.
         FontManager.GetRegisteredFonts().Should().Contain(f => string.Equals(f.FamilyName, InvoiceDocumentFont.Family, StringComparison.OrdinalIgnoreCase),
@@ -216,7 +221,7 @@ public class DependencyInjectionTests
         var fontSettings = Options.Create(new FontSettings
         {
             Fonts = [
-                new FontSetting { Name = "calibri", Path = RepoFonts.CalibriPath }
+                new FontSetting { Path = RepoFonts.CalibriPath }
             ]
         });
 
@@ -244,18 +249,16 @@ public class DependencyInjectionTests
     }
 
     [Theory]
-    [InlineData(null, "calibri", Label = "missing font path throws")]
-    [InlineData("", "calibri", Label = "empty font path throws")]
-    [InlineData("some-path.ttf", null, Label = "missing font name throws")]
-    [InlineData("some-path.ttf", "", Label = "empty font name throws")]
-    public void AddPdfGenerator_GivenEmptyFontPathOrName_ThrowsArgumentException(string? path, string? name)
+    [InlineData(null, Label = "missing font path throws")]
+    [InlineData("", Label = "empty font path throws")]
+    public void AddPdfGenerator_GivenEmptyFontPath_ThrowsArgumentException(string? path)
     {
         //Arrange
         var services = new ServiceCollection();
         var fontSettings = Options.Create(new FontSettings
         {
             Fonts = [
-                new FontSetting { Name = name!, Path = path! }
+                new FontSetting { Path = path! }
             ]
         });
 
@@ -264,7 +267,7 @@ public class DependencyInjectionTests
 
         //Assert
         act.Should().Throw<ArgumentException>()
-            .WithMessage("*Font path or name cannot be null or empty*");
+            .WithMessage("*Font path cannot be null or empty*");
     }
 
     public static IEnumerable<TheoryDataRow<FontSettings>> GetFontSettingsTestData()
@@ -297,7 +300,7 @@ public class DependencyInjectionTests
         var fontSettings = new FontSettings
         {
             Fonts = [
-                new FontSetting { Name = "calibri", Path = "nonexistent-path.ttf" }
+                new FontSetting { Path = "nonexistent-path.ttf" }
                 ]
         };
 
@@ -306,6 +309,6 @@ public class DependencyInjectionTests
 
         //Assert
         act.Should().Throw<FileNotFoundException>()
-            .WithMessage("*Font calibri file not found at path: nonexistent-path.ttf*");
+            .WithMessage("*Font file not found at path: nonexistent-path.ttf*");
     }
 }
