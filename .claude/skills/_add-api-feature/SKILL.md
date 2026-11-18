@@ -2,7 +2,7 @@
 name: _add-api-feature
 model: sonnet
 effort: high
-description: Add or extend a Biller REST API feature end-to-end across every layer — BillerContracts request/response records, FluentValidation validator, Swagger examples, controller, application service + model + mapping extensions, domain entity + repository interface, Dapper repository, Liquibase migration, DI registrations, and unit tests. Use this whenever the user wants a new entity/resource (e.g. "add payments", "CRUD for products"), a new endpoint, or a new field exposed through the API in the Biller repo, even if they only mention one layer ("add a Currency field to invoices", "new GET by seller endpoint") — fields and endpoints almost always ripple through several layers. Also use it when the user gives a Jira issue (BIL-<n> key or link) for API work: it has _write-plan review the issue and check or write its plan in docs/plans first. With no issue, it asks for the details and creates the BIL issue in Jira before starting.
+description: Add or extend a Biller REST API feature end-to-end across every layer — BillerContracts request/response records, FluentValidation validator, Swagger examples, controller, application service + model + mapping extensions, domain entity + repository interface, Dapper repository, Liquibase migration, DI registrations, and unit tests. Use this whenever the user wants a new entity/resource (e.g. "add payments", "CRUD for products"), a new endpoint, or a new field exposed through the API in the Biller repo, even if they only mention one layer ("add a Currency field to invoices", "new GET by seller endpoint") — fields and endpoints almost always ripple through several layers. Also use it when the user gives a Jira issue (BIL-<n> key or link) for API work: it finds the issue's plan in docs/plans, describes it and asks whether _write-plan should check it against the code (or has _write-plan write one when there is none). With no issue, it asks for the details and creates the BIL issue in Jira before starting.
 ---
 
 # Add an API feature end-to-end
@@ -37,7 +37,16 @@ key and go to step 1. If not, create it first:
 - Then go on at step 1 with the new key. It has no plan yet, so `_write-plan` writes one.
 
 1. **Plan on Opus.** First run `_sync-repos` here, where the user can be asked: `_write-plan`
-   can't ask, and reads only repos that are `ok`. Then run `_write-plan BIL-<n>`. It runs in its
+   can't ask, and reads only repos that are `ok`. Then look for the issue's plan by its key:
+   `docs/plans/BIL-<n>-*.md` in Biller and the siblings, and the `Plan:` line of the issue
+   description.
+   - **Found:** tell the user its path, whether it is committed, and what it describes (the goal,
+     the main design decisions, the repos and steps, its open questions) in a few lines. Then ask
+     whether `_write-plan` should check it against the code and update it. Yes: run it as below.
+     No: skip `_write-plan`, take the plan as it is and go to step 3.
+   - **Not found:** `_write-plan` writes one; run it as below.
+
+   Run `_write-plan BIL-<n>`. It runs in its
    own context, doesn't see this conversation and remembers nothing between runs, so keep a list
    of what the user has decided (details, answers, "go on despite the blocker", "leave <repo> out")
    and pass **all of it on every run**. It reads and reviews the issue, checks the existing plan
@@ -56,12 +65,12 @@ key and go to step 1. If not, create it first:
    list leaves out, and there are no open questions. Otherwise add the answers to the list, run `_write-plan` again with
    the whole list, and repeat this step with what that run returns. Don't start another run while
    answers are still missing, and stop when the user doesn't want to go on.
-3. **Approval:** when `_write-plan` returned anything but `unchanged`, or the plan file isn't
+3. **Approval:** when `_write-plan` ran and returned anything but `unchanged`, or the plan file isn't
    committed yet (`git status --porcelain docs/plans/BIL-<n>-*` shows it), show the plan and wait
    for approval before writing code. Offer to add
    `Plan: docs/plans/BIL-<n>-<slug>.md in the Biller repo.` to the top of the issue description.
    Edit Jira only after the user agrees.
-4. **An approved plan:** report the differences `_write-plan` found. Follow the plan's design
+4. **An approved plan:** report the differences `_write-plan` found, if it ran. Follow the plan's design
    decisions and step order; don't re-decide them. If the code makes a decision wrong or a step
    impossible, stop and tell the user; once they agree, add the change to the list, run
    `_write-plan`, then step 3.
