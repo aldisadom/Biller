@@ -1,5 +1,7 @@
 ---
 name: _test-stack
+model: sonnet
+effort: high
 description: Start a throwaway Biller stack (Postgres, Liquibase migrations, the API and optionally BillerFrontEnd) from any branch or checkout, next to the user's own billio-* stack without touching it, then run BillioIntegrationTest against it, test a migration's rollback on real rows, seed one invoice, or print what a front-end page renders. Use this whenever the user wants the integration tests run, a migration or its rollback checked, the API or a page tried out against a branch, or "see it working", and whenever another skill (_add-api-feature, _add-db-migration, _pre-pr) reaches a step that needs a running Biller, even if they say "docker" or "local stack".
 ---
 

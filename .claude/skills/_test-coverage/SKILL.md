@@ -1,5 +1,7 @@
 ---
 name: _test-coverage
+model: sonnet
+effort: high
 description: Run Biller's xUnit test suite with code coverage, generate the HTML/text coverage report, and summarise failures and coverage gaps. Use this whenever the user wants to run tests, check that a change didn't break anything, see coverage numbers, find untested code, or asks "do the tests pass?" in the Biller repo — including after finishing a feature, migration, or invoice layout change, even if they don't say "coverage".
 ---
 

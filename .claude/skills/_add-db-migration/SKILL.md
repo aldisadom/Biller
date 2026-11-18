@@ -1,5 +1,7 @@
 ---
 name: _add-db-migration
+model: sonnet
+effort: high
 description: Create a Liquibase SQL migration (changeset) for Biller's PostgreSQL database — new tables, new/renamed/altered columns, indexes, constraints — following the repo's numbering, naming, and rollback conventions, and optionally apply it locally via docker compose. Use this whenever a change in the Biller repo needs a schema change, e.g. "add a column", "new table for X", "make email unique", "store invoice currency", or when an entity/repository change implies the DB must change, even if the user doesn't say "migration" or "Liquibase". Not for seeding initial, sample, or test data.
 ---
 

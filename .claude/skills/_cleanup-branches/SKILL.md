@@ -1,5 +1,7 @@
 ---
 name: _cleanup-branches
+model: sonnet
+effort: high
 description: Delete old local git branches in Biller and its sibling repos (BillerContracts, BillerFrontEnd, BillioIntegrationTest), keeping master, the checked-out branch and the branch with Biller's current name. Local only, never touches branches on origin. Use this whenever the user wants to clean up, prune, tidy or remove old, stale, merged or leftover branches in any Biller repo, even if they name only one repo or say "gone branches".
 ---
 
