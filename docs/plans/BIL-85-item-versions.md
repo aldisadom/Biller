@@ -100,7 +100,8 @@ versions (decision 4) have only approximate dates.
    save can never re-price by accident. `POST /invoices` allows an empty version = current.
 4. **Versions are rebuilt from existing invoices in the migration.** Every distinct
    (item, name, price) found on an invoice line becomes a version, oldest invoice first, dated by
-   that invoice. The item's current name and price are always the last version. Every existing line
+   that invoice. The item's current name and price are always the last version, dated no earlier
+   than an older version (or `now()` when never invoiced). Every existing line
    of an item that still exists gets the `Version` it matches, so old prices are pickable.
    - Rebuilt `changed_date`s are "first invoiced on", not the real edit time. The changeset comment
      says so.
@@ -168,7 +169,9 @@ CREATE TABLE item_versions (
    `jsonb_array_elements(items_data::jsonb)`, plus each item's current `(name, price)` when no line
    has it. Number them with
    `ROW_NUMBER() OVER (PARTITION BY item_id ORDER BY is_current, first_used, name, price)`, so the
-   current state is last. `changed_date` = the first invoice's `created_date`, or `now()`. The
+   current state is last. `changed_date` = the first invoice's `created_date`; for the current
+   version, the latest such date of any of the item's pairs when it was invoiced, else `now()` (review
+   round 1 and 2: dates never go back as versions go up). The
    current version takes its name and price from `items`, not from a line: `numeric` 50 and 50.0
    are equal, so a line's copy could change how `GET /items` prints the price.
 2. Stamp every line that has a matching version:

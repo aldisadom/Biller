@@ -2,14 +2,15 @@
 
 -- changeset Aldis:37
 -- comment: Rebuild item versions from invoice lines, then stamp every invoice line with the version it matches.
--- comment: A rebuilt changed_date is the date that name and price were first invoiced, not when the item was edited.
+-- comment: A rebuilt changed_date is the date that name and price were first invoiced, not when the item was edited; the current version's is never earlier than an older version's, and is now() when it was never invoiced.
 
 -- 1. Versions of the items that still exist: each distinct (name, price) found on their invoice lines,
 --    oldest invoice first, then the item's current name and price as its last version. The current version
 --    takes its name and price from items, not from a line, so GET /items prints the price as before
---    (numeric 50 and 50.0 are equal, but print differently). It is dated by the latest first use of any of
---    its item's pairs, so dates never go back as versions go up (50 in January, 60 in February and 50 again
---    now gives v1 = 60 in February and v2 = 50 dated February too).
+--    (numeric 50 and 50.0 are equal, but print differently). When it was invoiced, it is dated by the latest
+--    first use of any of its item's pairs, so dates never go back as versions go up (50 in January, 60 in
+--    February and 50 again now gives v1 = 60 in February and v2 = 50 dated February too). When it was
+--    never invoiced, it is dated now(), after every invoice.
 WITH lines AS (
     SELECT (l.value->>'Id')::uuid AS item_id,
            l.value->>'Name' AS name,
@@ -37,7 +38,8 @@ SELECT item_id,
        ROW_NUMBER() OVER (PARTITION BY item_id ORDER BY is_current, first_used, name, price),
        name,
        price,
-       COALESCE(CASE WHEN is_current THEN MAX(first_used) OVER (PARTITION BY item_id) ELSE first_used END::timestamptz, now())
+       COALESCE(CASE WHEN is_current AND first_used IS NOT NULL THEN MAX(first_used) OVER (PARTITION BY item_id)
+                     ELSE first_used END::timestamptz, now())
 FROM candidates;
 
 -- 2. Add "Version" to every line that matches a version. A line of a deleted item, or with no name or price,
