@@ -29,7 +29,9 @@ on a small Linux PC.
 - Never edit a changeset that is already on master. Fix it with a new one. Every changeset has a `-- rollback`.
 - Invoices store their user, seller and customer ids and show the current data. They keep their
   own number, dates and lines. Editing an item must not change an existing invoice or its PDF.
-  Saving the invoice itself (`PUT /invoices`) copies line names and prices from the current items.
+  A line names the item version it was saved with. `PUT /invoices` copies name and price from the
+  version each line names, and never moves a line to another version by itself. Item names and
+  prices live in `item_versions`, whose rows are never updated.
   The series name isn't copied, so a series with invoices can't be renamed.
 - Mirror the Item feature when adding a layer. Map every property by hand.
 - Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be

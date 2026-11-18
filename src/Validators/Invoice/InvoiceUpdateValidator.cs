@@ -24,6 +24,8 @@ public class InvoiceUpdateValidator : AbstractValidator<InvoiceUpdateRequest>
         RuleFor(x => x.SellerId).NotEmpty().WithMessage("Please specify seller Id");
         RuleFor(x => x.CustomerId).NotEmpty().WithMessage("Please specify customer id");
         RuleFor(x => x.Items).Must(x => x.Count != 0).WithMessage("Please provide at least one item");
+        // A saved line keeps its version, so a save never re-prices it by accident
+        RuleForEach(x => x.Items).Must(i => i.Version is not null).WithMessage((_, i) => $"Please specify item version for {i.Id}");
         RuleFor(x => x.CreatedDate).NotEmpty().WithMessage("Please specify create date");
         RuleFor(x => x.DueDate).GreaterThanOrEqualTo(x => x.CreatedDate).WithMessage("Please specify due date >= create date");
 

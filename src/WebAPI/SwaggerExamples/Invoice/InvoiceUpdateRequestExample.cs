@@ -26,13 +26,15 @@ public class InvoiceUpdateRequestExample : IExamplesProvider<InvoiceUpdateReques
                 new()
                 {
                     Id = Guid.Parse("f8ff867d-8e7f-4c4d-b7f3-0f7ac1ecfd43"),
-                    Quantity = 2
+                    Quantity = 2,
+                    Version = 1
                 },
                 new()
                 {
                     Id = Guid.Parse("87b3b388-9e67-4a0d-b7f3-bcb4b458ab29"),
                     Quantity = 5,
-                    Comments = "With defects"
+                    Comments = "With defects",
+                    Version = 3
                 }
             ],
             Comments = "Invoice comment"

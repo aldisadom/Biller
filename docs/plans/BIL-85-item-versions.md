@@ -124,23 +124,24 @@ versions (decision 4) have only approximate dates.
   plan (`BIL-75-units.md`, master @ 125ae5e) still puts `unit_id` on `items` and uses an
   `InvoiceItemUpdateRequest` that doesn't exist; check it with `_write-plan` after this one merges.
 
-## Step 0: Setup
+## Step 0: Setup (done)
 
-- Run `_sync-repos`. Branch `BIL-85-item-versions` in all four repos.
-- Update the BIL-85 description in Jira to this design.
+- [x] Run `_sync-repos`. Branch `BIL-85-item-versions` in all four repos.
+- [x] Update the BIL-85 description in Jira to this design.
 
-## Step 1: BillerContracts 6.0.0
+## Step 1: BillerContracts 6.0.0 (done: PR #23 merged, 6.0.0 published)
 
-- `ItemResponse`: add `int Version`.
-- New `ItemVersionResponse` (`ItemId`, `Version`, `Name`, `Price`, `ChangedDate`) and
-  `ItemVersionListResponse` (`Versions`).
+- `ItemResponse`: add `int Version` (the version it shows).
+- New `ItemVersionListResponse` (`ItemId`, `Versions`; not paged, so no `PagedResponse`) of
+  `ItemVersionResponse` (`Version`, `Name`, `Price`, `ChangedDate`). The item id is on the list
+  once, not on each version (user's decision).
 - `InvoiceItemRequest`: add `int? Version`. `InvoiceItemResponse`: add `int? Version`.
-- `BillerContracts.Clients`: `IItemClient.GetVersions(Guid id)` (`GET {id}/versions`), with a test
-  in `Clients.Tests/ItemClientTest.cs` (BillerContracts `CLAUDE.md`: a new endpoint needs a client
-  method and a client test).
-- Publish `6.0.0-preview.<run>` from the branch for CI, 6.0.0 after merge.
+- `BillerContracts.Clients`, each with a test in `Clients.Tests/ItemClientTest.cs`:
+  - `IItemClient.GetVersions(Guid id)` → `GET {id}/versions`.
+  - `IItemClient.Get(Guid id, int version)` → `GET {id}?Version=n`, one version of the item
+    (user's decision). An overload, not an optional parameter, so `Get(id)` calls and mocks stay.
 
-## Step 2: Migrations (`_add-db-migration` skill; 036 is the next free number)
+## Step 2: Migrations (done; `_add-db-migration` skill; 036 is the next free number)
 
 Three changesets: schema, data, cleanup. Each has its own rollback.
 
@@ -195,13 +196,14 @@ Checks on a copy of production:
   it had before; the only lines without `Version` are those whose item is not in `items`;
   `SUM(total_price)` and the invoice count unchanged.
 
-## Step 3: Domain and Infrastructure (`_add-api-feature` skill, mirror Item)
+## Step 3: Domain and Infrastructure (done; `_add-api-feature` skill, mirror Item)
 
 - `src/Domain/Entities/ItemEntity.cs`: add `int Version`. Still has `Name` and `Price`, filled by
   the join. New `ItemVersionEntity` (`Id`, `ItemId`, `Version`, `Name`, `Price`, `ChangedDate`, and
   from the join `CustomerId`).
-- `src/Domain/Repositories/IItemRepository.cs`: `GetVersions(Guid itemId)`,
-  `GetVersions(List<Guid> itemIds)`.
+- `src/Domain/Repositories/IItemRepository.cs`: `Get(Guid id, int version)`,
+  `GetVersions(Guid itemId)`, `GetVersions(List<Guid> itemIds)`. `Get(id)` and `Get(id, version)`
+  share one query: `v.version = COALESCE(@Version, <latest>)`.
 - `src/Infrastructure/Repository/ItemRepository.cs`:
 
 Both tables have `id`, so every column is qualified: `WHERE i.id = @Id`, `i.id = ANY(@Ids)`,
@@ -229,11 +231,13 @@ WHERE (latest.name, latest.price) IS DISTINCT FROM (@Name, @Price);
 -- Delete: unchanged (DELETE FROM items WHERE id=@Id); the foreign key removes the versions
 ```
 
-## Step 4: Application
+## Step 4: Application (done)
 
 - `ItemModel.Version`, new `ItemVersionModel`, mapping extensions in
   `src/Application/MappingProfiles/ItemMappingProfile.cs` (every property by hand, `ItemResponse.ToModel`
   too).
+- `ItemService.Get(Guid id, int version)`: `NotFoundException` `Invoice item:{id} version {n} not found`
+  when the item or that version doesn't exist.
 - `InvoiceItemModel`: `int? Version`. `ToInvoiceItemModel(InvoiceItemRequest)` and
   `ToInvoiceItemResponse` map it.
 - `src/Application/Services/ItemService.cs`:
@@ -245,20 +249,23 @@ WHERE (latest.name, latest.price) IS DISTINCT FROM (@Name, @Price);
   - `GetWithValidation` goes, from `IItemService` too: `InvoiceService.Validate` is its only caller.
 - `src/Application/Services/InvoiceService.cs`:
   - `Validate` calls `GetVersionsWithValidation`.
-  - A line with an empty version gets the latest version number before `MapItemToInvoiceItem`, so
-    every saved line has one.
-  - `MapItemToInvoiceItem` matches on item id **and** version, and sets `Name`, `Price`, `Version`.
+  - `MapItemToInvoiceItem` gives a line with an empty version its item's latest version number, so
+    every saved line has one, then matches on item id **and** version and sets `Name` and `Price`.
   - `Get`, the paged `Get` and `GeneratePDF` don't change.
 
-## Step 5: Validators and WebAPI
+## Step 5: Validators and WebAPI (done)
 
-- `src/Validators/Invoice/InvoiceUpdateValidator.cs`: every line needs `Version >= 1`.
-  `InvoiceItemValidator`: a given version must be `>= 1`. `InvoiceModelUpdateValidator` (runs on
-  `PUT` after the request validator and repeats its line rules): every line needs `Version >= 1`.
-- `src/WebAPI/Controllers/ItemController.cs`: `[HttpGet("{id}/versions")]` →
-  `ItemVersionListResponse`, with a Swagger example. Update the item and invoice examples for `Version`.
+- `src/Validators/Invoice/InvoiceUpdateValidator.cs`: every line needs a version ("Please specify
+  item version for {id}"). `InvoiceItemValidator` (`POST` and `PUT` lines): a given version must be
+  `>= 1`. `InvoiceModelUpdateValidator` (runs on `PUT` after the request validator and repeats its
+  line rules): every line needs `Version >= 1`.
+- `src/WebAPI/Controllers/ItemController.cs`:
+  - `GET {id}` takes an optional `[FromQuery] int? version`: empty → the latest, a number → that
+    version (user's decision); 404 when the item has no such version.
+  - `[HttpGet("{id}/versions")]` → `ItemVersionListResponse` with `ItemId`, with a Swagger example.
+  - Update the item examples and the invoice update example for `Version`.
 
-## Step 6: Rules
+## Step 6: Rules (done)
 
 - `CLAUDE.md`: replace "Saving the invoice itself (`PUT /invoices`) copies line names and prices from
   the current items." with "A line names the item version it was saved with. `PUT /invoices` copies
@@ -269,7 +276,7 @@ WHERE (latest.name, latest.price) IS DISTINCT FROM (@Name, @Price);
 - `README.md` / `docs/README_lt.md`: no change. The new endpoint is in the existing items group, and
   no command, setting, port, package or layout changes.
 
-## Step 7: Tests
+## Step 7: Tests (done)
 
 Unit (`_write-tests` skill):
 - `ItemServiceTest`: `GetVersions` (ordered, empty → 404); `GetVersionsWithValidation` (empty
@@ -285,17 +292,20 @@ Unit (`_write-tests` skill):
 - Validators, mapping (`Version` round-trip through `items_data`, and a line without `Version`
   reads as `null`), controller, Swagger examples, DI.
 
-## Step 8: Integration tests (BillioIntegrationTest, same branch; responses only, no PDF content)
+## Step 8: Integration tests (done; BillioIntegrationTest, same branch; responses only, no PDF content)
 
 - Item: create, change price twice, save unchanged, change only quantity → 3 versions, `GET` shows
-  the latest and the new quantity. Delete → `GET /items/{id}` and its versions 404.
+  the latest and the new quantity; `GET ?version=1` shows the first name and price, `?version=9`
+  404. Delete → its versions 404.
 - Invoice: edit the item, then `PUT` unchanged → line and total unchanged; `PUT` with the current
   version → new price; `PUT` with version 1 → old price; `PUT` without a version or with version 99
   → 400; delete the item → `GET` still shows the line with its name and price.
 - `UpdateRequestFromInvoice` copies `Version` from the response.
-- `InvoiceKeepsItemPriceUntilUpdated_Valid_Success` asserts today's re-pricing: it becomes the
-  invoice case above (unchanged `PUT` keeps the old name and price; `PUT` with the item's new
-  version takes the new ones).
+- `InvoiceKeepsItemPriceUntilUpdated_Valid_Success` asserted today's re-pricing: it became
+  `InvoiceKeepsItemVersionUntilChanged_Valid_Success` (unchanged `PUT` keeps the old name and price;
+  version 2 takes the new ones; version 1 brings the old ones back). The 400 cases are
+  `InvoiceUpdateLineVersion_Invalid_Fail` (own data "Rickon": each own-data test needs its own name,
+  or parallel runs collide on the user's email).
 - Lines built by hand in `PUT` tests get the item's `Version` (from the saved `ItemResponse`), or
   the validator's "Please specify item version" replaces the error they expect or fails the save:
   `InvoiceIdsUpdate_Invalid_Fail`, `InvoiceUpdateChangeItems_Valid_Success`,
@@ -313,7 +323,8 @@ Unit (`_write-tests` skill):
     item (400, or silently an old version of the new item).
 - `MappingProfiles/InvoiceMappingProfile.ToUpdateRequest(InvoiceItemResponse)` copies `Version`;
   its test in `tests/FrontEnd.Tests/MappingProfiles/InvoiceMappingProfileTest.cs`.
-- `Items_id.razor`: version table.
+- `Items_id.razor`: version table. `ItemVersionResponse.ChangedDate` arrives as UTC (`timestamptz`
+  through Npgsql): show it with `ToLocalTime()`.
 - Update its `CLAUDE.md`/`REVIEW.md` line about the total coming from current item prices.
 
 ## Verification
@@ -327,6 +338,9 @@ Unit (`_write-tests` skill):
    rolls 038–036 back and applies them again, so 037 rebuilds the versions from those rows. Save
    again and diff. Expected differences: rebuilt `changedDate`s, and the deleted item's line loses
    its `version` (no item to rebuild it from). Then `run-integration.sh --repeat 3`.
+   Done on 2026-11-18: exactly those differences, plus a rebuilt old version's price printing as
+   `10.0` instead of `10` (it comes from the line's JSON copy; equal value). Integration: 3 runs of
+   266, 0 failed.
 3. On a copy of production (as in BIL-86 step 10): save `GET /items`, `GET /invoices` (all pages)
    and every invoice PDF as text before; migrate; save again and diff. Expected difference: only the
    new `version` fields. Run the checks from step 2.

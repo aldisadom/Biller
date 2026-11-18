@@ -16,7 +16,7 @@ public class InvoiceUpdateValidatorTest
         CustomerId = Guid.NewGuid(),
         Items =
         [
-            new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 2 }
+            new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 2, Version = 1 }
         ],
         CreatedDate = new DateOnly(2024, 1, 1),
         DueDate = new DateOnly(2024, 1, 31)
@@ -60,6 +60,22 @@ public class InvoiceUpdateValidatorTest
     }
 
     [Fact]
+    public void Validate_GivenLineWithoutVersion_IsInvalid()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.Items[0].Version = null;
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == $"{nameof(request.Items)}[0]"
+            && e.ErrorMessage == $"Please specify item version for {request.Items[0].Id}");
+    }
+
+    [Fact]
     public void Validate_GivenDueDateBeforeCreatedDate_IsInvalid()
     {
         //Arrange
@@ -80,6 +96,7 @@ public class InvoiceUpdateValidatorTest
         yield return new(new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 }) { Label = "item with empty id throws" };
         yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 0 }) { Label = "item with zero quantity throws" };
         yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = -1 }) { Label = "item with negative quantity throws" };
+        yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 1, Version = 0 }) { Label = "item with version zero throws" };
     }
 
     [Theory]

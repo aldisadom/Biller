@@ -13,7 +13,7 @@ public class InvoiceModelUpdateValidatorTest
         Id = Guid.NewGuid(),
         SellerId = Guid.NewGuid(),
         CustomerId = Guid.NewGuid(),
-        Items = [new() { Id = Guid.NewGuid(), Quantity = 1 }]
+        Items = [new() { Id = Guid.NewGuid(), Quantity = 1, Version = 1 }]
     };
 
     [Fact]
@@ -71,6 +71,24 @@ public class InvoiceModelUpdateValidatorTest
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == $"{nameof(InvoiceModel.Items)}[0]"
             && e.ErrorMessage == $"Please provide quantity that should > 0 for {model.Items[0].Id}");
+    }
+
+    [Theory]
+    [InlineData(null, Label = "line without a version is rejected")]
+    [InlineData(0, Label = "line with version zero is rejected")]
+    public void Validate_GivenLineVersionMissingOrBelowOne_IsInvalid(int? version)
+    {
+        //Arrange
+        InvoiceModel model = ValidModel();
+        model.Items![0].Version = version;
+
+        //Act
+        var result = _validator.Validate(model);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == $"{nameof(InvoiceModel.Items)}[0]"
+            && e.ErrorMessage == $"Please specify item version for {model.Items[0].Id}");
     }
 
     [Theory]

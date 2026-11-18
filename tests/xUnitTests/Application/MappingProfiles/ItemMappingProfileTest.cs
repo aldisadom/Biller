@@ -19,7 +19,8 @@ public class ItemMappingProfileTest
             CustomerId = Guid.NewGuid(),
             Name = "ItemName",
             Quantity = 66,
-            Price = 123.67M
+            Price = 123.67M,
+            Version = 3
         };
 
         //Act
@@ -39,7 +40,8 @@ public class ItemMappingProfileTest
             CustomerId = Guid.NewGuid(),
             Name = "ItemName",
             Quantity = 66,
-            Price = 123.67M
+            Price = 123.67M,
+            Version = 3
         };
 
 
@@ -98,7 +100,8 @@ public class ItemMappingProfileTest
             CustomerId = Guid.NewGuid(),
             Name = "ItemName",
             Quantity = 66,
-            Price = 123.67M
+            Price = 123.67M,
+            Version = 3
         };
 
         //Act
@@ -118,11 +121,56 @@ public class ItemMappingProfileTest
             CustomerId = Guid.NewGuid(),
             Name = "ItemName",
             Quantity = 66,
-            Price = 123.67M
+            Price = 123.67M,
+            Version = 3
         };
 
         //Act
         var to = from.ToModel();
+
+        //Assert
+        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
+    }
+
+    [Fact]
+    public void ToModel_GivenVersionEntity_MapsAllProperties()
+    {
+        //Arrange
+        var from = new ItemVersionEntity
+        {
+            Id = Guid.NewGuid(),
+            ItemId = Guid.NewGuid(),
+            Version = 3,
+            Name = "ItemName",
+            Price = 123.67M,
+            ChangedDate = new DateTime(2026, 11, 10, 14, 30, 0, DateTimeKind.Utc),
+            CustomerId = Guid.NewGuid()
+        };
+
+        //Act
+        var to = from.ToModel();
+
+        //Assert
+        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
+    }
+
+    [Fact]
+    public void ToResponse_GivenVersionModel_MapsAllProperties()
+    {
+        //Arrange
+        var from = new ItemVersionModel
+        {
+            Id = Guid.NewGuid(),
+            ItemId = Guid.NewGuid(),
+            Version = 3,
+            Name = "ItemName",
+            Price = 123.67M,
+            ChangedDate = new DateTime(2026, 11, 10, 14, 30, 0, DateTimeKind.Utc),
+            CustomerId = Guid.NewGuid()
+        };
+
+        //Act
+        var to = from.ToResponse();
 
         //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);

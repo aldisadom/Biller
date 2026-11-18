@@ -5,7 +5,7 @@ using FluentValidation;
 namespace Validators.Invoice;
 
 /// <summary>
-/// Invoice model validation before update: every id is set, every item quantity is above 0 and the PDF can show the comments
+/// Invoice model validation before update: every id is set, every item quantity is above 0, every item has a version and the PDF can show the comments
 /// </summary>
 public class InvoiceModelUpdateValidator : AbstractValidator<InvoiceModel>
 {
@@ -21,6 +21,7 @@ public class InvoiceModelUpdateValidator : AbstractValidator<InvoiceModel>
         RuleFor(x => x.Items).NotEmpty().WithMessage("Please provide at least one item");
         RuleForEach(x => x.Items).Must(i => i.Id != Guid.Empty).WithMessage("Please specify item Id");
         RuleForEach(x => x.Items).Must(i => i.Quantity > 0).WithMessage((_, i) => $"Please provide quantity that should > 0 for {i.Id}");
+        RuleForEach(x => x.Items).Must(i => i.Version >= 1).WithMessage((_, i) => $"Please specify item version for {i.Id}");
 
         RuleFor(x => x.Comments).DrawableOnPdf(documentTextChecker);
         RuleForEach(x => x.Items).ChildRules(item => item.RuleFor(i => i.Comments).DrawableOnPdf(documentTextChecker));

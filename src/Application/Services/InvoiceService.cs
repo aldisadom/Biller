@@ -30,16 +30,22 @@ public class InvoiceService : IInvoiceService
         _invoiceDocumentFactory = invoiceDocumentFactory;
     }
 
-    public static void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, IEnumerable<ItemModel> items)
+    /// <summary>
+    /// Gives a line without a version its item's latest one, then copies name and price from the
+    /// version each line names. A line never moves to another version by itself.
+    /// </summary>
+    public static void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, IEnumerable<ItemVersionModel> versions)
     {
         foreach (InvoiceItemModel invoiceItem in invoiceItems)
         {
-            foreach (ItemModel item in items)
+            invoiceItem.Version ??= versions.Where(v => v.ItemId == invoiceItem.Id).Max(v => (int?)v.Version);
+
+            foreach (ItemVersionModel version in versions)
             {
-                if (invoiceItem.Id == item.Id)
+                if (invoiceItem.Id == version.ItemId && invoiceItem.Version == version.Version)
                 {
-                    invoiceItem.Price = item.Price;
-                    invoiceItem.Name = item.Name;
+                    invoiceItem.Price = version.Price;
+                    invoiceItem.Name = version.Name;
                     break;
                 }
             }
@@ -152,7 +158,7 @@ public class InvoiceService : IInvoiceService
         return await _invoiceRepository.MarkOverdue(today.ToDateTime(TimeOnly.MinValue));
     }
 
-    private async Task<(CustomerModel customer, IEnumerable<ItemModel> items)> Validate(InvoiceModel invoiceData)
+    private async Task<(CustomerModel customer, IEnumerable<ItemVersionModel> versions)> Validate(InvoiceModel invoiceData)
     {
         var sellerResult = await _sellerService.GetWithValidation(invoiceData.SellerId, invoiceData.UserId);
         sellerResult.Match(
@@ -164,7 +170,7 @@ public class InvoiceService : IInvoiceService
             customer => { return customer; },
             error => { throw new ValidationException(error.ExtendedMessage); }
         );
-        var itemsResult = await _itemService.GetWithValidation(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.CustomerId);
+        var itemsResult = await _itemService.GetVersionsWithValidation(invoiceData.Items!, invoiceData.CustomerId);
         var items = itemsResult.Match(
             items => { return items; },
             error => { throw new ValidationException(error.ExtendedMessage); }

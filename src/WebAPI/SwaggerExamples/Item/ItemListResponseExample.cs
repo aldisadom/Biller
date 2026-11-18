@@ -27,7 +27,9 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
             CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Iron throne",
-            Price = 999999999999999m
+            Price = 999999999999999m,
+            Quantity = 1m,
+            Version = 3
         });
 
         itemListResponse.Items.Add(new ItemResponse()
@@ -35,7 +37,9 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
             CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Lanister backstab",
-            Price = 0.01m
+            Price = 0.01m,
+            Quantity = 1m,
+            Version = 1
         });
 
         itemListResponse.Items.Add(new ItemResponse()
@@ -43,7 +47,9 @@ public class ItemListResponseExample : IExamplesProvider<ItemListResponse>
             CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Hourly rate",
-            Price = 10.00m
+            Price = 10.00m,
+            Quantity = 8m,
+            Version = 2
         });
 
         return itemListResponse;

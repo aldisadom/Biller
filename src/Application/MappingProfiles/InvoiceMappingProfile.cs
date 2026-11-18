@@ -89,7 +89,8 @@ public static class InvoiceModelExtensions
         {
             Id = from.Id,
             Quantity = from.Quantity,
-            Comments = from.Comments
+            Comments = from.Comments,
+            Version = from.Version
         };
     }
 
@@ -115,7 +116,8 @@ public static class InvoiceModelExtensions
             Name = from.Name,
             Price = from.Price,
             Quantity = from.Quantity,
-            Comments = from.Comments
+            Comments = from.Comments,
+            Version = from.Version
         };
     }
 }
