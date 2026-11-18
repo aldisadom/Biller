@@ -7,7 +7,9 @@
 -- 1. Versions of the items that still exist: each distinct (name, price) found on their invoice lines,
 --    oldest invoice first, then the item's current name and price as its last version. The current version
 --    takes its name and price from items, not from a line, so GET /items prints the price as before
---    (numeric 50 and 50.0 are equal, but print differently).
+--    (numeric 50 and 50.0 are equal, but print differently). It is dated by the latest first use of any of
+--    its item's pairs, so dates never go back as versions go up (50 in January, 60 in February and 50 again
+--    now gives v1 = 60 in February and v2 = 50 dated February too).
 WITH lines AS (
     SELECT (l.value->>'Id')::uuid AS item_id,
            l.value->>'Name' AS name,
@@ -35,7 +37,7 @@ SELECT item_id,
        ROW_NUMBER() OVER (PARTITION BY item_id ORDER BY is_current, first_used, name, price),
        name,
        price,
-       COALESCE(first_used::timestamptz, now())
+       COALESCE(CASE WHEN is_current THEN MAX(first_used) OVER (PARTITION BY item_id) ELSE first_used END::timestamptz, now())
 FROM candidates;
 
 -- 2. Add "Version" to every line that matches a version. A line of a deleted item, or with no name or price,

@@ -63,29 +63,6 @@ public class ItemServiceTest
     }
 
     [Fact]
-    public async Task GetIds_GivenValidIds_ReturnsDTOs()
-    {
-        //Arrange
-        List<ItemEntity> itemList = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
-
-        List<Guid> ids = itemList.Select(x => x.Id).ToList();
-
-        _itemRepositoryMock.Setup(m => m.Get(ids))
-                        .ReturnsAsync(itemList);
-
-        var expectedResult = itemList.Select(i => i.ToModel());
-
-        //Act
-        var result = await _itemService.Get(ids);
-
-        //Assert
-        result.Count().Should().Be(itemList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
-
-        _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
-    }
-
-    [Fact]
     public async Task GetIdVersion_GivenExistingVersion_ReturnsThatVersion()
     {
         //Arrange
@@ -254,6 +231,45 @@ public class ItemServiceTest
         result.Should().BeEquivalentTo(expectedResult);
 
         _itemRepositoryMock.Verify(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(lineIds))), Times.Once());
+    }
+
+    [Fact]
+    public async Task GetVersionsWithValidation_GivenVersionOnlyAnotherLinesItemHas_ReturnsErrorModel()
+    {
+        //Arrange
+        Guid customerId = Guid.NewGuid();
+        Guid throneId = Guid.NewGuid();
+        Guid swordId = Guid.NewGuid();
+        List<InvoiceItemModel> lines = [new() { Id = throneId, Version = 3 }, new() { Id = swordId, Version = 1 }];
+        List<ItemVersionEntity> versions =
+        [
+            new() { ItemId = throneId, CustomerId = customerId, Version = 1 },
+            new() { ItemId = swordId, CustomerId = customerId, Version = 1 },
+            new() { ItemId = swordId, CustomerId = customerId, Version = 2 },
+            new() { ItemId = swordId, CustomerId = customerId, Version = 3 }
+        ];
+
+        _itemRepositoryMock.Setup(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(new[] { throneId, swordId }))))
+                        .ReturnsAsync(versions);
+
+        ErrorModel expectedResult = new()
+        {
+            StatusCode = HttpStatusCode.BadRequest,
+            Message = "Validation failure",
+            ExtendedMessage = $"Item id {throneId} has no version 3"
+        };
+
+        //Act
+        var resultResponse = await _itemService.GetVersionsWithValidation(lines, customerId);
+        ErrorModel result = resultResponse.Match(
+            versions => { throw new Exception("Got versions not error" + versions.ToString()); },
+            error => { return error; }
+        );
+
+        //Assert
+        result.Should().BeEquivalentTo(expectedResult);
+
+        _itemRepositoryMock.Verify(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(new[] { throneId, swordId }))), Times.Once());
     }
 
     [Fact]

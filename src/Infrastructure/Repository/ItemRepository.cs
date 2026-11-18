@@ -31,14 +31,6 @@ public class ItemRepository : IItemRepository
         return await GetVersion(id, version);
     }
 
-    public async Task<IEnumerable<ItemEntity>> Get(List<Guid> ids)
-    {
-        string sql = $@"{SelectItem}
-                        WHERE i.id=ANY(@Ids)";
-
-        return await _dbConnection.QueryAsync<ItemEntity>(sql, new { ids, Version = (int?)null });
-    }
-
     public async Task<(IEnumerable<ItemEntity> Items, int TotalCount, int Page)> Get(Guid? customerId, int page, int pageSize)
     {
         string filter = @"WHERE (@CustomerId IS NULL OR i.customer_id = @CustomerId)";

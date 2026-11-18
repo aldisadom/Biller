@@ -46,14 +46,6 @@ public class ItemService : IItemService
         return versions.Select(v => v.ToModel());
     }
 
-    public async Task<IEnumerable<ItemModel>> Get(List<Guid> ids)
-    {
-        IEnumerable<ItemEntity> itemEntities;
-
-        itemEntities = await _itemRepository.Get(ids);
-
-        return itemEntities.Select(i => i.ToModel());
-    }
 
     public async Task<(IEnumerable<ItemModel> Items, int TotalCount, int Page)> Get(ItemGetRequest? query)
     {

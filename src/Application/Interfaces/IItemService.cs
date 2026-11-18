@@ -9,7 +9,6 @@ public interface IItemService
     Task<Guid> Add(ItemModel item);
     Task Delete(Guid id);
     Task<(IEnumerable<ItemModel> Items, int TotalCount, int Page)> Get(ItemGetRequest? query);
-    Task<IEnumerable<ItemModel>> Get(List<Guid> ids);
     Task<Result<IEnumerable<ItemVersionModel>>> GetVersionsWithValidation(List<InvoiceItemModel> lines, Guid customerId);
     Task<ItemModel> Get(Guid id);
     Task<ItemModel> Get(Guid id, int version);
