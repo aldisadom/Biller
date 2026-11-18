@@ -91,6 +91,8 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Start services
+        env:
+          BILLER_ENVIRONMENT: Dev
         run: docker compose -f docker-compose.yml up -d --build
 
       - name: Wait for API to be ready

@@ -77,6 +77,10 @@ Every Biller repo has these limits. Keep them when updating packages.
 - Both build Release only, as CI does: Debug gives other coverage numbers.
 - Throwaway stack and integration tests: the `_test-stack` skill (`test-stack.sh up`, `run-integration.sh`, `test-stack.sh down`).
 - The user's local stack: `docker compose up -d --build` (Swagger at http://localhost:8090/swagger, DB on port 5437). Don't use it for tests.
+- Environments: `docker compose` (and `make run`/`make update`) runs the API as `Prod`
+  (`appsettings.Prod.json`); the test stack and CI run it as `Dev` (`appsettings.Dev.json`),
+  CI through `BILLER_ENVIRONMENT=Dev docker compose up -d --build`. Change both files together
+  unless a setting is meant to differ.
 
 ## More
 - Plans: `docs/plans/BIL-<n>-<slug>.md` (Jira project BIL), in the repo the work is in. Only plans
