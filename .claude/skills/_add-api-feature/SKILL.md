@@ -36,7 +36,7 @@ key and go to step 1. If not, create it first:
   `createJiraIssueLink` (`linkType: "Blocks"`, the blocker as `inwardIssue`).
 - Then go on at step 1 with the new key. It has no plan yet, so `_write-plan` writes one.
 
-1. **Plan on Fable.** First run `_sync-repos` here, where the user can be asked: `_write-plan`
+1. **Plan on Opus.** First run `_sync-repos` here, where the user can be asked: `_write-plan`
    can't ask, and reads only repos that are `ok`. Then run `_write-plan BIL-<n>`. It runs in its
    own context, doesn't see this conversation and remembers nothing between runs, so keep a list
    of what the user has decided (details, answers, "go on despite the blocker", "leave <repo> out")

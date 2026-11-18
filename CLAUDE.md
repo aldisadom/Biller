@@ -86,7 +86,7 @@ Every Biller repo has these limits. Keep them when updating packages.
 - Plans: `docs/plans/BIL-<n>-<slug>.md` (Jira project BIL), in the repo the work is in. Only plans
   that change several repos, or Biller itself, live here. The `_write-plan` skill writes and checks them.
 - Skills set their model and effort in their frontmatter: Sonnet at high effort by default,
-  `_write-plan` on Fable (medium, in its own context), `_pr-review` on Opus (high). A new skill gets
+  `_write-plan` on Opus (xhigh, in its own context), `_pr-review` on Opus (high). A new skill gets
   `model:` and `effort:` lines too.
 - Review rules: `REVIEW.md`. Past bugs to test reviews against: `docs/review-evals.md`.
 - Before opening a PR, use the `_pre-pr` skill. The build and tests must pass: don't open a PR, or
