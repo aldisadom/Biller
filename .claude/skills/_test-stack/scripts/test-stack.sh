@@ -123,7 +123,7 @@ cmd_up() {
   echo ">> API image"
   docker build -q -t "$API_IMAGE" -f "$dockerfile" "$biller" >/dev/null \
     || die "API image build failed (run: docker build -f $dockerfile $biller)"
-  docker run -d --name "$API" --network "$NET" -e ASPNETCORE_ENVIRONMENT=LocalDocker \
+  docker run -d --name "$API" --network "$NET" -e ASPNETCORE_ENVIRONMENT=Dev \
     -e ASPNETCORE_HTTP_PORTS=8070 -e ASPNETCORE_HTTPS_PORTS= -v "$biller/Fonts:/Fonts" \
     -p "${API_PORT:+$API_PORT:}8070" "$API_IMAGE" >/dev/null || die "could not start $API"
   API_URL="$(api_url)"
@@ -136,7 +136,7 @@ cmd_up() {
     docker build -q -t "$FRONTEND_IMAGE" -f "$frontend_repo/src/FrontEnd/Dockerfile" "$frontend_repo" >/dev/null \
       || die "front-end image build failed"
     local inner="http://$API:8070"
-    docker run -d --name "$FRONTEND" --network "$NET" -e ASPNETCORE_ENVIRONMENT=Development \
+    docker run -d --name "$FRONTEND" --network "$NET" -e ASPNETCORE_ENVIRONMENT=Dev \
       -e ASPNETCORE_HTTP_PORTS=8080 -e ASPNETCORE_HTTPS_PORTS= \
       -e "ClientsOptions__UserUrl=$inner/users" -e "ClientsOptions__SellerUrl=$inner/sellers" \
       -e "ClientsOptions__CustomerUrl=$inner/customers" -e "ClientsOptions__ItemUrl=$inner/items" \

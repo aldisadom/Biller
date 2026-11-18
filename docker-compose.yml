@@ -50,7 +50,8 @@ services:
     depends_on: 
       - db
     environment:
-      - ASPNETCORE_ENVIRONMENT=LocalDocker
+      # Prod for make run/update; CI sets BILLER_ENVIRONMENT=Dev for the tests
+      - ASPNETCORE_ENVIRONMENT=${BILLER_ENVIRONMENT:-Prod}
       - ASPNETCORE_HTTP_PORTS=8070
       - ASPNETCORE_HTTPS_PORTS=
     volumes:
