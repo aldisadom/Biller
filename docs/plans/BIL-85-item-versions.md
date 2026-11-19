@@ -314,7 +314,7 @@ Unit (`_write-tests` skill):
   `InvoiceIdsUpdate_Invalid_Fail`, `InvoiceUpdateChangeItems_Valid_Success`,
   `InvoiceUpdateChangeCustomer_Invalid_Fail`, `InvoiceUpdateChangeSeller_Invalid_Fail`.
 
-## Step 9: BillerFrontEnd (separate PR, its own `CLAUDE.md`)
+## Step 9: BillerFrontEnd (done; separate PR, its own `CLAUDE.md`)
 
 - `Invoices_update.razor`: each line shows its stored name, price and version. A version drop-down
   per line (from `GetVersions`), a "Refresh" button per line and "Refresh all", shown when the
@@ -327,7 +327,10 @@ Unit (`_write-tests` skill):
 - `MappingProfiles/InvoiceMappingProfile.ToUpdateRequest(InvoiceItemResponse)` copies `Version`;
   its test in `tests/FrontEnd.Tests/MappingProfiles/InvoiceMappingProfileTest.cs`.
 - `Items_id.razor`: version table. `ItemVersionResponse.ChangedDate` arrives as UTC (`timestamptz`
-  through Npgsql): show it with `ToLocalTime()`.
+  through Npgsql). Shown as UTC with a "UTC" label, not with `ToLocalTime()`: Blazor Server runs it
+  in the container, which sets no time zone, so it would print UTC as if it were local.
+- `Invoices_update.razor` loads every version of the customer's items (`GetVersions` per item) on
+  open; a line of a deleted item keeps its stored name in its item list and its stored price.
 - Update its `CLAUDE.md`/`REVIEW.md` line about the total coming from current item prices.
 
 ## Verification
