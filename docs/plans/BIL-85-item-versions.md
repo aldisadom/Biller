@@ -170,8 +170,9 @@ CREATE TABLE item_versions (
    has it. Number them with
    `ROW_NUMBER() OVER (PARTITION BY item_id ORDER BY is_current, first_used, name, price)`, so the
    current state is last. `changed_date` = the first invoice's `created_date`; for the current
-   version, the latest such date of any of the item's pairs when it was invoiced, else `now()` (review
-   round 1 and 2: dates never go back as versions go up). The
+   version, the latest such date of any of the item's pairs when it was invoiced, else `now()`; every
+   rebuilt date is capped at `now()`, since `created_date` can be in the future (review rounds 1–3:
+   dates never go back as versions go up). The
    current version takes its name and price from `items`, not from a line: `numeric` 50 and 50.0
    are equal, so a line's copy could change how `GET /items` prints the price.
 2. Stamp every line that has a matching version:
