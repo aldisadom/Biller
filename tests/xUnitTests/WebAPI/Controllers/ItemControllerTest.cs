@@ -51,7 +51,7 @@ public class ItemControllerTest
             CustomerId = _customerId
         };
 
-        _itemServiceMock.Setup(s => s.Get(item.Id))
+        _itemServiceMock.Setup(s => s.Get(item.Id, null))
             .ReturnsAsync(item);
 
         //Act
@@ -61,7 +61,7 @@ public class ItemControllerTest
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(item.ToResponse());
 
-        _itemServiceMock.Verify(s => s.Get(item.Id), Times.Once());
+        _itemServiceMock.Verify(s => s.Get(item.Id, null), Times.Once());
         _itemServiceMock.VerifyNoOtherCalls();
     }
 

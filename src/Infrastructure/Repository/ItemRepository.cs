@@ -7,13 +7,6 @@ namespace Infrastructure.Repository;
 
 public class ItemRepository : IItemRepository
 {
-    // An item with the name and price of one version: @Version, or the latest when @Version is null.
-    // Both tables have an id column, so every column is qualified.
-    private const string SelectItem = @"SELECT i.id, i.customer_id, i.quantity, v.version, v.name, v.price
-                        FROM items i
-                        JOIN item_versions v ON v.item_id = i.id
-                            AND v.version = COALESCE(@Version, (SELECT MAX(version) FROM item_versions WHERE item_id = i.id))";
-
     private readonly IDbConnection _dbConnection;
 
     public ItemRepository(IDbConnection dbConnection)
@@ -21,14 +14,17 @@ public class ItemRepository : IItemRepository
         _dbConnection = dbConnection;
     }
 
-    public async Task<ItemEntity?> Get(Guid id)
+    public async Task<ItemEntity?> Get(Guid id, int? version)
     {
-        return await GetVersion(id, null);
-    }
+        // The item with the name and price of one version: version, or the latest when version is null.
+        // Both tables have an id column, so every column is qualified.
+        string sql = @"SELECT i.id, i.customer_id, i.quantity, v.version, v.name, v.price
+                        FROM items i
+                        JOIN item_versions v ON v.item_id = i.id
+                            AND v.version = COALESCE(@Version, (SELECT MAX(version) FROM item_versions WHERE item_id = i.id))
+                        WHERE i.id=@Id";
 
-    public async Task<ItemEntity?> Get(Guid id, int version)
-    {
-        return await GetVersion(id, version);
+        return await _dbConnection.QuerySingleOrDefaultAsync<ItemEntity>(sql, new { id, version });
     }
 
     public async Task<(IEnumerable<ItemEntity> Items, int TotalCount, int Page)> Get(Guid? customerId, int page, int pageSize)
@@ -108,13 +104,5 @@ public class ItemRepository : IItemRepository
                         WHERE id=@Id";
 
         await _dbConnection.ExecuteAsync(sql, new { id });
-    }
-
-    private async Task<ItemEntity?> GetVersion(Guid id, int? version)
-    {
-        string sql = $@"{SelectItem}
-                        WHERE i.id=@Id";
-
-        return await _dbConnection.QuerySingleOrDefaultAsync<ItemEntity>(sql, new { id, version });
     }
 }

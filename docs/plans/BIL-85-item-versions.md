@@ -204,9 +204,10 @@ Checks on a copy of production:
 - `src/Domain/Entities/ItemEntity.cs`: add `int Version`. Still has `Name` and `Price`, filled by
   the join. New `ItemVersionEntity` (`Id`, `ItemId`, `Version`, `Name`, `Price`, `ChangedDate`, and
   from the join `CustomerId`).
-- `src/Domain/Repositories/IItemRepository.cs`: `Get(Guid id, int version)`,
-  `GetVersions(Guid itemId)`, `GetVersions(List<Guid> itemIds)`. `Get(id)` and `Get(id, version)`
-  share one query: `v.version = COALESCE(@Version, <latest>)`.
+- `src/Domain/Repositories/IItemRepository.cs`: `Get(Guid id, int? version)` replaces `Get(Guid id)`
+  (user's decision: one method, `null` = the latest; one query with
+  `v.version = COALESCE(@Version, <latest>)`), plus `GetVersions(Guid itemId)` and
+  `GetVersions(List<Guid> itemIds)`.
 - `src/Infrastructure/Repository/ItemRepository.cs`:
 
 Both tables have `id`, so every column is qualified: `WHERE i.id = @Id`, `i.id = ANY(@Ids)`,
@@ -239,8 +240,9 @@ WHERE (latest.name, latest.price) IS DISTINCT FROM (@Name, @Price);
 - `ItemModel.Version`, new `ItemVersionModel`, mapping extensions in
   `src/Application/MappingProfiles/ItemMappingProfile.cs` (every property by hand, `ItemResponse.ToModel`
   too).
-- `ItemService.Get(Guid id, int version)`: `NotFoundException` `Invoice item:{id} version {n} not found`
-  when the item or that version doesn't exist.
+- `ItemService.Get(Guid id, int? version)` replaces `Get(Guid id)` (user's decision): `null` = the
+  latest; `NotFoundException` `Invoice item:{id} not found`, or `Invoice item:{id} version {n} not found`
+  when a version was asked for. The controller passes its query value straight through.
 - `InvoiceItemModel`: `int? Version`. `ToInvoiceItemModel(InvoiceItemRequest)` and
   `ToInvoiceItemResponse` map it.
 - `src/Application/Services/ItemService.cs`:

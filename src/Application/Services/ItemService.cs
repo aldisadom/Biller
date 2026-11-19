@@ -20,18 +20,12 @@ public class ItemService : IItemService
         _itemRepository = itemRepository;
     }
 
-    public async Task<ItemModel> Get(Guid id)
-    {
-        ItemEntity itemEntity = await _itemRepository.Get(id)
-            ?? throw new NotFoundException($"Invoice item:{id} not found");
-
-        return itemEntity.ToModel();
-    }
-
-    public async Task<ItemModel> Get(Guid id, int version)
+    public async Task<ItemModel> Get(Guid id, int? version)
     {
         ItemEntity itemEntity = await _itemRepository.Get(id, version)
-            ?? throw new NotFoundException($"Invoice item:{id} version {version} not found");
+            ?? throw new NotFoundException(version is null
+                ? $"Invoice item:{id} not found"
+                : $"Invoice item:{id} version {version} not found");
 
         return itemEntity.ToModel();
     }
@@ -93,7 +87,7 @@ public class ItemService : IItemService
 
     public async Task Update(ItemModel item)
     {
-        await Get(item.Id);
+        await Get(item.Id, null);
 
         ItemEntity itemEntity = item.ToEntity();
 
@@ -102,7 +96,7 @@ public class ItemService : IItemService
 
     public async Task Delete(Guid id)
     {
-        await Get(id);
+        await Get(id, null);
 
         await _itemRepository.Delete(id);
     }

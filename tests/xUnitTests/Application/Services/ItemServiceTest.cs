@@ -31,18 +31,18 @@ public class ItemServiceTest
         //Arrange
         ItemEntity item = new() { Id = Guid.NewGuid() };
 
-        _itemRepositoryMock.Setup(m => m.Get(item.Id))
+        _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
                         .ReturnsAsync(item);
 
         ItemModel expectedResult = item.ToModel();
 
         //Act
-        ItemModel result = await _itemService.Get(item.Id);
+        ItemModel result = await _itemService.Get(item.Id, null);
 
         //Assert
         result.Should().BeEquivalentTo(expectedResult);
 
-        _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
     }
 
     [Fact]
@@ -51,15 +51,15 @@ public class ItemServiceTest
         //Arrange
         Guid id = Guid.NewGuid();
 
-        _itemRepositoryMock.Setup(m => m.Get(id))
+        _itemRepositoryMock.Setup(m => m.Get(id, null))
                         .ReturnsAsync((ItemEntity)null!);
 
         //Act
         //Assert
-        await _itemService.Invoking(x => x.Get(id))
-                            .Should().ThrowAsync<NotFoundException>();
+        await _itemService.Invoking(x => x.Get(id, null))
+                            .Should().ThrowAsync<NotFoundException>().WithMessage($"Invoice item:{id} not found");
 
-        _itemRepositoryMock.Verify(m => m.Get(id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(id, null), Times.Once());
     }
 
     [Fact]
@@ -386,7 +386,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Update(itemEntity))
                         .Returns(Task.CompletedTask);
 
-        _itemRepositoryMock.Setup(m => m.Get(itemEntity.Id))
+        _itemRepositoryMock.Setup(m => m.Get(itemEntity.Id, null))
                                 .ReturnsAsync(itemEntity);
 
         //Act
@@ -394,7 +394,7 @@ public class ItemServiceTest
         await _itemService.Invoking(x => x.Update(item))
                                         .Should().NotThrowAsync<Exception>();
 
-        _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
         _itemRepositoryMock.Verify(m => m.Update(itemEntity), Times.Once());
     }
 
@@ -404,7 +404,7 @@ public class ItemServiceTest
         //Arrange
         ItemModel item = new() { Id = Guid.NewGuid() };
 
-        _itemRepositoryMock.Setup(m => m.Get(item.Id))
+        _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
                         .ReturnsAsync((ItemEntity)null!);
 
         //Act
@@ -412,7 +412,7 @@ public class ItemServiceTest
         await _itemService.Invoking(x => x.Update(item))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
         _itemRepositoryMock.Verify(m => m.Update(It.IsAny<ItemEntity>()), Times.Never());
     }
 
@@ -425,7 +425,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Delete(item.Id))
                         .Returns(Task.CompletedTask);
 
-        _itemRepositoryMock.Setup(m => m.Get(item.Id))
+        _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
                         .ReturnsAsync(item);
 
         //Act
@@ -433,7 +433,7 @@ public class ItemServiceTest
         await _itemService.Invoking(x => x.Delete(item.Id))
                             .Should().NotThrowAsync<Exception>();
 
-        _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
         _itemRepositoryMock.Verify(m => m.Delete(item.Id), Times.Once());
     }
 
@@ -443,7 +443,7 @@ public class ItemServiceTest
         //Arrange
         Guid id = Guid.NewGuid();
 
-        _itemRepositoryMock.Setup(m => m.Get(id))
+        _itemRepositoryMock.Setup(m => m.Get(id, null))
                         .ReturnsAsync((ItemEntity)null!);
 
         //Act
@@ -451,7 +451,7 @@ public class ItemServiceTest
         await _itemService.Invoking(x => x.Delete(id))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _itemRepositoryMock.Verify(m => m.Get(id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(id, null), Times.Once());
         _itemRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Never());
     }
 }

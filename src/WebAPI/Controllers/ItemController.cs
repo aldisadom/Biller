@@ -58,9 +58,7 @@ public class ItemController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id, [FromQuery] int? version = null)
     {
-        ItemModel item = version is null
-            ? await _itemService.Get(id)
-            : await _itemService.Get(id, version.Value);
+        ItemModel item = await _itemService.Get(id, version);
 
         ItemResponse result = item.ToResponse();
 
