@@ -1,13 +1,12 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Seller;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
-using System.Net;
+using FluentValidation;
 
 namespace Application.Services;
 
@@ -38,12 +37,12 @@ public class SellerService : ISellerService
         return (entities.Select(s => s.ToModel()), totalCount, returnedPage);
     }
 
-    public async Task<Result<SellerModel>> GetWithValidation(Guid id, Guid userId)
+    public async Task<SellerModel> GetForUser(Guid id, Guid userId)
     {
-        var seller = await _sellerRepository.Get(id);
+        SellerEntity? seller = await _sellerRepository.Get(id);
 
         if (seller is null || seller.UserId != userId)
-            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Seller id {id} is invalid for user id {userId}" };
+            throw new ValidationException($"Seller id {id} is invalid for user id {userId}");
 
         return seller.ToModel();
     }

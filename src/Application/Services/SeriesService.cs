@@ -1,14 +1,12 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Series;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentValidation;
-using System.Net;
 
 namespace Application.Services;
 
@@ -41,12 +39,12 @@ public class SeriesService : ISeriesService
         return (entities.Select(s => s.ToModel()), totalCount, returnedPage);
     }
 
-    public async Task<Result<SeriesModel>> GetWithValidation(Guid id, Guid sellerId)
+    public async Task<SeriesModel> GetForSeller(Guid id, Guid sellerId)
     {
-        var series = await _seriesRepository.Get(id);
+        SeriesEntity? series = await _seriesRepository.Get(id);
 
         if (series is null || series.SellerId != sellerId)
-            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Series id {id} is invalid for seller id {sellerId}" };
+            throw new ValidationException($"Series id {id} is invalid for seller id {sellerId}");
 
         return series.ToModel();
     }

@@ -154,21 +154,9 @@ public class InvoiceService : IInvoiceService
 
     private async Task<(CustomerModel customer, IEnumerable<ItemModel> items)> Validate(InvoiceModel invoiceData)
     {
-        var sellerResult = await _sellerService.GetWithValidation(invoiceData.SellerId, invoiceData.UserId);
-        sellerResult.Match(
-            seller => { return seller; },
-            error => { throw new ValidationException(error.ExtendedMessage); }
-        );
-        var customerResult = await _customerService.GetWithValidation(invoiceData.CustomerId, invoiceData.SellerId);
-        var customer = customerResult.Match(
-            customer => { return customer; },
-            error => { throw new ValidationException(error.ExtendedMessage); }
-        );
-        var itemsResult = await _itemService.GetWithValidation(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.CustomerId);
-        var items = itemsResult.Match(
-            items => { return items; },
-            error => { throw new ValidationException(error.ExtendedMessage); }
-        );
+        await _sellerService.GetForUser(invoiceData.SellerId, invoiceData.UserId);
+        CustomerModel customer = await _customerService.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId);
+        IEnumerable<ItemModel> items = await _itemService.GetForCustomer(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.CustomerId);
 
         return (customer, items);
     }

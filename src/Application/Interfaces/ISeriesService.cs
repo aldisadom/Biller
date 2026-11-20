@@ -1,5 +1,4 @@
 ﻿using Application.Models;
-using BillerContracts;
 using BillerContracts.Requests.Series;
 
 namespace Application.Interfaces;
@@ -10,6 +9,6 @@ public interface ISeriesService
     Task Delete(Guid id);
     Task<(IEnumerable<SeriesModel> Items, int TotalCount, int Page)> Get(SeriesGetRequest? query);
     Task<SeriesModel> Get(Guid id);
-    Task<Result<SeriesModel>> GetWithValidation(Guid id, Guid sellerId);
+    Task<SeriesModel> GetForSeller(Guid id, Guid sellerId);
     Task Update(SeriesModel series);
 }
