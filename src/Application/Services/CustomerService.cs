@@ -1,14 +1,12 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Customer;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
 using FluentValidation;
-using System.Net;
 
 namespace Application.Services;
 
@@ -41,19 +39,19 @@ public class CustomerService : ICustomerService
         return (entities.Select(c => c.ToModel()), totalCount, returnedPage);
     }
 
-    public async Task<Result<CustomerModel>> GetWithValidation(Guid id, Guid sellerId)
+    public async Task<CustomerModel> GetForSeller(Guid id, Guid sellerId)
     {
-        var customer = await _customerRepository.Get(id);
+        CustomerEntity? customer = await _customerRepository.Get(id);
 
         if (customer is null || customer.SellerId != sellerId)
-            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Customer id {id} is invalid for seller id {sellerId}" };
+            throw new ValidationException($"Customer id {id} is invalid for seller id {sellerId}");
 
         return customer.ToModel();
     }
 
     public async Task<Guid> Add(CustomerModel customer)
     {
-        await ValidateSeries(customer.SeriesId, customer.SellerId);
+        await _seriesService.GetForSeller(customer.SeriesId, customer.SellerId);
 
         CustomerEntity customerEntity = customer.ToEntity();
 
@@ -63,7 +61,7 @@ public class CustomerService : ICustomerService
     public async Task Update(CustomerModel customer)
     {
         CustomerModel stored = await Get(customer.Id);
-        await ValidateSeries(customer.SeriesId, stored.SellerId);
+        await _seriesService.GetForSeller(customer.SeriesId, stored.SellerId);
 
         CustomerEntity customerEntity = customer.ToEntity();
 
@@ -78,14 +76,5 @@ public class CustomerService : ICustomerService
         await Get(id);
 
         await _customerRepository.Delete(id);
-    }
-
-    private async Task ValidateSeries(Guid seriesId, Guid sellerId)
-    {
-        var seriesResult = await _seriesService.GetWithValidation(seriesId, sellerId);
-        seriesResult.Match(
-            series => { return series; },
-            error => { throw new ValidationException(error.ExtendedMessage); }
-        );
     }
 }

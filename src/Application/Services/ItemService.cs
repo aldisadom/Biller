@@ -1,13 +1,12 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Item;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
-using System.Net;
+using FluentValidation;
 
 namespace Application.Services;
 
@@ -47,7 +46,7 @@ public class ItemService : IItemService
         return (entities.Select(i => i.ToModel()), totalCount, returnedPage);
     }
 
-    public async Task<Result<IEnumerable<ItemModel>>> GetWithValidation(List<Guid> ids, Guid customerId)
+    public async Task<IEnumerable<ItemModel>> GetForCustomer(List<Guid> ids, Guid customerId)
     {
         var items = await _itemRepository.Get(ids);
 
@@ -61,7 +60,7 @@ public class ItemService : IItemService
             idString += " " + item.ToString();
 
         if (!string.IsNullOrEmpty(idString))
-            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Items id{idString} is invalid for customer id {customerId}" };
+            throw new ValidationException($"Items id{idString} is invalid for customer id {customerId}");
 
         return items.ToList().Select(i => i.ToModel()).ToList();
     }

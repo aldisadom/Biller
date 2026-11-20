@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using Application.Services;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Series;
 using Domain.Entities;
@@ -10,7 +9,6 @@ using Domain.Repositories;
 using AwesomeAssertions;
 using FluentValidation;
 using Moq;
-using System.Net;
 
 namespace xUnitTests.Application.Services;
 
@@ -93,18 +91,35 @@ public class SeriesServiceTest
         _seriesRepositoryMock.Verify(m => m.Get(sellerId, page, pageSize), Times.Once());
     }
 
-    public static IEnumerable<TheoryDataRow<SeriesEntity?, Guid, bool>> GetWithValidationTestData()
+    [Fact]
+    public async Task GetForSeller_GivenSellersSeries_ReturnsSeries()
+    {
+        //Arrange
+        SeriesEntity series = new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid(), Name = "WF" };
+
+        _seriesRepositoryMock.Setup(m => m.Get(series.Id))
+                        .ReturnsAsync(series);
+
+        //Act
+        SeriesModel result = await _seriesService.GetForSeller(series.Id, series.SellerId);
+
+        //Assert
+        result.Should().BeEquivalentTo(new SeriesModel { Id = series.Id, SellerId = series.SellerId, Name = "WF" });
+
+        _seriesRepositoryMock.Verify(m => m.Get(series.Id), Times.Once());
+    }
+
+    public static IEnumerable<TheoryDataRow<SeriesEntity?, Guid>> GetForSellerInvalidTestData()
     {
         Guid sellerId = Guid.NewGuid();
 
-        yield return new(new SeriesEntity { Id = Guid.NewGuid(), SellerId = sellerId }, sellerId, true) { Label = "series of the seller is valid" };
-        yield return new(new SeriesEntity { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() }, sellerId, false) { Label = "series of another seller is invalid" };
-        yield return new(null, sellerId, false) { Label = "missing series is invalid" };
+        yield return new(new SeriesEntity { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() }, sellerId) { Label = "series of another seller is rejected" };
+        yield return new(null, sellerId) { Label = "missing series is rejected" };
     }
 
     [Theory]
-    [MemberData(nameof(GetWithValidationTestData))]
-    public async Task GetWithValidation_GivenSeries_ReturnsExpected(SeriesEntity? series, Guid sellerId, bool expected)
+    [MemberData(nameof(GetForSellerInvalidTestData))]
+    public async Task GetForSeller_GivenSeriesNotOfSeller_ThrowsValidationException(SeriesEntity? series, Guid sellerId)
     {
         //Arrange
         Guid id = series?.Id ?? Guid.NewGuid();
@@ -113,19 +128,10 @@ public class SeriesServiceTest
                         .ReturnsAsync(series);
 
         //Act
-        Result<SeriesModel> result = await _seriesService.GetWithValidation(id, sellerId);
-
         //Assert
-        bool isValid = result.Match(_ => true, _ => false);
-        isValid.Should().Be(expected);
-
-        if (!expected)
-            result.Match(_ => null!, error => error).Should().BeEquivalentTo(new ErrorModel
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                Message = "Validation failure",
-                ExtendedMessage = $"Series id {id} is invalid for seller id {sellerId}"
-            });
+        await _seriesService.Invoking(x => x.GetForSeller(id, sellerId))
+                            .Should().ThrowAsync<ValidationException>()
+                            .WithMessage($"Series id {id} is invalid for seller id {sellerId}");
 
         _seriesRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }

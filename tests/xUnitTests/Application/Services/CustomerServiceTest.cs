@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using Application.Services;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Customer;
 using Domain.Entities;
@@ -10,7 +9,6 @@ using Domain.Repositories;
 using AwesomeAssertions;
 using FluentValidation;
 using Moq;
-using System.Net;
 
 namespace xUnitTests.Application.Services;
 
@@ -66,7 +64,7 @@ public class CustomerServiceTest
     }
 
     [Fact]
-    public async Task GetIdWithValidation_GivenValidId_ReturnsDTO()
+    public async Task GetForSeller_GivenSellersCustomer_ReturnsCustomer()
     {
         //Arrange
         CustomerEntity customer = new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() };
@@ -77,11 +75,7 @@ public class CustomerServiceTest
         CustomerModel expectedResult = new() { Id = customer.Id, SellerId = customer.SellerId };
 
         //Act
-        var resultResponse = await _customerService.GetWithValidation(customer.Id, customer.SellerId);
-        CustomerModel result = resultResponse.Match(
-            entity => { return entity; },
-            error => { throw new Exception(error.ToString()); }
-        );
+        CustomerModel result = await _customerService.GetForSeller(customer.Id, customer.SellerId);
 
         //Assert
         result.Should().BeEquivalentTo(expectedResult);
@@ -90,60 +84,40 @@ public class CustomerServiceTest
     }
 
     [Fact]
-    public async Task GetIdWithValidation_GivenInvalidSellerId_ReturnsErrorModel()
+    public async Task GetForSeller_GivenAnotherSellersCustomer_ThrowsValidationException()
     {
         //Arrange
-        CustomerEntity customer = new() { Id = Guid.NewGuid() };
+        CustomerEntity customer = new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() };
+        Guid sellerId = Guid.NewGuid();
 
         _customerRepositoryMock.Setup(m => m.Get(customer.Id))
                         .ReturnsAsync(customer);
 
-        var sellerId = Guid.NewGuid();
-        ErrorModel expectedResult = new()
-        {
-            StatusCode = HttpStatusCode.BadRequest,
-            Message = "Validation failure",
-            ExtendedMessage = $"Customer id {customer.Id} is invalid for seller id {sellerId}"
-        };
-
         //Act
-        var resultResponse = await _customerService.GetWithValidation(customer.Id, sellerId);
-        ErrorModel result = resultResponse.Match(
-            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
-        error => { return error; }
-        );
-
         //Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        await _customerService.Invoking(x => x.GetForSeller(customer.Id, sellerId))
+                            .Should().ThrowAsync<ValidationException>()
+                            .WithMessage($"Customer id {customer.Id} is invalid for seller id {sellerId}");
+
         _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
     }
 
     [Fact]
-    public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel()
+    public async Task GetForSeller_GivenUnknownCustomer_ThrowsValidationException()
     {
         //Arrange
         Guid id = Guid.NewGuid();
+        Guid sellerId = Guid.NewGuid();
 
         _customerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((CustomerEntity)null!);
 
-        var sellerId = Guid.NewGuid();
-        ErrorModel expectedResult = new()
-        {
-            StatusCode = HttpStatusCode.BadRequest,
-            Message = "Validation failure",
-            ExtendedMessage = $"Customer id {id} is invalid for seller id {sellerId}"
-        };
-
         //Act
-        var resultResponse = await _customerService.GetWithValidation(id, sellerId);
-        ErrorModel result = resultResponse.Match(
-            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
-        error => { return error; }
-        );
-
         //Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        await _customerService.Invoking(x => x.GetForSeller(id, sellerId))
+                            .Should().ThrowAsync<ValidationException>()
+                            .WithMessage($"Customer id {id} is invalid for seller id {sellerId}");
+
         _customerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 
@@ -207,7 +181,7 @@ public class CustomerServiceTest
 
         CustomerEntity customerEntity = new() { Id = customer.Id, SellerId = customer.SellerId, SeriesId = customer.SeriesId };
 
-        _seriesServiceMock.Setup(m => m.GetWithValidation(customer.SeriesId, customer.SellerId))
+        _seriesServiceMock.Setup(m => m.GetForSeller(customer.SeriesId, customer.SellerId))
                             .ReturnsAsync(series);
         _customerRepositoryMock.Setup(m => m.Add(customerEntity))
                                  .ReturnsAsync(customer.Id);
@@ -218,7 +192,7 @@ public class CustomerServiceTest
         //Assert
         result.Should().Be(customer.Id);
 
-        _seriesServiceMock.Verify(m => m.GetWithValidation(customer.SeriesId, customer.SellerId), Times.Once());
+        _seriesServiceMock.Verify(m => m.GetForSeller(customer.SeriesId, customer.SellerId), Times.Once());
         _customerRepositoryMock.Verify(m => m.Add(customerEntity), Times.Once());
     }
 
@@ -227,17 +201,16 @@ public class CustomerServiceTest
     {
         //Arrange
         CustomerModel customer = new() { SellerId = Guid.NewGuid(), SeriesId = Guid.NewGuid() };
-        ErrorModel error = new() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = "Series id is invalid" };
 
-        _seriesServiceMock.Setup(m => m.GetWithValidation(customer.SeriesId, customer.SellerId))
-                            .ReturnsAsync(error);
+        _seriesServiceMock.Setup(m => m.GetForSeller(customer.SeriesId, customer.SellerId))
+                            .ThrowsAsync(new ValidationException("Series id is invalid"));
 
         //Act
         //Assert
         await _customerService.Invoking(x => x.Add(customer))
                             .Should().ThrowAsync<ValidationException>().WithMessage("Series id is invalid");
 
-        _seriesServiceMock.Verify(m => m.GetWithValidation(customer.SeriesId, customer.SellerId), Times.Once());
+        _seriesServiceMock.Verify(m => m.GetForSeller(customer.SeriesId, customer.SellerId), Times.Once());
         _customerRepositoryMock.Verify(m => m.Add(It.IsAny<CustomerEntity>()), Times.Never());
     }
 
@@ -253,7 +226,7 @@ public class CustomerServiceTest
 
         _customerRepositoryMock.Setup(m => m.Get(stored.Id))
                                 .ReturnsAsync(stored);
-        _seriesServiceMock.Setup(m => m.GetWithValidation(customer.SeriesId, stored.SellerId))
+        _seriesServiceMock.Setup(m => m.GetForSeller(customer.SeriesId, stored.SellerId))
                             .ReturnsAsync(series);
         _customerRepositoryMock.Setup(m => m.Update(customerEntity))
                         .ReturnsAsync(true);
@@ -264,7 +237,7 @@ public class CustomerServiceTest
                                         .Should().NotThrowAsync<Exception>();
 
         _customerRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
-        _seriesServiceMock.Verify(m => m.GetWithValidation(customer.SeriesId, stored.SellerId), Times.Once());
+        _seriesServiceMock.Verify(m => m.GetForSeller(customer.SeriesId, stored.SellerId), Times.Once());
         _customerRepositoryMock.Verify(m => m.Update(customerEntity), Times.Once());
     }
 
@@ -280,7 +253,7 @@ public class CustomerServiceTest
 
         _customerRepositoryMock.Setup(m => m.Get(stored.Id))
                                 .ReturnsAsync(stored);
-        _seriesServiceMock.Setup(m => m.GetWithValidation(customer.SeriesId, stored.SellerId))
+        _seriesServiceMock.Setup(m => m.GetForSeller(customer.SeriesId, stored.SellerId))
                             .ReturnsAsync(series);
         _customerRepositoryMock.Setup(m => m.Update(customerEntity))
                         .ReturnsAsync(false);
@@ -292,7 +265,7 @@ public class CustomerServiceTest
                             .WithMessage($"Customer id {customer.Id} has invoices, so its series can't be changed");
 
         _customerRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
-        _seriesServiceMock.Verify(m => m.GetWithValidation(customer.SeriesId, stored.SellerId), Times.Once());
+        _seriesServiceMock.Verify(m => m.GetForSeller(customer.SeriesId, stored.SellerId), Times.Once());
         _customerRepositoryMock.Verify(m => m.Update(customerEntity), Times.Once());
     }
 
@@ -308,7 +281,7 @@ public class CustomerServiceTest
 
         _customerRepositoryMock.Setup(m => m.Get(stored.Id))
                                 .ReturnsAsync(stored);
-        _seriesServiceMock.Setup(m => m.GetWithValidation(customer.SeriesId, stored.SellerId))
+        _seriesServiceMock.Setup(m => m.GetForSeller(customer.SeriesId, stored.SellerId))
                             .ReturnsAsync(series);
         _customerRepositoryMock.Setup(m => m.Update(customerEntity))
                         .ReturnsAsync((bool?)null);
@@ -320,7 +293,7 @@ public class CustomerServiceTest
                             .WithMessage($"Invoice customer:{customer.Id} not found");
 
         _customerRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
-        _seriesServiceMock.Verify(m => m.GetWithValidation(customer.SeriesId, stored.SellerId), Times.Once());
+        _seriesServiceMock.Verify(m => m.GetForSeller(customer.SeriesId, stored.SellerId), Times.Once());
         _customerRepositoryMock.Verify(m => m.Update(customerEntity), Times.Once());
     }
 
@@ -330,12 +303,11 @@ public class CustomerServiceTest
         //Arrange
         CustomerEntity stored = new() { Id = Guid.NewGuid(), SellerId = Guid.NewGuid() };
         CustomerModel customer = new() { Id = stored.Id, SeriesId = Guid.NewGuid() };
-        ErrorModel error = new() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = "Series id is invalid" };
 
         _customerRepositoryMock.Setup(m => m.Get(stored.Id))
                                 .ReturnsAsync(stored);
-        _seriesServiceMock.Setup(m => m.GetWithValidation(customer.SeriesId, stored.SellerId))
-                            .ReturnsAsync(error);
+        _seriesServiceMock.Setup(m => m.GetForSeller(customer.SeriesId, stored.SellerId))
+                            .ThrowsAsync(new ValidationException("Series id is invalid"));
 
         //Act
         //Assert
@@ -343,7 +315,7 @@ public class CustomerServiceTest
                             .Should().ThrowAsync<ValidationException>().WithMessage("Series id is invalid");
 
         _customerRepositoryMock.Verify(m => m.Get(stored.Id), Times.Once());
-        _seriesServiceMock.Verify(m => m.GetWithValidation(customer.SeriesId, stored.SellerId), Times.Once());
+        _seriesServiceMock.Verify(m => m.GetForSeller(customer.SeriesId, stored.SellerId), Times.Once());
         _customerRepositoryMock.Verify(m => m.Update(It.IsAny<CustomerEntity>()), Times.Never());
     }
 
@@ -362,7 +334,7 @@ public class CustomerServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _customerRepositoryMock.Verify(m => m.Get(customer.Id), Times.Once());
-        _seriesServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _seriesServiceMock.Verify(m => m.GetForSeller(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
         _customerRepositoryMock.Verify(m => m.Update(It.IsAny<CustomerEntity>()), Times.Never());
     }
 
