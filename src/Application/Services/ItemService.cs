@@ -50,9 +50,9 @@ public class ItemService : IItemService
         return (entities.Select(i => i.ToModel()), totalCount, returnedPage);
     }
 
-    public async Task<IEnumerable<ItemVersionModel>> GetVersionsForCustomer(List<InvoiceItemModel> lines, Guid customerId)
+    public async Task<IEnumerable<ItemVersionModel>> GetVersionsForCustomer(List<InvoiceItemModel> items, Guid customerId)
     {
-        List<Guid> ids = lines.Select(l => l.Id).ToList();
+        List<Guid> ids = items.Select(l => l.Id).ToList();
         List<ItemVersionEntity> versions = (await _itemRepository.GetVersions(ids)).ToList();
 
         string idString = string.Empty;
@@ -68,7 +68,7 @@ public class ItemService : IItemService
             throw new ValidationException($"Items id{idString} is invalid for customer id {customerId}");
 
         // An empty version means the latest, which always exists
-        InvoiceItemModel? unknownVersion = lines.FirstOrDefault(l =>
+        InvoiceItemModel? unknownVersion = items.FirstOrDefault(l =>
             l.Version is not null && !versions.Any(v => (v.ItemId == l.Id) && (v.Version == l.Version)));
 
         if (unknownVersion is not null)
