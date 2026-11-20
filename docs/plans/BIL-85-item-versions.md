@@ -248,13 +248,14 @@ WHERE (latest.name, latest.price) IS DISTINCT FROM (@Name, @Price);
   `ToInvoiceItemResponse` map it.
 - `src/Application/Services/ItemService.cs`:
   - `GetVersions(Guid id)`: `NotFoundException` when there are no rows.
-  - `GetVersionsWithValidation(lines, customerId)` replaces `GetWithValidation` for invoices. One
+  - `GetVersionsForCustomer(items, customerId)` replaces `GetForCustomer` for invoices. One
     query (`GetVersions(itemIds)`), then per line in C#: unknown item or another customer's →
     today's message `Items id … is invalid for customer id …`; empty version → the latest; a number
-    that doesn't exist → `Item id {id} has no version {n}`.
-  - `GetWithValidation` goes, from `IItemService` too: `InvoiceService.Validate` is its only caller.
+    that doesn't exist → `Item id {id} has no version {n}`. Both throw `ValidationException`
+    (BIL-112, merged from master: ownership checks throw instead of returning `Result`).
+  - `GetForCustomer` goes, from `IItemService` too: `InvoiceService.Validate` is its only caller.
 - `src/Application/Services/InvoiceService.cs`:
-  - `Validate` calls `GetVersionsWithValidation`.
+  - `Validate` calls `GetVersionsForCustomer`.
   - `MapItemToInvoiceItem` gives a line with an empty version its item's latest version number, so
     every saved line has one, then matches on item id **and** version and sets `Name` and `Price`.
   - `Get`, the paged `Get` and `GeneratePDF` don't change.
@@ -285,7 +286,7 @@ WHERE (latest.name, latest.price) IS DISTINCT FROM (@Name, @Price);
 ## Step 7: Tests (done)
 
 Unit (`_write-tests` skill):
-- `ItemServiceTest`: `GetVersions` (ordered, empty → 404); `GetVersionsWithValidation` (empty
+- `ItemServiceTest`: `GetVersions` (ordered, empty → 404); `GetVersionsForCustomer` (empty
   version → latest; explicit old version; unknown version; other customer's item; unknown item).
 - `InvoiceServiceTest`: `Update` with the stored version keeps name and price after the item
   changed; with the current version takes the new ones; with an older version takes those; the same
@@ -293,8 +294,8 @@ Unit (`_write-tests` skill):
   current version.
 - Existing tests that change: `Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndCopiesCurrentItemPrices`
   copies the prices of each line's version instead; every `InvoiceServiceTest` setup of
-  `GetWithValidation` moves to `GetVersionsWithValidation`; `ItemServiceTest`'s
-  `GetWithValidation` tests go with the method.
+  `GetForCustomer` moves to `GetVersionsForCustomer`; `ItemServiceTest`'s
+  `GetForCustomer` tests go with the method.
 - Validators, mapping (`Version` round-trip through `items_data`, and a line without `Version`
   reads as `null`), controller, Swagger examples, DI.
 

@@ -39,8 +39,8 @@ SELECT item_id,
        ROW_NUMBER() OVER (PARTITION BY item_id ORDER BY is_current, first_used, name, price),
        name,
        price,
-       LEAST(COALESCE(CASE WHEN is_current AND first_used IS NOT NULL THEN MAX(first_used) OVER (PARTITION BY item_id)
-                           ELSE first_used END::timestamptz, now()), now())
+       LEAST(CASE WHEN is_current AND first_used IS NOT NULL THEN MAX(first_used) OVER (PARTITION BY item_id)
+                  ELSE first_used END::timestamptz, now())
 FROM candidates;
 
 -- 2. Add "Version" to every line that matches a version. A line of a deleted item, or with no name or price,
