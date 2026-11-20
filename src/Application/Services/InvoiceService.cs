@@ -30,16 +30,22 @@ public class InvoiceService : IInvoiceService
         _invoiceDocumentFactory = invoiceDocumentFactory;
     }
 
-    public static void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, IEnumerable<ItemModel> items)
+    /// <summary>
+    /// Gives a line without a version its item's latest one, then copies name and price from the
+    /// version each line names. A line never moves to another version by itself.
+    /// </summary>
+    public static void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, IEnumerable<ItemVersionModel> versions)
     {
         foreach (InvoiceItemModel invoiceItem in invoiceItems)
         {
-            foreach (ItemModel item in items)
+            invoiceItem.Version ??= versions.Where(v => v.ItemId == invoiceItem.Id).Max(v => (int?)v.Version);
+
+            foreach (ItemVersionModel version in versions)
             {
-                if (invoiceItem.Id == item.Id)
+                if (invoiceItem.Id == version.ItemId && invoiceItem.Version == version.Version)
                 {
-                    invoiceItem.Price = item.Price;
-                    invoiceItem.Name = item.Name;
+                    invoiceItem.Price = version.Price;
+                    invoiceItem.Name = version.Name;
                     break;
                 }
             }
@@ -152,13 +158,13 @@ public class InvoiceService : IInvoiceService
         return await _invoiceRepository.MarkOverdue(today.ToDateTime(TimeOnly.MinValue));
     }
 
-    private async Task<(CustomerModel customer, IEnumerable<ItemModel> items)> Validate(InvoiceModel invoiceData)
+    private async Task<(CustomerModel customer, IEnumerable<ItemVersionModel> versions)> Validate(InvoiceModel invoiceData)
     {
         await _sellerService.GetForUser(invoiceData.SellerId, invoiceData.UserId);
         CustomerModel customer = await _customerService.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId);
-        IEnumerable<ItemModel> items = await _itemService.GetForCustomer(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.CustomerId);
+        IEnumerable<ItemVersionModel> versions = await _itemService.GetVersionsForCustomer(invoiceData.Items!, invoiceData.CustomerId);
 
-        return (customer, items);
+        return (customer, versions);
     }
 
     public async Task Delete(Guid id)

@@ -19,7 +19,9 @@ public class ItemResponseExample : IExamplesProvider<ItemResponse>
             CustomerId = Guid.NewGuid(),
             Id = Guid.NewGuid(),
             Name = "Iron throne",
-            Price = 999999999999999m
+            Price = 999999999999999m,
+            Quantity = 1m,
+            Version = 3
         };
     }
 }

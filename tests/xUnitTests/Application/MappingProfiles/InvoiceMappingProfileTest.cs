@@ -206,7 +206,8 @@ public class InvoiceMappingProfileTest
             Name = "ItemName",
             Quantity = 66,
             Price = 123.67M,
-            Comments = "Item comment"
+            Comments = "Item comment",
+            Version = 3
         };
 
 
@@ -225,7 +226,8 @@ public class InvoiceMappingProfileTest
         {
             Id = Guid.NewGuid(),
             Quantity = 66,
-            Comments = "Item comment"
+            Comments = "Item comment",
+            Version = 3
         };
 
         //Act

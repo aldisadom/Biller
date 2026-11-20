@@ -51,7 +51,7 @@ public class ItemControllerTest
             CustomerId = _customerId
         };
 
-        _itemServiceMock.Setup(s => s.Get(item.Id))
+        _itemServiceMock.Setup(s => s.Get(item.Id, null))
             .ReturnsAsync(item);
 
         //Act
@@ -61,7 +61,64 @@ public class ItemControllerTest
         result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(item.ToResponse());
 
-        _itemServiceMock.Verify(s => s.Get(item.Id), Times.Once());
+        _itemServiceMock.Verify(s => s.Get(item.Id, null), Times.Once());
+        _itemServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Get_GivenIdAndVersion_ReturnsOkWithThatVersion()
+    {
+        //Arrange
+        var item = new ItemModel
+        {
+            Id = _item1Id,
+            CustomerId = _customerId,
+            Version = 2,
+            Name = "Wooden throne",
+            Price = 8m
+        };
+
+        _itemServiceMock.Setup(s => s.Get(item.Id, 2))
+            .ReturnsAsync(item);
+
+        //Act
+        var result = await _itemController.Get(item.Id, 2);
+
+        //Assert
+        result.Should().BeOfType<OkObjectResult>()
+            .Which.Value.Should().BeEquivalentTo(item.ToResponse());
+
+        _itemServiceMock.Verify(s => s.Get(item.Id, 2), Times.Once());
+        _itemServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task GetVersions_GivenId_ReturnsOkWithItemIdAndVersions()
+    {
+        //Arrange
+        List<ItemVersionModel> versions =
+        [
+            new() { ItemId = _item1Id, Version = 1, Name = "Wooden throne", Price = 8m },
+            new() { ItemId = _item1Id, Version = 2, Name = "Iron throne", Price = 12m }
+        ];
+
+        _itemServiceMock.Setup(s => s.GetVersions(_item1Id))
+            .ReturnsAsync(versions);
+
+        ItemVersionListResponse expected = new()
+        {
+            ItemId = _item1Id,
+            Versions = versions.Select(v => v.ToResponse()).ToList()
+        };
+
+        //Act
+        var result = await _itemController.GetVersions(_item1Id);
+
+        //Assert
+        result.Should().BeOfType<OkObjectResult>()
+            .Which.Value.Should().BeEquivalentTo(expected);
+
+        _itemServiceMock.Verify(s => s.GetVersions(_item1Id), Times.Once());
         _itemServiceMock.VerifyNoOtherCalls();
     }
 

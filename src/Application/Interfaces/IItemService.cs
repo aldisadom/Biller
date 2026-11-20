@@ -8,8 +8,8 @@ public interface IItemService
     Task<Guid> Add(ItemModel item);
     Task Delete(Guid id);
     Task<(IEnumerable<ItemModel> Items, int TotalCount, int Page)> Get(ItemGetRequest? query);
-    Task<IEnumerable<ItemModel>> Get(List<Guid> ids);
-    Task<IEnumerable<ItemModel>> GetForCustomer(List<Guid> ids, Guid customerId);
-    Task<ItemModel> Get(Guid id);
+    Task<IEnumerable<ItemVersionModel>> GetVersionsForCustomer(List<InvoiceItemModel> items, Guid customerId);
+    Task<ItemModel> Get(Guid id, int? version);
+    Task<IEnumerable<ItemVersionModel>> GetVersions(Guid id);
     Task Update(ItemModel item);
 }

@@ -19,22 +19,26 @@ public class ItemService : IItemService
         _itemRepository = itemRepository;
     }
 
-    public async Task<ItemModel> Get(Guid id)
+    public async Task<ItemModel> Get(Guid id, int? version)
     {
-        ItemEntity itemEntity = await _itemRepository.Get(id)
-            ?? throw new NotFoundException($"Invoice item:{id} not found");
+        ItemEntity itemEntity = await _itemRepository.Get(id, version)
+            ?? throw new NotFoundException(version is null
+                ? $"Invoice item:{id} not found"
+                : $"Invoice item:{id} version {version} not found");
 
         return itemEntity.ToModel();
     }
 
-    public async Task<IEnumerable<ItemModel>> Get(List<Guid> ids)
+    public async Task<IEnumerable<ItemVersionModel>> GetVersions(Guid id)
     {
-        IEnumerable<ItemEntity> itemEntities;
+        List<ItemVersionEntity> versions = (await _itemRepository.GetVersions(id)).ToList();
 
-        itemEntities = await _itemRepository.Get(ids);
+        if (versions.Count == 0)
+            throw new NotFoundException($"Invoice item:{id} not found");
 
-        return itemEntities.Select(i => i.ToModel());
+        return versions.Select(v => v.ToModel());
     }
+
 
     public async Task<(IEnumerable<ItemModel> Items, int TotalCount, int Page)> Get(ItemGetRequest? query)
     {
@@ -46,14 +50,15 @@ public class ItemService : IItemService
         return (entities.Select(i => i.ToModel()), totalCount, returnedPage);
     }
 
-    public async Task<IEnumerable<ItemModel>> GetForCustomer(List<Guid> ids, Guid customerId)
+    public async Task<IEnumerable<ItemVersionModel>> GetVersionsForCustomer(List<InvoiceItemModel> items, Guid customerId)
     {
-        var items = await _itemRepository.Get(ids);
+        List<Guid> ids = items.Select(l => l.Id).ToList();
+        List<ItemVersionEntity> versions = (await _itemRepository.GetVersions(ids)).ToList();
 
         string idString = string.Empty;
 
         var nonMatching = ids
-            .Where(id => !items.Any(i => (i.Id == id) && (i.CustomerId == customerId)))
+            .Where(id => !versions.Any(v => (v.ItemId == id) && (v.CustomerId == customerId)))
             .ToList();
 
         foreach (var item in nonMatching)
@@ -62,7 +67,14 @@ public class ItemService : IItemService
         if (!string.IsNullOrEmpty(idString))
             throw new ValidationException($"Items id{idString} is invalid for customer id {customerId}");
 
-        return items.ToList().Select(i => i.ToModel()).ToList();
+        // An empty version means the latest, which always exists
+        InvoiceItemModel? unknownVersion = items.FirstOrDefault(l =>
+            l.Version is not null && !versions.Any(v => (v.ItemId == l.Id) && (v.Version == l.Version)));
+
+        if (unknownVersion is not null)
+            throw new ValidationException($"Item id {unknownVersion.Id} has no version {unknownVersion.Version}");
+
+        return versions.Select(v => v.ToModel()).ToList();
     }
 
     public async Task<Guid> Add(ItemModel item)
@@ -74,7 +86,7 @@ public class ItemService : IItemService
 
     public async Task Update(ItemModel item)
     {
-        await Get(item.Id);
+        await Get(item.Id, null);
 
         ItemEntity itemEntity = item.ToEntity();
 
@@ -83,7 +95,7 @@ public class ItemService : IItemService
 
     public async Task Delete(Guid id)
     {
-        await Get(id);
+        await Get(id, null);
 
         await _itemRepository.Delete(id);
     }

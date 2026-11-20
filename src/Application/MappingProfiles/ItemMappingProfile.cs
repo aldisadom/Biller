@@ -15,7 +15,8 @@ public static class ItemModelExtensions
             CustomerId = from.CustomerId,
             Name = from.Name,
             Price = from.Price,
-            Quantity = from.Quantity
+            Quantity = from.Quantity,
+            Version = from.Version
         };
     }
 
@@ -27,7 +28,8 @@ public static class ItemModelExtensions
             CustomerId = from.CustomerId,
             Name = from.Name,
             Price = from.Price,
-            Quantity = from.Quantity
+            Quantity = from.Quantity,
+            Version = from.Version
         };
     }
 
@@ -61,7 +63,8 @@ public static class ItemModelExtensions
             CustomerId = from.CustomerId,
             Name = from.Name,
             Price = from.Price,
-            Quantity = from.Quantity
+            Quantity = from.Quantity,
+            Version = from.Version
         };
     }
 
@@ -73,7 +76,33 @@ public static class ItemModelExtensions
             CustomerId = from.CustomerId,
             Name = from.Name,
             Price = from.Price,
-            Quantity = from.Quantity
+            Quantity = from.Quantity,
+            Version = from.Version
+        };
+    }
+
+    public static ItemVersionModel ToModel(this ItemVersionEntity from)
+    {
+        return new ItemVersionModel
+        {
+            Id = from.Id,
+            ItemId = from.ItemId,
+            Version = from.Version,
+            Name = from.Name,
+            Price = from.Price,
+            ChangedDate = from.ChangedDate,
+            CustomerId = from.CustomerId
+        };
+    }
+
+    public static ItemVersionResponse ToResponse(this ItemVersionModel from)
+    {
+        return new ItemVersionResponse
+        {
+            Version = from.Version,
+            Name = from.Name,
+            Price = from.Price,
+            ChangedDate = from.ChangedDate
         };
     }
 }
