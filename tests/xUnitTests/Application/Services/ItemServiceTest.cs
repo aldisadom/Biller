@@ -1,7 +1,6 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Item;
 using Domain.Entities;
@@ -9,7 +8,6 @@ using Domain.Exceptions;
 using Domain.Repositories;
 using AwesomeAssertions;
 using Moq;
-using System.Net;
 
 namespace xUnitTests.Application.Services;
 
@@ -142,7 +140,7 @@ public class ItemServiceTest
 
     [Theory]
     [MemberData(nameof(GetValidLineVersionTestData))]
-    public async Task GetVersionsWithValidation_GivenExistingVersion_ReturnsItemVersions(int? lineVersion)
+    public async Task GetVersionsForCustomer_GivenExistingVersion_ReturnsItemVersions(int? lineVersion)
     {
         //Arrange
         Guid customerId = Guid.NewGuid();
@@ -158,11 +156,7 @@ public class ItemServiceTest
                         .ReturnsAsync(versions);
 
         //Act
-        var resultResponse = await _itemService.GetVersionsWithValidation(lines, customerId);
-        IEnumerable<ItemVersionModel> result = resultResponse.Match(
-            versions => { return versions; },
-            error => { throw new Exception(error.ToString()); }
-        );
+        IEnumerable<ItemVersionModel> result = await _itemService.GetVersionsForCustomer(lines, customerId);
 
         //Assert
         result.Should().BeEquivalentTo(versions.Select(v => v.ToModel()));
@@ -171,7 +165,7 @@ public class ItemServiceTest
     }
 
     [Fact]
-    public async Task GetVersionsWithValidation_GivenOtherCustomersItem_ReturnsErrorModel()
+    public async Task GetVersionsForCustomer_GivenOtherCustomersItem_ThrowsValidationException()
     {
         //Arrange
         Guid customerId = Guid.NewGuid();
@@ -182,28 +176,17 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(new[] { itemId }))))
                         .ReturnsAsync(versions);
 
-        ErrorModel expectedResult = new()
-        {
-            StatusCode = HttpStatusCode.BadRequest,
-            Message = "Validation failure",
-            ExtendedMessage = $"Items id {itemId} is invalid for customer id {customerId}"
-        };
-
         //Act
-        var resultResponse = await _itemService.GetVersionsWithValidation(lines, customerId);
-        ErrorModel result = resultResponse.Match(
-            versions => { throw new Exception("Got versions not error" + versions.ToString()); },
-            error => { return error; }
-        );
-
         //Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        await _itemService.Invoking(x => x.GetVersionsForCustomer(lines, customerId))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Items id {itemId} is invalid for customer id {customerId}");
 
         _itemRepositoryMock.Verify(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(new[] { itemId }))), Times.Once());
     }
 
     [Fact]
-    public async Task GetVersionsWithValidation_GivenUnknownItems_ReturnsErrorModelNamingEach()
+    public async Task GetVersionsForCustomer_GivenUnknownItems_ThrowsValidationExceptionNamingEach()
     {
         //Arrange
         Guid customerId = Guid.NewGuid();
@@ -213,28 +196,17 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(lineIds))))
                         .ReturnsAsync((List<ItemVersionEntity>)[]);
 
-        ErrorModel expectedResult = new()
-        {
-            StatusCode = HttpStatusCode.BadRequest,
-            Message = "Validation failure",
-            ExtendedMessage = $"Items id {lineIds[0]} {lineIds[1]} is invalid for customer id {customerId}"
-        };
-
         //Act
-        var resultResponse = await _itemService.GetVersionsWithValidation(lines, customerId);
-        ErrorModel result = resultResponse.Match(
-            versions => { throw new Exception("Got versions not error" + versions.ToString()); },
-            error => { return error; }
-        );
-
         //Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        await _itemService.Invoking(x => x.GetVersionsForCustomer(lines, customerId))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Items id {lineIds[0]} {lineIds[1]} is invalid for customer id {customerId}");
 
         _itemRepositoryMock.Verify(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(lineIds))), Times.Once());
     }
 
     [Fact]
-    public async Task GetVersionsWithValidation_GivenVersionOnlyAnotherLinesItemHas_ReturnsErrorModel()
+    public async Task GetVersionsForCustomer_GivenVersionOnlyAnotherLinesItemHas_ThrowsValidationException()
     {
         //Arrange
         Guid customerId = Guid.NewGuid();
@@ -252,28 +224,17 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(new[] { throneId, swordId }))))
                         .ReturnsAsync(versions);
 
-        ErrorModel expectedResult = new()
-        {
-            StatusCode = HttpStatusCode.BadRequest,
-            Message = "Validation failure",
-            ExtendedMessage = $"Item id {throneId} has no version 3"
-        };
-
         //Act
-        var resultResponse = await _itemService.GetVersionsWithValidation(lines, customerId);
-        ErrorModel result = resultResponse.Match(
-            versions => { throw new Exception("Got versions not error" + versions.ToString()); },
-            error => { return error; }
-        );
-
         //Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        await _itemService.Invoking(x => x.GetVersionsForCustomer(lines, customerId))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Item id {throneId} has no version 3");
 
         _itemRepositoryMock.Verify(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(new[] { throneId, swordId }))), Times.Once());
     }
 
     [Fact]
-    public async Task GetVersionsWithValidation_GivenUnknownVersion_ReturnsErrorModel()
+    public async Task GetVersionsForCustomer_GivenUnknownVersion_ThrowsValidationException()
     {
         //Arrange
         Guid customerId = Guid.NewGuid();
@@ -284,22 +245,11 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(new[] { itemId }))))
                         .ReturnsAsync(versions);
 
-        ErrorModel expectedResult = new()
-        {
-            StatusCode = HttpStatusCode.BadRequest,
-            Message = "Validation failure",
-            ExtendedMessage = $"Item id {itemId} has no version 99"
-        };
-
         //Act
-        var resultResponse = await _itemService.GetVersionsWithValidation(lines, customerId);
-        ErrorModel result = resultResponse.Match(
-            versions => { throw new Exception("Got versions not error" + versions.ToString()); },
-            error => { return error; }
-        );
-
         //Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        await _itemService.Invoking(x => x.GetVersionsForCustomer(lines, customerId))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Item id {itemId} has no version 99");
 
         _itemRepositoryMock.Verify(m => m.GetVersions(It.Is<List<Guid>>(ids => ids.SequenceEqual(new[] { itemId }))), Times.Once());
     }

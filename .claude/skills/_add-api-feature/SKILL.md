@@ -167,8 +167,9 @@ Steps:
   Map **every** property, because the mapping tests check for missing ones.
 - `src/Application/Interfaces/I<X>Service.cs` + `src/Application/Services/<X>Service.cs`:
   `Get(Guid)` throws `NotFoundException($"<X>:{id} not found")` when the repo returns null.
-  `Update`/`Delete` call `Get(id)` first so missing ids become 404s. Cross-entity checks return
-  `Result<T>`/`ErrorModel` (see `ItemService.GetWithValidation`). The list `Get(<X>GetRequest? query)`
+  `Update`/`Delete` call `Get(id)` first so missing ids become 404s. Ownership checks
+  `GetFor<Owner>(id, ownerId)` return the model and throw `FluentValidation.ValidationException` (a 400)
+  when the row is missing or another owner's (see `SellerService.GetForUser`). The list `Get(<X>GetRequest? query)`
   defaults to page 1 and `PageSize.p25` and passes the repository's `(Items, TotalCount, Page)` on,
   mapped to models.
 - Register it in `src/Application/DependencyInjection.cs`.

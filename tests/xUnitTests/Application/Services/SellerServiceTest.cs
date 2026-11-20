@@ -1,7 +1,6 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Seller;
 using Domain.Entities;
@@ -9,7 +8,6 @@ using Domain.Exceptions;
 using Domain.Repositories;
 using AwesomeAssertions;
 using Moq;
-using System.Net;
 
 namespace xUnitTests.Application.Services;
 
@@ -63,7 +61,7 @@ public class SellerServiceTest
     }
 
     [Fact]
-    public async Task GetIdWithValidation_GivenValidId_ReturnsDTO()
+    public async Task GetForUser_GivenUsersSeller_ReturnsSeller()
     {
         //Arrange
         SellerEntity seller = new() { Id = Guid.NewGuid(), UserId = Guid.NewGuid() };
@@ -71,76 +69,50 @@ public class SellerServiceTest
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
 
-        SellerModel expectedResult = seller.ToModel();
-
         //Act
-        var resultResponse = await _sellerService.GetWithValidation(seller.Id, seller.UserId);
-        SellerModel result = resultResponse.Match(
-            entity => { return entity; },
-            error => { throw new Exception(error.ToString()); }
-        );
+        SellerModel result = await _sellerService.GetForUser(seller.Id, seller.UserId);
 
         //Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        result.Should().BeEquivalentTo(seller.ToModel());
 
         _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
     }
 
     [Fact]
-    public async Task GetIdWithValidation_GivenInvaliduserId_ReturnsErrorModel()
+    public async Task GetForUser_GivenAnotherUsersSeller_ThrowsValidationException()
     {
         //Arrange
-        SellerEntity seller = new() { Id = Guid.NewGuid() };
+        SellerEntity seller = new() { Id = Guid.NewGuid(), UserId = Guid.NewGuid() };
+        Guid userId = Guid.NewGuid();
 
         _sellerRepositoryMock.Setup(m => m.Get(seller.Id))
                         .ReturnsAsync(seller);
 
-        var userId = Guid.NewGuid();
-        ErrorModel expectedResult = new()
-        {
-            StatusCode = HttpStatusCode.BadRequest,
-            Message = "Validation failure",
-            ExtendedMessage = $"Seller id {seller.Id} is invalid for user id {userId}"
-        };
-
         //Act
-        var resultResponse = await _sellerService.GetWithValidation(seller.Id, userId);
-        ErrorModel result = resultResponse.Match(
-            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
-        error => { return error; }
-        );
-
         //Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        await _sellerService.Invoking(x => x.GetForUser(seller.Id, userId))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Seller id {seller.Id} is invalid for user id {userId}");
+
         _sellerRepositoryMock.Verify(m => m.Get(seller.Id), Times.Once());
     }
 
     [Fact]
-    public async Task GetIdWithValidation_GivenInvalidId_ReturnsErrorModel()
+    public async Task GetForUser_GivenUnknownSeller_ThrowsValidationException()
     {
         //Arrange
         Guid id = Guid.NewGuid();
+        Guid userId = Guid.NewGuid();
 
         _sellerRepositoryMock.Setup(m => m.Get(id))
                         .ReturnsAsync((SellerEntity)null!);
 
-        var userId = Guid.NewGuid();
-        ErrorModel expectedResult = new()
-        {
-            StatusCode = HttpStatusCode.BadRequest,
-            Message = "Validation failure",
-            ExtendedMessage = $"Seller id {id} is invalid for user id {userId}"
-        };
-
         //Act
-        var resultResponse = await _sellerService.GetWithValidation(id, userId);
-        ErrorModel result = resultResponse.Match(
-            entity => { throw new Exception("Got entity not error" + entity.ToString()); },
-        error => { return error; }
-        );
-
         //Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        await _sellerService.Invoking(x => x.GetForUser(id, userId))
+                            .Should().ThrowAsync<FluentValidation.ValidationException>()
+                            .WithMessage($"Seller id {id} is invalid for user id {userId}");
+
         _sellerRepositoryMock.Verify(m => m.Get(id), Times.Once());
     }
 

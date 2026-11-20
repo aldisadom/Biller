@@ -1,13 +1,12 @@
 ﻿using Application.Interfaces;
 using Application.MappingProfiles;
 using Application.Models;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Item;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Repositories;
-using System.Net;
+using FluentValidation;
 
 namespace Application.Services;
 
@@ -51,7 +50,7 @@ public class ItemService : IItemService
         return (entities.Select(i => i.ToModel()), totalCount, returnedPage);
     }
 
-    public async Task<Result<IEnumerable<ItemVersionModel>>> GetVersionsWithValidation(List<InvoiceItemModel> lines, Guid customerId)
+    public async Task<IEnumerable<ItemVersionModel>> GetVersionsForCustomer(List<InvoiceItemModel> lines, Guid customerId)
     {
         List<Guid> ids = lines.Select(l => l.Id).ToList();
         List<ItemVersionEntity> versions = (await _itemRepository.GetVersions(ids)).ToList();
@@ -66,14 +65,14 @@ public class ItemService : IItemService
             idString += " " + item.ToString();
 
         if (!string.IsNullOrEmpty(idString))
-            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Items id{idString} is invalid for customer id {customerId}" };
+            throw new ValidationException($"Items id{idString} is invalid for customer id {customerId}");
 
         // An empty version means the latest, which always exists
         InvoiceItemModel? unknownVersion = lines.FirstOrDefault(l =>
             l.Version is not null && !versions.Any(v => (v.ItemId == l.Id) && (v.Version == l.Version)));
 
         if (unknownVersion is not null)
-            return new ErrorModel() { StatusCode = HttpStatusCode.BadRequest, Message = "Validation failure", ExtendedMessage = $"Item id {unknownVersion.Id} has no version {unknownVersion.Version}" };
+            throw new ValidationException($"Item id {unknownVersion.Id} has no version {unknownVersion.Version}");
 
         return versions.Select(v => v.ToModel()).ToList();
     }

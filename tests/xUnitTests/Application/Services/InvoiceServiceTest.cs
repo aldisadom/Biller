@@ -2,7 +2,6 @@
 using Application.MappingProfiles;
 using Application.Models;
 using Application.Services;
-using BillerContracts;
 using BillerContracts.Enums;
 using BillerContracts.Requests.Invoice;
 using Domain.Entities;
@@ -249,7 +248,7 @@ public class InvoiceServiceTest
                             .Should().ThrowAsync<NotFoundException>();
 
         _userServiceMock.Verify(m => m.Get(invoiceData.UserId), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _sellerServiceMock.Verify(m => m.GetForUser(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -262,18 +261,18 @@ public class InvoiceServiceTest
         _userServiceMock.Setup(m => m.Get(invoiceData.UserId))
                 .ReturnsAsync(new UserModel { Id = invoiceData.UserId });
 
-        _sellerServiceMock.Setup(m => m.GetWithValidation(invoiceData.SellerId, invoiceData.UserId))
-                .ReturnsAsync(new ErrorModel());
+        _sellerServiceMock.Setup(m => m.GetForUser(invoiceData.SellerId, invoiceData.UserId))
+                .ThrowsAsync(new FluentValidation.ValidationException("Ownership check failed"));
 
         //Act
         //Assert
         await _invoiceService.Invoking(x => x.Add(invoiceData))
-                            .Should().ThrowAsync<FluentValidation.ValidationException>();
+                            .Should().ThrowAsync<FluentValidation.ValidationException>().WithMessage("Ownership check failed");
 
         _userServiceMock.Verify(m => m.Get(invoiceData.UserId), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.SellerId, invoiceData.UserId), Times.Once());
-        _customerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
-        _itemServiceMock.Verify(m => m.GetVersionsWithValidation(It.IsAny<List<InvoiceItemModel>>(), It.IsAny<Guid>()), Times.Never());
+        _sellerServiceMock.Verify(m => m.GetForUser(invoiceData.SellerId, invoiceData.UserId), Times.Once());
+        _customerServiceMock.Verify(m => m.GetForSeller(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _itemServiceMock.Verify(m => m.GetVersionsForCustomer(It.IsAny<List<InvoiceItemModel>>(), It.IsAny<Guid>()), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -286,21 +285,21 @@ public class InvoiceServiceTest
         _userServiceMock.Setup(m => m.Get(invoiceData.UserId))
                 .ReturnsAsync(new UserModel { Id = invoiceData.UserId });
 
-        _sellerServiceMock.Setup(m => m.GetWithValidation(invoiceData.SellerId, invoiceData.UserId))
+        _sellerServiceMock.Setup(m => m.GetForUser(invoiceData.SellerId, invoiceData.UserId))
                 .ReturnsAsync(new SellerModel { Id = invoiceData.SellerId });
 
-        _customerServiceMock.Setup(m => m.GetWithValidation(invoiceData.CustomerId, invoiceData.SellerId))
-                .ReturnsAsync(new ErrorModel());
+        _customerServiceMock.Setup(m => m.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId))
+                .ThrowsAsync(new FluentValidation.ValidationException("Ownership check failed"));
 
         //Act
         //Assert
         await _invoiceService.Invoking(x => x.Add(invoiceData))
-                            .Should().ThrowAsync<FluentValidation.ValidationException>();
+                            .Should().ThrowAsync<FluentValidation.ValidationException>().WithMessage("Ownership check failed");
 
         _userServiceMock.Verify(m => m.Get(invoiceData.UserId), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.SellerId, invoiceData.UserId), Times.Once());
-        _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.CustomerId, invoiceData.SellerId), Times.Once());
-        _itemServiceMock.Verify(m => m.GetVersionsWithValidation(It.IsAny<List<InvoiceItemModel>>(), It.IsAny<Guid>()), Times.Never());
+        _sellerServiceMock.Verify(m => m.GetForUser(invoiceData.SellerId, invoiceData.UserId), Times.Once());
+        _customerServiceMock.Verify(m => m.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId), Times.Once());
+        _itemServiceMock.Verify(m => m.GetVersionsForCustomer(It.IsAny<List<InvoiceItemModel>>(), It.IsAny<Guid>()), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -313,24 +312,24 @@ public class InvoiceServiceTest
         _userServiceMock.Setup(m => m.Get(invoiceData.UserId))
                 .ReturnsAsync(new UserModel { Id = invoiceData.UserId });
 
-        _sellerServiceMock.Setup(m => m.GetWithValidation(invoiceData.SellerId, invoiceData.UserId))
+        _sellerServiceMock.Setup(m => m.GetForUser(invoiceData.SellerId, invoiceData.UserId))
                 .ReturnsAsync(new SellerModel { Id = invoiceData.SellerId });
 
-        _customerServiceMock.Setup(m => m.GetWithValidation(invoiceData.CustomerId, invoiceData.SellerId))
+        _customerServiceMock.Setup(m => m.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId))
                 .ReturnsAsync(new CustomerModel { Id = invoiceData.CustomerId });
 
-        _itemServiceMock.Setup(m => m.GetVersionsWithValidation(invoiceData.Items!, invoiceData.CustomerId))
-            .ReturnsAsync(new ErrorModel());
+        _itemServiceMock.Setup(m => m.GetVersionsForCustomer(invoiceData.Items!, invoiceData.CustomerId))
+            .ThrowsAsync(new FluentValidation.ValidationException("Ownership check failed"));
 
         //Act
         //Assert
         await _invoiceService.Invoking(x => x.Add(invoiceData))
-                            .Should().ThrowAsync<FluentValidation.ValidationException>();
+                            .Should().ThrowAsync<FluentValidation.ValidationException>().WithMessage("Ownership check failed");
 
         _userServiceMock.Verify(m => m.Get(invoiceData.UserId), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(invoiceData.SellerId, invoiceData.UserId), Times.Once());
-        _customerServiceMock.Verify(m => m.GetWithValidation(invoiceData.CustomerId, invoiceData.SellerId), Times.Once());
-        _itemServiceMock.Verify(m => m.GetVersionsWithValidation(invoiceData.Items!, invoiceData.CustomerId), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetForUser(invoiceData.SellerId, invoiceData.UserId), Times.Once());
+        _customerServiceMock.Verify(m => m.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId), Times.Once());
+        _itemServiceMock.Verify(m => m.GetVersionsForCustomer(invoiceData.Items!, invoiceData.CustomerId), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -382,13 +381,13 @@ public class InvoiceServiceTest
         _userServiceMock.Setup(m => m.Get(user.Id))
                 .ReturnsAsync(user);
 
-        _sellerServiceMock.Setup(m => m.GetWithValidation(seller.Id, user.Id))
+        _sellerServiceMock.Setup(m => m.GetForUser(seller.Id, user.Id))
                 .ReturnsAsync(seller);
 
-        _customerServiceMock.Setup(m => m.GetWithValidation(customer.Id, seller.Id))
+        _customerServiceMock.Setup(m => m.GetForSeller(customer.Id, seller.Id))
                 .ReturnsAsync(customer);
 
-        _itemServiceMock.Setup(m => m.GetVersionsWithValidation(invoiceData.Items!, customer.Id))
+        _itemServiceMock.Setup(m => m.GetVersionsForCustomer(invoiceData.Items!, customer.Id))
             .ReturnsAsync(items);
 
         _invoiceDataRepositoryMock.Setup(m => m.Add(expectedEntity))
@@ -401,9 +400,9 @@ public class InvoiceServiceTest
         result.Should().Be(newId);
 
         _userServiceMock.Verify(m => m.Get(user.Id), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(seller.Id, user.Id), Times.Once());
-        _customerServiceMock.Verify(m => m.GetWithValidation(customer.Id, seller.Id), Times.Once());
-        _itemServiceMock.Verify(m => m.GetVersionsWithValidation(invoiceData.Items!, customer.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetForUser(seller.Id, user.Id), Times.Once());
+        _customerServiceMock.Verify(m => m.GetForSeller(customer.Id, seller.Id), Times.Once());
+        _itemServiceMock.Verify(m => m.GetVersionsForCustomer(invoiceData.Items!, customer.Id), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Add(expectedEntity), Times.Once());
     }
 
@@ -423,11 +422,11 @@ public class InvoiceServiceTest
 
         _userServiceMock.Setup(m => m.Get(user.Id))
                 .ReturnsAsync(user);
-        _sellerServiceMock.Setup(m => m.GetWithValidation(seller.Id, user.Id))
+        _sellerServiceMock.Setup(m => m.GetForUser(seller.Id, user.Id))
                 .ReturnsAsync(seller);
-        _customerServiceMock.Setup(m => m.GetWithValidation(customer.Id, seller.Id))
+        _customerServiceMock.Setup(m => m.GetForSeller(customer.Id, seller.Id))
                 .ReturnsAsync(customer);
-        _itemServiceMock.Setup(m => m.GetVersionsWithValidation(invoiceData.Items!, customer.Id))
+        _itemServiceMock.Setup(m => m.GetVersionsForCustomer(invoiceData.Items!, customer.Id))
             .ReturnsAsync(items);
         _invoiceDataRepositoryMock.Setup(m => m.Add(expectedEntity))
                                  .ReturnsAsync(Guid.Empty);
@@ -439,9 +438,9 @@ public class InvoiceServiceTest
                             .WithMessage($"Invoice was not created: customer id {customer.Id} is no longer in series id {customer.SeriesId}, or the series has no numbers left");
 
         _userServiceMock.Verify(m => m.Get(user.Id), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(seller.Id, user.Id), Times.Once());
-        _customerServiceMock.Verify(m => m.GetWithValidation(customer.Id, seller.Id), Times.Once());
-        _itemServiceMock.Verify(m => m.GetVersionsWithValidation(invoiceData.Items!, customer.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetForUser(seller.Id, user.Id), Times.Once());
+        _customerServiceMock.Verify(m => m.GetForSeller(customer.Id, seller.Id), Times.Once());
+        _itemServiceMock.Verify(m => m.GetVersionsForCustomer(invoiceData.Items!, customer.Id), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Add(expectedEntity), Times.Once());
     }
 
@@ -628,13 +627,13 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
             .ReturnsAsync(storedInvoice.ToEntity());
 
-        _sellerServiceMock.Setup(m => m.GetWithValidation(seller.Id, storedInvoice.UserId))
+        _sellerServiceMock.Setup(m => m.GetForUser(seller.Id, storedInvoice.UserId))
             .ReturnsAsync(seller);
 
-        _customerServiceMock.Setup(m => m.GetWithValidation(customer.Id, seller.Id))
+        _customerServiceMock.Setup(m => m.GetForSeller(customer.Id, seller.Id))
             .ReturnsAsync(customer);
 
-        _itemServiceMock.Setup(m => m.GetVersionsWithValidation(invoiceData.Items!, customer.Id))
+        _itemServiceMock.Setup(m => m.GetVersionsForCustomer(invoiceData.Items!, customer.Id))
             .ReturnsAsync(items);
 
         _invoiceDataRepositoryMock.Setup(m => m.Update(expectedEntity))
@@ -645,9 +644,9 @@ public class InvoiceServiceTest
 
         //Assert
         _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(seller.Id, storedInvoice.UserId), Times.Once());
-        _customerServiceMock.Verify(m => m.GetWithValidation(customer.Id, seller.Id), Times.Once());
-        _itemServiceMock.Verify(m => m.GetVersionsWithValidation(invoiceData.Items!, customer.Id), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetForUser(seller.Id, storedInvoice.UserId), Times.Once());
+        _customerServiceMock.Verify(m => m.GetForSeller(customer.Id, seller.Id), Times.Once());
+        _itemServiceMock.Verify(m => m.GetVersionsForCustomer(invoiceData.Items!, customer.Id), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Update(expectedEntity), Times.Once());
     }
 
@@ -717,9 +716,9 @@ public class InvoiceServiceTest
                             .WithMessage($"Invoice id {storedInvoice.Id} can't be moved to another seller");
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
-        _customerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
-        _itemServiceMock.Verify(m => m.GetVersionsWithValidation(It.IsAny<List<InvoiceItemModel>>(), It.IsAny<Guid>()), Times.Never());
+        _sellerServiceMock.Verify(m => m.GetForUser(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _customerServiceMock.Verify(m => m.GetForSeller(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _itemServiceMock.Verify(m => m.GetVersionsForCustomer(It.IsAny<List<InvoiceItemModel>>(), It.IsAny<Guid>()), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -746,9 +745,9 @@ public class InvoiceServiceTest
                             .WithMessage($"Invoice id {storedInvoice.Id} can't be moved to another customer");
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
-        _customerServiceMock.Verify(m => m.GetWithValidation(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
-        _itemServiceMock.Verify(m => m.GetVersionsWithValidation(It.IsAny<List<InvoiceItemModel>>(), It.IsAny<Guid>()), Times.Never());
+        _sellerServiceMock.Verify(m => m.GetForUser(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _customerServiceMock.Verify(m => m.GetForSeller(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Never());
+        _itemServiceMock.Verify(m => m.GetVersionsForCustomer(It.IsAny<List<InvoiceItemModel>>(), It.IsAny<Guid>()), Times.Never());
         _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -768,24 +767,24 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
             .ReturnsAsync(storedInvoice.ToEntity());
 
-        _sellerServiceMock.Setup(m => m.GetWithValidation(storedInvoice.SellerId, storedInvoice.UserId))
+        _sellerServiceMock.Setup(m => m.GetForUser(storedInvoice.SellerId, storedInvoice.UserId))
             .ReturnsAsync(new SellerModel { Id = storedInvoice.SellerId });
 
-        _customerServiceMock.Setup(m => m.GetWithValidation(storedInvoice.CustomerId, storedInvoice.SellerId))
+        _customerServiceMock.Setup(m => m.GetForSeller(storedInvoice.CustomerId, storedInvoice.SellerId))
             .ReturnsAsync(new CustomerModel { Id = storedInvoice.CustomerId });
 
-        _itemServiceMock.Setup(m => m.GetVersionsWithValidation(invoiceData.Items!, storedInvoice.CustomerId))
-            .ReturnsAsync(new ErrorModel());
+        _itemServiceMock.Setup(m => m.GetVersionsForCustomer(invoiceData.Items!, storedInvoice.CustomerId))
+            .ThrowsAsync(new FluentValidation.ValidationException("Ownership check failed"));
 
         //Act
         //Assert
         await _invoiceService.Invoking(x => x.Update(invoiceData))
-                            .Should().ThrowAsync<FluentValidation.ValidationException>();
+                            .Should().ThrowAsync<FluentValidation.ValidationException>().WithMessage("Ownership check failed");
 
         _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
-        _sellerServiceMock.Verify(m => m.GetWithValidation(storedInvoice.SellerId, storedInvoice.UserId), Times.Once());
-        _customerServiceMock.Verify(m => m.GetWithValidation(storedInvoice.CustomerId, storedInvoice.SellerId), Times.Once());
-        _itemServiceMock.Verify(m => m.GetVersionsWithValidation(invoiceData.Items!, storedInvoice.CustomerId), Times.Once());
+        _sellerServiceMock.Verify(m => m.GetForUser(storedInvoice.SellerId, storedInvoice.UserId), Times.Once());
+        _customerServiceMock.Verify(m => m.GetForSeller(storedInvoice.CustomerId, storedInvoice.SellerId), Times.Once());
+        _itemServiceMock.Verify(m => m.GetVersionsForCustomer(invoiceData.Items!, storedInvoice.CustomerId), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
