@@ -15,13 +15,47 @@ public class InvoiceRepository : IInvoiceRepository
         _dbConnection = dbConnection;
     }
 
+    // Lines show their item's current name and price (BIL-113). Archived items aren't filtered out here.
+    private const string LinesSql = @"SELECT l.*, it.name, it.price FROM invoice_lines l
+                        JOIN items it ON it.id = l.item_id
+                        WHERE l.invoice_id = ANY(@Ids)
+                        ORDER BY l.invoice_id, l.line_no";
+
     public async Task<InvoiceEntity?> Get(Guid id)
     {
         string sql = @"SELECT i.*, s.name AS series_name FROM invoices i
                         JOIN series s ON s.id = i.series_id
                         WHERE i.id=@Id";
 
-        return await _dbConnection.QuerySingleOrDefaultAsync<InvoiceEntity>(sql, new { id });
+        InvoiceEntity? invoice = await _dbConnection.QuerySingleOrDefaultAsync<InvoiceEntity>(sql, new { id });
+        if (invoice is null)
+            return null;
+
+        await LoadLines([invoice]);
+        return invoice;
+    }
+
+    private async Task LoadLines(List<InvoiceEntity> invoices)
+    {
+        if (invoices.Count == 0)
+            return;
+
+        IEnumerable<InvoiceLineEntity> lines = await _dbConnection.QueryAsync<InvoiceLineEntity>(LinesSql,
+            new { Ids = invoices.Select(i => i.Id).ToList() });
+        ILookup<Guid, InvoiceLineEntity> byInvoice = lines.ToLookup(l => l.InvoiceId);
+
+        foreach (InvoiceEntity invoice in invoices)
+            invoice.Lines = byInvoice[invoice.Id].ToList();
+    }
+
+    // The lines as arrays for unnest(...) WITH ORDINALITY: line_no is the position in the list, from 1.
+    private static object WithLines(InvoiceEntity invoice, object invoiceParameters)
+    {
+        var parameters = new DynamicParameters(invoiceParameters);
+        parameters.Add("ItemIds", invoice.Lines.Select(l => l.ItemId).ToArray());
+        parameters.Add("Quantities", invoice.Lines.Select(l => l.Quantity).ToArray());
+        parameters.Add("LineComments", invoice.Lines.Select(l => l.Comments).ToArray());
+        return parameters;
     }
 
     public async Task<(IEnumerable<InvoiceEntity> Items, int TotalCount, int Page)> Get(Guid? userId, Guid? sellerId, Guid? customerId, int page, int pageSize)
@@ -37,8 +71,12 @@ public class InvoiceRepository : IInvoiceRepository
                             ORDER BY i.created_date DESC
                             LIMIT @PageSize OFFSET @Offset";
 
-        return await _dbConnection.QueryPage<InvoiceEntity>(dataSql, countSql,
+        var (items, totalCount, foundPage) = await _dbConnection.QueryPage<InvoiceEntity>(dataSql, countSql,
             new { UserId = userId, SellerId = sellerId, CustomerId = customerId }, page, pageSize);
+
+        List<InvoiceEntity> invoices = items.ToList();
+        await LoadLines(invoices);
+        return (invoices, totalCount, foundPage);
     }
 
     public async Task<Guid> Add(InvoiceEntity invoice)
@@ -50,26 +88,66 @@ public class InvoiceRepository : IInvoiceRepository
                               AND next_number < 2147483647
                               AND EXISTS (SELECT 1 FROM customers WHERE id = @CustomerId AND series_id = @SeriesId)
                             RETURNING next_number - 1 AS invoice_number
+                        ),
+                        inv AS (
+                            INSERT INTO invoices
+                            (customer_id, seller_id, user_id, series_id, invoice_number, created_date, due_date,
+                            comments, status)
+                            SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.invoice_number, @CreatedDate, @DueDate,
+                            @Comments, @Status
+                            FROM reserved
+                            RETURNING id
+                        ),
+                        lines AS (
+                            INSERT INTO invoice_lines (invoice_id, line_no, item_id, quantity, comments)
+                            SELECT inv.id, l.ord, l.item_id, l.quantity, l.comments
+                            FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @LineComments::text[])
+                                WITH ORDINALITY AS l(item_id, quantity, comments, ord)
                         )
-                        INSERT INTO invoices
-                        (customer_id, seller_id, user_id, series_id, invoice_number, created_date, due_date,
-                        items_data, comments, total_price, status)
-                        SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.invoice_number, @CreatedDate, @DueDate,
-                        @ItemsData, @Comments, @TotalPrice, @Status
-                        FROM reserved
-                        RETURNING id";
+                        SELECT id FROM inv";
 
-        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, invoice);
+        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, WithLines(invoice, new
+        {
+            invoice.CustomerId,
+            invoice.SellerId,
+            invoice.UserId,
+            invoice.SeriesId,
+            invoice.CreatedDate,
+            invoice.DueDate,
+            invoice.Comments,
+            invoice.Status
+        }));
     }
 
+    // Lines 1..n are upserted and lines above n deleted: the two touch different rows, so the key
+    // (invoice_id, line_no) never sees an old and a new line at once.
     public async Task Update(InvoiceEntity invoice)
     {
-        string sql = @"UPDATE invoices
-                        SET created_date=@CreatedDate, due_date=@DueDate,
-                        items_data=@ItemsData, comments=@Comments, total_price=@TotalPrice
-                        WHERE id=@Id";
+        string sql = @"WITH inv AS (
+                            UPDATE invoices
+                            SET created_date=@CreatedDate, due_date=@DueDate, comments=@Comments
+                            WHERE id=@Id
+                            RETURNING id
+                        ),
+                        upserted AS (
+                            INSERT INTO invoice_lines (invoice_id, line_no, item_id, quantity, comments)
+                            SELECT inv.id, l.ord, l.item_id, l.quantity, l.comments
+                            FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @LineComments::text[])
+                                WITH ORDINALITY AS l(item_id, quantity, comments, ord)
+                            ON CONFLICT (invoice_id, line_no) DO UPDATE
+                            SET item_id=EXCLUDED.item_id, quantity=EXCLUDED.quantity, comments=EXCLUDED.comments
+                        )
+                        DELETE FROM invoice_lines
+                        WHERE invoice_id IN (SELECT id FROM inv)
+                          AND line_no > cardinality(@ItemIds::uuid[])";
 
-        await _dbConnection.ExecuteAsync(sql, invoice);
+        await _dbConnection.ExecuteAsync(sql, WithLines(invoice, new
+        {
+            invoice.Id,
+            invoice.CreatedDate,
+            invoice.DueDate,
+            invoice.Comments
+        }));
     }
 
     public async Task UpdateStatus(Guid id, InvoiceStatus status)

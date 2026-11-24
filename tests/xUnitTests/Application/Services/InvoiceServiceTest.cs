@@ -9,7 +9,6 @@ using Domain.Exceptions;
 using Domain.Repositories;
 using AwesomeAssertions;
 using Moq;
-using Newtonsoft.Json;
 using System.Linq.Expressions;
 
 namespace xUnitTests.Application.Services;
@@ -49,6 +48,14 @@ public class InvoiceServiceTest
         Items = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }]
     };
 
+    // InvoiceEntity is a record, but its Lines list compares by reference: compare the rest of the
+    // entity, then the lines one by one.
+    private static Expression<Func<InvoiceEntity, bool>> Saved(InvoiceEntity expected) =>
+        actual => IsSaved(actual, expected);
+
+    private static bool IsSaved(InvoiceEntity actual, InvoiceEntity expected) =>
+        actual with { Lines = expected.Lines } == expected && actual.Lines.SequenceEqual(expected.Lines);
+
     [Fact]
     public async Task GetId_GivenValidId_ReturnsStoredInvoiceWithCurrentUserSellerAndCustomer()
     {
@@ -57,14 +64,18 @@ public class InvoiceServiceTest
         storedInvoice.SeriesId = Guid.NewGuid();
         storedInvoice.SeriesName = "WF";
         storedInvoice.InvoiceNumber = 5;
-        storedInvoice.Items = [new() { Id = Guid.NewGuid(), Name = "Iron throne", Price = 10m, Quantity = 2 }];
+        storedInvoice.Items = [new() { Id = Guid.NewGuid(), Quantity = 2 }];
+        // The repository reads the line's name and price from its item
+        InvoiceEntity storedEntity = storedInvoice.ToEntity();
+        storedEntity.Lines[0].Name = "Iron throne";
+        storedEntity.Lines[0].Price = 10m;
 
         UserModel user = new() { Id = storedInvoice.UserId };
         SellerModel seller = new() { Id = storedInvoice.SellerId };
         CustomerModel customer = new() { Id = storedInvoice.CustomerId };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
-                        .ReturnsAsync(storedInvoice.ToEntity());
+                        .ReturnsAsync(storedEntity);
         _userServiceMock.Setup(m => m.Get(user.Id))
                 .ReturnsAsync(user);
         _sellerServiceMock.Setup(m => m.Get(seller.Id))
@@ -335,7 +346,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Add_GivenValidData_SavesCustomersSeriesAndCurrentItemNamesAndPrices()
+    public async Task Add_GivenValidData_SavesCustomersSeriesAndLinesWithoutItemNamesOrPrices()
     {
         //Arrange
         Guid throneId = Guid.NewGuid();
@@ -371,12 +382,12 @@ public class InvoiceServiceTest
             Status = InvoiceStatus.Created,
             CreatedDate = new DateTime(2026, 10, 1),
             DueDate = new DateTime(2026, 10, 11),
-            ItemsData = JsonConvert.SerializeObject(new List<InvoiceItemModel>
-            {
-                new() { Id = throneId, Name = "Iron throne", Price = 10m, Quantity = 2 },
-                new() { Id = swordId, Name = "Valyrian sword", Price = 20m, Quantity = 3 }
-            }),
-            TotalPrice = 80m
+            // The items' names and prices aren't copied: reads join the item (BIL-113)
+            Lines =
+            [
+                new() { LineNo = 1, ItemId = throneId, Quantity = 2, Comments = string.Empty },
+                new() { LineNo = 2, ItemId = swordId, Quantity = 3, Comments = string.Empty }
+            ]
         };
 
         _userServiceMock.Setup(m => m.Get(user.Id))
@@ -391,7 +402,7 @@ public class InvoiceServiceTest
         _itemServiceMock.Setup(m => m.GetForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customer.Id))
             .ReturnsAsync(items);
 
-        _invoiceDataRepositoryMock.Setup(m => m.Add(expectedEntity))
+        _invoiceDataRepositoryMock.Setup(m => m.Add(It.Is(Saved(expectedEntity))))
                                  .ReturnsAsync(newId);
 
         //Act
@@ -404,7 +415,7 @@ public class InvoiceServiceTest
         _sellerServiceMock.Verify(m => m.GetForUser(seller.Id, user.Id), Times.Once());
         _customerServiceMock.Verify(m => m.GetForSeller(customer.Id, seller.Id), Times.Once());
         _itemServiceMock.Verify(m => m.GetForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customer.Id), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Add(expectedEntity), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Add(It.Is(Saved(expectedEntity))), Times.Once());
     }
 
     [Fact]
@@ -429,7 +440,7 @@ public class InvoiceServiceTest
                 .ReturnsAsync(customer);
         _itemServiceMock.Setup(m => m.GetForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customer.Id))
             .ReturnsAsync(items);
-        _invoiceDataRepositoryMock.Setup(m => m.Add(expectedEntity))
+        _invoiceDataRepositoryMock.Setup(m => m.Add(It.Is(Saved(expectedEntity))))
                                  .ReturnsAsync(Guid.Empty);
 
         //Act
@@ -442,7 +453,7 @@ public class InvoiceServiceTest
         _sellerServiceMock.Verify(m => m.GetForUser(seller.Id, user.Id), Times.Once());
         _customerServiceMock.Verify(m => m.GetForSeller(customer.Id, seller.Id), Times.Once());
         _itemServiceMock.Verify(m => m.GetForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customer.Id), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Add(expectedEntity), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Add(It.Is(Saved(expectedEntity))), Times.Once());
     }
 
     [Fact]
@@ -564,7 +575,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndCopiesCurrentItemPrices()
+    public async Task Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndSavesLinesWithoutItemPrices()
     {
         //Arrange
         Guid throneId = Guid.NewGuid();
@@ -614,11 +625,7 @@ public class InvoiceServiceTest
             Comments = "Winter is coming",
             CreatedDate = new DateTime(2026, 10, 1),
             DueDate = new DateTime(2026, 10, 11),
-            ItemsData = JsonConvert.SerializeObject(new List<InvoiceItemModel>
-            {
-                new() { Id = throneId, Name = "Iron throne", Price = 12m, Quantity = 4 }
-            }),
-            TotalPrice = 48m
+            Lines = [new() { InvoiceId = storedInvoice.Id, LineNo = 1, ItemId = throneId, Quantity = 4, Comments = string.Empty }]
         };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
@@ -633,7 +640,7 @@ public class InvoiceServiceTest
         _itemServiceMock.Setup(m => m.GetForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customer.Id))
             .ReturnsAsync(items);
 
-        _invoiceDataRepositoryMock.Setup(m => m.Update(expectedEntity))
+        _invoiceDataRepositoryMock.Setup(m => m.Update(It.Is(Saved(expectedEntity))))
             .Returns(Task.CompletedTask);
 
         //Act
@@ -644,7 +651,7 @@ public class InvoiceServiceTest
         _sellerServiceMock.Verify(m => m.GetForUser(seller.Id, storedInvoice.UserId), Times.Once());
         _customerServiceMock.Verify(m => m.GetForSeller(customer.Id, seller.Id), Times.Once());
         _itemServiceMock.Verify(m => m.GetForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customer.Id), Times.Once());
-        _invoiceDataRepositoryMock.Verify(m => m.Update(expectedEntity), Times.Once());
+        _invoiceDataRepositoryMock.Verify(m => m.Update(It.Is(Saved(expectedEntity))), Times.Once());
     }
 
     [Fact]

@@ -28,8 +28,11 @@ on a small Linux PC.
   `(series_id, invoice_number)` then fails the next create instead of saving a duplicate number.
 - Never edit a changeset that is already on master. Fix it with a new one. Every changeset has a `-- rollback`.
 - Invoices store their user, seller and customer ids and show the current data. They keep their
-  own number, dates and lines. Editing an item must not change an existing invoice or its PDF.
-  Saving the invoice itself (`PUT /invoices`) copies line names and prices from the current items.
+  own number and dates. Lines are rows in `invoice_lines`: a line names its item, keeps its quantity
+  and comments, and shows the item's current name and price. The total is computed from the lines.
+  Until BIL-85, editing an item changes every invoice that uses it, its PDF and total, paid ones
+  too (accepted; BIL-85 brings back "editing an item must not change an existing invoice or its
+  PDF"). An item that an invoice line uses can't be deleted (400).
   The series name isn't copied, so a series with invoices can't be renamed.
 - Mirror the Item feature when adding a layer. Map every property by hand.
 - Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be

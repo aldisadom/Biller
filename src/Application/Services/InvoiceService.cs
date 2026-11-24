@@ -30,22 +30,6 @@ public class InvoiceService : IInvoiceService
         _invoiceDocumentFactory = invoiceDocumentFactory;
     }
 
-    public static void MapItemToInvoiceItem(List<InvoiceItemModel> invoiceItems, IEnumerable<ItemModel> items)
-    {
-        foreach (InvoiceItemModel invoiceItem in invoiceItems)
-        {
-            foreach (ItemModel item in items)
-            {
-                if (invoiceItem.Id == item.Id)
-                {
-                    invoiceItem.Price = item.Price;
-                    invoiceItem.Name = item.Name;
-                    break;
-                }
-            }
-        }
-    }
-
     private async Task<InvoiceModel> GetStored(Guid id)
     {
         InvoiceEntity invoiceDataEntity = await _invoiceRepository.Get(id)
@@ -95,10 +79,9 @@ public class InvoiceService : IInvoiceService
     {
         await _userService.Get(invoiceData.UserId);
 
-        var (customer, items) = await Validate(invoiceData);
+        CustomerModel customer = await Validate(invoiceData);
         invoiceData.SeriesId = customer.SeriesId;
         invoiceData.Status = InvoiceStatus.Created;
-        MapItemToInvoiceItem(invoiceData.Items!, items);
 
         InvoiceEntity invoiceDataEntity = invoiceData.ToEntity();
 
@@ -126,8 +109,7 @@ public class InvoiceService : IInvoiceService
         invoiceData.SeriesName = invoice.SeriesName;
         invoiceData.InvoiceNumber = invoice.InvoiceNumber;
 
-        var (_, items) = await Validate(invoiceData);
-        MapItemToInvoiceItem(invoiceData.Items!, items);
+        await Validate(invoiceData);
 
         InvoiceEntity invoiceEntity = invoiceData.ToEntity();
 
@@ -152,13 +134,15 @@ public class InvoiceService : IInvoiceService
         return await _invoiceRepository.MarkOverdue(today.ToDateTime(TimeOnly.MinValue));
     }
 
-    private async Task<(CustomerModel customer, IEnumerable<ItemModel> items)> Validate(InvoiceModel invoiceData)
+    // Lines don't copy name or price: reads join the item (BIL-113). GetForCustomer only checks that
+    // every line's item is the customer's.
+    private async Task<CustomerModel> Validate(InvoiceModel invoiceData)
     {
         await _sellerService.GetForUser(invoiceData.SellerId, invoiceData.UserId);
         CustomerModel customer = await _customerService.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId);
-        IEnumerable<ItemModel> items = await _itemService.GetForCustomer(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.CustomerId);
+        await _itemService.GetForCustomer(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.CustomerId);
 
-        return (customer, items);
+        return customer;
     }
 
     public async Task Delete(Guid id)

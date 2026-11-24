@@ -189,7 +189,11 @@ SELECT id, left(items_data, 80) FROM invoices WHERE NOT (items_data IS JSON ARRA
 
 None. Check: Biller stays on 5.0.0, and no request or response changes.
 
-## Step 2: Migrations (`_add-db-migration`; numbers are taken when written)
+## Step 2: Migrations (`_add-db-migration`; numbers are taken when written) (written, 4a)
+
+Written as below, with 036–038 the next free numbers. `_add-db-migration` says a column drop ships
+in a later release than the code change; the user chose to keep 037 and 038 in this PR as planned
+(2026-11-24). The test-stack check below is still to do.
 
 `036-Create-table-invoice_lines.sql` (decision 4a):
 
@@ -282,7 +286,11 @@ Check on the test stack that Liquibase 4.26 runs the precondition in formatted S
 on a broken row, and all three rollbacks on real rows (`_test-stack`), with 4b's variant too when
 pre-check 1 is above 0.
 
-## Step 3: Domain and Infrastructure
+## Step 3: Domain and Infrastructure (done)
+
+Done as: `Add` and `Update` pass the invoice's own columns as an anonymous object plus the line
+arrays (`WithLines`), not the entity, so Dapper doesn't see the `Lines` list. Reads load lines with
+one query for the invoice or the whole page (`LoadLines`).
 
 - `Domain/Entities/InvoiceLineEntity.cs` replaces the unused `InvoiceItemEntity`: `InvoiceId`,
   `LineNo`, `ItemId`, `Quantity`, `Comments`, and `Name`, `Price` filled only by reads (from the
@@ -353,7 +361,11 @@ pre-check 1 is above 0.
 - `ItemRepository`: unchanged with 4a. With 4b: `ItemEntity` gets no new property; `Get(id)`,
   `Get(ids)` and the paged `Get` (count and data) add `NOT archived`.
 
-## Step 4: Application
+## Step 4: Application (done)
+
+Done differently: `Newtonsoft.Json` stays in `Application.csproj`. WebAPI's middleware
+(`ErrorChecking`, `ModelStateErrors`) uses it and gets it only through Application. `Validate`
+returns only the customer now.
 
 - `InvoiceModelExtensions`: `ToModel(InvoiceEntity)` maps `Lines` to `Items` (by hand, in
   `line_no` order, `Name` and `Price` from the line's joined values); `ToEntity(InvoiceModel)` maps
@@ -372,7 +384,18 @@ None. Quantity > 0 and item ids are already checked, and items' prices are > 0.
 
 None. Check that `DELETE /items/{id}`'s Swagger docs list the 400 for an item an invoice uses.
 
-## Step 7: Tests (`_write-tests`)
+Done differently: not added. `DELETE /customers/{id}` and `DELETE /sellers/{id}` also refuse with
+a foreign-key 400 and don't list it, and the user reverted the same attributes on BIL-85's branch.
+
+## Step 7: Tests (`_write-tests`) (done)
+
+Done as:
+- `InvoiceEntity` is a record, but `Lines` compares by reference, so `InvoiceServiceTest` matches
+  the saved entity with `Saved(expected)`: the rest of the record, then the lines one by one.
+- New tests: `ToInvoiceItemModel(InvoiceLineEntity)`, `ToInvoiceLineEntity`, and empty lines both
+  ways. `ToModel` gets lines out of order and returns them in line order.
+- Checked with `revert-check.sh`: copying name and price onto the line fails two mapping tests.
+- Release run: 938 passed. Coverage 94.0% line, 89.5% branch; the minimums are raised at `_pre-pr`.
 
 - `InvoiceMappingProfileTest`: entity lines ↔ model items, order kept, `LineNo` from 1, every
   property mapped (names and prices from the entity lines on read, not set on write); empty lines;
@@ -405,7 +428,10 @@ None. Check that `DELETE /items/{id}`'s Swagger docs list the 400 for an item an
 
 None.
 
-## Step 10: Docs and rules
+## Step 10: Docs and rules (done)
+
+Done as below. `CLAUDE.md` also says the total is computed from the lines. `README.md` and
+`docs/README_lt.md` name none of the changed columns or tables: no change.
 
 - `CLAUDE.md` "Conventions", the invoices paragraph becomes (wording when writing):
   "Invoices store their user, seller and customer ids and show the current data. They keep their

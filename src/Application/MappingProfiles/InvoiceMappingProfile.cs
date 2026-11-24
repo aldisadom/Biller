@@ -2,7 +2,6 @@
 using BillerContracts.Requests.Invoice;
 using BillerContracts.Responses.Invoice;
 using Domain.Entities;
-using Newtonsoft.Json;
 
 namespace Application.MappingProfiles;
 
@@ -19,7 +18,7 @@ public static class InvoiceModelExtensions
             SeriesId = from.SeriesId,
             SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
-            Items = JsonConvert.DeserializeObject<List<InvoiceItemModel>>(from.ItemsData),
+            Items = from.Lines.OrderBy(l => l.LineNo).Select(l => l.ToInvoiceItemModel()).ToList(),
             Comments = from.Comments,
             Status = from.Status,
             CreatedDate = DateOnly.FromDateTime(from.CreatedDate),
@@ -38,12 +37,36 @@ public static class InvoiceModelExtensions
             UserId = from.UserId,
             SellerId = from.SellerId,
             CustomerId = from.CustomerId,
-            ItemsData = JsonConvert.SerializeObject(from.Items),
+            Lines = from.Items!.Select((item, index) => item.ToInvoiceLineEntity(from.Id, index + 1)).ToList(),
             Comments = from.Comments,
             Status = from.Status,
             CreatedDate = from.CreatedDate.ToDateTime(TimeOnly.MinValue),
-            DueDate = from.DueDate.ToDateTime(TimeOnly.MinValue),
-            TotalPrice = from.CalculateTotal()
+            DueDate = from.DueDate.ToDateTime(TimeOnly.MinValue)
+        };
+    }
+
+    // Name and price come from the line's item when read; a line doesn't store them.
+    public static InvoiceItemModel ToInvoiceItemModel(this InvoiceLineEntity from)
+    {
+        return new InvoiceItemModel
+        {
+            Id = from.ItemId,
+            Name = from.Name,
+            Price = from.Price,
+            Quantity = from.Quantity,
+            Comments = from.Comments
+        };
+    }
+
+    public static InvoiceLineEntity ToInvoiceLineEntity(this InvoiceItemModel from, Guid invoiceId, int lineNo)
+    {
+        return new InvoiceLineEntity
+        {
+            InvoiceId = invoiceId,
+            LineNo = lineNo,
+            ItemId = from.Id,
+            Quantity = from.Quantity,
+            Comments = from.Comments
         };
     }
 
