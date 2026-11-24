@@ -15,7 +15,7 @@ public class InvoiceRepository : IInvoiceRepository
         _dbConnection = dbConnection;
     }
 
-    // Lines show their item's current name and price (BIL-113). Archived items aren't filtered out here.
+    // Lines show their item's current name and price (BIL-113).
     private const string LinesSql = @"SELECT l.*, it.name, it.price FROM invoice_lines l
                         JOIN items it ON it.id = l.item_id
                         WHERE l.invoice_id = ANY(@Ids)

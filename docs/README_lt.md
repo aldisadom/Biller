@@ -120,7 +120,11 @@ Susitarimai, paketų apribojimai ir peržiūros taisyklės yra [CLAUDE.md](../CL
 Schemą valdo Liquibase. Kiekvienas `.sql` failas aplanke `migrations/sql/` yra pakeitimų rinkinys:
 `migrations/dbChangeLog.yaml` įtraukia visą aplanką, o `billio-liquibase` konteineris kaskart
 paleidžiant rinkinį pritaiko failus pagal failų pavadinimų tvarką (skaičių pavadinimo pradžioje).
-Pakeitimų rinkinys, kuris jau yra master šakoje, niekada neredaguojamas; klaida taisoma nauju
+Su `docker compose up` (ir `make run`) `billio-webapi` paleidžiamas tik tada, kai duomenų bazė
+priima prisijungimus ir visos migracijos pavyko: jei kuri nors nepavyksta, `up` baigiasi klaida, API
+nepaleidžiamas, o `docker compose logs liquibase` parodo priežastį. Pats Docker Liquibase nelaukia:
+perkrovus kompiuterį jis `billio-webapi` paleidžia savaime, todėl nepavykusią migraciją sutaisykite
+prieš perkraudami kompiuterį. Pakeitimų rinkinys, kuris jau yra master šakoje, niekada neredaguojamas; klaida taisoma nauju
 rinkiniu. Naujas rinkinys turi `-- rollback` eilutę. Keturi seni rinkiniai (023, 024, 026 ir 027)
 jos neturi, todėl atšaukti pakeitimų toliau jų negalima.
 
