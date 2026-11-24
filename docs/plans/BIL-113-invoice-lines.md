@@ -108,10 +108,11 @@ Checked again at ea10918 (origin/master has nothing newer).
 9. **Three changesets (user's layout, 2026-11-24): schema, data, drop.** 036 creates the table;
    037 moves the lines (with 4b, first restores the missing items); 038 drops `items_data` and
    `total_price` together. The move reads only `items_data` values that are JSON arrays
-   (`IS JSON ARRAY`, PG16), so non-JSON text doesn't fail a `::jsonb` cast. 038 has a Liquibase
-   precondition (`onFail:HALT`) that counts invoices whose `items_data` isn't a JSON array or whose
-   array length differs from their moved lines; anything above 0 stops before the drop, so nothing
-   is lost silently. A line element that isn't an object, or misses `Id` or `Quantity` (wrong key
+   (`IS JSON ARRAY`, PG16), so non-JSON text doesn't fail a `::jsonb` cast. 037 has a Liquibase
+   precondition (`onFail:HALT`) that stops before moving anything while an invoice's `items_data`
+   isn't a JSON array, so fixing that row and updating again is enough (review F8). 038 has one that
+   counts invoices whose `items_data` isn't a JSON array or whose array length differs from their
+   moved lines; anything above 0 stops before the drop, so nothing is lost silently. A line element that isn't an object, or misses `Id` or `Quantity` (wrong key
    case), fails 037 on `NOT NULL`. GUID case doesn't matter: `::uuid` reads both.
 10. **Rollbacks rebuild the JSON from the current items.** 038's rollback adds `items_data` and
     `total_price` back and fills them from the lines, with `Name` and `Price` from the items as they
@@ -181,7 +182,7 @@ WHERE jsonb_typeof(l.value) <> 'object'
    OR l.value->>'Id' IS NULL OR l.value->>'Quantity' IS NULL
    OR (l.value->>'Quantity')::numeric <= 0;
 
--- 4. items_data that isn't a JSON array (038's precondition would stop)
+-- 4. items_data that isn't a JSON array (037's precondition would stop)
 SELECT id, left(items_data, 80) FROM invoices WHERE NOT (items_data IS JSON ARRAY);
 ```
 
@@ -198,7 +199,8 @@ changeset each. The SQL is in the files:
 
 - `036-Create-table-invoice_lines.sql`: the table, its keys, checks and the `item_id` index.
   Rollback: `DROP TABLE invoice_lines`.
-- `037-Migrate-invoices_items_data_to_invoice_lines.sql`: one `INSERT ... SELECT` from
+- `037-Migrate-invoices_items_data_to_invoice_lines.sql`: a precondition that halts while any
+  `items_data` isn't a JSON array, then one `INSERT ... SELECT` from
   `jsonb_array_elements(... ) WITH ORDINALITY` (decision 4a). One statement, so a line whose item is
   gone fails it whole and moves nothing. Rollback: `DELETE FROM invoice_lines`.
 - `038-Alter-table-invoices_drop_items_data_total_price.sql`: the precondition (decision 9), then
@@ -210,8 +212,17 @@ comment), first with the old layout and again with this one: `rollback-count 3` 
 back (038's rollback rebuilt `items_data` with the items' current name and price, lines in order,
 and `total_price` 55.0) and `update` ran them again with both lines intact. 038's precondition
 halts in formatted SQL: with `items_data = 'not json'`, `update` stopped on "SQL Precondition
-failed. Expected '0' got '1'" and both columns stayed; after repairing the row, 038 ran. 4b's
-variant isn't written (pre-check 1 not run yet).
+failed. Expected '0' got '1'" and both columns stayed; after repairing the row, 038 ran. 037's
+precondition (review F8) was checked the same way: rolled back to before 037 with a broken row, it
+stopped before moving anything; after repairing the row, `update` ran 037 and 038. 4b's variant
+isn't written (pre-check 1 not run yet).
+
+A database that ran this branch's earlier layout (036 that also moved the lines, `037-Alter-...`,
+`038-Alter-...drop_total_price`) can't update with these files: Liquibase rejects 036's changed
+checksum. Only throwaway test stacks ran it; recreate any other. The owner's local `billio-db` ran
+BIL-85's 036–038 instead (`item_versions`, `items.name`/`price` dropped), so this branch doesn't run
+on it as it is: restore a backup from before BIL-85, or roll BIL-85's changesets back from its
+branch (review F9).
 
 With decision 4b, 037 starts with the archived items (before the `INSERT`), and its rollback
 undoes them after emptying the table:
