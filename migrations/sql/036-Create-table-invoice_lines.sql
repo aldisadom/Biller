@@ -1,7 +1,7 @@
 --liquibase formatted sql
 
 -- changeset Aldis:36
--- comment: Invoice lines move from invoices.items_data (JSON text) to invoice_lines. A line names its item and keeps quantity and comments; name and price are read from the item. items_data that isn't a JSON array moves no lines; changeset 37 stops before dropping it.
+-- comment: Create invoice_lines: a line names its item and keeps its position, quantity and comments; name and price are read from the item. Changeset 37 moves the lines out of invoices.items_data.
 CREATE TABLE invoice_lines (
     invoice_id uuid NOT NULL,
     line_no integer NOT NULL,
@@ -19,12 +19,5 @@ CREATE TABLE invoice_lines (
 );
 
 CREATE INDEX idx_invoice_lines_item_id ON invoice_lines (item_id);
-
-INSERT INTO invoice_lines (invoice_id, line_no, item_id, quantity, comments)
-SELECT i.id, l.ord, (l.value->>'Id')::uuid, (l.value->>'Quantity')::numeric, l.value->>'Comments'
-FROM invoices i
-CROSS JOIN LATERAL jsonb_array_elements(
-    CASE WHEN i.items_data IS JSON ARRAY THEN i.items_data::jsonb ELSE '[]'::jsonb END)
-    WITH ORDINALITY AS l(value, ord);
 
 -- rollback DROP TABLE invoice_lines;

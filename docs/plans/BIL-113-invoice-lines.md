@@ -72,9 +72,9 @@ Checked again at ea10918 (origin/master has nothing newer).
    differ from the item's current values; pre-check 2 lists those lines for information.
 4. **Lines whose item was already deleted: decided by pre-check 1's count (user's decision).**
    - **0 on the production copy (4a):** no extra mechanism. If such a line appears before the
-     deploy, 036 fails on the foreign key and changes nothing; fix or delete that invoice and deploy
-     again.
-   - **Above 0 (4b): restore them as hidden archived items.** 036 adds
+     deploy, 037 (the move) fails on the foreign key and moves nothing; fix or delete that invoice
+     and deploy again.
+   - **Above 0 (4b): restore them as hidden archived items.** 037 first adds
      `items.archived boolean NOT NULL DEFAULT false` and inserts one `items` row per missing id: the
      line's id, the invoice's customer, and the name, price and quantity of its line on the newest
      invoice, with `archived = true`. Every item read in `ItemRepository` filters `NOT archived`, so
@@ -85,7 +85,7 @@ Checked again at ea10918 (origin/master has nothing newer).
    - Rejected: a nullable `item_id` (it only worked with name and price on the line: a line with
      no item would have no name or price to show); dropping orphan lines (loses billed data); no
      foreign key (the issue's main goal).
-5. **`invoices.total_price` is dropped (changeset 038).** A stored total goes stale on the first
+5. **`invoices.total_price` is dropped (changeset 038, with `items_data`).** A stored total goes stale on the first
    item edit (decision 3), and keeping it right would mean updating every invoice of an item on each
    item edit. Computing it on read is what Biller already does: responses and PDFs use
    `CalculateTotal()` over the lines, now with the joined current prices, so the response, the PDF
@@ -94,7 +94,7 @@ Checked again at ea10918 (origin/master has nothing newer).
    rollback rebuilds it from the lines and the current prices.
 6. **Line checks:** `line_no >= 1`, `quantity > 0` (as `InvoiceItemValidator`). Validators stay in
    front, so a check failing (500) means a bug. Pre-check 3 shows whether old lines break a check;
-   if they do, fix them before 036.
+   if they do, fix them before deploying.
 7. **Each write is one statement.** `Add`: the existing `reserved` CTE, then the invoice insert,
    then the lines insert from the invoice's new id. `Update`: update the invoice, upsert lines
    `1..n` (`ON CONFLICT (invoice_id, line_no) DO UPDATE`), delete lines above `n`. The upsert and the
@@ -105,21 +105,21 @@ Checked again at ea10918 (origin/master has nothing newer).
 8. **Reads are two queries:** the invoice (or page), then its lines joined to `items` by
    `invoice_id = ANY(@Ids) ORDER BY invoice_id, line_no`. The one-statement rule is for writes. A
    `json_agg` column would bring the JSON parsing back.
-9. **Three changesets.** 036 creates the table and moves the lines (with 4b, first restores the
-   missing items); 037 drops `items_data`; 038 drops `total_price`. The move reads only `items_data`
-   values that are JSON arrays (`IS JSON ARRAY`, PG16), so non-JSON text doesn't fail a `::jsonb`
-   cast. 037 has a Liquibase precondition (`onFail:HALT`) that counts invoices whose `items_data`
-   isn't a JSON array or whose array length differs from their moved lines; anything above 0 stops
-   before the drop, so nothing is lost silently. A line element that isn't an object, or misses `Id`
-   or `Quantity` (wrong key case), fails 036 on `NOT NULL`. GUID case doesn't matter: `::uuid` reads
-   both.
-10. **Rollbacks rebuild the JSON from the current items.** 038's rollback adds `total_price` back and
-    fills it from the lines and the items' current prices. 037's rollback adds `items_data` back and
-    fills it from the lines with `Name` and `Price` from the items as they are now
-    (`jsonb_agg(... ORDER BY line_no)`, `'[]'` for an invoice without lines), so lines changed after
-    the deploy survive a rollback; the old line names and prices dropped by 036 don't come back.
-    Newtonsoft reads jsonb's key order, spacing and `50` for `50.0` the same. 036's rollback drops
-    the table (with 4b, then deletes the archived items and drops the column).
+9. **Three changesets (user's layout, 2026-11-24): schema, data, drop.** 036 creates the table;
+   037 moves the lines (with 4b, first restores the missing items); 038 drops `items_data` and
+   `total_price` together. The move reads only `items_data` values that are JSON arrays
+   (`IS JSON ARRAY`, PG16), so non-JSON text doesn't fail a `::jsonb` cast. 038 has a Liquibase
+   precondition (`onFail:HALT`) that counts invoices whose `items_data` isn't a JSON array or whose
+   array length differs from their moved lines; anything above 0 stops before the drop, so nothing
+   is lost silently. A line element that isn't an object, or misses `Id` or `Quantity` (wrong key
+   case), fails 037 on `NOT NULL`. GUID case doesn't matter: `::uuid` reads both.
+10. **Rollbacks rebuild the JSON from the current items.** 038's rollback adds `items_data` and
+    `total_price` back and fills them from the lines, with `Name` and `Price` from the items as they
+    are now (`jsonb_agg(... ORDER BY line_no)`, `'[]'` for an invoice without lines; the total from
+    `quantity * price`), so lines changed after the deploy survive a rollback; the old line names
+    and prices the move dropped don't come back. Newtonsoft reads jsonb's key order, spacing and `50`
+    for `50.0` the same. 037's rollback empties `invoice_lines` (with 4b, then deletes the archived
+    items and drops the column); 036's drops the table.
 11. **No contract, front-end or PDF layout change.** `InvoiceItemModel` keeps its shape; its `Name`
     and `Price` now come from the join. Only the entities, the repository, the mapping and the
     service change.
@@ -181,7 +181,7 @@ WHERE jsonb_typeof(l.value) <> 'object'
    OR l.value->>'Id' IS NULL OR l.value->>'Quantity' IS NULL
    OR (l.value->>'Quantity')::numeric <= 0;
 
--- 4. items_data that isn't a JSON array (037's precondition would stop)
+-- 4. items_data that isn't a JSON array (038's precondition would stop)
 SELECT id, left(items_data, 80) FROM invoices WHERE NOT (items_data IS JSON ARRAY);
 ```
 
@@ -191,54 +191,30 @@ None. Check: Biller stays on 5.0.0, and no request or response changes.
 
 ## Step 2: Migrations (`_add-db-migration`; numbers are taken when written) (written, 4a)
 
-Written as below, with 036–038 the next free numbers. `_add-db-migration` says a column drop ships
-in a later release than the code change; the user chose to keep 037 and 038 in this PR as planned
-(2026-11-24).
+036–038 were the next free numbers. `_add-db-migration` says a column drop ships in a later release
+than the code change; the user chose to keep the drop in this PR as planned (2026-11-24). After
+the PR opened, the user set the layout (2026-11-24): the table, the data move and the drop are one
+changeset each. The SQL is in the files:
+
+- `036-Create-table-invoice_lines.sql`: the table, its keys, checks and the `item_id` index.
+  Rollback: `DROP TABLE invoice_lines`.
+- `037-Migrate-invoices_items_data_to_invoice_lines.sql`: one `INSERT ... SELECT` from
+  `jsonb_array_elements(... ) WITH ORDINALITY` (decision 4a). One statement, so a line whose item is
+  gone fails it whole and moves nothing. Rollback: `DELETE FROM invoice_lines`.
+- `038-Alter-table-invoices_drop_items_data_total_price.sql`: the precondition (decision 9), then
+  `DROP COLUMN items_data, DROP COLUMN total_price`. Rollback: both columns back, filled from the
+  lines and the current items, then `SET NOT NULL`.
 
 Checked on the test stack (`bil-113`, one seeded invoice with a second line of quantity 3.5 and a
-comment): `rollback-count 3` rolled 038–036 back (037's rollback rebuilt `items_data` with the
-items' current name and price, lines in order; 038's `total_price` 55.0) and `update` ran them again
-with both lines intact. 037's precondition halts in formatted SQL: with `items_data = 'not json'`,
-`update` stopped on "SQL Precondition failed. Expected '0' got '1'" and both columns stayed; after
-repairing the row, 037 and 038 ran. 4b's variant isn't written (pre-check 1 not run yet).
+comment), first with the old layout and again with this one: `rollback-count 3` rolled 038–036
+back (038's rollback rebuilt `items_data` with the items' current name and price, lines in order,
+and `total_price` 55.0) and `update` ran them again with both lines intact. 038's precondition
+halts in formatted SQL: with `items_data = 'not json'`, `update` stopped on "SQL Precondition
+failed. Expected '0' got '1'" and both columns stayed; after repairing the row, 038 ran. 4b's
+variant isn't written (pre-check 1 not run yet).
 
-`036-Create-table-invoice_lines.sql` (decision 4a):
-
-```sql
---liquibase formatted sql
-
--- changeset Aldis:36
--- comment: Invoice lines move from invoices.items_data (JSON text) to invoice_lines. A line names its item and keeps quantity and comments; name and price are read from the item. items_data that isn't a JSON array moves no lines; changeset 37 stops before dropping it.
-CREATE TABLE invoice_lines (
-    invoice_id uuid NOT NULL,
-    line_no integer NOT NULL,
-    item_id uuid NOT NULL,
-    quantity numeric NOT NULL,
-    comments text,
-
-    PRIMARY KEY (invoice_id, line_no),
-    CONSTRAINT fk_invoice_lines_invoice_id
-      FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
-    CONSTRAINT fk_invoice_lines_item_id
-      FOREIGN KEY (item_id) REFERENCES items(id),
-    CONSTRAINT ck_invoice_lines_line_no CHECK (line_no >= 1),
-    CONSTRAINT ck_invoice_lines_quantity CHECK (quantity > 0)
-);
-
-CREATE INDEX idx_invoice_lines_item_id ON invoice_lines (item_id);
-
-INSERT INTO invoice_lines (invoice_id, line_no, item_id, quantity, comments)
-SELECT i.id, l.ord, (l.value->>'Id')::uuid, (l.value->>'Quantity')::numeric, l.value->>'Comments'
-FROM invoices i
-CROSS JOIN LATERAL jsonb_array_elements(
-    CASE WHEN i.items_data IS JSON ARRAY THEN i.items_data::jsonb ELSE '[]'::jsonb END)
-    WITH ORDINALITY AS l(value, ord);
-
--- rollback DROP TABLE invoice_lines;
-```
-
-With decision 4b, 036 starts with the archived items (before `CREATE TABLE`), and its rollback
-undoes them after the drop:
+With decision 4b, 037 starts with the archived items (before the `INSERT`), and its rollback
+undoes them after emptying the table:
 
 ```sql
 ALTER TABLE items ADD COLUMN archived boolean NOT NULL DEFAULT false;
@@ -254,44 +230,13 @@ CROSS JOIN LATERAL (
 WHERE NOT EXISTS (SELECT 1 FROM items it WHERE it.id = l.item_id)
 ORDER BY l.item_id, i.created_date DESC, i.invoice_number DESC;
 
--- rollback DROP TABLE invoice_lines;
+-- rollback DELETE FROM invoice_lines;
 -- rollback DELETE FROM items WHERE archived;
 -- rollback ALTER TABLE items DROP COLUMN archived;
 ```
 
-`037-Alter-table-invoices_drop_items_data.sql`:
-
-```sql
---liquibase formatted sql
-
--- changeset Aldis:37
--- preconditions onFail:HALT onError:HALT
--- precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM invoices i WHERE CASE WHEN i.items_data IS JSON ARRAY THEN jsonb_array_length(i.items_data::jsonb) <> (SELECT COUNT(*) FROM invoice_lines l WHERE l.invoice_id = i.id) ELSE true END
--- comment: Drop invoices.items_data: the lines are in invoice_lines. Stops when an invoice's JSON lines weren't all moved. The rollback rebuilds the JSON from invoice_lines with the items' current name and price.
-ALTER TABLE invoices DROP COLUMN items_data;
-
--- rollback ALTER TABLE invoices ADD COLUMN items_data TEXT;
--- rollback UPDATE invoices i SET items_data = COALESCE((SELECT jsonb_agg(jsonb_build_object('Id', l.item_id, 'Name', it.name, 'Price', it.price, 'Quantity', l.quantity, 'Comments', l.comments) ORDER BY l.line_no) FROM invoice_lines l JOIN items it ON it.id = l.item_id WHERE l.invoice_id = i.id), '[]'::jsonb)::text;
--- rollback ALTER TABLE invoices ALTER COLUMN items_data SET NOT NULL;
-```
-
-`038-Alter-table-invoices_drop_total_price.sql`:
-
-```sql
---liquibase formatted sql
-
--- changeset Aldis:38
--- comment: Drop invoices.total_price: the total is computed from the lines and the items' current prices (BIL-113). The rollback rebuilds it the same way.
-ALTER TABLE invoices DROP COLUMN total_price;
-
--- rollback ALTER TABLE invoices ADD COLUMN total_price decimal;
--- rollback UPDATE invoices i SET total_price = COALESCE((SELECT SUM(l.quantity * it.price) FROM invoice_lines l JOIN items it ON it.id = l.item_id WHERE l.invoice_id = i.id), 0);
--- rollback ALTER TABLE invoices ALTER COLUMN total_price SET NOT NULL;
-```
-
-Check on the test stack that Liquibase 4.26 runs the precondition in formatted SQL, that it halts
-on a broken row, and all three rollbacks on real rows (`_test-stack`), with 4b's variant too when
-pre-check 1 is above 0.
+With 4b, check its variant on the test stack too before deploying (`_test-stack`, rows with an
+archived item).
 
 ## Step 3: Domain and Infrastructure (done)
 
