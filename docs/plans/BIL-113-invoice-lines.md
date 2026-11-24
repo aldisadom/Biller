@@ -193,7 +193,14 @@ None. Check: Biller stays on 5.0.0, and no request or response changes.
 
 Written as below, with 036–038 the next free numbers. `_add-db-migration` says a column drop ships
 in a later release than the code change; the user chose to keep 037 and 038 in this PR as planned
-(2026-11-24). The test-stack check below is still to do.
+(2026-11-24).
+
+Checked on the test stack (`bil-113`, one seeded invoice with a second line of quantity 3.5 and a
+comment): `rollback-count 3` rolled 038–036 back (037's rollback rebuilt `items_data` with the
+items' current name and price, lines in order; 038's `total_price` 55.0) and `update` ran them again
+with both lines intact. 037's precondition halts in formatted SQL: with `items_data = 'not json'`,
+`update` stopped on "SQL Precondition failed. Expected '0' got '1'" and both columns stayed; after
+repairing the row, 037 and 038 ran. 4b's variant isn't written (pre-check 1 not run yet).
 
 `036-Create-table-invoice_lines.sql` (decision 4a):
 
@@ -406,7 +413,17 @@ Done as:
 - `Infrastructure` is outside coverage; the SQL is covered by the integration tests.
 - Coverage: compare with the minimums + 1 before the PR (`CLAUDE.md`).
 
-## Step 8: Integration tests (BillioIntegrationTest, branch `BIL-113-invoice-lines`)
+## Step 8: Integration tests (BillioIntegrationTest, branch `BIL-113-invoice-lines`) (done)
+
+Done as below (BillioIntegrationTest ecc9e8e):
+- `CustomerDelete_WhenHasInvoice_Fail` pinned from a run: Postgres reports the item's foreign key
+  first, so the 400 ends in `invoice_customers_id`.
+- `ItemDelete_WhenUsedByInvoice_Fail` also checks that the item is gone after the invoice and item
+  deletes (404 "Invoice item:{id} not found").
+- `InvoiceUpdateLines_OrderKept_Success` starts from one line, then puts two reordered, three (new
+  line last) and one, with its own items (`AddOwnItem`). It has the same `[DependsOn]` list as the
+  other tests that change invoices (eval 15).
+- Run against the test stack: 265 passed, three runs.
 
 - `InvoiceKeepsItemPriceUntilUpdated_Valid_Success` becomes
   `InvoiceLineFollowsItemEdit_Valid_Success` (the new rule): after the item edit, `GET` shows the
