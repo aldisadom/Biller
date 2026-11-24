@@ -10,5 +10,5 @@ public interface IItemRepository
     Task<(IEnumerable<ItemEntity> Items, int TotalCount, int Page)> Get(Guid? customerId, int page, int pageSize);
     Task<Guid> Add(ItemEntity item);
     Task Update(ItemEntity item);
-    Task Delete(Guid id);
+    Task<bool> Delete(Guid id);
 }

@@ -6,6 +6,7 @@ Failure here looks like:
 - An old invoice or its PDF changes after an item or unit is edited.
 - A `PUT /invoices` changes a line's name or price though the request kept its version.
 - An `item_versions` row is updated, or deleted while its item still exists.
+- An item is deleted while an invoice line still uses it.
 - A migration loses data, can't roll back, or edits an already-applied changeset.
 - A password, hash, or salt ends up in a response, log, or invoice.
 - A request for one user's data returns another user's data.

@@ -48,7 +48,7 @@ into the line, as today, so reads and PDFs don't change.
 | Refresh a line (button) | the item's current version (`ItemResponse.Version`) | Line gets the newest name and price |
 | Pick another version | any version from `GET /items/{id}/versions` | Line gets that version's name and price |
 | New invoice | `Version` left empty | Current version |
-| Delete an item | `DELETE /items/{id}` | Item and its versions are gone. Invoices keep their copy |
+| Delete an item | `DELETE /items/{id}` | 400 while an invoice uses it; otherwise the item and its versions are gone |
 
 No refresh endpoint: refresh and pick are the same `PUT /invoices`, with a different version number.
 The front end shows "newer version available" by comparing the line's version with the item's.
@@ -105,12 +105,14 @@ versions (decision 4) have only approximate dates.
    of an item that still exists gets the `Version` it matches, so old prices are pickable.
    - Rebuilt `changed_date`s are "first invoiced on", not the real edit time. The changeset comment
      says so.
-5. **Deleting an item is a hard delete, as today.** Its versions go with it
-   (`item_versions.item_id` is `ON DELETE CASCADE`). Invoices that used it keep their copy, so
-   they still read and print. Such a line can't be saved again with `PUT /invoices` (400), which is
-   what happens today: remove the line or keep the invoice as it is. Its `Version` then points to
-   nothing, and lines of items deleted before the migration have none, so the response field is
-   `int?`.
+5. **An item that an invoice line uses can't be deleted** (changed after review, owner's decision:
+   it was a hard delete). `DELETE /items/{id}` is 400 "Item id {id} is used by invoices" while any
+   invoice's `items_data` has a line with that id; the check is in the `DELETE` statement itself.
+   Once no invoice uses it, delete is a hard delete and its versions go with it
+   (`item_versions.item_id` is `ON DELETE CASCADE`). Items deleted before this change can still
+   have lines on invoices: those read and print from their copy, can't be saved again with
+   `PUT /invoices` (400), and lines of items deleted before the migration have no `Version`, so the
+   response field is `int?`.
 6. **Writes stay one statement each** (data-modifying CTE): add inserts the item and version 1;
    update sets `quantity` and inserts a version only when `(name, price)` differs from the latest.
 7. **Line validation uses `item_versions`.** A line is valid when the item belongs to the invoice's
@@ -233,7 +235,10 @@ INSERT INTO item_versions (item_id, version, name, price)
 SELECT updated.id, latest.version + 1, @Name, @Price FROM updated, latest
 WHERE (latest.name, latest.price) IS DISTINCT FROM (@Name, @Price);
 
--- Delete: unchanged (DELETE FROM items WHERE id=@Id); the foreign key removes the versions
+-- Delete (decision 5): returns whether a row went; the foreign key removes the versions
+DELETE FROM items WHERE id=@Id
+  AND NOT EXISTS (SELECT 1 FROM invoices
+                  WHERE items_data::jsonb @> jsonb_build_array(jsonb_build_object('Id', @Id)));
 ```
 
 ## Step 4: Application (done)
@@ -306,7 +311,11 @@ Unit (`_write-tests` skill):
   404. Delete → its versions 404.
 - Invoice: edit the item, then `PUT` unchanged → line and total unchanged; `PUT` with the current
   version → new price; `PUT` with version 1 → old price; `PUT` without a version or with version 99
-  → 400; delete the item → `GET` still shows the line with its name and price.
+  → 400. Deleting the item while the invoice uses it → 400 "Item id {id} is used by invoices", item,
+  versions and invoice unchanged; after the invoice is deleted, the item can be
+  (`ItemDelete_WhenUsedByInvoice_Fail`). `CustomerDelete_WhenHasInvoice_Fail` deleted the item first,
+  which is now refused: it became `CustomerDelete_WhenHasItemAndInvoice_Fail`, and Postgres reports
+  the items constraint first (`fk_invoice_customers_id`).
 - `UpdateRequestFromInvoice` copies `Version` from the response.
 - `InvoiceKeepsItemPriceUntilUpdated_Valid_Success` asserted today's re-pricing: it became
   `InvoiceKeepsItemVersionUntilChanged_Valid_Success` (unchanged `PUT` keeps the old name and price;

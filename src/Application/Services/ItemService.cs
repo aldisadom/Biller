@@ -97,6 +97,7 @@ public class ItemService : IItemService
     {
         await Get(id, null);
 
-        await _itemRepository.Delete(id);
+        if (!await _itemRepository.Delete(id))
+            throw new ValidationException($"Item id {id} is used by invoices");
     }
 }
