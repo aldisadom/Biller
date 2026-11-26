@@ -43,6 +43,8 @@ export ClientsOptions__UserUrl="$URL/users" ClientsOptions__SellerUrl="$URL/sell
 
 echo ">> $SLN on '$(git branch --show-current)' against $URL"
 BUILD="$("$DOTNET" build "$SLN" -c Release -nologo 2>&1)"
+# Windows dotnet.exe ends its lines with CRLF; a kept \r garbles the saved lines.
+BUILD="${BUILD//$'\r'/}"
 if ! grep -q "Build succeeded" <<< "$BUILD"; then
   grep -E " error " <<< "$BUILD" | sort -u
   echo "Build FAILED"
@@ -91,7 +93,14 @@ for run in $(seq 1 "$REPEAT"); do
   OUT="$("$DOTNET" test "$SLN" -c Release --no-build \
     --report-trx --report-trx-filename "$TRX_FILE" --results-directory "$TRX_DIR" 2>&1)"
   CODE=$?
-  if [[ -f "$TRX_DIR/$TRX_FILE" ]]; then failed_tests "$TRX_DIR/$TRX_FILE"; else echo "No TRX report at $REPO/$TRX_DIR/$TRX_FILE"; fi
+  OUT="${OUT//$'\r'/}"
+  # The run fails without a readable TRX report or with a failing test in it, even when dotnet exits 0.
+  if [[ -f "$TRX_DIR/$TRX_FILE" ]]; then
+    FAILURES="$(failed_tests "$TRX_DIR/$TRX_FILE" 2>&1)" || CODE=1
+    [[ -n "$FAILURES" ]] && { echo "$FAILURES"; CODE=1; }
+  else
+    echo "No TRX report at $REPO/$TRX_DIR/$TRX_FILE"; CODE=1
+  fi
   TOTALS="$(grep -E "^\s+(total|failed|succeeded|skipped):" <<< "$OUT" | tr -s ' ' | tr '\n' ' ')"
   echo "Run $run/$REPEAT: ${TOTALS:-no summary (see: $DOTNET test $SLN -c Release --no-build)}"
   [[ $CODE -ne 0 ]] && FAILED=1
