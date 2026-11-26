@@ -44,13 +44,12 @@ the BillioIntegrationTest branch named there, so put the local checkout on that 
 (`_sync-repos`). Then save the result for the PR description:
 
 ```bash
-P=.claude/skills/_pre-pr/scripts/pr-state.sh
+S=.claude/skills/_test-stack/scripts; P=.claude/skills/_pre-pr/scripts/pr-state.sh
 if bash $S/test-stack.sh up; then
   OUT="$(bash $S/run-integration.sh --repeat 3 2>&1)"; CODE=$?; echo "$OUT"
   bash $S/test-stack.sh down
-  { echo "BillioIntegrationTest branch: $(git -C ../BillioIntegrationTest branch --show-current)"
-    echo "Command: run-integration.sh --repeat 3 (exit $CODE)"
-    grep -E '^Run [0-9]+/[0-9]+|Build FAILED' <<< "$OUT"; } | bash $P write integration
+  { echo "Command: run-integration.sh --repeat 3 (exit $CODE)"
+    grep -E '^>> |^Run [0-9]+/[0-9]+|Build FAILED|^ERROR: | error [A-Z]+[0-9]+:' <<< "$OUT"; } | bash $P write integration
 else
   echo "test-stack.sh up failed: nothing saved. Fix the error, run test-stack.sh down, then run this again."
 fi
