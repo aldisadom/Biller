@@ -49,15 +49,15 @@ public class InvoiceService : IInvoiceService
         return invoice.ToFull(user, seller, customer);
     }
 
-    public async Task<(IEnumerable<InvoiceModelFull> Items, int TotalCount, int Page)> Get(InvoiceGetRequest? query)
+    public async Task<(IEnumerable<InvoiceModelFull> Invoices, int TotalCount, int Page)> Get(InvoiceGetRequest? query)
     {
         int page = query?.Page ?? 1;
         var pageSize = query?.PageSize ?? PageSize.p25;
 
-        var (entities, totalCount, returnedPage) = await _invoiceRepository.Get(
+        var (invoiceEntities, totalCount, returnedPage) = await _invoiceRepository.Get(
             query?.UserId, query?.SellerId, query?.CustomerId, page, (int)pageSize);
 
-        List<InvoiceModel> invoices = entities.Select(i => i.ToModel()).ToList();
+        List<InvoiceModel> invoices = invoiceEntities.Select(i => i.ToModel()).ToList();
 
         Dictionary<Guid, UserModel> users = await GetEach(invoices.Select(i => i.UserId), _userService.Get);
         Dictionary<Guid, SellerModel> sellers = await GetEach(invoices.Select(i => i.SellerId), _sellerService.Get);
@@ -134,8 +134,8 @@ public class InvoiceService : IInvoiceService
         return await _invoiceRepository.MarkOverdue(today.ToDateTime(TimeOnly.MinValue));
     }
 
-    // Lines don't copy name or price: reads join the item (BIL-113). GetForCustomer only checks that
-    // every line's item is the customer's.
+    // Invoice items don't copy name or price: reads join the item (BIL-113). GetForCustomer only
+    // checks that every invoice item's item is the customer's.
     private async Task<CustomerModel> Validate(InvoiceModel invoiceData)
     {
         await _sellerService.GetForUser(invoiceData.SellerId, invoiceData.UserId);

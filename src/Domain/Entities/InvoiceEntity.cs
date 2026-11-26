@@ -14,7 +14,7 @@ public record InvoiceEntity
     public int InvoiceNumber { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime DueDate { get; set; }
-    public List<InvoiceLineEntity> Lines { get; set; } = [];
+    public List<InvoiceItemEntity> Items { get; set; } = [];
     public string? Comments { get; set; }
     public InvoiceStatus Status { get; set; }
 }

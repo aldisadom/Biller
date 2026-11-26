@@ -57,14 +57,14 @@ public class InvoiceMappingProfileTest
 
         //Assert
         HashSet<string> ignoreProperties = [
-            "Lines",
+            "Items",
             "CreatedDate",
             "DueDate"
         ];
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
 
-        // A line keeps its position, item, quantity and comments; name and price aren't stored
-        to.Lines.Should().BeEquivalentTo(new List<InvoiceLineEntity>
+        // An invoice item keeps its line number, item, quantity and comments; name and price aren't stored
+        to.Items.Should().BeEquivalentTo(new List<InvoiceItemEntity>
         {
             new() { InvoiceId = from.Id, LineNo = 1, ItemId = from.Items![0].Id, Quantity = 1, Comments = "Item 1 comment" },
             new() { InvoiceId = from.Id, LineNo = 2, ItemId = from.Items[1].Id, Quantity = 2, Comments = "Item 2 comment" }
@@ -74,7 +74,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToEntity_GivenModelWithoutItems_HasNoLines()
+    public void ToEntity_GivenModelWithoutItems_HasNoItems()
     {
         //Arrange
         InvoiceModel from = new() { Items = [] };
@@ -83,7 +83,7 @@ public class InvoiceMappingProfileTest
         var to = from.ToEntity();
 
         //Assert
-        to.Lines.Should().BeEmpty();
+        to.Items.Should().BeEmpty();
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class InvoiceMappingProfileTest
             SellerId = Guid.NewGuid(),
             CustomerId = Guid.NewGuid(),
             // Out of line order, to show the items come back in line order
-            Lines =
+            Items =
             [
                 new() { LineNo = 2, ItemId = secondItemId, Name = "Item 2", Price = 20.5m, Quantity = 2, Comments = "Item 2 comment" },
                 new() { LineNo = 1, ItemId = firstItemId, Name = "Item 1", Price = 10.5m, Quantity = 1, Comments = "Item 1 comment" }
@@ -161,10 +161,10 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_GivenEntityWithoutLines_HasNoItems()
+    public void ToModel_GivenEntityWithoutItems_HasNoItems()
     {
         //Arrange
-        InvoiceEntity from = new() { Lines = [] };
+        InvoiceEntity from = new() { Items = [] };
 
         //Act
         var to = from.ToModel();
@@ -174,10 +174,10 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToInvoiceItemModel_GivenInvoiceLineEntity_MapsAllProperties()
+    public void ToInvoiceItemModel_GivenInvoiceItemEntity_MapsAllProperties()
     {
         //Arrange
-        InvoiceLineEntity from = new()
+        InvoiceItemEntity from = new()
         {
             InvoiceId = Guid.NewGuid(),
             LineNo = 3,
@@ -199,7 +199,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToInvoiceLineEntity_GivenInvoiceItemModel_MapsItemQuantityAndCommentsOnly()
+    public void ToInvoiceItemEntity_GivenInvoiceItemModel_MapsItemQuantityAndCommentsOnly()
     {
         //Arrange
         InvoiceItemModel from = new()
@@ -213,10 +213,10 @@ public class InvoiceMappingProfileTest
         Guid invoiceId = Guid.NewGuid();
 
         //Act
-        var to = from.ToInvoiceLineEntity(invoiceId, 3);
+        var to = from.ToInvoiceItemEntity(invoiceId, 3);
 
         //Assert
-        to.Should().BeEquivalentTo(new InvoiceLineEntity
+        to.Should().BeEquivalentTo(new InvoiceItemEntity
         {
             InvoiceId = invoiceId,
             LineNo = 3,

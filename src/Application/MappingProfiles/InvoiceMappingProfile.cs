@@ -18,7 +18,7 @@ public static class InvoiceModelExtensions
             SeriesId = from.SeriesId,
             SeriesName = from.SeriesName,
             InvoiceNumber = from.InvoiceNumber,
-            Items = from.Lines.OrderBy(l => l.LineNo).Select(l => l.ToInvoiceItemModel()).ToList(),
+            Items = from.Items.OrderBy(ii => ii.LineNo).Select(ii => ii.ToInvoiceItemModel()).ToList(),
             Comments = from.Comments,
             Status = from.Status,
             CreatedDate = DateOnly.FromDateTime(from.CreatedDate),
@@ -37,7 +37,7 @@ public static class InvoiceModelExtensions
             UserId = from.UserId,
             SellerId = from.SellerId,
             CustomerId = from.CustomerId,
-            Lines = from.Items!.Select((item, index) => item.ToInvoiceLineEntity(from.Id, index + 1)).ToList(),
+            Items = from.Items!.Select((item, index) => item.ToInvoiceItemEntity(from.Id, index + 1)).ToList(),
             Comments = from.Comments,
             Status = from.Status,
             CreatedDate = from.CreatedDate.ToDateTime(TimeOnly.MinValue),
@@ -45,8 +45,8 @@ public static class InvoiceModelExtensions
         };
     }
 
-    // Name and price come from the line's item when read; a line doesn't store them.
-    public static InvoiceItemModel ToInvoiceItemModel(this InvoiceLineEntity from)
+    // Name and price come from the item when read; an invoice item doesn't store them.
+    public static InvoiceItemModel ToInvoiceItemModel(this InvoiceItemEntity from)
     {
         return new InvoiceItemModel
         {
@@ -58,9 +58,9 @@ public static class InvoiceModelExtensions
         };
     }
 
-    public static InvoiceLineEntity ToInvoiceLineEntity(this InvoiceItemModel from, Guid invoiceId, int lineNo)
+    public static InvoiceItemEntity ToInvoiceItemEntity(this InvoiceItemModel from, Guid invoiceId, int lineNo)
     {
-        return new InvoiceLineEntity
+        return new InvoiceItemEntity
         {
             InvoiceId = invoiceId,
             LineNo = lineNo,

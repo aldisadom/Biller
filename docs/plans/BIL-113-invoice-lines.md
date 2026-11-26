@@ -1,4 +1,4 @@
-# Plan: invoice lines in an `invoice_lines` table (BIL-113)
+# Plan: invoice items in an `invoice_items` table (BIL-113)
 
 Jira: [BIL-113](https://aldisadom.atlassian.net/browse/BIL-113). Epic: BIL-89 (Billeris). Blocks
 BIL-85 (item versions, In progress, branch `BIL-85-item-versions`, not merged) and BIL-75 (units,
@@ -16,7 +16,7 @@ None. The user decided:
 
 ## Goal
 
-- Invoice lines are rows in `invoice_lines` instead of JSON text in `invoices.items_data`.
+- Invoice lines are rows in `invoice_items` instead of JSON text in `invoices.items_data`.
 - The database guarantees that a line's item exists: an item an invoice uses can't be deleted (400),
   even by a request at the same moment, and deleting an invoice deletes its lines.
 - Line positions and quantities are checked by the database.
@@ -52,13 +52,13 @@ Checked again at ea10918 (origin/master has nothing newer).
 
 ## Design decisions
 
-1. **Table `invoice_lines`, key `(invoice_id, line_no)`.** `line_no` is the 1-based position, so
+1. **Table `invoice_items`, key `(invoice_id, line_no)`.** `line_no` is the 1-based position, so
    lines keep their order. No separate `id`: nothing points to a line yet (BIL-85 and BIL-75 add
    columns, not references). `invoice_id` is `ON DELETE CASCADE`, so `InvoiceRepository.Delete`
    stays as it is.
 2. **`item_id` is `NOT NULL` and references `items(id)` without cascade.** Deleting an item a line
-   uses fails on `fk_invoice_lines_item_id`, and the middleware already turns that into 400 "Can not
-   delete (please clear all dependants) or update (item not found): invoice_lines_item_id". So the
+   uses fails on `fk_invoice_items_item_id`, and the middleware already turns that into 400 "Can not
+   delete (please clear all dependants) or update (item not found): invoice_items_item_id". So the
    check is the foreign key's job; `ItemService` and `ItemRepository.Delete` don't change. This is a
    new rule: on master, used items can be deleted. Index on `item_id` for the delete check and
    per-item queries.
@@ -90,7 +90,7 @@ Checked again at ea10918 (origin/master has nothing newer).
    item edit. Computing it on read is what Biller already does: responses and PDFs use
    `CalculateTotal()` over the lines, now with the joined current prices, so the response, the PDF
    and the total can't disagree. Nothing in Biller reads the column. BIL-90's plan sums it; that
-   plan changes to sum `quantity * price` over `invoice_lines` joined to `items` (follow-up). The
+   plan changes to sum `quantity * price` over `invoice_items` joined to `items` (follow-up). The
    rollback rebuilds it from the lines and the current prices.
 6. **Line checks:** `line_no >= 1`, `quantity > 0` (as `InvoiceItemValidator`). Validators stay in
    front, so a check failing (500) means a bug. Pre-check 3 shows whether old lines break a check;
@@ -119,7 +119,7 @@ Checked again at ea10918 (origin/master has nothing newer).
     are now (`jsonb_agg(... ORDER BY line_no)`, `'[]'` for an invoice without lines; the total from
     `quantity * price`), so lines changed after the deploy survive a rollback; the old line names
     and prices the move dropped don't come back. Newtonsoft reads jsonb's key order, spacing and `50`
-    for `50.0` the same. 037's rollback empties `invoice_lines` (with 4b, then deletes the archived
+    for `50.0` the same. 037's rollback empties `invoice_items` (with 4b, then deletes the archived
     items and drops the column); 036's drops the table.
 11. **No contract, front-end or PDF layout change.** `InvoiceItemModel` keeps its shape; its `Name`
     and `Price` now come from the join. Only the entities, the repository, the mapping and the
@@ -133,9 +133,9 @@ Checked again at ea10918 (origin/master has nothing newer).
   - Its decision 4 (versions rebuilt from the JSON lines) can't work: after BIL-113 the old line
     names and prices are gone. Versions start from the items as they are at BIL-85's deploy (one
     version per item); every existing line points to it.
-  - Its decision 2 (lines keep a copy plus `Version`) becomes `invoice_lines.item_version_id`
+  - Its decision 2 (lines keep a copy plus `Version`) becomes `invoice_items.item_version_id`
     (foreign key to `item_versions`), read through the version; no name or price copy on the line.
-    Its 037 reads `invoice_lines`, not `items_data`.
+    Its 037 reads `invoice_items`, not `items_data`.
   - Its decision 5 (hard delete, invoices keep their copy) becomes 400 by this foreign key (its
     `CLAUDE.md` text already says so).
   - It restores the `CLAUDE.md` rule "Editing an item must not change an existing invoice or its
@@ -145,7 +145,7 @@ Checked again at ea10918 (origin/master has nothing newer).
   (decision 3). It moves to the line table: until BIL-85 a line shows its item's current unit
   (join), as it does name and price; with BIL-85 the unit belongs to the item version.
 - **Follow-up on BIL-90:** `docs/plans/BIL-90-seller-invoice-summary.md` decision 3 sums
-  `invoices.total_price`, which 038 drops. It sums `l.quantity * it.price` over `invoice_lines`
+  `invoices.total_price`, which 038 drops. It sums `l.quantity * it.price` over `invoice_items`
   joined to `items` instead (with BIL-85, the version's price).
 
 ## Pre-check queries
@@ -197,12 +197,12 @@ than the code change; the user chose to keep the drop in this PR as planned (202
 the PR opened, the user set the layout (2026-11-24): the table, the data move and the drop are one
 changeset each. The SQL is in the files:
 
-- `036-Create-table-invoice_lines.sql`: the table, its keys, checks and the `item_id` index.
-  Rollback: `DROP TABLE invoice_lines`.
-- `037-Migrate-invoices_items_data_to_invoice_lines.sql`: a precondition that halts while any
+- `036-Create-table-invoice_items.sql`: the table, its keys, checks and the `item_id` index.
+  Rollback: `DROP TABLE invoice_items`.
+- `037-Migrate-invoices_items_data_to_invoice_items.sql`: a precondition that halts while any
   `items_data` isn't a JSON array, then one `INSERT ... SELECT` from
   `jsonb_array_elements(... ) WITH ORDINALITY` (decision 4a). One statement, so a line whose item is
-  gone fails it whole and moves nothing. Rollback: `DELETE FROM invoice_lines`.
+  gone fails it whole and moves nothing. Rollback: `DELETE FROM invoice_items`.
 - `038-Alter-table-invoices_drop_items_data_total_price.sql`: the precondition (decision 9), then
   `DROP COLUMN items_data, DROP COLUMN total_price`. Rollback: both columns back, filled from the
   lines and the current items, then `SET NOT NULL`.
@@ -216,6 +216,10 @@ failed. Expected '0' got '1'" and both columns stayed; after repairing the row, 
 precondition (review F8) was checked the same way: rolled back to before 037 with a broken row, it
 stopped before moving anything; after repairing the row, `update` ran 037 and 038. 4b's variant
 isn't written (pre-check 1 not run yet).
+
+036 and 037 were renamed from `...invoice_lines.sql` to `...invoice_items.sql` (2026-11-26).
+Liquibase knows a changeset by id, author and file path, so a database that ran the old names runs
+them again and fails: recreate it. Production never ran them.
 
 A database that ran this branch's earlier layout (036 that also moved the lines, `037-Alter-...`,
 `038-Alter-...drop_total_price`) can't update with these files: Liquibase rejects 036's changed
@@ -241,7 +245,7 @@ CROSS JOIN LATERAL (
 WHERE NOT EXISTS (SELECT 1 FROM items it WHERE it.id = l.item_id)
 ORDER BY l.item_id, i.created_date DESC, i.invoice_number DESC;
 
--- rollback DELETE FROM invoice_lines;
+-- rollback DELETE FROM invoice_items;
 -- rollback DELETE FROM items WHERE archived;
 -- rollback ALTER TABLE items DROP COLUMN archived;
 ```
@@ -251,27 +255,33 @@ archived item).
 
 ## Step 3: Domain and Infrastructure (done)
 
-Done as: `Add` and `Update` pass the invoice's own columns as an anonymous object plus the line
-arrays (`WithLines`), not the entity, so Dapper doesn't see the `Lines` list. Reads load lines with
-one query for the invoice or the whole page (`LoadLines`).
+Done as: `Add` and `Update` pass the invoice's own columns as an anonymous object plus the invoice
+item arrays (`WithItems`), not the entity, so Dapper doesn't see the `Items` list. Reads load the
+invoice items with one query for the invoice or the whole page (`LoadItems`).
 
-- `Domain/Entities/InvoiceLineEntity.cs` replaces the unused `InvoiceItemEntity`: `InvoiceId`,
-  `LineNo`, `ItemId`, `Quantity`, `Comments`, and `Name`, `Price` filled only by reads (from the
-  join).
-- `InvoiceEntity`: `List<InvoiceLineEntity> Lines` replaces `string ItemsData`; `TotalPrice` goes.
-- `IInvoiceRepository`: signatures unchanged.
+Renamed after review (2026-11-26, user's decision): lines are invoice items in the code and the
+database. The table is `invoice_items` (constraints `fk_/ck_invoice_items_*`, index
+`idx_invoice_items_item_id`), the entity `InvoiceItemEntity`, the property `InvoiceEntity.Items`.
+`line_no` / `LineNo` keep their name: it is the invoice item's position. The paged `Get` names its
+tuple `Invoices` instead of `Items` in `IInvoiceRepository` and `IInvoiceService`.
+
+- `Domain/Entities/InvoiceItemEntity.cs` replaces the unused `InvoiceItemEntity` of the same name:
+  `InvoiceId`, `LineNo`, `ItemId`, `Quantity`, `Comments`, and `Name`, `Price` filled only by reads
+  (from the join).
+- `InvoiceEntity`: `List<InvoiceItemEntity> Items` replaces `string ItemsData`; `TotalPrice` goes.
+- `IInvoiceRepository`: signatures unchanged (the paged `Get`'s tuple field is now `Invoices`).
 - `InvoiceRepository`:
   - `Get(id)`: invoice query as today, then
 
     ```sql
-    SELECT l.*, it.name, it.price FROM invoice_lines l
-    JOIN items it ON it.id = l.item_id
-    WHERE l.invoice_id = @Id ORDER BY l.line_no
+    SELECT ii.*, it.name, it.price FROM invoice_items ii
+    JOIN items it ON it.id = ii.item_id
+    WHERE ii.invoice_id = @Id ORDER BY ii.line_no
     ```
 
     No `archived` filter here (decision 4b).
-  - Paged `Get`: page query as today, then the same lines query for the page's ids
-    (`l.invoice_id = ANY(@Ids) ORDER BY l.invoice_id, l.line_no`), grouped onto each entity.
+  - Paged `Get`: page query as today, then the same invoice items query for the page's ids
+    (`ii.invoice_id = ANY(@Ids) ORDER BY ii.invoice_id, ii.line_no`), grouped onto each entity.
   - `Add`:
 
     ```sql
@@ -285,11 +295,11 @@ one query for the invoice or the whole page (`LoadLines`).
         FROM reserved
         RETURNING id
     ),
-    lines AS (
-        INSERT INTO invoice_lines (invoice_id, line_no, item_id, quantity, comments)
-        SELECT inv.id, l.ord, l.item_id, l.quantity, l.comments
-        FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @LineComments::text[])
-                  WITH ORDINALITY AS l(item_id, quantity, comments, ord)
+    items_added AS (
+        INSERT INTO invoice_items (invoice_id, line_no, item_id, quantity, comments)
+        SELECT inv.id, ii.ord, ii.item_id, ii.quantity, ii.comments
+        FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @ItemComments::text[])
+                  WITH ORDINALITY AS ii(item_id, quantity, comments, ord)
     )
     SELECT id FROM inv
     ```
@@ -306,19 +316,19 @@ one query for the invoice or the whole page (`LoadLines`).
         RETURNING id
     ),
     upserted AS (
-        INSERT INTO invoice_lines (invoice_id, line_no, item_id, quantity, comments)
-        SELECT inv.id, l.ord, l.item_id, l.quantity, l.comments
-        FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @LineComments::text[])
-                  WITH ORDINALITY AS l(item_id, quantity, comments, ord)
+        INSERT INTO invoice_items (invoice_id, line_no, item_id, quantity, comments)
+        SELECT inv.id, ii.ord, ii.item_id, ii.quantity, ii.comments
+        FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @ItemComments::text[])
+                  WITH ORDINALITY AS ii(item_id, quantity, comments, ord)
         ON CONFLICT (invoice_id, line_no) DO UPDATE
         SET item_id=EXCLUDED.item_id, quantity=EXCLUDED.quantity, comments=EXCLUDED.comments
     )
-    DELETE FROM invoice_lines
+    DELETE FROM invoice_items
     WHERE invoice_id IN (SELECT id FROM inv)
       AND line_no > cardinality(@ItemIds::uuid[])
     ```
 
-  - The array parameters are built from `invoice.Lines` in a private helper, so `Add` and `Update`
+  - The array parameters are built from `invoice.Items` in a private helper, so `Add` and `Update`
     share it.
   - `Delete`, `UpdateStatus`, `MarkOverdue`: unchanged (lines cascade).
 - `ItemRepository`: unchanged with 4a. With 4b: `ItemEntity` gets no new property; `Get(id)`,
@@ -330,9 +340,9 @@ Done differently: `Newtonsoft.Json` stays in `Application.csproj`. WebAPI's midd
 (`ErrorChecking`, `ModelStateErrors`) uses it and gets it only through Application. `Validate`
 returns only the customer now.
 
-- `InvoiceModelExtensions`: `ToModel(InvoiceEntity)` maps `Lines` to `Items` (by hand, in
-  `line_no` order, `Name` and `Price` from the line's joined values); `ToEntity(InvoiceModel)` maps
-  `Items` to `Lines` with `LineNo = index + 1`, `InvoiceId = Id`, `ItemId`, `Quantity`, `Comments`
+- `InvoiceModelExtensions`: `ToModel(InvoiceEntity)` maps the entity's `Items` to the model's
+  `Items` (by hand, in `line_no` order, `Name` and `Price` from the joined values);
+  `ToEntity(InvoiceModel)` maps them back with `ToInvoiceItemEntity`: `LineNo = index + 1`, `InvoiceId = Id`, `ItemId`, `Quantity`, `Comments`
   (no `Name`, `Price`), and drops `TotalPrice`. No more `JsonConvert` there.
 - `InvoiceService`: `MapItemToInvoiceItem` and its two calls go; `Validate` still calls
   `GetForCustomer` for the check (its result is no longer needed by `Add`/`Update`).
@@ -353,17 +363,17 @@ a foreign-key 400 and don't list it, and the user reverted the same attributes o
 ## Step 7: Tests (`_write-tests`) (done)
 
 Done as:
-- `InvoiceEntity` is a record, but `Lines` compares by reference, so `InvoiceServiceTest` matches
-  the saved entity with `Saved(expected)`: the rest of the record, then the lines one by one.
-- New tests: `ToInvoiceItemModel(InvoiceLineEntity)`, `ToInvoiceLineEntity`, and empty lines both
-  ways. `ToModel` gets lines out of order and returns them in line order.
+- `InvoiceEntity` is a record, but `Items` compares by reference, so `InvoiceServiceTest` matches
+  the saved entity with `Saved(expected)`: the rest of the record, then the invoice items one by one.
+- New tests: `ToInvoiceItemModel(InvoiceItemEntity)`, `ToInvoiceItemEntity`, and empty invoice
+  items both ways. `ToModel` gets lines out of order and returns them in line order.
 - Checked with `revert-check.sh`: copying name and price onto the line fails two mapping tests.
 - Release run: 938 passed. Coverage 94.0% line, 89.5% branch; the minimums are raised at `_pre-pr`.
 
 - `InvoiceMappingProfileTest`: entity lines ↔ model items, order kept, `LineNo` from 1, every
   property mapped (names and prices from the entity lines on read, not set on write); empty lines;
   the `TotalPrice` expectation goes from `ToEntity`.
-- `InvoiceServiceTest`: entities built with `Lines` instead of `ItemsData` and without
+- `InvoiceServiceTest`: entities built with `Items` instead of `ItemsData` and without
   `TotalPrice` (two places); `Add`/`Update` no longer expect names and prices copied onto the
   saved lines.
 - `Infrastructure` is outside coverage; the SQL is covered by the integration tests.
@@ -382,12 +392,12 @@ Done as below (BillioIntegrationTest ecc9e8e):
 - Run against the test stack: 265 passed, three runs.
 
 - `InvoiceKeepsItemPriceUntilUpdated_Valid_Success` becomes
-  `InvoiceLineFollowsItemEdit_Valid_Success` (the new rule): after the item edit, `GET` shows the
+  `InvoiceItemFollowsItemEdit_Valid_Success` (the new rule): after the item edit, `GET` shows the
   item's new name and price and the total from them, before any `PUT /invoices`; a `PUT` with new
   quantity and comments keeps them; the series' `NextNumber` check stays.
 - `InvoiceWithDeletedItem_Valid_Success` becomes `ItemDelete_WhenUsedByInvoice_Fail`: 400
   "Validation failure", "Can not delete (please clear all dependants) or update (item not found):
-  invoice_lines_item_id"; the invoice still reads the same; after the invoice is deleted, the item
+  invoice_items_item_id"; the invoice still reads the same; after the invoice is deleted, the item
   delete works (cascade).
 - `CustomerDelete_WhenHasInvoice_Fail`: can no longer delete the item first. Delete the customer
   with its item and invoice in place and expect 400 on whichever constraint Postgres reports
@@ -408,11 +418,11 @@ Done as below. `CLAUDE.md` also says the total is computed from the lines. `READ
 
 - `CLAUDE.md` "Conventions", the invoices paragraph becomes (wording when writing):
   "Invoices store their user, seller and customer ids and show the current data. They keep their
-  own number and dates. Lines are rows in `invoice_lines`: a line names its item and keeps its
-  quantity and comments, and shows the item's current name and price. Until BIL-85, editing an item
-  changes every invoice that uses it, its PDF and total, paid ones too (accepted; BIL-85 brings back
-  'editing an item must not change an existing invoice or its PDF'). An item that an invoice line
-  uses can't be deleted (400). The series name isn't copied, so a series with invoices can't be
+  own number and dates. Invoice items are rows in `invoice_items`: an invoice item names its item and
+  keeps its quantity and comments, and shows the item's current name and price. Until BIL-85, editing
+  an item changes every invoice that uses it, its PDF and total, paid ones too (accepted; BIL-85
+  brings back 'editing an item must not change an existing invoice or its PDF'). An item that an
+  invoice uses can't be deleted (400). The series name isn't copied, so a series with invoices can't be
   renamed."
 - `REVIEW.md`: "An old invoice or its PDF changes after an item or unit is edited." becomes "An old
   invoice or its PDF changes after a unit is edited (items: allowed until BIL-85, see `CLAUDE.md`)."
