@@ -109,7 +109,12 @@ The conventions, package limits and review rules are in [CLAUDE.md](CLAUDE.md) a
 
 The schema is managed by Liquibase. Every `.sql` file in `migrations/sql/` is a changeset:
 `migrations/dbChangeLog.yaml` includes the whole folder, and the `billio-liquibase` container applies
-the files in file-name order (the number at the start) each time the stack starts. A changeset that
+the files in file-name order (the number at the start) each time the stack starts. With
+`docker compose up` (and `make run`), `billio-webapi` starts only after the database accepts
+connections and every migration succeeded: when one fails, `up` stops with an error, the API isn't
+started, and `docker compose logs liquibase` shows why. Docker itself doesn't wait for Liquibase: after
+a reboot it restarts `billio-webapi` on its own, so fix a failed migration before restarting the PC.
+A changeset that
 is on master is never edited; a fix is a new changeset. A new changeset has a `-- rollback` line.
 Four old ones (023, 024, 026 and 027) have none, so a rollback can't go back past them.
 
