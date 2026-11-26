@@ -49,7 +49,7 @@ if bash $S/test-stack.sh up; then
   OUT="$(bash $S/run-integration.sh --repeat 3 2>&1)"; CODE=$?; echo "$OUT"
   bash $S/test-stack.sh down
   { echo "Command: run-integration.sh --repeat 3 (exit $CODE)"
-    grep -E '^>> |^Run [0-9]+/[0-9]+|Build FAILED|^ERROR: | error [A-Z]+[0-9]+:' <<< "$OUT"; } | bash $P write integration
+    grep -E '^>> |^Run [0-9]+/[0-9]+|Build FAILED|^ERROR: |: error ' <<< "$OUT"; } | bash $P write integration
 else
   echo "test-stack.sh up failed: nothing saved. Fix the error, run test-stack.sh down, then run this again."
 fi
