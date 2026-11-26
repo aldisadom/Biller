@@ -182,8 +182,12 @@ WHERE jsonb_typeof(l.value) <> 'object'
    OR l.value->>'Id' IS NULL OR l.value->>'Quantity' IS NULL
    OR (l.value->>'Quantity')::numeric <= 0;
 
--- 4. items_data that isn't a JSON array (037's precondition would stop)
-SELECT id, left(items_data, 80) FROM invoices WHERE NOT (items_data IS JSON ARRAY);
+-- 4. items_data that isn't a JSON array jsonb can read (037's precondition would stop). jsonb
+--    rejects a \u0000 escape (a NUL in a comment) that IS JSON accepts. Run it first and fix its
+--    rows before 1-3: they cast to jsonb and error ('unsupported Unicode escape sequence') while
+--    such a row is there.
+SELECT id, left(items_data, 80) FROM invoices
+WHERE NOT (items_data IS JSON ARRAY AND pg_input_is_valid(items_data, 'jsonb'));
 ```
 
 ## Step 1: BillerContracts
@@ -200,7 +204,8 @@ changeset each. The SQL is in the files:
 - `036-Create-table-invoice_items.sql`: the table, its keys, checks and the `item_id` index.
   Rollback: `DROP TABLE invoice_items`.
 - `037-Migrate-invoices_items_data_to_invoice_items.sql`: a precondition that halts while any
-  `items_data` isn't a JSON array, then one `INSERT ... SELECT` from
+  `items_data` isn't a JSON array that jsonb can read (F11: jsonb rejects a `\u0000` escape that
+  `IS JSON` accepts), then one `INSERT ... SELECT` from
   `jsonb_array_elements(... ) WITH ORDINALITY` (decision 4a). One statement, so a line whose item is
   gone fails it whole and moves nothing. Rollback: `DELETE FROM invoice_items`.
 - `038-Alter-table-invoices_drop_items_data_total_price.sql`: the precondition (decision 9), then
@@ -219,7 +224,10 @@ isn't written (pre-check 1 not run yet).
 
 036 and 037 were renamed from `...invoice_lines.sql` to `...invoice_items.sql` (2026-11-26).
 Liquibase knows a changeset by id, author and file path, so a database that ran the old names runs
-them again and fails: recreate it. Production never ran them.
+the new ones as well. If it had run 038 too, the new 037 fails (no `items_data`). If 038 hadn't
+run, the new 036–038 succeed but the old `invoice_lines` table stays, and its foreign key still
+blocks deleting an item that an invoice no longer uses. Either way, recreate that database (or drop
+`invoice_lines` and the old 036/037 rows in `databasechangelog`). Production never ran them.
 
 A database that ran this branch's earlier layout (036 that also moved the lines, `037-Alter-...`,
 `038-Alter-...drop_total_price`) can't update with these files: Liquibase rejects 036's changed
@@ -436,8 +444,9 @@ Done as below. `CLAUDE.md` also says the total is computed from the lines. `READ
 
 ## Order of work
 
-1. Run pre-checks 1–4 on a production copy. Pre-check 1's count picks 4a or 4b; pre-check 2 is for
-   the user's information; pre-checks 3 and 4 must be empty (or fixed) before deploying.
+1. Run the pre-checks on a production copy: 4 first, and fix its rows, then 1–3. Pre-check 1's
+   count picks 4a or 4b; pre-check 2 is for the user's information; pre-checks 3 and 4 must be
+   empty (or fixed) before deploying.
 2. Biller branch `BIL-113-invoice-lines`: migrations 036–038 → entities and repositories → mapping
    and service → unit tests → `CLAUDE.md`, `REVIEW.md`.
 3. BillioIntegrationTest branch with the same name: Step 8.
