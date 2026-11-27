@@ -15,9 +15,9 @@ public class InvoiceRepository : IInvoiceRepository
         _dbConnection = dbConnection;
     }
 
-    // Invoice items show their item's current name and price (BIL-113).
-    private const string ItemsSql = @"SELECT ii.*, it.name, it.price FROM invoice_items ii
-                        JOIN items it ON it.id = ii.item_id
+    // Invoice items show the name and price of the item version they name (BIL-85).
+    private const string ItemsSql = @"SELECT ii.*, v.name, v.price FROM invoice_items ii
+                        JOIN item_versions v ON v.item_id = ii.item_id AND v.version = ii.version
                         WHERE ii.invoice_id = ANY(@Ids)
                         ORDER BY ii.invoice_id, ii.line_no";
 
@@ -53,6 +53,7 @@ public class InvoiceRepository : IInvoiceRepository
     {
         var parameters = new DynamicParameters(invoiceParameters);
         parameters.Add("ItemIds", invoice.Items.Select(ii => ii.ItemId).ToArray());
+        parameters.Add("Versions", invoice.Items.Select(ii => ii.Version).ToArray());
         parameters.Add("Quantities", invoice.Items.Select(ii => ii.Quantity).ToArray());
         parameters.Add("ItemComments", invoice.Items.Select(ii => ii.Comments).ToArray());
         return parameters;
@@ -99,10 +100,10 @@ public class InvoiceRepository : IInvoiceRepository
                             RETURNING id
                         ),
                         items_added AS (
-                            INSERT INTO invoice_items (invoice_id, line_no, item_id, quantity, comments)
-                            SELECT inv.id, ii.ord, ii.item_id, ii.quantity, ii.comments
-                            FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @ItemComments::text[])
-                                WITH ORDINALITY AS ii(item_id, quantity, comments, ord)
+                            INSERT INTO invoice_items (invoice_id, line_no, item_id, version, quantity, comments)
+                            SELECT inv.id, ii.ord, ii.item_id, ii.version, ii.quantity, ii.comments
+                            FROM inv, unnest(@ItemIds::uuid[], @Versions::int[], @Quantities::numeric[], @ItemComments::text[])
+                                WITH ORDINALITY AS ii(item_id, version, quantity, comments, ord)
                         )
                         SELECT id FROM inv";
 
@@ -130,12 +131,12 @@ public class InvoiceRepository : IInvoiceRepository
                             RETURNING id
                         ),
                         upserted AS (
-                            INSERT INTO invoice_items (invoice_id, line_no, item_id, quantity, comments)
-                            SELECT inv.id, ii.ord, ii.item_id, ii.quantity, ii.comments
-                            FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @ItemComments::text[])
-                                WITH ORDINALITY AS ii(item_id, quantity, comments, ord)
+                            INSERT INTO invoice_items (invoice_id, line_no, item_id, version, quantity, comments)
+                            SELECT inv.id, ii.ord, ii.item_id, ii.version, ii.quantity, ii.comments
+                            FROM inv, unnest(@ItemIds::uuid[], @Versions::int[], @Quantities::numeric[], @ItemComments::text[])
+                                WITH ORDINALITY AS ii(item_id, version, quantity, comments, ord)
                             ON CONFLICT (invoice_id, line_no) DO UPDATE
-                            SET item_id=EXCLUDED.item_id, quantity=EXCLUDED.quantity, comments=EXCLUDED.comments
+                            SET item_id=EXCLUDED.item_id, version=EXCLUDED.version, quantity=EXCLUDED.quantity, comments=EXCLUDED.comments
                         )
                         DELETE FROM invoice_items
                         WHERE invoice_id IN (SELECT id FROM inv)
