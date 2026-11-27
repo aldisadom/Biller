@@ -43,6 +43,8 @@ export ClientsOptions__UserUrl="$URL/users" ClientsOptions__SellerUrl="$URL/sell
 
 echo ">> $SLN on '$(git branch --show-current)' against $URL"
 BUILD="$("$DOTNET" build "$SLN" -c Release -nologo 2>&1)"
+# Windows dotnet.exe ends its lines with CRLF; a kept \r garbles the saved lines.
+BUILD="${BUILD//$'\r'/}"
 if ! grep -q "Build succeeded" <<< "$BUILD"; then
   grep -E " error " <<< "$BUILD" | sort -u
   echo "Build FAILED"
@@ -54,7 +56,8 @@ fi
 TRX_DIR="TestResults/run-integration"
 TRX_FILE="run-integration.trx"
 
-# Print the first 10 failed tests of a TRX report, each with its message and first stack frame.
+# Print why a TRX report fails the run, and nothing when it passes: the first 10 failed tests, each
+# with its message and first stack frame, a report without test results, or a failed run outcome.
 failed_tests() {
 python3 -I - "$1" <<'EOF'
 import sys
@@ -62,11 +65,13 @@ import xml.etree.ElementTree as ET
 
 ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
 try:
-    results = ET.parse(sys.argv[1]).getroot().iter(ns + "UnitTestResult")
+    root = ET.parse(sys.argv[1]).getroot()
 except ET.ParseError as error:
     sys.exit(f"Unreadable TRX report {sys.argv[1]}: {error}")
+results = list(root.iter(ns + "UnitTestResult"))
 # The outcomes of a test that failed, or didn't finish or run.
-failing = ("Failed", "Error", "Timeout", "Aborted", "Disconnected", "NotRunnable", "InProgress")
+failing = ("Failed", "Error", "Timeout", "Aborted", "Disconnected", "NotRunnable", "InProgress",
+           "PassedButRunAborted", "Pending")
 failed = [r for r in results if r.get("outcome") in failing]
 for result in failed[:10]:
     outcome = result.get("outcome")
@@ -81,6 +86,13 @@ for result in failed[:10]:
         print("  " + line)
 if len(failed) > 10:
     print(f"... and {len(failed) - 10} more failed tests")
+if not results:
+    print(f"No test results in TRX report {sys.argv[1]}")
+# A passing run's report says Completed (BillioIntegrationTest's does) or Passed.
+summary = root.find(ns + "ResultSummary")
+outcome = summary.get("outcome") if summary is not None else None
+if outcome not in (None, "Completed", "Passed"):
+    print(f"TRX report outcome: {outcome}")
 EOF
 }
 
@@ -91,7 +103,14 @@ for run in $(seq 1 "$REPEAT"); do
   OUT="$("$DOTNET" test "$SLN" -c Release --no-build \
     --report-trx --report-trx-filename "$TRX_FILE" --results-directory "$TRX_DIR" 2>&1)"
   CODE=$?
-  if [[ -f "$TRX_DIR/$TRX_FILE" ]]; then failed_tests "$TRX_DIR/$TRX_FILE"; else echo "No TRX report at $REPO/$TRX_DIR/$TRX_FILE"; fi
+  OUT="${OUT//$'\r'/}"
+  # The run fails without a readable TRX report or with a failing test in it, even when dotnet exits 0.
+  if [[ -f "$TRX_DIR/$TRX_FILE" ]]; then
+    FAILURES="$(failed_tests "$TRX_DIR/$TRX_FILE" 2>&1)" || CODE=1
+    [[ -n "$FAILURES" ]] && { echo "$FAILURES"; CODE=1; }
+  else
+    echo "No TRX report at $REPO/$TRX_DIR/$TRX_FILE"; CODE=1
+  fi
   TOTALS="$(grep -E "^\s+(total|failed|succeeded|skipped):" <<< "$OUT" | tr -s ' ' | tr '\n' ' ')"
   echo "Run $run/$REPEAT: ${TOTALS:-no summary (see: $DOTNET test $SLN -c Release --no-build)}"
   [[ $CODE -ne 0 ]] && FAILED=1

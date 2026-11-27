@@ -48,12 +48,16 @@ S=.claude/skills/_test-stack/scripts; P=.claude/skills/_pre-pr/scripts/pr-state.
 if bash $S/test-stack.sh up; then
   OUT="$(bash $S/run-integration.sh --repeat 3 2>&1)"; CODE=$?; echo "$OUT"
   bash $S/test-stack.sh down
-  { echo "Command: run-integration.sh --repeat 3 (exit $CODE)"
-    grep -E '^>> |^Run [0-9]+/[0-9]+|Build FAILED|^ERROR: |: error ' <<< "$OUT"; } | bash $P write integration
+  { echo "Command: run-integration.sh --repeat 3 (exit $CODE)"; echo "$OUT"; } | bash $P write integration
 else
   echo "test-stack.sh up failed: nothing saved. Fix the error, run test-stack.sh down, then run this again."
 fi
 ```
+
+`integration.md` keeps the run's whole output. `run-integration.sh` prints only what the PR needs:
+the BillioIntegrationTest solution and branch and the API URL, errors (every distinct error line of a
+failed build), each failed test with its message and first stack frame (the first 10), a TRX report
+that is missing, unreadable, without test results or with a failed outcome, and the `Run n/N` totals. Keep it that short when changing it.
 
 Run the tests only when `up` succeeded. When it fails ("the test stack is already there", a build
 or migration error), an older stack may still answer on port 8091, and the tests would pass for code
