@@ -7,6 +7,8 @@ namespace Application.MappingProfiles;
 
 public static class ItemModelExtensions
 {
+    // No Version: it is read only. ItemRepository.Add writes version 1, and Update the latest + 1
+    // when the name or price changes.
     public static ItemEntity ToEntity(this ItemModel from)
     {
         return new ItemEntity
@@ -15,8 +17,7 @@ public static class ItemModelExtensions
             CustomerId = from.CustomerId,
             Name = from.Name,
             Price = from.Price,
-            Quantity = from.Quantity,
-            Version = from.Version
+            Quantity = from.Quantity
         };
     }
 

@@ -223,38 +223,41 @@ public class ItemServiceTest
     }
 
     [Fact]
-    public async Task Add_GivenValidId_ReturnsGuid()
+    public async Task Add_GivenValidItem_ReturnsGuidAndSavesNoVersion()
     {
         //Arrange
-        ItemModel item = new() { Id = Guid.NewGuid() };
+        ItemModel item = new() { CustomerId = Guid.NewGuid(), Name = "Iron throne", Price = 12m, Quantity = 2, Version = 3 };
 
-        ItemEntity itemEntity = item.ToEntity();
+        // The repository writes version 1 itself
+        ItemEntity expectedEntity = new() { CustomerId = item.CustomerId, Name = "Iron throne", Price = 12m, Quantity = 2 };
+        Guid newId = Guid.NewGuid();
 
-        _itemRepositoryMock.Setup(m => m.Add(itemEntity))
-                                 .ReturnsAsync(item.Id);
+        _itemRepositoryMock.Setup(m => m.Add(expectedEntity))
+                                 .ReturnsAsync(newId);
 
         //Act
         Guid result = await _itemService.Add(item);
 
         //Assert
-        result.Should().Be(item.Id);
+        result.Should().Be(newId);
 
-        _itemRepositoryMock.Verify(m => m.Add(itemEntity), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Add(expectedEntity), Times.Once());
     }
 
     [Fact]
-    public async Task Update_GivenExistingId_UpdatesRepository()
+    public async Task Update_GivenExistingId_UpdatesRepositoryWithNoVersion()
     {
         //Arrange
-        ItemModel item = new() { Id = Guid.NewGuid() };
+        ItemModel item = new() { Id = Guid.NewGuid(), Name = "Iron throne", Price = 12m, Quantity = 2, Version = 3 };
 
-        ItemEntity itemEntity = item.ToEntity();
+        // The repository adds the next version itself, when the name or price changed
+        ItemEntity expectedEntity = new() { Id = item.Id, Name = "Iron throne", Price = 12m, Quantity = 2 };
 
-        _itemRepositoryMock.Setup(m => m.Update(itemEntity))
+        _itemRepositoryMock.Setup(m => m.Update(expectedEntity))
                         .Returns(Task.CompletedTask);
 
-        _itemRepositoryMock.Setup(m => m.Get(itemEntity.Id, null))
-                                .ReturnsAsync(itemEntity);
+        _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
+                                .ReturnsAsync(new ItemEntity { Id = item.Id });
 
         //Act
         //Assert
@@ -262,7 +265,7 @@ public class ItemServiceTest
                                         .Should().NotThrowAsync<Exception>();
 
         _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
-        _itemRepositoryMock.Verify(m => m.Update(itemEntity), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Update(expectedEntity), Times.Once());
     }
 
     [Fact]

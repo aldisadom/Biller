@@ -1,5 +1,6 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
+using AwesomeAssertions;
 using BillerContracts.Requests.Item;
 using BillerContracts.Responses.Item;
 using Domain.Entities;
@@ -10,7 +11,7 @@ namespace xUnitTests.Application.MappingProfiles;
 public class ItemMappingProfileTest
 {
     [Fact]
-    public void ToEntity_GivenModel_MapsAllProperties()
+    public void ToEntity_GivenModel_MapsAllPropertiesButVersion()
     {
         //Arrange
         var from = new ItemModel
@@ -27,7 +28,11 @@ public class ItemMappingProfileTest
         var to = from.ToEntity();
 
         //Assert
-        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
+        HashSet<string> ignoreProperties = ["Version"];
+        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
+
+        // A write never carries a version: the repository numbers them
+        to.Version.Should().Be(0);
     }
 
     [Fact]
