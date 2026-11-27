@@ -85,7 +85,6 @@ public static class ItemModelExtensions
     {
         return new ItemVersionModel
         {
-            Id = from.Id,
             ItemId = from.ItemId,
             Version = from.Version,
             Name = from.Name,

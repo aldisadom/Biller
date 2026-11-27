@@ -138,7 +138,6 @@ public class ItemMappingProfileTest
         //Arrange
         var from = new ItemVersionEntity
         {
-            Id = Guid.NewGuid(),
             ItemId = Guid.NewGuid(),
             Version = 3,
             Name = "ItemName",
@@ -160,7 +159,6 @@ public class ItemMappingProfileTest
         //Arrange
         var from = new ItemVersionModel
         {
-            Id = Guid.NewGuid(),
             ItemId = Guid.NewGuid(),
             Version = 3,
             Name = "ItemName",

@@ -2,7 +2,6 @@ namespace Domain.Entities;
 
 public record ItemVersionEntity
 {
-    public Guid Id { get; set; }
     public Guid ItemId { get; set; }
     public int Version { get; set; }
     public string Name { get; set; } = string.Empty;
