@@ -79,7 +79,8 @@ public class InvoiceService : IInvoiceService
     {
         await _userService.Get(invoiceData.UserId);
 
-        CustomerModel customer = await Validate(invoiceData);
+        (CustomerModel customer, IEnumerable<ItemVersionModel> versions) = await Validate(invoiceData);
+        SetLatestVersion(invoiceData.Items!, versions);
         invoiceData.SeriesId = customer.SeriesId;
         invoiceData.Status = InvoiceStatus.Created;
 
@@ -109,6 +110,7 @@ public class InvoiceService : IInvoiceService
         invoiceData.SeriesName = invoice.SeriesName;
         invoiceData.InvoiceNumber = invoice.InvoiceNumber;
 
+        // Saves the versions it was given: an invoice item moves to another version only when asked.
         await Validate(invoiceData);
 
         InvoiceEntity invoiceEntity = invoiceData.ToEntity();
@@ -134,15 +136,23 @@ public class InvoiceService : IInvoiceService
         return await _invoiceRepository.MarkOverdue(today.ToDateTime(TimeOnly.MinValue));
     }
 
-    // Invoice items don't copy name or price: reads join the item (BIL-113). GetVersionsForCustomer
-    // only checks that every invoice item's item is the customer's and that its version exists.
-    private async Task<CustomerModel> Validate(InvoiceModel invoiceData)
+    // Invoice items don't copy name or price: reads join the item version they name (BIL-85).
+    // GetVersionsForCustomer checks that every invoice item's item is the customer's and that a given
+    // version exists, and returns the versions of those items.
+    private async Task<(CustomerModel Customer, IEnumerable<ItemVersionModel> Versions)> Validate(InvoiceModel invoiceData)
     {
         await _sellerService.GetForUser(invoiceData.SellerId, invoiceData.UserId);
         CustomerModel customer = await _customerService.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId);
-        await _itemService.GetVersionsForCustomer(invoiceData.Items!, invoiceData.CustomerId);
+        IEnumerable<ItemVersionModel> versions = await _itemService.GetVersionsForCustomer(invoiceData.Items!, invoiceData.CustomerId);
 
-        return customer;
+        return (customer, versions);
+    }
+
+    // A new invoice item without a version gets its item's latest version.
+    private static void SetLatestVersion(List<InvoiceItemModel> invoiceItems, IEnumerable<ItemVersionModel> versions)
+    {
+        foreach (InvoiceItemModel invoiceItem in invoiceItems.Where(ii => ii.Version is null))
+            invoiceItem.Version = versions.Where(v => v.ItemId == invoiceItem.Id).Max(v => v.Version);
     }
 
     public async Task Delete(Guid id)

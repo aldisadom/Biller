@@ -45,12 +45,13 @@ public static class InvoiceModelExtensions
         };
     }
 
-    // Name and price come from the item when read; an invoice item doesn't store them.
+    // Name and price come from the item version when read; an invoice item doesn't store them.
     public static InvoiceItemModel ToInvoiceItemModel(this InvoiceItemEntity from)
     {
         return new InvoiceItemModel
         {
             Id = from.ItemId,
+            Version = from.Version,
             Name = from.Name,
             Price = from.Price,
             Quantity = from.Quantity,
@@ -58,6 +59,7 @@ public static class InvoiceModelExtensions
         };
     }
 
+    // A missing version becomes 0, which the foreign key rejects: never the item's latest.
     public static InvoiceItemEntity ToInvoiceItemEntity(this InvoiceItemModel from, Guid invoiceId, int lineNo)
     {
         return new InvoiceItemEntity
@@ -65,6 +67,7 @@ public static class InvoiceModelExtensions
             InvoiceId = invoiceId,
             LineNo = lineNo,
             ItemId = from.Id,
+            Version = from.Version.GetValueOrDefault(),
             Quantity = from.Quantity,
             Comments = from.Comments
         };
