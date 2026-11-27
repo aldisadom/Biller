@@ -15,6 +15,7 @@ public class InvoiceMappingProfileTest
         new InvoiceItemModel
         {
             Id = Guid.NewGuid(),
+            Version = 2,
             Name = "Item 1",
             Quantity = 1,
             Price = 10.5m,
@@ -23,6 +24,7 @@ public class InvoiceMappingProfileTest
         new InvoiceItemModel
         {
             Id = Guid.NewGuid(),
+            Version = 3,
             Name = "Item 2",
             Quantity = 2,
             Price = 20.5m,
@@ -63,11 +65,11 @@ public class InvoiceMappingProfileTest
         ];
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
 
-        // An invoice item keeps its line number, item, quantity and comments; name and price aren't stored
+        // An invoice item keeps its line number, item, version, quantity and comments; name and price aren't stored
         to.Items.Should().BeEquivalentTo(new List<InvoiceItemEntity>
         {
-            new() { InvoiceId = from.Id, LineNo = 1, ItemId = from.Items![0].Id, Quantity = 1, Comments = "Item 1 comment" },
-            new() { InvoiceId = from.Id, LineNo = 2, ItemId = from.Items[1].Id, Quantity = 2, Comments = "Item 2 comment" }
+            new() { InvoiceId = from.Id, LineNo = 1, ItemId = from.Items![0].Id, Version = 2, Quantity = 1, Comments = "Item 1 comment" },
+            new() { InvoiceId = from.Id, LineNo = 2, ItemId = from.Items[1].Id, Version = 3, Quantity = 2, Comments = "Item 2 comment" }
         }, o => o.WithStrictOrdering());
         to.CreatedDate.Should().Be(from.CreatedDate.ToDateTime(TimeOnly.MinValue));
         to.DueDate.Should().Be(from.DueDate.ToDateTime(TimeOnly.MinValue));
@@ -130,8 +132,8 @@ public class InvoiceMappingProfileTest
             // Out of line order, to show the items come back in line order
             Items =
             [
-                new() { LineNo = 2, ItemId = secondItemId, Name = "Item 2", Price = 20.5m, Quantity = 2, Comments = "Item 2 comment" },
-                new() { LineNo = 1, ItemId = firstItemId, Name = "Item 1", Price = 10.5m, Quantity = 1, Comments = "Item 1 comment" }
+                new() { LineNo = 2, ItemId = secondItemId, Version = 3, Name = "Item 2", Price = 20.5m, Quantity = 2, Comments = "Item 2 comment" },
+                new() { LineNo = 1, ItemId = firstItemId, Version = 2, Name = "Item 1", Price = 10.5m, Quantity = 1, Comments = "Item 1 comment" }
             ],
             Comments = "invoice comment",
             Status = InvoiceStatus.Send,
@@ -153,8 +155,8 @@ public class InvoiceMappingProfileTest
 
         to.Items.Should().BeEquivalentTo(new List<InvoiceItemModel>
         {
-            new() { Id = firstItemId, Name = "Item 1", Price = 10.5m, Quantity = 1, Comments = "Item 1 comment" },
-            new() { Id = secondItemId, Name = "Item 2", Price = 20.5m, Quantity = 2, Comments = "Item 2 comment" }
+            new() { Id = firstItemId, Version = 2, Name = "Item 1", Price = 10.5m, Quantity = 1, Comments = "Item 1 comment" },
+            new() { Id = secondItemId, Version = 3, Name = "Item 2", Price = 20.5m, Quantity = 2, Comments = "Item 2 comment" }
         }, o => o.WithStrictOrdering());
         to.CreatedDate.Should().Be(DateOnly.FromDateTime(from.CreatedDate));
         to.DueDate.Should().Be(DateOnly.FromDateTime(from.DueDate));
@@ -182,6 +184,7 @@ public class InvoiceMappingProfileTest
             InvoiceId = Guid.NewGuid(),
             LineNo = 3,
             ItemId = Guid.NewGuid(),
+            Version = 4,
             Name = "Iron throne",
             Price = 10.5m,
             Quantity = 2,
@@ -192,19 +195,22 @@ public class InvoiceMappingProfileTest
         var to = from.ToInvoiceItemModel();
 
         //Assert
-        HashSet<string> ignoreProperties = ["Id"];
+        // Version is int on the entity and int? on the model, which TestMapp doesn't pair
+        HashSet<string> ignoreProperties = ["Id", "Version"];
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
 
         to.Id.Should().Be(from.ItemId);
+        to.Version.Should().Be(4);
     }
 
     [Fact]
-    public void ToInvoiceItemEntity_GivenInvoiceItemModel_MapsItemQuantityAndCommentsOnly()
+    public void ToInvoiceItemEntity_GivenInvoiceItemModel_MapsItemVersionQuantityAndCommentsOnly()
     {
         //Arrange
         InvoiceItemModel from = new()
         {
             Id = Guid.NewGuid(),
+            Version = 4,
             Name = "Iron throne",
             Price = 10.5m,
             Quantity = 2,
@@ -221,9 +227,24 @@ public class InvoiceMappingProfileTest
             InvoiceId = invoiceId,
             LineNo = 3,
             ItemId = from.Id,
+            Version = 4,
             Quantity = 2,
             Comments = "Winterfell"
         });
+    }
+
+    [Fact]
+    public void ToInvoiceItemEntity_GivenInvoiceItemModelWithoutVersion_MapsVersionZero()
+    {
+        //Arrange
+        InvoiceItemModel from = new() { Id = Guid.NewGuid() };
+
+        //Act
+        var to = from.ToInvoiceItemEntity(Guid.NewGuid(), 1);
+
+        //Assert
+        // 0 is no version, so the foreign key rejects it: a missing version never becomes the latest
+        to.Version.Should().Be(0);
     }
 
     [Fact]

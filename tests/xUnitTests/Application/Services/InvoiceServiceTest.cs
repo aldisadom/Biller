@@ -64,8 +64,8 @@ public class InvoiceServiceTest
         storedInvoice.SeriesId = Guid.NewGuid();
         storedInvoice.SeriesName = "WF";
         storedInvoice.InvoiceNumber = 5;
-        storedInvoice.Items = [new() { Id = Guid.NewGuid(), Quantity = 2 }];
-        // The repository reads the invoice item's name and price from its item
+        storedInvoice.Items = [new() { Id = Guid.NewGuid(), Version = 2, Quantity = 2 }];
+        // The repository reads the invoice item's name and price from the item version it names
         InvoiceEntity storedEntity = storedInvoice.ToEntity();
         storedEntity.Items[0].Name = "Iron throne";
         storedEntity.Items[0].Price = 10m;
@@ -91,7 +91,7 @@ public class InvoiceServiceTest
         result.SeriesId.Should().Be(storedInvoice.SeriesId);
         result.SeriesName.Should().Be("WF");
         result.InvoiceNumber.Should().Be(5);
-        result.Items.Should().BeEquivalentTo(new List<InvoiceItemModel> { new() { Id = storedInvoice.Items[0].Id, Name = "Iron throne", Price = 10m, Quantity = 2 } });
+        result.Items.Should().BeEquivalentTo(new List<InvoiceItemModel> { new() { Id = storedInvoice.Items[0].Id, Version = 2, Name = "Iron throne", Price = 10m, Quantity = 2 } });
         result.User.Should().BeSameAs(user);
         result.Seller.Should().BeSameAs(seller);
         result.Customer.Should().BeSameAs(customer);
@@ -345,7 +345,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Add_GivenValidData_SavesCustomersSeriesAndInvoiceItemsWithoutItemNamesOrPrices()
+    public async Task Add_GivenValidData_SavesCustomersSeriesAndLatestVersionOnlyForInvoiceItemsWithoutOne()
     {
         //Arrange
         Guid throneId = Guid.NewGuid();
@@ -358,15 +358,18 @@ public class InvoiceServiceTest
             Status = InvoiceStatus.Payed,
             CreatedDate = new DateOnly(2026, 10, 1),
             DueDate = new DateOnly(2026, 10, 11),
-            Items = [new() { Id = throneId, Quantity = 2 }, new() { Id = swordId, Quantity = 3 }]
+            // The throne has no version: it gets the latest. The sword asks for its old version 1.
+            Items = [new() { Id = throneId, Quantity = 2 }, new() { Id = swordId, Version = 1, Quantity = 3 }]
         };
         UserModel user = new() { Id = invoiceData.UserId };
         SellerModel seller = new() { Id = invoiceData.SellerId };
         CustomerModel customer = new() { Id = invoiceData.CustomerId, SeriesId = Guid.NewGuid() };
         List<ItemVersionModel> itemVersions =
         [
-            new() { ItemId = throneId, Version = 1, Name = "Iron throne", Price = 10m, CustomerId = customer.Id },
-            new() { ItemId = swordId, Version = 1, Name = "Valyrian sword", Price = 20m, CustomerId = customer.Id }
+            new() { ItemId = throneId, Version = 2, Name = "Iron throne", Price = 12m, CustomerId = customer.Id },
+            new() { ItemId = throneId, Version = 1, Name = "Wooden throne", Price = 10m, CustomerId = customer.Id },
+            new() { ItemId = swordId, Version = 1, Name = "Valyrian sword", Price = 20m, CustomerId = customer.Id },
+            new() { ItemId = swordId, Version = 2, Name = "Valyrian sword", Price = 25m, CustomerId = customer.Id }
         ];
 
         Guid newId = Guid.NewGuid();
@@ -379,11 +382,11 @@ public class InvoiceServiceTest
             Status = InvoiceStatus.Created,
             CreatedDate = new DateTime(2026, 10, 1),
             DueDate = new DateTime(2026, 10, 11),
-            // The items' names and prices aren't copied: reads join the item (BIL-113)
+            // The items' names and prices aren't copied: reads join the item version (BIL-85)
             Items =
             [
-                new() { LineNo = 1, ItemId = throneId, Quantity = 2, Comments = string.Empty },
-                new() { LineNo = 2, ItemId = swordId, Quantity = 3, Comments = string.Empty }
+                new() { LineNo = 1, ItemId = throneId, Version = 2, Quantity = 2, Comments = string.Empty },
+                new() { LineNo = 2, ItemId = swordId, Version = 1, Quantity = 3, Comments = string.Empty }
             ]
         };
 
@@ -420,11 +423,12 @@ public class InvoiceServiceTest
     {
         //Arrange
         InvoiceModel invoiceData = NewInvoiceModel();
+        invoiceData.Items!.ForEach(i => i.Version = 1);
 
         UserModel user = new() { Id = invoiceData.UserId };
         SellerModel seller = new() { Id = invoiceData.SellerId };
         CustomerModel customer = new() { Id = invoiceData.CustomerId, SeriesId = Guid.NewGuid() };
-        List<ItemVersionModel> itemVersions = invoiceData.Items!.Select(i => new ItemVersionModel() { ItemId = i.Id, Version = 1, CustomerId = customer.Id }).ToList();
+        List<ItemVersionModel> itemVersions = invoiceData.Items.Select(i => new ItemVersionModel() { ItemId = i.Id, Version = 1, CustomerId = customer.Id }).ToList();
 
         InvoiceEntity expectedEntity = invoiceData.ToEntity() with { Status = InvoiceStatus.Created, SeriesId = customer.SeriesId };
 
@@ -571,7 +575,7 @@ public class InvoiceServiceTest
     }
 
     [Fact]
-    public async Task Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndSavesInvoiceItemsWithoutItemPrices()
+    public async Task Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndSavesRequestedVersions()
     {
         //Arrange
         Guid throneId = Guid.NewGuid();
@@ -585,7 +589,7 @@ public class InvoiceServiceTest
             SeriesName = "WF",
             InvoiceNumber = 5,
             Status = InvoiceStatus.Send,
-            Items = [new() { Id = throneId, Name = "Wooden throne", Price = 8m, Quantity = 1 }]
+            Items = [new() { Id = throneId, Version = 1, Name = "Wooden throne", Price = 8m, Quantity = 1 }]
         };
 
         InvoiceModel invoiceData = new()
@@ -600,11 +604,17 @@ public class InvoiceServiceTest
             Comments = "Winter is coming",
             CreatedDate = new DateOnly(2026, 10, 1),
             DueDate = new DateOnly(2026, 10, 11),
-            Items = [new() { Id = throneId, Quantity = 4 }]
+            // The same item at two versions, while a newer version 3 exists: both are saved as given
+            Items = [new() { Id = throneId, Version = 1, Quantity = 4 }, new() { Id = throneId, Version = 2, Quantity = 1 }]
         };
         SellerModel seller = new() { Id = invoiceData.SellerId };
         CustomerModel customer = new() { Id = invoiceData.CustomerId };
-        List<ItemVersionModel> itemVersions = [new() { ItemId = throneId, Version = 1, Name = "Iron throne", Price = 12m, CustomerId = customer.Id }];
+        List<ItemVersionModel> itemVersions =
+        [
+            new() { ItemId = throneId, Version = 1, Name = "Wooden throne", Price = 8m, CustomerId = customer.Id },
+            new() { ItemId = throneId, Version = 2, Name = "Iron throne", Price = 12m, CustomerId = customer.Id },
+            new() { ItemId = throneId, Version = 3, Name = "Iron throne", Price = 15m, CustomerId = customer.Id }
+        ];
 
         InvoiceEntity expectedEntity = new()
         {
@@ -619,7 +629,11 @@ public class InvoiceServiceTest
             Comments = "Winter is coming",
             CreatedDate = new DateTime(2026, 10, 1),
             DueDate = new DateTime(2026, 10, 11),
-            Items = [new() { InvoiceId = storedInvoice.Id, LineNo = 1, ItemId = throneId, Quantity = 4, Comments = string.Empty }]
+            Items =
+            [
+                new() { InvoiceId = storedInvoice.Id, LineNo = 1, ItemId = throneId, Version = 1, Quantity = 4, Comments = string.Empty },
+                new() { InvoiceId = storedInvoice.Id, LineNo = 2, ItemId = throneId, Version = 2, Quantity = 1, Comments = string.Empty }
+            ]
         };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
