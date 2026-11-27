@@ -8,12 +8,21 @@ Re-planned on 2026-11-27 for master after BIL-113 (#92, eb845fe): invoice items 
 `total_price` are gone. The first version of this plan built versions from the `items_data` JSON
 lines and stamped a `Version` key into them; that can't work any more (decisions 2 and 4), and its
 migrations 036–038 clash with master's numbers. What the branch keeps and redoes is in
-"Branch rework"; what the sibling branches keep, redo and merge is in steps 1, 8 and 9 (checked
+"Branch rework 1"; what the sibling branches keep, redo and merge is in steps 1, 8 and 9 (checked
 against their code on 2026-11-27).
+
+Updated on 2026-11-27 (second run) with the user's simplification of the branch's item and invoice
+code, which keeps this design: decisions 12–17, "Considered and rejected" and "Branch rework 2".
+The merge and steps 2–7 are done on the branch (b0a602a..3eaa1dd); steps 2–7 below describe the
+code after rework 2, and "Branch rework 2" lists what changes from the branch as it is now.
 
 ## Open questions
 
-None. The one open question (drop `items.name` and `items.price` now or in a later release) was
+1. **Decision 15 (optional):** add the `current_item_versions` view (R7) in this PR, or keep the
+   latest-version subqueries as they are? Nothing else depends on it; R7 is skipped until the user
+   says yes.
+
+The earlier open question (drop `items.name` and `items.price` now or in a later release) was
 answered on 2026-11-27: decision 11.
 
 ## Goal
@@ -23,6 +32,10 @@ answered on 2026-11-27: decision 11.
   another version. Editing an item doesn't change an existing invoice, its total or its PDF.
 
 ## Current state (master @ bfbd1a7)
+
+Checked again on 2026-11-27 (second run): master hasn't moved (`git log bfbd1a7..origin/master` is
+empty), so the table holds for master. What the branches have now is in the sibling rows, "Branch
+rework 1" and "Branch rework 2".
 
 The master commits after BIL-113, 1112a12 (revert of BIL-110) and bfbd1a7 (BIL-115/116,
 `run-integration.sh` reports), touch only skills (`_test-stack` and its scripts,
@@ -49,16 +62,21 @@ The master commits after BIL-113, 1112a12 (revert of BIL-110) and bfbd1a7 (BIL-1
 | Tests | `InvoiceServiceTest` matches saved entities with `Saved(expected)` (record compare plus invoice items one by one). `Add_GivenValidData_SavesCustomersSeriesAndInvoiceItemsWithoutItemNamesOrPrices`, `Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndSavesInvoiceItemsWithoutItemPrices`. `InvoiceMappingProfileTest`: `ToInvoiceItemModel_GivenInvoiceItemEntity_MapsAllProperties`, `ToInvoiceItemEntity_GivenInvoiceItemModel_MapsItemQuantityAndCommentsOnly` |
 | Other plans | `BIL-85-item-history.md` (old design) is still on master; the branch deletes it. `BIL-75-units.md` still snapshots the unit into `items_data`, `BIL-90-seller-invoice-summary.md` still sums `invoices.total_price`: BIL-113's follow-ups for them aren't done |
 | BillerContracts | master ab1dfc8 is PR #23 (squash), published as 6.0.0. The local `BIL-85-item-versions` (5 commits, deleted on origin after the merge) has the same tree as master. Step 1 |
-| BillioIntegrationTest | Master af3c2e3 (BIL-113, #35) changed `InvoiceTest.cs` and `REVIEW.md`. Branch `BIL-85-item-versions`: 3 pushed commits on 713d90e (PR #34 open, CI green against Biller's pushed branch) plus 6e58a5c, local. Master isn't merged; a trial merge conflicts in `InvoiceTest.cs`. Step 8 |
-| BillerFrontEnd | Master ec39ffb hasn't moved since the branch started (BIL-113 changed nothing there). Branch: 5 commits, pushed (PR #36 open, CI green). Step 9 |
+| BillioIntegrationTest | Master af3c2e3 (BIL-113, #35) changed `InvoiceTest.cs` and `REVIEW.md`. Branch `BIL-85-item-versions` (second run): 6e58a5c, the merge of master (d0cc251) and review rounds aad24b5, 940478b, 77de0a4, a3a9e3f, all local; origin is at c611578 (PR #34 open). Step 8 |
+| BillerFrontEnd | Master ec39ffb hasn't moved since the branch started (BIL-113 changed nothing there). Branch: 5 commits pushed (PR #36 open) plus 172ab86 (step 9's change), local. Step 9 |
+| Biller branch (second run) | Merge b0a602a and steps 2–7 (013109c, a2bcdca, 396382d, 2767b2a, 01d82b4), review round 1 (3eaa1dd: invoice Swagger examples show versions, `CI.yaml` 93.2 / 88.8). All pushed. "Branch rework 2" |
 
 Checked on a throwaway Postgres 16 (2026-11-27), with master's tables and rows and the SQL of
 039–041 below run by hand: a used item's delete still fails on `fk_invoice_items_item_id` (so the
 400 above stays), an unused item's delete removes its versions, an unknown version fails on
 `fk_invoice_items_item_id_version`, and the rollbacks 041–039 give master's tables back. Not run
-through Liquibase (file format, precondition): that is Verification 2.
+through Liquibase (file format, precondition): that is Verification 2. Rework 2's primary key
+(decision 14) and `COALESCE` (decision 12) weren't in that check either: Verification 2 runs them.
 
-## Branch rework
+## Branch rework 1: merge master (done)
+
+Done on 2026-11-27: merge b0a602a, then steps 2–7 as their own commits (013109c..01d82b4) and
+review round 1 (3eaa1dd), pushed. Kept below as the record of how the merge was resolved.
 
 Branch `BIL-85-item-versions`: 14 commits on ea10918 (BIL-112), pushed, plus 156c6a4 (item delete
 400), local only. PR #90 is open, so merge `origin/master` into the branch; no rebase, no force push. The
@@ -104,6 +122,191 @@ has them, master's and this branch's migrations don't run on it: roll those thre
 branch as it is now, before the merge, or restore a backup from before BIL-85. Ask first: it is the
 user's own stack.
 
+## Branch rework 2: simplify (decisions 12–17)
+
+The user's simplification (2026-11-27), on top of 3eaa1dd. The design stays: an invoice item names
+its version and copies nothing (BIL-113 decision 3). No endpoint, request or response changes
+(BillerContracts stays 6.0.0), and no PDF changes. Some error texts change (decisions 7 and 17), so
+the BillioIntegrationTest branch changes too (step 8, "Rework 2"). 039–041 aren't on master, so 039
+is edited in place (R1).
+
+| Where | On the branch now (3eaa1dd) | After (decision) |
+|---|---|---|
+| `039-Create-table-item_versions.sql` | `id uuid` primary key plus `uq_item_versions_item_id_version` | `PRIMARY KEY (item_id, version)`, no `id` (14) |
+| `ItemVersionEntity`, `ItemVersionModel` | `Id`, `ItemId`, `Version`, `Name`, `Price`, `ChangedDate`, and `CustomerId` from a join | `ItemId`, `Version`, `Name`, `Price`, `ChangedDate` (7, 14) |
+| `IItemRepository`, `ItemRepository` | `GetVersions(Guid)` and `GetVersions(List<Guid>)`, both joining `items` for `customer_id` | `GetVersions(Guid)` reads `item_versions` alone; `GetIdsForCustomer(ids, customerId)` replaces `GetVersions(List<Guid>)` (7) |
+| `IItemService`, `ItemService` | `GetVersionsForCustomer(items, customerId)`: loads every version, builds the message in an `idString` loop, checks owner and version. 404 texts "Invoice item:…" | `CheckForCustomer(ids, customerId)`: owner only (7). 404 texts "Item:…" (17) |
+| `InvoiceItemEntity.Version`, `ToInvoiceItemEntity` | `int`; a missing version maps to 0 | `int?`, mapped as it is (12) |
+| `InvoiceRepository.Add` | inserts `ii.version` | inserts `COALESCE(ii.version, <the item's latest>)` (12) |
+| `InvoiceService` | `Validate` returns the customer and the versions; `Add` calls `SetLatestVersion` | `Validate` returns the customer; `SetLatestVersion` goes (12) |
+| `InvoiceModelUpdateValidator` | registered as `IValidator<InvoiceModel>`, run by `InvoiceController.Update` after `ToModel()` | deleted (13) |
+| `InvoiceAddValidator`, `InvoiceUpdateValidator` | `RuleFor(x => x.Items).Must(ValidateInvoiceItems)`, which throws from inside the rule | `RuleForEach(x => x.Items).SetValidator(new InvoiceItemValidator(...))` (17) |
+| `ItemModelExtensions` | `ToEntity` maps `Version`, which `ItemRepository.Add` and `Update` never read; `ToModel(this ItemResponse)` has no caller | `ToEntity` leaves `Version` out (16); `ToModel(this ItemResponse)` goes (17) || `InvoiceModel` | `List<InvoiceItemModel>? Items`, with `!` in 7 places in `src`; `CalculateTotal` loops | `Items = []`, no `!`; `Items.Sum(i => i.CalculateTotal())` (17) |
+| `InvoiceItemModel.Id` | the item's id | `ItemId` (17) |
+
+R1–R5 are the changes by layer. Commit them so that each commit builds and its tests pass, e.g. one
+commit per decision with its tests: 14 (with R1), 7 and 12 together (the versions `Validate`
+returns feed `SetLatestVersion`), 13, 16, 17. Push only when the build and the tests pass
+(`CLAUDE.md`).
+
+### R1: Migration 039 (decision 14)
+
+- [ ] `039-Create-table-item_versions.sql`: the table as in step 2: no `id`, `PRIMARY KEY (item_id,
+  version)`, no `uq_item_versions_item_id_version`. Its comment adds that versions are keyed by item
+  and version. 040 and 041 don't change: 040 inserts no `id`, and 041's `fk_invoice_items_item_id_version`
+  `REFERENCES item_versions (item_id, version)` then references the primary key.
+- [ ] The edited 039 has a new checksum, and Liquibase stops on a database that ran the old one.
+  Production and master never ran 039–041, and a test stack starts empty. The user's local
+  `billio-db` ran them if it was migrated from this branch: then roll 041–039 back there
+  (`rollbackCount 3`) from the branch as it is now, before R1. Ask first: it is the user's own stack.
+
+### R2: Domain and Infrastructure (decisions 7, 12, 14)
+
+- [ ] `ItemVersionEntity`: drop `Id` and `CustomerId`.
+- [ ] `InvoiceItemEntity.Version`: `int?`. Comment: empty only on a new invoice item before
+  `InvoiceRepository.Add` saves it; a saved invoice item always has one (`NOT NULL`).
+- [ ] `IItemRepository`: drop `GetVersions(List<Guid> itemIds)`; add
+  `Task<IEnumerable<Guid>> GetIdsForCustomer(List<Guid> ids, Guid customerId)`.
+- [ ] `ItemRepository`: `GetVersions(Guid)` and `GetIdsForCustomer` as in step 3; `GetVersions(List<Guid>)` goes.
+- [ ] `InvoiceRepository.Add`: `items_added` as in step 3 (`COALESCE`). `WithItems` stays as it is;
+  its `Versions` is now `int?[]`, which Npgsql sends as `integer[]` with NULLs. `Update`: no change.
+
+### R3: Application (decisions 7, 12, 16, 17)
+
+- [ ] `ItemVersionModel`: drop `Id` and `CustomerId`; `ToModel(this ItemVersionEntity)` maps the
+  five that are left.
+- [ ] `ItemModelExtensions.ToEntity(this ItemModel)`: no `Version`, with a comment that it is read
+  only (decision 16). Delete `ToModel(this ItemResponse)`.
+- [ ] `IItemService`, `ItemService`: `GetVersionsForCustomer` becomes
+  `Task CheckForCustomer(List<Guid> ids, Guid customerId)`:
+
+  ```csharp
+  HashSet<Guid> ownItemIds = (await _itemRepository.GetIdsForCustomer(ids, customerId)).ToHashSet();
+  List<Guid> invalidIds = ids.Where(id => !ownItemIds.Contains(id)).ToList();
+
+  if (invalidIds.Count != 0)
+      throw new ValidationException($"Items id {string.Join(" ", invalidIds)} is invalid for customer id {customerId}");
+  ```
+
+  The same text as master's `GetForCustomer` and the branch's loop: ids in request order, a repeated
+  one repeated. `Get(id, version)` and `GetVersions(id)` throw "Item:{id} not found" and
+  "Item:{id} version {n} not found". The double blank line after `GetVersions` goes.
+- [ ] `InvoiceItemModel`: `Id` becomes `ItemId`. `InvoiceModelExtensions`: entity and model
+  `ItemId = from.ItemId` both ways; request to model `ItemId = from.Id`; model to response
+  `Id = from.ItemId`. `ToInvoiceItemEntity` maps `Version = from.Version`; its comment: "An empty
+  version stays empty: `InvoiceRepository.Add` takes the item's latest, and `PUT` requires one
+  (decision 3)." `ToEntity` loses its `!`.
+- [ ] `InvoiceModel`: `public List<InvoiceItemModel> Items { get; set; } = [];` and
+  `CalculateTotal() => Items.Sum(i => i.CalculateTotal())`. The `!` goes in
+  `InvoiceModelFullExtensions.ToResponse`, `InvoiceDocumentADA`, `InvoiceDocumentSF` (no output
+  change) and `InvoiceService`.
+- [ ] `InvoiceService`: `Validate` returns `Task<CustomerModel>` and calls
+  `_itemService.CheckForCustomer(invoiceData.Items.Select(ii => ii.ItemId).ToList(), invoiceData.CustomerId)`;
+  `Add` takes `CustomerModel customer = await Validate(invoiceData);`; `SetLatestVersion` goes. The
+  comment above `Validate`: it checks the seller, the customer and that every invoice item's item is
+  the customer's; it checks no version, since an empty one becomes the latest in
+  `InvoiceRepository.Add` and one the item doesn't have fails `fk_invoice_items_item_id_version`.
+
+### R4: Validators and WebAPI (decisions 13, 17)
+
+- [ ] Delete `src/Validators/Invoice/InvoiceModelUpdateValidator.cs` and its line in
+  `src/Validators/DependencyInjection.cs` (with `using Application.Models;`, which nothing else there uses).
+- [ ] `InvoiceController`: drop the `IValidator<InvoiceModel>` field, constructor parameter and its
+  `<param>`, and `_validatorModelUpdate.CheckValidation(invoiceData)` in `Update`.
+- [ ] `InvoiceAddValidator`, `InvoiceUpdateValidator`: in place of `RuleFor(x => x.Items).Must(ValidateInvoiceItems)`,
+  `RuleForEach(x => x.Items).SetValidator(new InvoiceItemValidator(documentTextChecker));`.
+  `ValidateInvoiceItems`, the `_documentTextChecker` field and `using FluentValidation.Results;` go.
+  `InvoiceUpdateValidator` keeps "Please specify item version for {id}" (decision 3); its comment
+  says "invoice item" for "line".
+- [ ] Swagger examples, `ItemController`, `README.md`, `docs/README_lt.md`, `CLAUDE.md`, `REVIEW.md`:
+  no change (no endpoint, setting or layout changes, and the rules in step 6 still hold).
+
+### R5: Tests (`_write-tests`)
+
+- [ ] `ItemServiceTest`:
+  - The five `GetVersionsForCustomer_*` tests go. New: `CheckForCustomer_GivenCustomersItems_DoesNotThrow`
+    (the repository returns every id) and `CheckForCustomer_GivenItemsNotTheCustomers_ThrowsValidationExceptionNamingEach`
+    (three ids, the repository returns the middle one: the message names the first and the third, in
+    that order). Both verify `GetIdsForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(...)), customerId)`.
+    Another customer's item and an unknown one are the same case here; the SQL tells them apart only
+    by `customer_id`, which the integration tests cover ("Invalid items id", "Item of another customer").
+  - `GetId_GivenInvalidId_ThrowNotFoundException` and `GetIdVersion_GivenUnknownVersion_ThrowsNotFoundException`
+    expect "Item:{id} not found" and "Item:{id} version 99 not found";
+    `GetVersions_GivenUnknownItem_ThrowsNotFoundException` gets `.WithMessage($"Item:{id} not found")`.
+  - `Add_GivenValidId_ReturnsGuid` and `Update_GivenExistingId_UpdatesRepository`: the model has a
+    `Version` (e.g. 3) and a name, price and quantity; the expected entity is built by hand without a
+    version, not with `item.ToEntity()` (`REVIEW.md`: no expected value copied from the code under
+    test). Rename them to say the version isn't saved.
+- [ ] `ItemMappingProfileTest`: `ToEntity_GivenModel_MapsAllProperties` ignores `Version` and checks
+  `to.Version` is 0 (rename: all but `Version`); `ToModel_GivenResponse_MapsAllProperties` goes;
+  `ToModel_GivenVersionEntity_MapsAllProperties` and `ToResponse_GivenVersionModel_MapsAllProperties`
+  lose `Id` and `CustomerId`.
+- [ ] `InvoiceMappingProfileTest`: `ItemId` in `NewItems`, `ToEntity_GivenModel_MapsAllProperties`
+  and `ToModel_GivenAddRequest_MapsAllProperties`. `ToInvoiceItemModel_GivenInvoiceItemEntity_MapsAllProperties`
+  becomes a plain `TestMapp` (the ignore set and its comment go: both sides have `ItemId` and `int? Version`).
+  `ToInvoiceItemEntity_GivenInvoiceItemModelWithoutVersion_MapsVersionZero` becomes
+  `..._KeepsVersionEmpty` (`to.Version` is null). `ToInvoiceItemResponse_GivenInvoiceItemModel_MapsAllProperties`
+  and `ToInvoiceItemModel_GivenInvoiceItemRequest_MapsAllProperties` ignore `Id` and check `Id` against
+  `ItemId` by hand. `ToEntity_GivenModelWithoutItems_HasNoItems` builds `new()`.
+- [ ] `InvoiceServiceTest`: `ItemId` and no `!` everywhere. Every `GetVersionsForCustomer(invoiceData.Items!, …)`
+  setup and verify becomes `CheckForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(<the invoice items' ItemIds>)), customerId)`
+  (`Returns(Task.CompletedTask)`, or the `ThrowsAsync` the test had), and `It.IsAny<List<InvoiceItemModel>>()`
+  becomes `It.IsAny<List<Guid>>()`. The `itemVersions` lists go.
+  `Add_GivenValidData_SavesCustomersSeriesAndLatestVersionOnlyForInvoiceItemsWithoutOne` becomes
+  `Add_GivenValidData_SavesCustomersSeriesAndInvoiceItemVersionsAsGiven`: the throne without a version
+  is saved with `Version = null`, the sword with 1. `Add_GivenSeriesGoneBeforeInsert_ThrowsValidationException`
+  loses `ForEach(i => i.Version = 1)`. `Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndSavesRequestedVersions`
+  keeps the same item at versions 1 and 2.
+- [ ] `InvoiceModelTest`: add `CalculateTotal_GivenNoItems_ReturnsZero` (`new InvoiceModel()`).
+- [ ] `InvoiceFullMappingProfileTest`, `InvoiceControllerTest.CreateInvoice`: `ItemId`.
+- [ ] `InvoiceControllerTest`: `_validatorModelUpdateMock` goes (field, constructor, the setup and
+  verify in `Update_GivenValidRequest_ReturnsNoContent`, `VerifyNoOtherCalls` in
+  `Update_GivenInvalidRequest_ThrowsValidationException`); `Update_GivenInvalidModel_ThrowsValidationException` goes.
+- [ ] Validators: delete `InvoiceModelUpdateValidatorTest.cs`; drop `IValidator<InvoiceModel>` from
+  `DependencyInjectionTests`. In `InvoiceAddValidatorTest` and `InvoiceUpdateValidatorTest`,
+  `Validate_GivenInvalidItem_ThrowsValidationException` becomes `Validate_GivenInvalidItem_IsInvalid`
+  (each case gives its property name and message: `Items[0].Id` "Please specify item Id",
+  `Items[0].Quantity` "Please provide quantity that should > 0 for {id}", and on update `Items[0].Version`
+  "Please specify item version >= 1 for {id}"; the labels say "is rejected" for "throws"), and
+  `Validate_GivenItemCommentThePdfCannotShow_ThrowsValidationExceptionNamingTheCharacter` becomes
+  `..._IsInvalidNamingTheCharacter` (`Items[0].Comments`, the same message). New in both:
+  `Validate_GivenRequestAndItemErrors_ReportsBoth` (empty seller id and quantity 0: both errors,
+  which the old throw hid). `InvoiceItemValidatorTest` and `Validate_GivenLineWithoutVersion_IsInvalid` stay.
+- [ ] `revert-check.sh`: each of these must fail a test: `ToInvoiceItemEntity` dropping `Version`
+  or turning an empty one into a number; `InvoiceService.Add` setting a version; `CheckForCustomer`
+  ignoring what the repository returned; `ItemModel.ToEntity` mapping `Version` again;
+  `InvoiceUpdateValidator` without its version rule.
+- [ ] Coverage: the branch's 93.2 / 88.8 were set before this rework, and the rework deletes covered
+  code. At `_pre-pr`, set them again from the new numbers minus 1 (`CLAUDE.md`), never below master's
+  93.0 / 88.5.
+
+### R6: BillioIntegrationTest
+
+Step 8, "Rework 2".
+
+### R7 (optional, open question 1): `current_item_versions` (decision 15)
+
+- [ ] 039, after the table:
+
+  ```sql
+  -- The latest version of every item: its current name and price
+  CREATE VIEW current_item_versions AS
+  SELECT DISTINCT ON (item_id) item_id, version, name, price, changed_date
+  FROM item_versions
+  ORDER BY item_id, version DESC;
+  ```
+
+  Its rollback runs before the table's: `-- rollback DROP VIEW current_item_versions;` between
+  `ALTER TABLE invoice_items DROP COLUMN version;` and `DROP TABLE item_versions;`. (In 039, which
+  R1 edits anyway, rather than a changeset of its own.)
+- [ ] Use it for the latest version: `ItemRepository.Get(id, version)`
+  `v.version = COALESCE(@Version, (SELECT version FROM current_item_versions WHERE item_id = i.id))`;
+  the paged `Get` `JOIN current_item_versions v ON v.item_id = i.id`; `Update`'s
+  `latest AS (SELECT version, name, price FROM current_item_versions WHERE item_id=@Id)`;
+  `InvoiceRepository.Add` `COALESCE(ii.version, (SELECT version FROM current_item_versions WHERE item_id = ii.item_id))`.
+  041's rollback keeps its `MAX(version)` (it was checked as it is).
+- [ ] No unit test (Infrastructure is outside coverage); the integration tests cover every read and write.
+
 ## How it works
 
 An invoice item is **(item id, version, quantity, comments)**. Its name and price are read from
@@ -115,7 +318,7 @@ that version, so the response, the total and the PDF come from one place and can
 | Save an invoice, invoice items untouched | each invoice item with the version it has | Same name, price and total |
 | Refresh an invoice item (button) | the item's current version (`ItemResponse.Version`) | It shows the newest name and price |
 | Pick another version | any version from `GET /items/{id}/versions` | It shows that version's name and price |
-| New invoice | `Version` left empty | Current version |
+| New invoice | `Version` left empty | Current version, taken by the insert (decision 12) |
 | Delete an item | `DELETE /items/{id}` | 400 while an invoice uses it (foreign key); otherwise the item and its versions are gone |
 
 No refresh endpoint: refresh and pick are the same `PUT /invoices`, with a different version number.
@@ -138,13 +341,14 @@ After, `items` holds what has no versions:
 |---|---|---|
 | A | C1 | 1 |
 
-New table `item_versions`. Rows are only inserted, never updated. The highest `version` is the
-item's current name and price. Version 1 is the item as it was at the deploy:
+New table `item_versions`, keyed by `(item_id, version)` (decision 14). Rows are only inserted,
+never updated. The highest `version` is the item's current name and price. Version 1 is the item as
+it was at the deploy:
 
-| id | item_id | version | name | price | changed_date |
-|---|---|---|---|---|---|
-| V1 | A | 1 | Programming | 50 | deploy time |
-| V2 | A | 2 | Programming | 60 | 2026-12-10 14:30 |
+| item_id | version | name | price | changed_date |
+|---|---|---|---|---|
+| A | 1 | Programming | 50 | deploy time |
+| A | 2 | Programming | 60 | 2026-12-10 14:30 |
 
 `invoice_items` gets a `version` column; every existing invoice item gets 1:
 
@@ -161,16 +365,18 @@ The invoice still shows 50 after the edit, until a `PUT /invoices` sends version
    edit makes no version.
 2. **An invoice item names its version: `invoice_items.version`**, with
    `fk_invoice_items_item_id_version (item_id, version) REFERENCES item_versions (item_id, version)`
-   (the existing unique key). Reads join `item_versions` on that pair for name and price; no copy
+   (its primary key, decision 14). Reads join `item_versions` on that pair for name and price; no copy
    on the invoice item (BIL-113 decision 3). BIL-113's follow-up named an `item_version_id`; the
    user asked for a version column. Reasons: it is the number the API already takes and returns
    (BillerContracts 6.0.0), and the foreign key makes the database check that the version belongs
    to the invoice item's item, which an `item_version_id` next to `item_id` wouldn't (the two could
    disagree). `fk_invoice_items_item_id` stays as it is.
 3. **`PUT /invoices` requires `Version` on every invoice item** (400 "Please specify item version
-   for {id}"), so a save can never re-price by accident. `POST /invoices` allows an empty version =
-   the item's latest, which `InvoiceService.Add` sets from the versions `Validate` loaded.
-   `InvoiceService.Update` never sets a version.
+   for {id}", `InvoiceUpdateValidator`), so a save can never re-price by accident. `POST /invoices`
+   allows an empty version = the item's latest, which `InvoiceRepository.Add`'s statement takes
+   (decision 12). `InvoiceService.Update` never sets a version, and `InvoiceRepository.Update` saves
+   them as given: an empty one that got past the validator would fail `NOT NULL`, never become the
+   latest.
 4. **Versions start from the items as they are at the deploy.** Every item gets version 1 with its
    current name and price, dated at the deploy (`changed_date` default `now()`), and every invoice
    item gets version 1. BIL-113's 038 dropped the old line names and prices, so there is no
@@ -187,14 +393,22 @@ The invoice still shows 50 after the edit, until a `PUT /invoices` sends version
 6. **Writes stay one statement each.** Item add inserts the item and version 1; item update sets
    `quantity` and inserts a version only when `(name, price)` differs from the latest (both as on
    the branch). Invoice add and update are master's statements with a `version` column. Two item
-   updates at the same moment can both take latest + 1; the unique key then fails one (400), and
+   updates at the same moment can both take latest + 1; the primary key then fails one (400), and
    nothing wrong is saved (accepted, `CLAUDE.md`).
-7. **Invoice item validation uses `item_versions`** (`GetVersionsForCustomer`): the item belongs
-   to the invoice's customer and the version exists, else 400. An unknown version that got past
-   it would still fail `fk_invoice_items_item_id_version` (400 "Key does not exist").
+7. **Invoice item validation is ownership only** (user's decision, 2026-11-27; it replaces
+   `GetVersionsForCustomer`). `ItemService.CheckForCustomer(ids, customerId)` reads
+   `SELECT id FROM items WHERE id = ANY(@Ids) AND customer_id = @CustomerId` and throws 400 "Items
+   id {ids} is invalid for customer id {customerId}" for the ids it didn't get back, in request
+   order (master's text). A version the item doesn't have is left to
+   `fk_invoice_items_item_id_version`: 400 "Validation failure", "Key does not exist:
+   invoice_items_item_id_version", on `POST` and `PUT`. The foreign key fails the whole statement,
+   so no invoice, invoice item, invoice change or number is saved. Reasons: the database already
+   checks the version, so the service reads no versions and builds no message from them. The text
+   for an unknown version changes from "Item id {id} has no version 99"; the BillioIntegrationTest
+   branch checks it (step 8, "Rework 2").
 8. **BillerContracts 6.0.0** (published, no change). `InvoiceItemResponse.Version` stays `int?`,
    though Biller now always sets it: making it `int` would need 7.0.0 for nothing. Biller and
-   BillerFrontEnd deploy together.
+   BillerFrontEnd deploy together. Rework 2 (decisions 12–17) changes no contract either.
 9. **Three changesets: schema, data, then constraint and drop (039–041).** As BIL-113's layout.
    041 has a precondition (`onFail:HALT`) that stops before the drop while an item has no version
    or an invoice item has no version, so a name and price can't be lost silently.
@@ -212,6 +426,77 @@ The invoice still shows 50 after the edit, until a `PUT /invoices` sends version
     names and prices anyway. 041's precondition (decision 9) stops before the drop while an item
     or an invoice item has no version.
 
+Decisions 12–17 are the user's simplification of the branch (2026-11-27, "Branch rework 2"). They
+keep the design above: no copy of name or price on invoice items (BIL-113 decision 3), no endpoint,
+request or response change (BillerContracts 6.0.0), no PDF change.
+
+12. **`POST /invoices` takes the latest version in SQL.** `InvoiceItemEntity.Version` is `int?`;
+    `InvoiceRepository.Add` sends the versions as `int?[]` and inserts
+    `COALESCE(ii.version, (SELECT MAX(version) FROM item_versions WHERE item_id = ii.item_id))`.
+    `InvoiceService.SetLatestVersion` and the "a missing version becomes 0" mapping in
+    `ToInvoiceItemEntity` go, and `Validate` returns only the customer. Reasons: the version is
+    picked by the statement that saves it, and the service needs no versions. `PUT` still requires
+    a version on every invoice item (decision 3). Accepted: when an invoice item has no version and
+    its item is deleted between the ownership check and the insert, `MAX` is empty and the insert
+    fails `NOT NULL` (500 "Database error") rather than a foreign key (400); it needs two requests at
+    once (`CLAUDE.md`).
+13. **No model validator on `PUT /invoices`.** `InvoiceModelUpdateValidator` repeats
+    `InvoiceUpdateValidator` and `InvoiceItemValidator` rule for rule (ids, at least one item, item
+    id, quantity > 0, version, comments) on `InvoiceUpdateRequest.ToModel()`, which copies the same
+    fields 1:1, so nothing between the two checks can break a rule. It goes with its DI registration
+    and `InvoiceController.Update`'s second check; `InvoiceUpdateValidator` keeps the version rule.
+    This reverses BIL-102's decision 2, where the owner kept the class (then it checked only the ids,
+    which `ToModel` also copies unchanged).
+14. **`item_versions` is keyed by `(item_id, version)`.** Its `id` column goes: nothing reads it,
+    and invoice items reference the pair. 039's `PRIMARY KEY (item_id, version)` replaces the uuid
+    key and `uq_item_versions_item_id_version`; 041's `fk_invoice_items_item_id_version` references
+    the primary key. Unnamed, like `invoice_items`' key (036). `ItemVersionEntity` and
+    `ItemVersionModel` lose `Id`. Two item updates at the same moment (decision 6) now fail on
+    `item_versions_pkey`: still 400, the text "Key is already used: versions" for "…: item".
+15. *Optional, open question 1.* **A `current_item_versions` view**
+    (`SELECT DISTINCT ON (item_id) … ORDER BY item_id, version DESC`) would give "the item's latest
+    version" one definition, for `ItemRepository.Get(id, version)`, the paged `Get`, `Update`'s
+    `latest` and `InvoiceRepository.Add`'s `COALESCE`, in place of three `MAX(version)` subqueries and
+    one `ORDER BY version DESC LIMIT 1` (R7). Postgres pushes `item_id = …` into the view, since it is
+    the `DISTINCT ON` column, so a lookup reads the primary key; the paged join reads the whole view,
+    which is small for one owner's items. Without it, step 3's SQL stays as it is.
+16. **Item add and update take no version.** `ItemAddRequest` and `ItemUpdateRequest` have none;
+    `ItemRepository.Add` writes version 1 and `Update` writes latest + 1 only when the name or price
+    changes, and neither reads `@Version`. The version is output only (`GET /items`,
+    `GET /items/{id}`, `GET /items/{id}/versions`). `ItemModel.ToEntity()` stops mapping `Version`, so
+    the write path doesn't carry it; reads still fill `ItemEntity.Version` and `ItemModel.Version`.
+    Reasons: that mapping is the one place a write carries a version, and a separate write type (an
+    entity without `Version`) would add a type and a mapping for one property. `REVIEW.md`'s "a
+    mapping method misses a property" doesn't apply: a comment on `ToEntity` names it, and a test
+    pins it at 0.
+17. **Small cleanups.**
+    - `InvoiceModel.Items` is `List<InvoiceItemModel>` with `= []`: every path sets it (requests,
+      reads), so the 7 `!`s go. `CalculateTotal()` is `Items.Sum(i => i.CalculateTotal())`: one
+      definition of an invoice item's total, the same sum.
+    - `ItemModelExtensions.ToModel(this ItemResponse)` goes: nothing in `src` calls it (only its own
+      test, which goes too); it was on master before BIL-85.
+    - `ItemService`'s 404 texts say "Item:{id} not found" and "Item:{id} version {n} not found" for
+      "Invoice item:…" (`GET /items/{id}`, `GET /items/{id}/versions`, `PUT` and `DELETE /items`). The
+      BillioIntegrationTest branch checks them (step 8, "Rework 2").
+    - `InvoiceItemModel.Id` becomes `ItemId`, as on `InvoiceItemEntity`: it is the item's id.
+      `InvoiceItemRequest.Id` and `InvoiceItemResponse.Id` (BillerContracts) stay; the mappings pair
+      them by hand.
+    - `InvoiceAddValidator` and `InvoiceUpdateValidator` check invoice items with
+      `RuleForEach(x => x.Items).SetValidator(new InvoiceItemValidator(documentTextChecker))` in place
+      of `ValidateInvoiceItems` (pre-existing: it throws from inside `Must`, so the request's other
+      errors were lost). Every message stays, and a request with only invoice item errors gets the
+      same text (one error per line). One with a request error as well now lists both.
+
+### Considered and rejected
+
+- **Copy name and price onto `invoice_items`** (as `items_data` did before BIL-113). It would drop
+  `item_versions`, `Version` and the versions endpoint. Rejected (user, 2026-11-27): it reverses
+  BIL-113's decision 3 (no copy on the invoice item) and this issue's goal (an item's history kept as
+  versions); `Version` leaves `ItemResponse`, `InvoiceItemRequest` and `InvoiceItemResponse`, so
+  BillerContracts 7.0.0; the BillerFrontEnd branch (version picker, refresh) and the
+  BillioIntegrationTest branch would be redone; and `PUT /invoices` would still need a rule to keep
+  an existing line's price, the job `Version` does now.
+
 ## Dependencies
 
 - None open. BIL-65 (series) and BIL-113 (invoice items), which blocked this issue, are Done.
@@ -226,10 +511,10 @@ The invoice still shows 50 after the edit, until a `PUT /invoices` sends version
 ## Step 0: Setup
 
 - [x] Run `_sync-repos`. Branch `BIL-85-item-versions` in all four repos.
-- [ ] Update the BIL-85 description in Jira to this design: invoice items get a `version` column
+- [x] Update the BIL-85 description in Jira to this design: invoice items get a `version` column
   (no copy, no `Version` in JSON), versions start from the items at the deploy (not rebuilt), an
-  item an invoice uses can't be deleted (400, foreign key).
-- [ ] Merge `origin/master` into the Biller branch ("Branch rework").
+  item an invoice uses can't be deleted (400, foreign key). Rework 2 needs no change to it.
+- [x] Merge `origin/master` into the Biller branch ("Branch rework 1", b0a602a).
 
 ## Step 1: BillerContracts 6.0.0 (done: PR #23 merged, 6.0.0 published)
 
@@ -253,22 +538,21 @@ branch while Biller is on `BIL-85-item-versions`; delete it after BIL-85 merges.
   - Tests: `Get_GivenIdAndVersion_SendsVersionAsQuery`, `GetVersions_GivenId_GetsVersionsUrl`,
     `GetVersions_GivenResponse_ReturnsVersions`, `Get_GivenId_ReturnsItemWithVersion`.
 
-## Step 2: Migrations (redo; `_add-db-migration`; numbers are taken when written, 039 is next)
+## Step 2: Migrations (done: 013109c; rework 2 edits 039, R1)
 
-`039-Create-table-item_versions.sql`: the branch's 036 table, plus the new column, nullable until
-041.
+`039-Create-table-item_versions.sql`: the branch's 036 table keyed by `(item_id, version)`
+(decision 14; the branch's 039 still has the uuid `id` and the unique key until R1), plus the new
+column, nullable until 041. The optional view of decision 15 would go here too (R7, open question 1).
 
 ```sql
 CREATE TABLE item_versions (
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
     item_id uuid NOT NULL,
     version int NOT NULL,
     name character varying(255) NOT NULL,
     price numeric NOT NULL,
     changed_date timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (id),
-    CONSTRAINT fk_item_versions_item_id FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
-    CONSTRAINT uq_item_versions_item_id_version UNIQUE (item_id, version)
+    PRIMARY KEY (item_id, version),
+    CONSTRAINT fk_item_versions_item_id FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
 );
 ALTER TABLE invoice_items ADD COLUMN version integer;
 -- rollback ALTER TABLE invoice_items DROP COLUMN version; DROP TABLE item_versions;
@@ -305,8 +589,8 @@ ALTER TABLE items DROP COLUMN name, DROP COLUMN price;
 -- rollback ALTER TABLE invoice_items DROP CONSTRAINT fk_invoice_items_item_id_version, ALTER COLUMN version DROP NOT NULL;
 ```
 
-- No new index: `idx_invoice_items_item_id` serves the new foreign key's lookups, and
-  `uq_item_versions_item_id_version` serves `item_versions.item_id`.
+- No new index: `idx_invoice_items_item_id` serves the new foreign key's lookups, and the primary
+  key `(item_id, version)` serves `item_versions.item_id` and the foreign key from `invoice_items`.
 - The changeset comments say: 040's `changed_date` is the deploy, not when the item was last
   edited; 041's rollback keeps only each item's latest name and price (decision 10).
 - Master's 038 rollback reads `items.name` and `price`; Liquibase rolls 041 back first, which puts
@@ -316,19 +600,32 @@ Checks on a copy of production: before, the item and invoice item counts. After,
 exactly one version, equal to the name and price it had; every invoice item has version 1; the
 invoice count and every invoice's computed total unchanged.
 
-## Step 3: Domain and Infrastructure (items: done, keep; invoice items: new)
+## Step 3: Domain and Infrastructure (done: a2bcdca, 396382d; rework 2 changes: R2)
 
-- Items, as on the branch: `ItemEntity.Version`; `ItemVersionEntity` (`Id`, `ItemId`, `Version`,
-  `Name`, `Price`, `ChangedDate`, and from the join `CustomerId`); `IItemRepository.Get(Guid id,
-  int? version)` (`null` = the latest, one query with `v.version = COALESCE(@Version, <latest>)`),
-  `GetVersions(Guid itemId)`, `GetVersions(List<Guid> itemIds)`. Every item query qualifies its
-  columns (both tables have `id`); the paged `Get` orders by `v.name, i.id` and keeps
-  `COUNT(*) OVER() AS total_count` last.
+- Items, as on the branch: `ItemEntity.Version`; `ItemVersionEntity` (`ItemId`, `Version`, `Name`,
+  `Price`, `ChangedDate`: no `Id`, decision 14, and no `CustomerId`, decision 7);
+  `IItemRepository.Get(Guid id, int? version)` (`null` = the latest, one query with
+  `v.version = COALESCE(@Version, <latest>)`), `GetVersions(Guid itemId)`, and
+  `GetIdsForCustomer(List<Guid> ids, Guid customerId)` in place of `GetVersions(List<Guid> itemIds)`
+  (decision 7). The item queries that join `item_versions` keep their qualified columns (`i.`,
+  `v.`); the paged `Get` orders by `v.name, i.id` and keeps `COUNT(*) OVER() AS total_count` last.
+
+```sql
+-- GetVersions(itemId): no join to items, a version exists only while its item does (cascade)
+SELECT * FROM item_versions
+WHERE item_id=@ItemId
+ORDER BY version
+
+-- GetIdsForCustomer: which of these ids are the customer's items (decision 7)
+SELECT id FROM items
+WHERE id = ANY(@Ids) AND customer_id = @CustomerId
+```
+
 - `IItemRepository.Delete` and `ItemRepository.Delete`: master's (`Task`, plain `DELETE`), with a
   comment that `invoice_items`' foreign keys refuse an item an invoice uses and its versions go by
   cascade.
-- `InvoiceItemEntity`: add `int Version`. `Name` and `Price` come from the version (join); fix
-  their comment.
+- `InvoiceItemEntity`: `int? Version`, empty only on a new invoice item before `Add` saves it
+  (decision 12). `Name` and `Price` come from the version (join).
 - `InvoiceRepository`:
 
 ```sql
@@ -338,57 +635,61 @@ JOIN item_versions v ON v.item_id = ii.item_id AND v.version = ii.version
 WHERE ii.invoice_id = ANY(@Ids)
 ORDER BY ii.invoice_id, ii.line_no
 
--- Add: items_added
+-- Add: items_added. An empty version is the item's latest (decision 12)
 INSERT INTO invoice_items (invoice_id, line_no, item_id, version, quantity, comments)
-SELECT inv.id, ii.ord, ii.item_id, ii.version, ii.quantity, ii.comments
+SELECT inv.id, ii.ord, ii.item_id,
+       COALESCE(ii.version, (SELECT MAX(version) FROM item_versions WHERE item_id = ii.item_id)),
+       ii.quantity, ii.comments
 FROM inv, unnest(@ItemIds::uuid[], @Versions::int[], @Quantities::numeric[], @ItemComments::text[])
     WITH ORDINALITY AS ii(item_id, version, quantity, comments, ord)
 
--- Update: upserted, the same insert plus
+-- Update: upserted, master's insert with the version as given, plus
 ON CONFLICT (invoice_id, line_no) DO UPDATE
 SET item_id=EXCLUDED.item_id, version=EXCLUDED.version, quantity=EXCLUDED.quantity, comments=EXCLUDED.comments
 ```
 
-  `WithItems` adds `Versions` (`invoice.Items.Select(ii => ii.Version)`). `Delete`, `UpdateStatus`,
-  `MarkOverdue` and the paged read: unchanged.
+  `WithItems` adds `Versions` (`invoice.Items.Select(ii => ii.Version)`, an `int?[]`). `Delete`,
+  `UpdateStatus`, `MarkOverdue` and the paged read: unchanged.
 
-## Step 4: Application (items: done, keep; invoices: redo on master)
+## Step 4: Application (done: a2bcdca, 396382d; rework 2 changes: R3)
 
-- Items, as on the branch: `ItemModel.Version`, `ItemVersionModel`, `ItemMappingProfile.cs` (every
-  property by hand, `ItemResponse.ToModel` too); `ItemService.Get(Guid id, int? version)`
-  (`NotFoundException` `Invoice item:{id} not found`, or `Invoice item:{id} version {n} not found`);
-  `GetVersions(Guid id)` (404 when there are no rows); `GetVersionsForCustomer(items, customerId)`
-  (one `GetVersions(itemIds)` query; unknown or other customer's item → `Items id … is invalid for
-  customer id …`; unknown version → `Item id {id} has no version {n}`; both `ValidationException`).
-  `Get(List<Guid>)` and `GetForCustomer` are gone from `IItemService`.
+- Items, as on the branch: `ItemModel.Version` (filled by reads only, decision 16),
+  `ItemVersionModel` (`ItemId`, `Version`, `Name`, `Price`, `ChangedDate`), `ItemMappingProfile.cs`
+  (every property by hand, except `Version` in `ToEntity`, decision 16; no `ItemResponse.ToModel`,
+  decision 17); `ItemService.Get(Guid id, int? version)` (`NotFoundException` `Item:{id} not found`,
+  or `Item:{id} version {n} not found`, decision 17); `GetVersions(Guid id)` (404 `Item:{id} not
+  found` when there are no rows); `CheckForCustomer(List<Guid> ids, Guid customerId)` (decision 7:
+  ownership only, `ValidationException` `Items id … is invalid for customer id …`).
+  `Get(List<Guid>)`, `GetForCustomer` and `GetVersionsForCustomer` are gone from `IItemService`.
 - `ItemService.Delete`: master's (`Get`, then `Delete`).
-- `InvoiceItemModel.Version` (`int?`, as on the branch).
-- `InvoiceModelExtensions`: `ToInvoiceItemModel(InvoiceItemEntity)` maps `Version`;
-  `ToInvoiceItemEntity` maps `Version = from.Version.GetValueOrDefault()` (a missing version
-  becomes 0, which the foreign key rejects, never the latest); request and response mappings as on
-  the branch.
+- `InvoiceItemModel`: `ItemId` (decision 17) and `Version` (`int?`, as on the branch).
+- `InvoiceModel`: `Items = []`, `CalculateTotal()` sums the invoice items' `CalculateTotal()`
+  (decision 17).
+- `InvoiceModelExtensions`: `ToInvoiceItemModel(InvoiceItemEntity)` maps `ItemId` and `Version`;
+  `ToInvoiceItemEntity` maps `Version` as it is (an empty one stays empty, decision 12); the request
+  and response mappings pair the contracts' `Id` with `ItemId`.
 - `InvoiceService` (from master's file):
-  - `Validate` calls `GetVersionsForCustomer(invoiceData.Items!, invoiceData.CustomerId)` and
-    returns the customer and the versions.
-  - `Add` gives each invoice item without a version its item's latest version from those (a
-    private method, e.g. `SetLatestVersion`); no name or price is copied.
+  - `Validate` calls `CheckForCustomer(invoiceData.Items.Select(ii => ii.ItemId).ToList(),
+    invoiceData.CustomerId)` and returns the customer, as on master.
+  - `Add` saves the invoice items' versions as given; an empty one becomes the item's latest in
+    `InvoiceRepository.Add` (decision 12). No name or price is copied.
   - `Update` saves the versions it was given (decision 3). `Get`, the paged `Get` and `GeneratePDF`
     don't change: name and price arrive from the repository.
   - Fix the comment above `Validate`.
 
-## Step 5: Validators and WebAPI (done, keep)
+## Step 5: Validators and WebAPI (done: a2bcdca, 3eaa1dd; rework 2 changes: R4)
 
 - `InvoiceUpdateValidator`: every invoice item needs a version ("Please specify item version for
-  {id}"). `InvoiceItemValidator` (`POST` and `PUT`): a given version must be `>= 1`.
-  `InvoiceModelUpdateValidator` (runs on `PUT` after the request validator): every invoice item
-  needs `Version >= 1`.
+  {id}"). `InvoiceItemValidator` (`POST` and `PUT`, run by
+  `RuleForEach(x => x.Items).SetValidator(...)`, decision 17): a given version must be `>= 1`. No
+  model validator after `ToModel()` (decision 13).
 - `ItemController`: `GET {id}` takes an optional `[FromQuery] int? version` (404 when the item has
   no such version); `[HttpGet("{id}/versions")]` → `ItemVersionListResponse` with `ItemId`, with a
   Swagger example. Item examples and the invoice update example show `Version`.
 - `DELETE /items/{id}`: no change (master's foreign-key 400; `DELETE /customers` and
   `DELETE /sellers` don't list theirs either).
 
-## Step 6: Rules (redo on master's text)
+## Step 6: Rules (done: 2767b2a; rework 2 changes none of it)
 
 - `CLAUDE.md`, Conventions, the invoices paragraph becomes:
   "Invoices store their user, seller and customer ids and show the current data. They keep their
@@ -408,36 +709,34 @@ SET item_id=EXCLUDED.item_id, version=EXCLUDED.version, quantity=EXCLUDED.quanti
 - `README.md` / `docs/README_lt.md`: no change. The new endpoint is in the existing items group,
   and no command, setting, port, package or layout changes.
 
-## Step 7: Tests (`_write-tests`; items: done, keep; invoices: redo)
+## Step 7: Tests (`_write-tests`; done: 01d82b4; rework 2 changes them: R5)
 
-- Keep the branch's `ItemServiceTest` (`GetVersions`, `GetVersionsForCustomer`, `Get` with a
-  version), `ItemMappingProfileTest`, validator tests, `ItemControllerTest` and
-  `ItemSwaggerExampleTest`. Drop `Delete_GivenItemUsedByInvoice_ThrowsValidationException`;
-  `Delete_GivenValidId_DeletesFromRepository` goes back to master's `Task` setup.
+- Keep the branch's `ItemServiceTest` (`GetVersions`, `Get` with a version; `CheckForCustomer`
+  replaces the `GetVersionsForCustomer` tests, R5), `ItemMappingProfileTest` (R5), validator tests
+  (R5), `ItemControllerTest` and `ItemSwaggerExampleTest`. `Delete_GivenItemUsedByInvoice_ThrowsValidationException`
+  is gone; `Delete_GivenValidId_DeletesFromRepository` has master's `Task` setup.
 - `InvoiceMappingProfileTest` (master's file plus the branch's request and response `Version`):
-  `ToInvoiceItemModel_GivenInvoiceItemEntity_MapsAllProperties` with `Version`;
-  `ToInvoiceItemEntity_GivenInvoiceItemModel_MapsItemQuantityAndCommentsOnly` maps `Version` too
-  (rename to say so); a model item without a version maps to 0; `ToModel`/`ToEntity` cases carry
-  versions.
-- `InvoiceServiceTest` (master's file): every `GetForCustomer` setup and verify becomes
-  `GetVersionsForCustomer(invoiceData.Items!, customerId)`. With `Saved(expected)`:
-  - `Add` with invoice items without a version saves each item's latest version (an item with
-    versions 1 and 2 saves 2); one with an explicit old version keeps it.
-  - `Update` saves the request's versions though a newer one exists; the same item on two invoice
-    items at two versions saves both as given.
-  - Replaces `Add_GivenValidData_SavesCustomersSeriesAndInvoiceItemsWithoutItemNamesOrPrices` and
-    `Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndSavesInvoiceItemsWithoutItemPrices`
-    (or extends them). The branch's `MapItemToInvoiceItem_*` tests go.
-- Name and price by version are SQL (Infrastructure, outside coverage): covered by the
-  integration tests.
-- `revert-check.sh`: `Update` setting the latest version, or `ToInvoiceItemEntity` dropping
-  `Version`, must fail a test.
+  `ToInvoiceItemModel_GivenInvoiceItemEntity_MapsAllProperties` with `ItemId` and `Version`;
+  `ToInvoiceItemEntity_GivenInvoiceItemModel_MapsItemVersionQuantityAndCommentsOnly`; a model item
+  without a version keeps it empty (R5); `ToModel`/`ToEntity` cases carry versions.
+- `InvoiceServiceTest` (master's file): every ownership setup and verify is
+  `CheckForCustomer(It.Is<List<Guid>>(...), customerId)` (R5). With `Saved(expected)`:
+  - `Add` saves each invoice item's version as given: one without a version is saved without one
+    (the SQL takes the latest, decision 12), one with an explicit old version keeps it.
+  - `Update` saves the request's versions; the same item on two invoice items at two versions saves
+    both as given.
+  - The branch's `MapItemToInvoiceItem_*` tests are gone.
+- Name and price by version, and the latest version on `POST`, are SQL (Infrastructure, outside
+  coverage): covered by the integration tests.
+- `revert-check.sh`: R5's list.
 - Coverage: compare with the minimums + 1 before the PR (`CLAUDE.md`), never below master's
-  93.0 / 88.5.
+  93.0 / 88.5 (R5).
 
-## Step 8: Integration tests (BillioIntegrationTest, same branch; done before BIL-113, merge and redo)
+## Step 8: Integration tests (BillioIntegrationTest, same branch; merge done, rework 2 to do)
 
-Checked against the branch and master on 2026-11-27.
+Checked against the branch and master on 2026-11-27. Second run: the merge (d0cc251, resolved as
+below) and review rounds aad24b5, 940478b, 77de0a4 and a3a9e3f are done, all local on top of
+6e58a5c; origin is still at c611578. "Rework 2" at the end of this step is still to do.
 
 **Branch.** `BIL-85-item-versions`: d12c263, c55eac5 and c611578 on 713d90e are pushed (PR #34
 open). 6e58a5c (2026-11-24) is local only, the counterpart of Biller's 156c6a4: it turns
@@ -473,7 +772,7 @@ under "Current state" shows Postgres reports `fk_invoice_items_item_id`. The tes
   `ItemVersions_Valid_Success`: a price-only edit, a name-only edit and a quantity-only edit give 3
   versions, oldest first, with rising `ChangedDate`; `GET` shows version 3 and the new quantity;
   `GET ?version=1` shows the first name and price with the current quantity.
-  `ItemGetVersion_NotFound_Fail` (`?version=99`: 404 "Invoice item:{id} version 99 not found"),
+  `ItemGetVersion_NotFound_Fail` (`?version=99`: 404 "Item:{id} version 99 not found" after rework 2),
   `ItemGetVersions_NotFound_Fail` (unknown id: 404). `ItemDelete_Valid_Success`: after the delete,
   `GET /items/{id}/versions` is 404 too.
 - Invoices (`InvoiceTest.cs`): `InvoiceKeepsItemVersionUntilChanged_Valid_Success` (unchanged `PUT`
@@ -489,10 +788,29 @@ under "Current state" shows Postgres reports `fk_invoice_items_item_id`. The tes
 - `BillerContracts.Clients` 6.0.0, `InvoiceLineVersionTestModel`.
 - `README.md` / `docs/README_lt.md`: no change (they name no tests).
 
-## Step 9: BillerFrontEnd (done before BIL-113; separate PR #36, its own `CLAUDE.md`)
+**Rework 2** (Biller's decisions 7 and 17), on the branch's tip a3a9e3f:
+- [ ] `InvoiceTestDataSources.LineVersionDataInvalid`: "Update line with a version the item doesn't
+  have" and "Add line with a version the item doesn't have" expect "Key does not exist:
+  invoice_items_item_id_version" for "Item id {0} has no version 99". `InvoiceLineVersion_Invalid_Fail`'s
+  checks that the rejected save changed nothing (one invoice, next number 2, the invoice and its
+  invoice item as they were) stay: the foreign key fails the whole statement, with `PUT`'s invoice
+  update and `POST`'s number.
+- [ ] "Invoice item:" becomes "Item:" in `ItemDelete_Valid_Success`, `ItemDelete_InValid_Fail`,
+  `ItemGetVersion_NotFound_Fail`, `ItemGetVersions_NotFound_Fail`, `ItemUpdate_InValid_Fail`
+  (`ItemTest.cs`) and `ItemDelete_WhenUsedByInvoice_Fail` (`InvoiceTest.cs`).
+- Unchanged: the ownership texts ("Invalid items id", "Item of another customer" keep "Items id …
+  is invalid for customer id …"), and the invoice validation cases read have one error each, so the
+  validator change (decision 17) keeps their texts; `run-integration.sh` confirms it.
+- `InvoiceAddTakesItemVersion_Valid_Success` and a3a9e3f's mixed `POST` now test the SQL's
+  `COALESCE` (decision 12), with no change.
+
+## Step 9: BillerFrontEnd (done; separate PR #36, its own `CLAUDE.md`)
 
 Checked against the branch on 2026-11-27. Front-end master hasn't moved since the branch started
 (ec39ffb), so there is nothing to merge. BIL-113 changed no contract and nothing in the front end.
+Second run: the "Change" items below are done in 172ab86 (local). Rework 2 changes nothing here: no
+contract changes, and the front end matches none of the error texts that change ("Invoice item:",
+"has no version").
 
 **Keep** (as on the branch, checked):
 - `Invoices_update.razor`: each invoice item shows its item, its version as "v{n} {name} {price}"
@@ -511,7 +829,7 @@ Checked against the branch on 2026-11-27. Front-end master hasn't moved since th
 - 58cd398, `Program.cs` `UseStaticWebAssets()` for Rider's Docker fast mode: not BIL-85 work, but
   already in PR #36; it stays unless the user wants it split off.
 
-**Change** (BIL-113 and this plan make the branch's code wrong):
+**Change** (BIL-113 and this plan make the branch's code wrong; done in 172ab86):
 - `Invoices_update.razor`: `deletedItemLines` goes, with its fallback in `LinePrice` and its
   `TryAdd` to the item drop-down (review round 1, "deleted-item lines per version"). Since BIL-113
   an item an invoice uses can't be deleted (decision 5), `fk_invoice_items_item_id_version` keeps
@@ -536,7 +854,11 @@ too; the item pages don't catch `ClientAPIException` (front-end `REVIEW.md`: no 
    them again (as a deploy onto master's tables). Save again and diff. Expected: every item has
    only version 1, with its latest name and price, dated now; every invoice item has version 1, so
    the seeded invoice shows the new price (decision 10). Check 041's precondition halts with an
-   item that has no version. Then `run-integration.sh --repeat 3`.
+   item that has no version. Rework 2, by hand or through the integration tests: a `POST` with
+   version 99 gets 400 "Key does not exist: invoice_items_item_id_version" and the series' next
+   number doesn't move; a `PUT` with version 99 changes nothing on the invoice; `item_versions` has
+   `item_versions_pkey (item_id, version)` and no `id`; deleting an item an invoice uses still
+   reports `invoice_items_item_id`. Then `run-integration.sh --repeat 3`.
 3. On a copy of production: save `GET /items`, `GET /invoices` (all pages) and every invoice PDF as
    text before; migrate; save again and diff. Expected difference: only the new `version` fields.
    Run the checks from step 2.
@@ -552,18 +874,26 @@ too; the item pages don't catch `ClientAPIException` (front-end `REVIEW.md`: no 
 - Units (BIL-75): when it lands, `unit_id` goes into `item_versions` next to name and price.
 - Restoring an item to an old version.
 - Version history from before the deploy (BIL-113 dropped it).
+- Copying name and price onto invoice items: considered and rejected (Design decisions).
+- The same "Invoice …:" 404 wording for sellers and customers ("Invoice seller:{id} not found",
+  "Invoice customer:{id} not found" in `SellerService` and `CustomerService`): only items change
+  here (decision 17). A follow-up issue if wanted.
 
 ## Order of work
 
 1. Done (2026-11-27): `_sync-repos` for the three siblings, then `_write-plan`; steps 1, 8 and 9
-   are checked against their code. BillerContracts needs nothing.
-2. Biller: merge `origin/master` ("Branch rework"), then steps 2–7, one commit per step.
-3. BillioIntegrationTest: merge `origin/master` into the branch on top of 6e58a5c, resolved as in
-   step 8, then step 8's changes. BillerFrontEnd: no merge; step 9's changes.
-4. Verification 1–2 and 4, `_pre-pr` for each repo.
+   are checked against their code. BillerContracts needs nothing. Biller: merge (b0a602a), steps
+   2–7 and review round 1 (013109c..3eaa1dd), pushed. BillioIntegrationTest: merge and review rounds
+   (d0cc251..a3a9e3f), local. BillerFrontEnd: step 9's change (172ab86), local.
+2. Biller: "Branch rework 2", R1–R5, committed as it says; R7 only if open question 1 says so.
+   Before R1, check the user's local `billio-db` (R1, ask first).
+3. BillioIntegrationTest: step 8's "Rework 2". BillerFrontEnd: nothing more.
+4. Verification 1–2 and 4, `_pre-pr` for each repo (Biller's code changed since review round 1, so
+   every PR step runs again, and the coverage minimums are set again, R5).
 5. Push Biller and BillioIntegrationTest one right after the other (BillioIntegrationTest's push
-   carries 6e58a5c too), then re-run the CI of the one pushed first: each CI clones the other's
-   same-name branch from origin, and either new branch fails against the other's old one (the old
-   tests delete an item an invoice uses; the old Biller lets them). Then push BillerFrontEnd and
-   update the three PRs (#90, #34, #36).
+   carries 6e58a5c and the merge too), then re-run the CI of the one pushed first: each CI clones
+   the other's same-name branch from origin, and either new branch fails against the other's old one
+   (origin's c611578 deletes an item an invoice uses and expects it to work, and expects "Item id {id}
+   has no version 99" and "Invoice item:…"; the reworked Biller does none of that). Then push
+   BillerFrontEnd and update the three PRs (#90, #34, #36).
 6. Verification 3 on a production copy, then deploy Biller and BillerFrontEnd together.
