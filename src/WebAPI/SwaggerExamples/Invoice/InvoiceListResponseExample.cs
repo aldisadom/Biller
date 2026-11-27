@@ -48,6 +48,10 @@ public class InvoiceListResponseExample : IExamplesProvider<InvoiceListResponse>
                 new InvoiceItemResponse()
                 {
                     Id = Guid.NewGuid(),
+                    Version = 2,
+                    Name = "Iron throne",
+                    Price = 1500m,
+                    Quantity = 1
                 }
             ],
             Comments = "",
@@ -72,6 +76,10 @@ public class InvoiceListResponseExample : IExamplesProvider<InvoiceListResponse>
                 new InvoiceItemResponse()
                 {
                     Id = Guid.NewGuid(),
+                    Version = 1,
+                    Name = "Longclaw",
+                    Price = 125m,
+                    Quantity = 2
                 }
             ],
             Comments = "Pay in cash",
