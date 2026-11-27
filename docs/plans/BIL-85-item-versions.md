@@ -141,7 +141,8 @@ is edited in place (R1).
 | `InvoiceService` | `Validate` returns the customer and the versions; `Add` calls `SetLatestVersion` | `Validate` returns the customer; `SetLatestVersion` goes (12) |
 | `InvoiceModelUpdateValidator` | registered as `IValidator<InvoiceModel>`, run by `InvoiceController.Update` after `ToModel()` | deleted (13) |
 | `InvoiceAddValidator`, `InvoiceUpdateValidator` | `RuleFor(x => x.Items).Must(ValidateInvoiceItems)`, which throws from inside the rule | `RuleForEach(x => x.Items).SetValidator(new InvoiceItemValidator(...))` (17) |
-| `ItemModelExtensions` | `ToEntity` maps `Version`, which `ItemRepository.Add` and `Update` never read; `ToModel(this ItemResponse)` has no caller | `ToEntity` leaves `Version` out (16); `ToModel(this ItemResponse)` goes (17) || `InvoiceModel` | `List<InvoiceItemModel>? Items`, with `!` in 7 places in `src`; `CalculateTotal` loops | `Items = []`, no `!`; `Items.Sum(i => i.CalculateTotal())` (17) |
+| `ItemModelExtensions` | `ToEntity` maps `Version`, which `ItemRepository.Add` and `Update` never read; `ToModel(this ItemResponse)` has no caller | `ToEntity` leaves `Version` out (16); `ToModel(this ItemResponse)` goes (17) |
+| `InvoiceModel` | `List<InvoiceItemModel>? Items`, with `!` in 7 places in `src`; `CalculateTotal` loops | `Items = []`, no `!`; `Items.Sum(i => i.CalculateTotal())` (17) |
 | `InvoiceItemModel.Id` | the item's id | `ItemId` (17) |
 
 R1–R5 are the changes by layer. Commit them so that each commit builds and its tests pass, e.g. one
