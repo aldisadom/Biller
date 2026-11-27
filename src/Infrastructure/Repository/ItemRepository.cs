@@ -45,22 +45,21 @@ public class ItemRepository : IItemRepository
 
     public async Task<IEnumerable<ItemVersionEntity>> GetVersions(Guid itemId)
     {
-        string sql = @"SELECT v.*, i.customer_id FROM item_versions v
-                        JOIN items i ON i.id = v.item_id
-                        WHERE v.item_id=@ItemId
-                        ORDER BY v.version";
+        // No join to items: a version exists only while its item does (ON DELETE CASCADE)
+        string sql = @"SELECT * FROM item_versions
+                        WHERE item_id=@ItemId
+                        ORDER BY version";
 
         return await _dbConnection.QueryAsync<ItemVersionEntity>(sql, new { itemId });
     }
 
-    public async Task<IEnumerable<ItemVersionEntity>> GetVersions(List<Guid> itemIds)
+    public async Task<IEnumerable<Guid>> GetIdsForCustomer(List<Guid> ids, Guid customerId)
     {
-        string sql = @"SELECT v.*, i.customer_id FROM item_versions v
-                        JOIN items i ON i.id = v.item_id
-                        WHERE v.item_id=ANY(@ItemIds)
-                        ORDER BY v.item_id, v.version";
+        // Which of these ids are the customer's items
+        string sql = @"SELECT id FROM items
+                        WHERE id = ANY(@Ids) AND customer_id = @CustomerId";
 
-        return await _dbConnection.QueryAsync<ItemVersionEntity>(sql, new { itemIds });
+        return await _dbConnection.QueryAsync<Guid>(sql, new { ids, customerId });
     }
 
     public async Task<Guid> Add(ItemEntity item)

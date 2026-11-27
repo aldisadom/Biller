@@ -50,31 +50,13 @@ public class ItemService : IItemService
         return (entities.Select(i => i.ToModel()), totalCount, returnedPage);
     }
 
-    public async Task<IEnumerable<ItemVersionModel>> GetVersionsForCustomer(List<InvoiceItemModel> items, Guid customerId)
+    public async Task CheckForCustomer(List<Guid> ids, Guid customerId)
     {
-        List<Guid> ids = items.Select(l => l.Id).ToList();
-        List<ItemVersionEntity> versions = (await _itemRepository.GetVersions(ids)).ToList();
+        HashSet<Guid> ownItemIds = (await _itemRepository.GetIdsForCustomer(ids, customerId)).ToHashSet();
+        List<Guid> invalidIds = ids.Where(id => !ownItemIds.Contains(id)).ToList();
 
-        string idString = string.Empty;
-
-        var nonMatching = ids
-            .Where(id => !versions.Any(v => (v.ItemId == id) && (v.CustomerId == customerId)))
-            .ToList();
-
-        foreach (var item in nonMatching)
-            idString += " " + item.ToString();
-
-        if (!string.IsNullOrEmpty(idString))
-            throw new ValidationException($"Items id{idString} is invalid for customer id {customerId}");
-
-        // An empty version means the latest, which always exists
-        InvoiceItemModel? unknownVersion = items.FirstOrDefault(l =>
-            l.Version is not null && !versions.Any(v => (v.ItemId == l.Id) && (v.Version == l.Version)));
-
-        if (unknownVersion is not null)
-            throw new ValidationException($"Item id {unknownVersion.Id} has no version {unknownVersion.Version}");
-
-        return versions.Select(v => v.ToModel()).ToList();
+        if (invalidIds.Count != 0)
+            throw new ValidationException($"Items id {string.Join(" ", invalidIds)} is invalid for customer id {customerId}");
     }
 
     public async Task<Guid> Add(ItemModel item)

@@ -89,8 +89,7 @@ public static class ItemModelExtensions
             Version = from.Version,
             Name = from.Name,
             Price = from.Price,
-            ChangedDate = from.ChangedDate,
-            CustomerId = from.CustomerId
+            ChangedDate = from.ChangedDate
         };
     }
 

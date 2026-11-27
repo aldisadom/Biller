@@ -142,8 +142,7 @@ public class ItemMappingProfileTest
             Version = 3,
             Name = "ItemName",
             Price = 123.67M,
-            ChangedDate = new DateTime(2026, 11, 10, 14, 30, 0, DateTimeKind.Utc),
-            CustomerId = Guid.NewGuid()
+            ChangedDate = new DateTime(2026, 11, 10, 14, 30, 0, DateTimeKind.Utc)
         };
 
         //Act
@@ -163,8 +162,7 @@ public class ItemMappingProfileTest
             Version = 3,
             Name = "ItemName",
             Price = 123.67M,
-            ChangedDate = new DateTime(2026, 11, 10, 14, 30, 0, DateTimeKind.Utc),
-            CustomerId = Guid.NewGuid()
+            ChangedDate = new DateTime(2026, 11, 10, 14, 30, 0, DateTimeKind.Utc)
         };
 
         //Act

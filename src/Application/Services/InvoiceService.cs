@@ -79,8 +79,7 @@ public class InvoiceService : IInvoiceService
     {
         await _userService.Get(invoiceData.UserId);
 
-        (CustomerModel customer, IEnumerable<ItemVersionModel> versions) = await Validate(invoiceData);
-        SetLatestVersion(invoiceData.Items!, versions);
+        CustomerModel customer = await Validate(invoiceData);
         invoiceData.SeriesId = customer.SeriesId;
         invoiceData.Status = InvoiceStatus.Created;
 
@@ -136,23 +135,16 @@ public class InvoiceService : IInvoiceService
         return await _invoiceRepository.MarkOverdue(today.ToDateTime(TimeOnly.MinValue));
     }
 
-    // Invoice items don't copy name or price: reads join the item version they name (BIL-85).
-    // GetVersionsForCustomer checks that every invoice item's item is the customer's and that a given
-    // version exists, and returns the versions of those items.
-    private async Task<(CustomerModel Customer, IEnumerable<ItemVersionModel> Versions)> Validate(InvoiceModel invoiceData)
+    // Checks the seller, the customer and that every invoice item's item is the customer's. It checks
+    // no version: an empty one becomes the item's latest in InvoiceRepository.Add, and one the item
+    // doesn't have fails fk_invoice_items_item_id_version (BIL-85).
+    private async Task<CustomerModel> Validate(InvoiceModel invoiceData)
     {
         await _sellerService.GetForUser(invoiceData.SellerId, invoiceData.UserId);
         CustomerModel customer = await _customerService.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId);
-        IEnumerable<ItemVersionModel> versions = await _itemService.GetVersionsForCustomer(invoiceData.Items!, invoiceData.CustomerId);
+        await _itemService.CheckForCustomer(invoiceData.Items!.Select(ii => ii.Id).ToList(), invoiceData.CustomerId);
 
-        return (customer, versions);
-    }
-
-    // A new invoice item without a version gets its item's latest version.
-    private static void SetLatestVersion(List<InvoiceItemModel> invoiceItems, IEnumerable<ItemVersionModel> versions)
-    {
-        foreach (InvoiceItemModel invoiceItem in invoiceItems.Where(ii => ii.Version is null))
-            invoiceItem.Version = versions.Where(v => v.ItemId == invoiceItem.Id).Max(v => v.Version);
+        return customer;
     }
 
     public async Task Delete(Guid id)

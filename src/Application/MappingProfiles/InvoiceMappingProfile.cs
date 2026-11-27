@@ -59,7 +59,7 @@ public static class InvoiceModelExtensions
         };
     }
 
-    // A missing version becomes 0, which the foreign key rejects: never the item's latest.
+    // An empty version stays empty: InvoiceRepository.Add takes the item's latest, and PUT requires one.
     public static InvoiceItemEntity ToInvoiceItemEntity(this InvoiceItemModel from, Guid invoiceId, int lineNo)
     {
         return new InvoiceItemEntity
@@ -67,7 +67,7 @@ public static class InvoiceModelExtensions
             InvoiceId = invoiceId,
             LineNo = lineNo,
             ItemId = from.Id,
-            Version = from.Version.GetValueOrDefault(),
+            Version = from.Version,
             Quantity = from.Quantity,
             Comments = from.Comments
         };

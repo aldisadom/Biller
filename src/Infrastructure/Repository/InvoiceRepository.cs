@@ -80,6 +80,7 @@ public class InvoiceRepository : IInvoiceRepository
         return (invoices, totalCount, foundPage);
     }
 
+    // An invoice item without a version gets its item's latest version (BIL-85).
     public async Task<Guid> Add(InvoiceEntity invoice)
     {
         string sql = @"WITH reserved AS (
@@ -101,7 +102,9 @@ public class InvoiceRepository : IInvoiceRepository
                         ),
                         items_added AS (
                             INSERT INTO invoice_items (invoice_id, line_no, item_id, version, quantity, comments)
-                            SELECT inv.id, ii.ord, ii.item_id, ii.version, ii.quantity, ii.comments
+                            SELECT inv.id, ii.ord, ii.item_id,
+                                COALESCE(ii.version, (SELECT MAX(version) FROM item_versions WHERE item_id = ii.item_id)),
+                                ii.quantity, ii.comments
                             FROM inv, unnest(@ItemIds::uuid[], @Versions::int[], @Quantities::numeric[], @ItemComments::text[])
                                 WITH ORDINALITY AS ii(item_id, version, quantity, comments, ord)
                         )

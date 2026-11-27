@@ -195,12 +195,11 @@ public class InvoiceMappingProfileTest
         var to = from.ToInvoiceItemModel();
 
         //Assert
-        // Version is int on the entity and int? on the model, which TestMapp doesn't pair
-        HashSet<string> ignoreProperties = ["Id", "Version"];
+        // The model's Id is the entity's ItemId
+        HashSet<string> ignoreProperties = ["Id"];
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
 
         to.Id.Should().Be(from.ItemId);
-        to.Version.Should().Be(4);
     }
 
     [Fact]
@@ -234,7 +233,7 @@ public class InvoiceMappingProfileTest
     }
 
     [Fact]
-    public void ToInvoiceItemEntity_GivenInvoiceItemModelWithoutVersion_MapsVersionZero()
+    public void ToInvoiceItemEntity_GivenInvoiceItemModelWithoutVersion_KeepsVersionEmpty()
     {
         //Arrange
         InvoiceItemModel from = new() { Id = Guid.NewGuid() };
@@ -243,8 +242,8 @@ public class InvoiceMappingProfileTest
         var to = from.ToInvoiceItemEntity(Guid.NewGuid(), 1);
 
         //Assert
-        // 0 is no version, so the foreign key rejects it: a missing version never becomes the latest
-        to.Version.Should().Be(0);
+        // InvoiceRepository.Add gives an empty version the item's latest; a PUT can't send one empty
+        to.Version.Should().BeNull();
     }
 
     [Fact]
