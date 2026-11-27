@@ -56,8 +56,8 @@ fi
 
 `integration.md` keeps the run's whole output. `run-integration.sh` prints only what the PR needs:
 the BillioIntegrationTest solution and branch and the API URL, errors (every distinct error line of a
-failed build), each failed test with its message and first stack frame (the first 10), a missing or
-unreadable TRX report, and the `Run n/N` totals. Keep it that short when changing it.
+failed build), each failed test with its message and first stack frame (the first 10), a TRX report
+that is missing, unreadable, without test results or with a failed outcome, and the `Run n/N` totals. Keep it that short when changing it.
 
 Run the tests only when `up` succeeded. When it fails ("the test stack is already there", a build
 or migration error), an older stack may still answer on port 8091, and the tests would pass for code

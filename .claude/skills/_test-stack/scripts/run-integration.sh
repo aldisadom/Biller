@@ -56,7 +56,8 @@ fi
 TRX_DIR="TestResults/run-integration"
 TRX_FILE="run-integration.trx"
 
-# Print the first 10 failed tests of a TRX report, each with its message and first stack frame.
+# Print why a TRX report fails the run, and nothing when it passes: the first 10 failed tests, each
+# with its message and first stack frame, a report without test results, or a failed run outcome.
 failed_tests() {
 python3 -I - "$1" <<'EOF'
 import sys
@@ -64,11 +65,13 @@ import xml.etree.ElementTree as ET
 
 ns = "{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}"
 try:
-    results = ET.parse(sys.argv[1]).getroot().iter(ns + "UnitTestResult")
+    root = ET.parse(sys.argv[1]).getroot()
 except ET.ParseError as error:
     sys.exit(f"Unreadable TRX report {sys.argv[1]}: {error}")
+results = list(root.iter(ns + "UnitTestResult"))
 # The outcomes of a test that failed, or didn't finish or run.
-failing = ("Failed", "Error", "Timeout", "Aborted", "Disconnected", "NotRunnable", "InProgress")
+failing = ("Failed", "Error", "Timeout", "Aborted", "Disconnected", "NotRunnable", "InProgress",
+           "PassedButRunAborted", "Pending")
 failed = [r for r in results if r.get("outcome") in failing]
 for result in failed[:10]:
     outcome = result.get("outcome")
@@ -83,6 +86,13 @@ for result in failed[:10]:
         print("  " + line)
 if len(failed) > 10:
     print(f"... and {len(failed) - 10} more failed tests")
+if not results:
+    print(f"No test results in TRX report {sys.argv[1]}")
+# A passing run's report says Completed (BillioIntegrationTest's does) or Passed.
+summary = root.find(ns + "ResultSummary")
+outcome = summary.get("outcome") if summary is not None else None
+if outcome not in (None, "Completed", "Passed"):
+    print(f"TRX report outcome: {outcome}")
 EOF
 }
 
