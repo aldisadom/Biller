@@ -22,7 +22,6 @@ public class InvoiceControllerTest
     private readonly Mock<IValidator<InvoiceGenerateRequest>> _validatorGenerateMock;
     private readonly Mock<IValidator<InvoiceUpdateRequest>> _validatorUpdateMock;
     private readonly Mock<IValidator<InvoiceGetRequest>> _validatorGetMock;
-    private readonly Mock<IValidator<InvoiceModel>> _validatorModelUpdateMock;
     private readonly InvoiceController _invoiceController;
     private readonly Guid _userId = Guid.NewGuid();
     private readonly Guid _sellerId = Guid.NewGuid();
@@ -35,7 +34,6 @@ public class InvoiceControllerTest
         _validatorGenerateMock = new Mock<IValidator<InvoiceGenerateRequest>>(MockBehavior.Strict);
         _validatorUpdateMock = new Mock<IValidator<InvoiceUpdateRequest>>(MockBehavior.Strict);
         _validatorGetMock = new Mock<IValidator<InvoiceGetRequest>>(MockBehavior.Strict);
-        _validatorModelUpdateMock = new Mock<IValidator<InvoiceModel>>(MockBehavior.Strict);
 
         _invoiceController = new InvoiceController(
             _invoiceServiceMock.Object,
@@ -43,8 +41,7 @@ public class InvoiceControllerTest
             _validatorAddMock.Object,
             _validatorGenerateMock.Object,
             _validatorUpdateMock.Object,
-            _validatorGetMock.Object,
-            _validatorModelUpdateMock.Object);
+            _validatorGetMock.Object);
     }
 
     private InvoiceModelFull CreateInvoice() => new()
@@ -179,8 +176,6 @@ public class InvoiceControllerTest
 
         _validatorUpdateMock.Setup(v => v.Validate(request))
             .Returns(new ValidationResult());
-        _validatorModelUpdateMock.Setup(v => v.Validate(It.Is<InvoiceModel>(m => m.Id == request.Id)))
-            .Returns(new ValidationResult());
         _invoiceServiceMock.Setup(s => s.Update(It.Is<InvoiceModel>(m =>
                 m.Id == request.Id &&
                 m.SellerId == request.SellerId &&
@@ -195,8 +190,6 @@ public class InvoiceControllerTest
 
         _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
         _validatorUpdateMock.VerifyNoOtherCalls();
-        _validatorModelUpdateMock.Verify(v => v.Validate(It.Is<InvoiceModel>(m => m.Id == request.Id)), Times.Once());
-        _validatorModelUpdateMock.VerifyNoOtherCalls();
         _invoiceServiceMock.Verify(s => s.Update(It.Is<InvoiceModel>(m =>
                 m.Id == request.Id &&
                 m.SellerId == request.SellerId &&
@@ -314,31 +307,6 @@ public class InvoiceControllerTest
 
         _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
         _validatorUpdateMock.VerifyNoOtherCalls();
-        _validatorModelUpdateMock.VerifyNoOtherCalls();
-        _invoiceServiceMock.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task Update_GivenInvalidModel_ThrowsValidationException()
-    {
-        //Arrange
-        var request = new InvoiceUpdateRequest { Id = Guid.NewGuid() };
-
-        _validatorUpdateMock.Setup(v => v.Validate(request))
-            .Returns(new ValidationResult());
-        _validatorModelUpdateMock.Setup(v => v.Validate(It.Is<InvoiceModel>(m => m.Id == request.Id)))
-            .Returns(new ValidationResult([new ValidationFailure(nameof(InvoiceModel.SellerId), "Please specify seller Id")]));
-
-        //Act
-        Func<Task> act = () => _invoiceController.Update(request);
-
-        //Assert
-        await act.Should().ThrowAsync<ValidationException>().WithMessage("Please specify seller Id");
-
-        _validatorUpdateMock.Verify(v => v.Validate(request), Times.Once());
-        _validatorUpdateMock.VerifyNoOtherCalls();
-        _validatorModelUpdateMock.Verify(v => v.Validate(It.Is<InvoiceModel>(m => m.Id == request.Id)), Times.Once());
-        _validatorModelUpdateMock.VerifyNoOtherCalls();
         _invoiceServiceMock.VerifyNoOtherCalls();
     }
 

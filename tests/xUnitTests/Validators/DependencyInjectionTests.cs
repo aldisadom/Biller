@@ -1,5 +1,4 @@
-﻿using Application.Models;
-using BillerContracts.Requests.Customer;
+﻿using BillerContracts.Requests.Customer;
 using BillerContracts.Requests.Invoice;
 using BillerContracts.Requests.Item;
 using BillerContracts.Requests.Seller;
@@ -42,7 +41,6 @@ public class DependencyInjectionTests
         [typeof(IValidator<InvoiceAddRequest>)] = typeof(InvoiceAddValidator),
         [typeof(IValidator<InvoiceGenerateRequest>)] = typeof(InvoiceGenerateValidator),
         [typeof(IValidator<InvoiceUpdateRequest>)] = typeof(InvoiceUpdateValidator),
-        [typeof(IValidator<InvoiceModel>)] = typeof(InvoiceModelUpdateValidator),
         [typeof(IValidator<InvoiceItemRequest>)] = typeof(InvoiceItemValidator),
         [typeof(IValidator<InvoiceGetRequest>)] = typeof(InvoiceGetValidator),
     };
