@@ -97,17 +97,13 @@ public class ItemRepository : IItemRepository
         await _dbConnection.ExecuteAsync(sql, item);
     }
 
-    public async Task<bool> Delete(Guid id)
+    public async Task Delete(Guid id)
     {
-        // Not while an invoice line uses it (lines live in invoices.items_data, so no foreign key does
-        // this); checked in the same statement, so an invoice added meanwhile can't slip through.
-        // item_versions rows go with it (ON DELETE CASCADE).
+        // invoice_items' foreign keys refuse an item that an invoice uses (400); its item_versions
+        // rows go with it (ON DELETE CASCADE).
         string sql = @"DELETE FROM items
-                        WHERE id=@Id
-                          AND NOT EXISTS (
-                              SELECT 1 FROM invoices
-                              WHERE items_data::jsonb @> jsonb_build_array(jsonb_build_object('Id', @Id)))";
+                        WHERE id=@Id";
 
-        return await _dbConnection.ExecuteAsync(sql, new { id }) > 0;
+        await _dbConnection.ExecuteAsync(sql, new { id });
     }
 }

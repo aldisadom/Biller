@@ -4,7 +4,6 @@ using BillerContracts.Enums;
 using BillerContracts.Requests.Invoice;
 using Domain.Entities;
 using AwesomeAssertions;
-using Newtonsoft.Json;
 using static xUnitTests.Application.MappingProfiles.MappingTestHelper;
 
 namespace xUnitTests.Application.MappingProfiles;
@@ -58,17 +57,33 @@ public class InvoiceMappingProfileTest
 
         //Assert
         HashSet<string> ignoreProperties = [
-            "ItemsData",
+            "Items",
             "CreatedDate",
-            "DueDate",
-            "TotalPrice"
+            "DueDate"
         ];
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
 
-        to.ItemsData.Should().Be(JsonConvert.SerializeObject(from.Items));
+        // An invoice item keeps its line number, item, quantity and comments; name and price aren't stored
+        to.Items.Should().BeEquivalentTo(new List<InvoiceItemEntity>
+        {
+            new() { InvoiceId = from.Id, LineNo = 1, ItemId = from.Items![0].Id, Quantity = 1, Comments = "Item 1 comment" },
+            new() { InvoiceId = from.Id, LineNo = 2, ItemId = from.Items[1].Id, Quantity = 2, Comments = "Item 2 comment" }
+        }, o => o.WithStrictOrdering());
         to.CreatedDate.Should().Be(from.CreatedDate.ToDateTime(TimeOnly.MinValue));
         to.DueDate.Should().Be(from.DueDate.ToDateTime(TimeOnly.MinValue));
-        to.TotalPrice.Should().Be(51.5m);
+    }
+
+    [Fact]
+    public void ToEntity_GivenModelWithoutItems_HasNoItems()
+    {
+        //Arrange
+        InvoiceModel from = new() { Items = [] };
+
+        //Act
+        var to = from.ToEntity();
+
+        //Assert
+        to.Items.Should().BeEmpty();
     }
 
     [Fact]
@@ -100,7 +115,8 @@ public class InvoiceMappingProfileTest
     public void ToModel_GivenEntity_MapsAllProperties()
     {
         //Arrange
-        List<InvoiceItemModel> invoiceItems = NewItems();
+        Guid firstItemId = Guid.NewGuid();
+        Guid secondItemId = Guid.NewGuid();
 
         var from = new InvoiceEntity
         {
@@ -111,7 +127,12 @@ public class InvoiceMappingProfileTest
             UserId = Guid.NewGuid(),
             SellerId = Guid.NewGuid(),
             CustomerId = Guid.NewGuid(),
-            ItemsData = JsonConvert.SerializeObject(invoiceItems),
+            // Out of line order, to show the items come back in line order
+            Items =
+            [
+                new() { LineNo = 2, ItemId = secondItemId, Name = "Item 2", Price = 20.5m, Quantity = 2, Comments = "Item 2 comment" },
+                new() { LineNo = 1, ItemId = firstItemId, Name = "Item 1", Price = 10.5m, Quantity = 1, Comments = "Item 1 comment" }
+            ],
             Comments = "invoice comment",
             Status = InvoiceStatus.Send,
             CreatedDate = DateOnly.FromDateTime(DateTime.Now).ToDateTime(TimeOnly.MinValue),
@@ -130,9 +151,79 @@ public class InvoiceMappingProfileTest
 
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
 
-        to.Items.Should().BeEquivalentTo(invoiceItems);
+        to.Items.Should().BeEquivalentTo(new List<InvoiceItemModel>
+        {
+            new() { Id = firstItemId, Name = "Item 1", Price = 10.5m, Quantity = 1, Comments = "Item 1 comment" },
+            new() { Id = secondItemId, Name = "Item 2", Price = 20.5m, Quantity = 2, Comments = "Item 2 comment" }
+        }, o => o.WithStrictOrdering());
         to.CreatedDate.Should().Be(DateOnly.FromDateTime(from.CreatedDate));
         to.DueDate.Should().Be(DateOnly.FromDateTime(from.DueDate));
+    }
+
+    [Fact]
+    public void ToModel_GivenEntityWithoutItems_HasNoItems()
+    {
+        //Arrange
+        InvoiceEntity from = new() { Items = [] };
+
+        //Act
+        var to = from.ToModel();
+
+        //Assert
+        to.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ToInvoiceItemModel_GivenInvoiceItemEntity_MapsAllProperties()
+    {
+        //Arrange
+        InvoiceItemEntity from = new()
+        {
+            InvoiceId = Guid.NewGuid(),
+            LineNo = 3,
+            ItemId = Guid.NewGuid(),
+            Name = "Iron throne",
+            Price = 10.5m,
+            Quantity = 2,
+            Comments = "Winterfell"
+        };
+
+        //Act
+        var to = from.ToInvoiceItemModel();
+
+        //Assert
+        HashSet<string> ignoreProperties = ["Id"];
+        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
+
+        to.Id.Should().Be(from.ItemId);
+    }
+
+    [Fact]
+    public void ToInvoiceItemEntity_GivenInvoiceItemModel_MapsItemQuantityAndCommentsOnly()
+    {
+        //Arrange
+        InvoiceItemModel from = new()
+        {
+            Id = Guid.NewGuid(),
+            Name = "Iron throne",
+            Price = 10.5m,
+            Quantity = 2,
+            Comments = "Winterfell"
+        };
+        Guid invoiceId = Guid.NewGuid();
+
+        //Act
+        var to = from.ToInvoiceItemEntity(invoiceId, 3);
+
+        //Assert
+        to.Should().BeEquivalentTo(new InvoiceItemEntity
+        {
+            InvoiceId = invoiceId,
+            LineNo = 3,
+            ItemId = from.Id,
+            Quantity = 2,
+            Comments = "Winterfell"
+        });
     }
 
     [Fact]

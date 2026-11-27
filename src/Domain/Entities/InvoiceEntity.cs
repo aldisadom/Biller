@@ -14,8 +14,7 @@ public record InvoiceEntity
     public int InvoiceNumber { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime DueDate { get; set; }
-    public string ItemsData { get; set; } = string.Empty;
+    public List<InvoiceItemEntity> Items { get; set; } = [];
     public string? Comments { get; set; }
-    public decimal TotalPrice { get; set; }
     public InvoiceStatus Status { get; set; }
 }

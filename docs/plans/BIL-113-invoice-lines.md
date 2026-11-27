@@ -1,0 +1,455 @@
+# Plan: invoice items in an `invoice_items` table (BIL-113)
+
+Jira: [BIL-113](https://aldisadom.atlassian.net/browse/BIL-113). Epic: BIL-89 (Billeris). Blocks
+BIL-85 (item versions, In progress, branch `BIL-85-item-versions`, not merged) and BIL-75 (units,
+To Do). Planned against master's code; BIL-85 is not a blocker.
+
+## Open questions
+
+None. The user decided:
+
+- Lines hold no name and no price: every read joins `items` and shows the item's current name and
+  price (decision 3). Until BIL-85, an item edit changes every invoice that uses the item, its PDF
+  and its total, paid invoices too. The user accepted this.
+- Lines whose item was already deleted: decided by pre-check 1's count on a production copy
+  (decision 4). Both branches are written below; the deploy step picks one.
+
+## Goal
+
+- Invoice lines are rows in `invoice_items` instead of JSON text in `invoices.items_data`.
+- The database guarantees that a line's item exists: an item an invoice uses can't be deleted (400),
+  even by a request at the same moment, and deleting an invoice deletes its lines.
+- Line positions and quantities are checked by the database.
+- Lines can be queried with SQL (sales per item; BIL-75 adds a unit, BIL-85 a version).
+- The API, BillerContracts, BillerFrontEnd and the PDFs keep their shape. Values on old invoices
+  change: they show each item's current name and price.
+
+## Current state (master @ ea10918)
+
+Checked again at ea10918 (origin/master has nothing newer).
+
+| Where | What |
+|---|---|
+| `invoices.items_data` (026) | `TEXT NOT NULL`: Newtonsoft JSON of `List<InvoiceItemModel>`, PascalCase keys `Id`, `Name`, `Price`, `Quantity`, `Comments`. No foreign key from a line to `items` |
+| `invoices.total_price` (026) | `decimal NOT NULL`, written from `InvoiceModel.CalculateTotal()` in `InvoiceModelExtensions.ToEntity`. Never read by Biller: `ToModel` doesn't map it, and responses (`InvoiceModelFullExtensions.ToResponse`) and both PDF documents compute the total from the lines with `CalculateTotal()`. Only BIL-90's plan reads it (not built) |
+| `items` (006, 025, 027) | `id`, `customer_id`, `name varchar(255)`, `price numeric`, `quantity decimal`, all `NOT NULL`. Foreign key to `customers` is `fk_invoice_customers_id` |
+| Last migration | `035-Migrate-customers_invoices_to_series.sql`. Liquibase 4.26.0, `includeAll` of `migrations/sql/` |
+| `InvoiceRepository` | `Get(id)` and the paged `Get` select `i.*` with the series name. `Add` is one statement: `reserved` CTE takes the series number, then `INSERT INTO invoices (..., items_data, ..., total_price, ...)`. `Update` sets `items_data` and `total_price`. `Delete` gives the number back in one statement |
+| `ItemRepository` | `Get(id)`, `Get(ids)` (`ANY(@Ids)`), paged `Get`, `Update`, and `Delete`: a plain `DELETE FROM items`, no "used by invoices" check. `ItemService.Delete` checks only that the item exists (404) |
+| `InvoiceEntity` | `string ItemsData`, `decimal TotalPrice` |
+| `InvoiceItemEntity` | Unused (`Id`, `Name`, `Price`, `Quantity`, `TotalPrice`, `Comments`) |
+| `InvoiceModelExtensions` (`MappingProfiles/InvoiceMappingProfile.cs`) | `ToModel(InvoiceEntity)` deserializes `ItemsData`; `ToEntity(InvoiceModel)` serializes `Items` and sets `TotalPrice` |
+| `InvoiceItemModel` | `Id`, `Name`, `Price`, `Quantity`, `Comments`, `CalculateTotal()`. Used by the service, mappings, responses and both PDF documents |
+| `InvoiceService.Add` / `Update` | `Validate` (seller of user, customer of seller, `ItemService.GetForCustomer` for the line items: 400 when an id isn't the customer's), then the public static `MapItemToInvoiceItem` copies name and price from the current items |
+| Validators | `InvoiceItemValidator`: item id not empty, quantity > 0, comments drawable. `InvoiceModelUpdateValidator` repeats them. `ItemAddValidator`/`ItemUpdateValidator`: price > 0 |
+| `ErrorChecking` middleware | Postgres "update or delete ... violates foreign key constraint" → 400 "Can not delete (please clear all dependants) or update (item not found): <constraint after `fk_`>". "insert or update" → 400 "Key does not exist: ...". A check-constraint violation → 500 |
+| BillerContracts | Biller uses 5.0.0: `InvoiceItemRequest` (`Id`, `Quantity`, `Comments`), `InvoiceItemResponse` (`Id`, `Name`, `Price`, `Quantity`, `Comments`), `InvoiceResponse.TotalPrice`. BillerContracts master already has BIL-85's `Version` (not used by Biller yet); this issue needs no contract change |
+| BillerFrontEnd | Works only through the contracts; no change |
+| BillioIntegrationTest (master) | `InvoiceTest.InvoiceKeepsItemPriceUntilUpdated_Valid_Success` (line 2080: item edit keeps the line until `PUT`). `InvoiceWithDeletedItem_Valid_Success` (2123: deletes an item an invoice uses, reads the invoice). `CustomerDelete_WhenHasInvoice_Fail` (2145: deletes the invoice's item first, then expects 400 on `invoices_customer_id`). Clean-up deletes invoices before items (`TestPreparation.DeleteAllData`, `InvoiceNumbering_SeriesRules_Success`) |
+| `CLAUDE.md` (master, Conventions) | "They keep their own number, dates and lines. Editing an item must not change an existing invoice or its PDF. Saving the invoice itself (`PUT /invoices`) copies line names and prices from the current items." |
+| `REVIEW.md` | Failure: "An old invoice or its PDF changes after an item or unit is edited." |
+| Other plans | BIL-85's plan on its branch (`docs/plans/BIL-85-item-versions.md`, migrations 036–038): lines stay in `items_data` with a `Version` key (decision 2), versions rebuilt from the JSON lines (decision 4), item delete stays a hard delete (decision 5). Master's `BIL-85-item-history.md` is the older design. `BIL-75-units.md` snapshots the unit into `items_data` (decision 3). `BIL-90-seller-invoice-summary.md` sums the stored `total_price` (decision 3). `BIL-86-...md` "Out of scope" names this move |
+
+## Design decisions
+
+1. **Table `invoice_items`, key `(invoice_id, line_no)`.** `line_no` is the 1-based position, so
+   lines keep their order. No separate `id`: nothing points to a line yet (BIL-85 and BIL-75 add
+   columns, not references). `invoice_id` is `ON DELETE CASCADE`, so `InvoiceRepository.Delete`
+   stays as it is.
+2. **`item_id` is `NOT NULL` and references `items(id)` without cascade.** Deleting an item a line
+   uses fails on `fk_invoice_items_item_id`, and the middleware already turns that into 400 "Can not
+   delete (please clear all dependants) or update (item not found): invoice_items_item_id". So the
+   check is the foreign key's job; `ItemService` and `ItemRepository.Delete` don't change. This is a
+   new rule: on master, used items can be deleted. Index on `item_id` for the delete check and
+   per-item queries.
+3. **A line holds no name and no price; reads join the item (user's decision).** Columns:
+   `invoice_id`, `line_no`, `item_id`, `quantity numeric`, `comments text`. Every invoice read joins
+   `items` and shows its current name and price. Reason: the user wants no copy of item data on the
+   line, and BIL-85 brings back what was billed through item versions. Accepted by the user: until
+   BIL-85, editing an item changes every invoice that uses it, its lines, PDF and total, paid
+   invoices too; `CLAUDE.md` and `REVIEW.md` say so (Step 10). `PUT /invoices` no longer copies name
+   and price (`MapItemToInvoiceItem` goes). The migration drops the line name and price where they
+   differ from the item's current values; pre-check 2 lists those lines for information.
+4. **Lines whose item was already deleted: decided by pre-check 1's count (user's decision).**
+   - **0 on the production copy (4a):** no extra mechanism. If such a line appears before the
+     deploy, 037 (the move) fails on the foreign key and moves nothing; fix or delete that invoice
+     and deploy again.
+   - **Above 0 (4b): restore them as hidden archived items.** 037 first adds
+     `items.archived boolean NOT NULL DEFAULT false` and inserts one `items` row per missing id: the
+     line's id, the invoice's customer, and the name, price and quantity of its line on the newest
+     invoice, with `archived = true`. Every item read in `ItemRepository` filters `NOT archived`, so
+     `GET /items/{id}` gives 404, they're missing from the item list, `PUT /items` and
+     `DELETE /items/{id}` give 404 (both call `Get` first), and `PUT /invoices` with such a line gives
+     400 from `GetForCustomer`, as on master. Invoice reads join `items` without the filter, so old
+     invoices show them.
+   - Rejected: a nullable `item_id` (it only worked with name and price on the line: a line with
+     no item would have no name or price to show); dropping orphan lines (loses billed data); no
+     foreign key (the issue's main goal).
+5. **`invoices.total_price` is dropped (changeset 038, with `items_data`).** A stored total goes stale on the first
+   item edit (decision 3), and keeping it right would mean updating every invoice of an item on each
+   item edit. Computing it on read is what Biller already does: responses and PDFs use
+   `CalculateTotal()` over the lines, now with the joined current prices, so the response, the PDF
+   and the total can't disagree. Nothing in Biller reads the column. BIL-90's plan sums it; that
+   plan changes to sum `quantity * price` over `invoice_items` joined to `items` (follow-up). The
+   rollback rebuilds it from the lines and the current prices.
+6. **Line checks:** `line_no >= 1`, `quantity > 0` (as `InvoiceItemValidator`). Validators stay in
+   front, so a check failing (500) means a bug. Pre-check 3 shows whether old lines break a check;
+   if they do, fix them before deploying.
+7. **Each write is one statement.** `Add`: the existing `reserved` CTE, then the invoice insert,
+   then the lines insert from the invoice's new id. `Update`: update the invoice, upsert lines
+   `1..n` (`ON CONFLICT (invoice_id, line_no) DO UPDATE`), delete lines above `n`. The upsert and the
+   delete touch different rows, so the key never sees an old and a new line 1 at once (a
+   delete-all-then-insert in one statement could, since the CTEs' order isn't defined). Lines go in
+   as arrays (`unnest(...) WITH ORDINALITY`), as `ItemRepository.Get(ids)` already passes
+   `ANY(@Ids)`.
+8. **Reads are two queries:** the invoice (or page), then its lines joined to `items` by
+   `invoice_id = ANY(@Ids) ORDER BY invoice_id, line_no`. The one-statement rule is for writes. A
+   `json_agg` column would bring the JSON parsing back.
+9. **Three changesets (user's layout, 2026-11-24): schema, data, drop.** 036 creates the table;
+   037 moves the lines (with 4b, first restores the missing items); 038 drops `items_data` and
+   `total_price` together. The move reads only `items_data` values that are JSON arrays
+   (`IS JSON ARRAY`, PG16), so non-JSON text doesn't fail a `::jsonb` cast. 037 has a Liquibase
+   precondition (`onFail:HALT`) that stops before moving anything while an invoice's `items_data`
+   isn't a JSON array, so fixing that row and updating again is enough (review F8). 038 has one that
+   counts invoices whose `items_data` isn't a JSON array or whose array length differs from their
+   moved lines; anything above 0 stops before the drop, so nothing is lost silently. A line element that isn't an object, or misses `Id` or `Quantity` (wrong key
+   case), fails 037 on `NOT NULL`. GUID case doesn't matter: `::uuid` reads both.
+10. **Rollbacks rebuild the JSON from the current items.** 038's rollback adds `items_data` and
+    `total_price` back and fills them from the lines, with `Name` and `Price` from the items as they
+    are now (`jsonb_agg(... ORDER BY line_no)`, `'[]'` for an invoice without lines; the total from
+    `quantity * price`), so lines changed after the deploy survive a rollback; the old line names
+    and prices the move dropped don't come back. Newtonsoft reads jsonb's key order, spacing and `50`
+    for `50.0` the same. 037's rollback empties `invoice_items` (with 4b, then deletes the archived
+    items and drops the column); 036's drops the table.
+11. **No contract, front-end or PDF layout change.** `InvoiceItemModel` keeps its shape; its `Name`
+    and `Price` now come from the join. Only the entities, the repository, the mapping and the
+    service change.
+
+## Dependencies
+
+- No blockers. BIL-113 goes to master before BIL-85 and BIL-75 (Jira: BIL-113 blocks both).
+- **Follow-up on BIL-85 (plan and branch; not edited here):**
+  - Its migrations renumber after 038.
+  - Its decision 4 (versions rebuilt from the JSON lines) can't work: after BIL-113 the old line
+    names and prices are gone. Versions start from the items as they are at BIL-85's deploy (one
+    version per item); every existing line points to it.
+  - Its decision 2 (lines keep a copy plus `Version`) becomes `invoice_items.item_version_id`
+    (foreign key to `item_versions`), read through the version; no name or price copy on the line.
+    Its 037 reads `invoice_items`, not `items_data`.
+  - Its decision 5 (hard delete, invoices keep their copy) becomes 400 by this foreign key (its
+    `CLAUDE.md` text already says so).
+  - It restores the `CLAUDE.md` rule "Editing an item must not change an existing invoice or its
+    PDF" and the `REVIEW.md` failure line for items (Step 10 marks both as suspended until BIL-85).
+  - With 4b, archived items get a version like any item, and its item reads keep `NOT archived`.
+- **Follow-up on BIL-75:** `docs/plans/BIL-75-units.md` snapshots the unit into `items_data`
+  (decision 3). It moves to the line table: until BIL-85 a line shows its item's current unit
+  (join), as it does name and price; with BIL-85 the unit belongs to the item version.
+- **Follow-up on BIL-90:** `docs/plans/BIL-90-seller-invoice-summary.md` decision 3 sums
+  `invoices.total_price`, which 038 drops. It sums `l.quantity * it.price` over `invoice_items`
+  joined to `items` instead (with BIL-85, the version's price).
+
+## Pre-check queries
+
+Run on a copy of production before deploying (`make update` takes a backup first).
+
+```sql
+-- 1. Lines whose item is gone: the count picks decision 4a (0) or 4b (above 0)
+SELECT i.id, i.invoice_number, l.value->>'Id' AS item_id, l.value->>'Name' AS name
+FROM invoices i
+CROSS JOIN LATERAL jsonb_array_elements(
+    CASE WHEN i.items_data IS JSON ARRAY THEN i.items_data::jsonb ELSE '[]'::jsonb END) l
+WHERE NOT EXISTS (SELECT 1 FROM items it WHERE it.id::text = lower(l.value->>'Id'));
+
+-- 2. For information: lines whose name or price differ from the item now. After the deploy these
+--    invoices, their PDFs and totals show the item's current name and price (decision 3).
+SELECT i.id, i.invoice_number, i.status, l.value->>'Id' AS item_id,
+       l.value->>'Name' AS billed_name, it.name AS name_now,
+       (l.value->>'Price')::numeric AS billed_price, it.price AS price_now
+FROM invoices i
+CROSS JOIN LATERAL jsonb_array_elements(
+    CASE WHEN i.items_data IS JSON ARRAY THEN i.items_data::jsonb ELSE '[]'::jsonb END) l
+JOIN items it ON it.id::text = lower(l.value->>'Id')
+WHERE l.value->>'Name' IS DISTINCT FROM it.name
+   OR (l.value->>'Price')::numeric IS DISTINCT FROM it.price
+ORDER BY i.invoice_number;
+
+-- 3. Lines that break a column rule (missing key, wrong case, quantity <= 0)
+SELECT i.id, l.value
+FROM invoices i
+CROSS JOIN LATERAL jsonb_array_elements(
+    CASE WHEN i.items_data IS JSON ARRAY THEN i.items_data::jsonb ELSE '[]'::jsonb END) l
+WHERE jsonb_typeof(l.value) <> 'object'
+   OR l.value->>'Id' IS NULL OR l.value->>'Quantity' IS NULL
+   OR (l.value->>'Quantity')::numeric <= 0;
+
+-- 4. items_data that isn't a JSON array jsonb can read (037's precondition would stop). jsonb
+--    rejects a \u0000 escape (a NUL in a comment) that IS JSON accepts. Run it first and fix its
+--    rows before 1-3: they cast to jsonb and error ('unsupported Unicode escape sequence') while
+--    such a row is there.
+SELECT id, left(items_data, 80) FROM invoices
+WHERE NOT (items_data IS JSON ARRAY AND pg_input_is_valid(items_data, 'jsonb'));
+```
+
+## Step 1: BillerContracts
+
+None. Check: Biller stays on 5.0.0, and no request or response changes.
+
+## Step 2: Migrations (`_add-db-migration`; numbers are taken when written) (written, 4a)
+
+036–038 were the next free numbers. `_add-db-migration` says a column drop ships in a later release
+than the code change; the user chose to keep the drop in this PR as planned (2026-11-24). After
+the PR opened, the user set the layout (2026-11-24): the table, the data move and the drop are one
+changeset each. The SQL is in the files:
+
+- `036-Create-table-invoice_items.sql`: the table, its keys, checks and the `item_id` index.
+  Rollback: `DROP TABLE invoice_items`.
+- `037-Migrate-invoices_items_data_to_invoice_items.sql`: a precondition that halts while any
+  `items_data` isn't a JSON array that jsonb can read (F11: jsonb rejects a `\u0000` escape that
+  `IS JSON` accepts), then one `INSERT ... SELECT` from
+  `jsonb_array_elements(... ) WITH ORDINALITY` (decision 4a). One statement, so a line whose item is
+  gone fails it whole and moves nothing. Rollback: `DELETE FROM invoice_items`.
+- `038-Alter-table-invoices_drop_items_data_total_price.sql`: the precondition (decision 9), then
+  `DROP COLUMN items_data, DROP COLUMN total_price`. Rollback: both columns back, filled from the
+  lines and the current items, then `SET NOT NULL`.
+
+Checked on the test stack (`bil-113`, one seeded invoice with a second line of quantity 3.5 and a
+comment), first with the old layout and again with this one: `rollback-count 3` rolled 038–036
+back (038's rollback rebuilt `items_data` with the items' current name and price, lines in order,
+and `total_price` 55.0) and `update` ran them again with both lines intact. 038's precondition
+halts in formatted SQL: with `items_data = 'not json'`, `update` stopped on "SQL Precondition
+failed. Expected '0' got '1'" and both columns stayed; after repairing the row, 038 ran. 037's
+precondition (review F8) was checked the same way: rolled back to before 037 with a broken row, it
+stopped before moving anything; after repairing the row, `update` ran 037 and 038. 4b's variant
+isn't written (pre-check 1 not run yet).
+
+036 and 037 were renamed from `...invoice_lines.sql` to `...invoice_items.sql` (2026-11-26).
+Liquibase knows a changeset by id, author and file path, so a database that ran the old names runs
+the new ones as well. If it had run 038 too, the new 037 fails (no `items_data`). If 038 hadn't
+run, the new 036–038 succeed but the old `invoice_lines` table stays, and its foreign key still
+blocks deleting an item that an invoice no longer uses. Either way, recreate that database (or drop
+`invoice_lines` and the old 036/037 rows in `databasechangelog`). Production never ran them.
+
+A database that ran this branch's earlier layout (036 that also moved the lines, `037-Alter-...`,
+`038-Alter-...drop_total_price`) can't update with these files: Liquibase rejects 036's changed
+checksum. Only throwaway test stacks ran it; recreate any other. The owner's local `billio-db` ran
+BIL-85's 036–038 instead (`item_versions`, `items.name`/`price` dropped), so this branch doesn't run
+on it as it is: restore a backup from before BIL-85, or roll BIL-85's changesets back from its
+branch (review F9).
+
+With decision 4b, 037 starts with the archived items (before the `INSERT`), and its rollback
+undoes them after emptying the table:
+
+```sql
+ALTER TABLE items ADD COLUMN archived boolean NOT NULL DEFAULT false;
+
+INSERT INTO items (id, customer_id, name, price, quantity, archived)
+SELECT DISTINCT ON (l.item_id) l.item_id, i.customer_id, l.name, l.price, l.quantity, true
+FROM invoices i
+CROSS JOIN LATERAL (
+    SELECT (e->>'Id')::uuid AS item_id, e->>'Name' AS name, (e->>'Price')::numeric AS price,
+           (e->>'Quantity')::numeric AS quantity
+    FROM jsonb_array_elements(
+        CASE WHEN i.items_data IS JSON ARRAY THEN i.items_data::jsonb ELSE '[]'::jsonb END) e) l
+WHERE NOT EXISTS (SELECT 1 FROM items it WHERE it.id = l.item_id)
+ORDER BY l.item_id, i.created_date DESC, i.invoice_number DESC;
+
+-- rollback DELETE FROM invoice_items;
+-- rollback DELETE FROM items WHERE archived;
+-- rollback ALTER TABLE items DROP COLUMN archived;
+```
+
+With 4b, check its variant on the test stack too before deploying (`_test-stack`, rows with an
+archived item).
+
+## Step 3: Domain and Infrastructure (done)
+
+Done as: `Add` and `Update` pass the invoice's own columns as an anonymous object plus the invoice
+item arrays (`WithItems`), not the entity, so Dapper doesn't see the `Items` list. Reads load the
+invoice items with one query for the invoice or the whole page (`LoadItems`).
+
+Renamed after review (2026-11-26, user's decision): lines are invoice items in the code and the
+database. The table is `invoice_items` (constraints `fk_/ck_invoice_items_*`, index
+`idx_invoice_items_item_id`), the entity `InvoiceItemEntity`, the property `InvoiceEntity.Items`.
+`line_no` / `LineNo` keep their name: it is the invoice item's position. The paged `Get` names its
+tuple `Invoices` instead of `Items` in `IInvoiceRepository` and `IInvoiceService`.
+
+- `Domain/Entities/InvoiceItemEntity.cs` replaces the unused `InvoiceItemEntity` of the same name:
+  `InvoiceId`, `LineNo`, `ItemId`, `Quantity`, `Comments`, and `Name`, `Price` filled only by reads
+  (from the join).
+- `InvoiceEntity`: `List<InvoiceItemEntity> Items` replaces `string ItemsData`; `TotalPrice` goes.
+- `IInvoiceRepository`: signatures unchanged (the paged `Get`'s tuple field is now `Invoices`).
+- `InvoiceRepository`:
+  - `Get(id)`: invoice query as today, then
+
+    ```sql
+    SELECT ii.*, it.name, it.price FROM invoice_items ii
+    JOIN items it ON it.id = ii.item_id
+    WHERE ii.invoice_id = @Id ORDER BY ii.line_no
+    ```
+
+    No `archived` filter here (decision 4b).
+  - Paged `Get`: page query as today, then the same invoice items query for the page's ids
+    (`ii.invoice_id = ANY(@Ids) ORDER BY ii.invoice_id, ii.line_no`), grouped onto each entity.
+  - `Add`:
+
+    ```sql
+    WITH reserved AS ( ...unchanged... ),
+    inv AS (
+        INSERT INTO invoices
+        (customer_id, seller_id, user_id, series_id, invoice_number, created_date, due_date,
+         comments, status)
+        SELECT @CustomerId, @SellerId, @UserId, @SeriesId, reserved.invoice_number, @CreatedDate, @DueDate,
+               @Comments, @Status
+        FROM reserved
+        RETURNING id
+    ),
+    items_added AS (
+        INSERT INTO invoice_items (invoice_id, line_no, item_id, quantity, comments)
+        SELECT inv.id, ii.ord, ii.item_id, ii.quantity, ii.comments
+        FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @ItemComments::text[])
+                  WITH ORDINALITY AS ii(item_id, quantity, comments, ord)
+    )
+    SELECT id FROM inv
+    ```
+
+    Still returns `Guid.Empty` when `reserved` takes no number, so `InvoiceService.Add` keeps its
+    check.
+  - `Update`:
+
+    ```sql
+    WITH inv AS (
+        UPDATE invoices
+        SET created_date=@CreatedDate, due_date=@DueDate, comments=@Comments
+        WHERE id=@Id
+        RETURNING id
+    ),
+    upserted AS (
+        INSERT INTO invoice_items (invoice_id, line_no, item_id, quantity, comments)
+        SELECT inv.id, ii.ord, ii.item_id, ii.quantity, ii.comments
+        FROM inv, unnest(@ItemIds::uuid[], @Quantities::numeric[], @ItemComments::text[])
+                  WITH ORDINALITY AS ii(item_id, quantity, comments, ord)
+        ON CONFLICT (invoice_id, line_no) DO UPDATE
+        SET item_id=EXCLUDED.item_id, quantity=EXCLUDED.quantity, comments=EXCLUDED.comments
+    )
+    DELETE FROM invoice_items
+    WHERE invoice_id IN (SELECT id FROM inv)
+      AND line_no > cardinality(@ItemIds::uuid[])
+    ```
+
+  - The array parameters are built from `invoice.Items` in a private helper, so `Add` and `Update`
+    share it.
+  - `Delete`, `UpdateStatus`, `MarkOverdue`: unchanged (lines cascade).
+- `ItemRepository`: unchanged with 4a. With 4b: `ItemEntity` gets no new property; `Get(id)`,
+  `Get(ids)` and the paged `Get` (count and data) add `NOT archived`.
+
+## Step 4: Application (done)
+
+Done differently: `Newtonsoft.Json` stays in `Application.csproj`. WebAPI's middleware
+(`ErrorChecking`, `ModelStateErrors`) uses it and gets it only through Application. `Validate`
+returns only the customer now.
+
+- `InvoiceModelExtensions`: `ToModel(InvoiceEntity)` maps the entity's `Items` to the model's
+  `Items` (by hand, in `line_no` order, `Name` and `Price` from the joined values);
+  `ToEntity(InvoiceModel)` maps them back with `ToInvoiceItemEntity`: `LineNo = index + 1`, `InvoiceId = Id`, `ItemId`, `Quantity`, `Comments`
+  (no `Name`, `Price`), and drops `TotalPrice`. No more `JsonConvert` there.
+- `InvoiceService`: `MapItemToInvoiceItem` and its two calls go; `Validate` still calls
+  `GetForCustomer` for the check (its result is no longer needed by `Add`/`Update`).
+- `InvoiceItemModel`, `InvoiceModel`, `InvoiceModelFull`, `ToResponse`, PDF documents: unchanged.
+- Remove the `Newtonsoft.Json` reference from `Application` if nothing else uses it.
+
+## Step 5: Validators
+
+None. Quantity > 0 and item ids are already checked, and items' prices are > 0.
+
+## Step 6: WebAPI
+
+None. Check that `DELETE /items/{id}`'s Swagger docs list the 400 for an item an invoice uses.
+
+Done differently: not added. `DELETE /customers/{id}` and `DELETE /sellers/{id}` also refuse with
+a foreign-key 400 and don't list it, and the user reverted the same attributes on BIL-85's branch.
+
+## Step 7: Tests (`_write-tests`) (done)
+
+Done as:
+- `InvoiceEntity` is a record, but `Items` compares by reference, so `InvoiceServiceTest` matches
+  the saved entity with `Saved(expected)`: the rest of the record, then the invoice items one by one.
+- New tests: `ToInvoiceItemModel(InvoiceItemEntity)`, `ToInvoiceItemEntity`, and empty invoice
+  items both ways. `ToModel` gets lines out of order and returns them in line order.
+- Checked with `revert-check.sh`: copying name and price onto the line fails two mapping tests.
+- Release run: 938 passed. Coverage 94.0% line, 89.5% branch; the minimums are raised at `_pre-pr`.
+
+- `InvoiceMappingProfileTest`: entity lines ↔ model items, order kept, `LineNo` from 1, every
+  property mapped (names and prices from the entity lines on read, not set on write); empty lines;
+  the `TotalPrice` expectation goes from `ToEntity`.
+- `InvoiceServiceTest`: entities built with `Items` instead of `ItemsData` and without
+  `TotalPrice` (two places); `Add`/`Update` no longer expect names and prices copied onto the
+  saved lines.
+- `Infrastructure` is outside coverage; the SQL is covered by the integration tests.
+- Coverage: compare with the minimums + 1 before the PR (`CLAUDE.md`).
+
+## Step 8: Integration tests (BillioIntegrationTest, branch `BIL-113-invoice-lines`) (done)
+
+Done as below (BillioIntegrationTest ecc9e8e):
+- `CustomerDelete_WhenHasInvoice_Fail` pinned from a run: Postgres reports the item's foreign key
+  first, so the 400 ends in `invoice_customers_id`.
+- `ItemDelete_WhenUsedByInvoice_Fail` also checks that the item is gone after the invoice and item
+  deletes (404 "Invoice item:{id} not found").
+- `InvoiceUpdateLines_OrderKept_Success` starts from one line, then puts two reordered, three (new
+  line last) and one, with its own items (`AddOwnItem`). It has the same `[DependsOn]` list as the
+  other tests that change invoices (eval 15).
+- Run against the test stack: 265 passed, three runs.
+
+- `InvoiceKeepsItemPriceUntilUpdated_Valid_Success` becomes
+  `InvoiceItemFollowsItemEdit_Valid_Success` (the new rule): after the item edit, `GET` shows the
+  item's new name and price and the total from them, before any `PUT /invoices`; a `PUT` with new
+  quantity and comments keeps them; the series' `NextNumber` check stays.
+- `InvoiceWithDeletedItem_Valid_Success` becomes `ItemDelete_WhenUsedByInvoice_Fail`: 400
+  "Validation failure", "Can not delete (please clear all dependants) or update (item not found):
+  invoice_items_item_id"; the invoice still reads the same; after the invoice is deleted, the item
+  delete works (cascade).
+- `CustomerDelete_WhenHasInvoice_Fail`: can no longer delete the item first. Delete the customer
+  with its item and invoice in place and expect 400 on whichever constraint Postgres reports
+  (`invoice_customers_id` from items or `invoices_customer_id`; pin it from a run).
+- New: `InvoiceUpdateLines_OrderKept_Success`: add with 2 lines, `PUT` with 3 (new line last), then
+  with 1; each read returns exactly those lines in order, and the total matches.
+- New tests go into the `[DependsOn]` lists as `docs/review-evals.md` #15 requires.
+- Run the whole suite on the test stack (`_test-stack`), plus the 036/037/038 rollbacks on real rows.
+
+## Step 9: Front end
+
+None.
+
+## Step 10: Docs and rules (done)
+
+Done as below. `CLAUDE.md` also says the total is computed from the lines. `README.md` and
+`docs/README_lt.md` name none of the changed columns or tables: no change.
+
+- `CLAUDE.md` "Conventions", the invoices paragraph becomes (wording when writing):
+  "Invoices store their user, seller and customer ids and show the current data. They keep their
+  own number and dates. Invoice items are rows in `invoice_items`: an invoice item names its item and
+  keeps its quantity and comments, and shows the item's current name and price. Until BIL-85, editing
+  an item changes every invoice that uses it, its PDF and total, paid ones too (accepted; BIL-85
+  brings back 'editing an item must not change an existing invoice or its PDF'). An item that an
+  invoice uses can't be deleted (400). The series name isn't copied, so a series with invoices can't be
+  renamed."
+- `REVIEW.md`: "An old invoice or its PDF changes after an item or unit is edited." becomes "An old
+  invoice or its PDF changes after a unit is edited (items: allowed until BIL-85, see `CLAUDE.md`)."
+- `README.md` / `docs/README_lt.md`: nothing names `items_data`, `total_price` or the tables;
+  check again when writing.
+
+## Out of scope
+
+- Units (BIL-75) and item versions (BIL-85), apart from the follow-ups above.
+- New endpoints for per-item sales.
+
+## Order of work
+
+1. Run the pre-checks on a production copy: 4 first, and fix its rows, then 1–3. Pre-check 1's
+   count picks 4a or 4b; pre-check 2 is for the user's information; pre-checks 3 and 4 must be
+   empty (or fixed) before deploying.
+2. Biller branch `BIL-113-invoice-lines`: migrations 036–038 → entities and repositories → mapping
+   and service → unit tests → `CLAUDE.md`, `REVIEW.md`.
+3. BillioIntegrationTest branch with the same name: Step 8.
+4. Test stack: migrations on rows like production's, all rollbacks, integration tests.
+5. `_pre-pr`, then PRs (Biller and BillioIntegrationTest).
+6. After merge: update BIL-85's plan and branch, BIL-75's plan and BIL-90's plan (Dependencies).

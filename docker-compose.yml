@@ -13,6 +13,15 @@ services:
      - "5437:5432"
     volumes:
      - postgres_data:/var/lib/postgresql/data
+    # Over TCP: on a new volume the image's first-time init server listens on the unix socket only,
+    # and Liquibase connects over TCP
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U postgres -d Data"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      # First-time init of a new volume doesn't count against the retries
+      start_period: 60s
 
   pgadmin:
     image: dpage/pgadmin4:9.7.0
@@ -29,9 +38,11 @@ services:
 
   liquibase:
     image: liquibase/liquibase:4.26.0
-    container_name: "billio-liquibase"    
-    depends_on: 
-      - db
+    container_name: "billio-liquibase"
+    # Waits until Postgres accepts connections, not just until its container started
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - ./migrations:/liquibase/migrations
     command:
@@ -47,8 +58,13 @@ services:
     image: ${DOCKER_REGISTRY-}webapi    
     container_name: "billio-webapi"  
     restart: unless-stopped
-    depends_on: 
-      - db
+    # Starts only after every migration ran: the code needs the schema it was written for. When a
+    # migration fails, `up` stops with an error and doesn't start this API.
+    depends_on:
+      db:
+        condition: service_healthy
+      liquibase:
+        condition: service_completed_successfully
     environment:
       # Prod for make run/update; CI sets BILLER_ENVIRONMENT=Dev for the tests
       - ASPNETCORE_ENVIRONMENT=${BILLER_ENVIRONMENT:-Prod}

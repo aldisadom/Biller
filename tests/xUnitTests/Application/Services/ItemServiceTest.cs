@@ -373,7 +373,7 @@ public class ItemServiceTest
         ItemEntity item = new() { Id = Guid.NewGuid() };
 
         _itemRepositoryMock.Setup(m => m.Delete(item.Id))
-                        .ReturnsAsync(true);
+                        .Returns(Task.CompletedTask);
 
         _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
                         .ReturnsAsync(item);
@@ -382,27 +382,6 @@ public class ItemServiceTest
         //Assert
         await _itemService.Invoking(x => x.Delete(item.Id))
                             .Should().NotThrowAsync<Exception>();
-
-        _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
-        _itemRepositoryMock.Verify(m => m.Delete(item.Id), Times.Once());
-    }
-
-    [Fact]
-    public async Task Delete_GivenItemUsedByInvoice_ThrowsValidationException()
-    {
-        //Arrange
-        ItemEntity item = new() { Id = Guid.NewGuid() };
-
-        _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
-                        .ReturnsAsync(item);
-        _itemRepositoryMock.Setup(m => m.Delete(item.Id))
-                        .ReturnsAsync(false);
-
-        //Act
-        //Assert
-        await _itemService.Invoking(x => x.Delete(item.Id))
-                            .Should().ThrowAsync<FluentValidation.ValidationException>()
-                            .WithMessage($"Item id {item.Id} is used by invoices");
 
         _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
         _itemRepositoryMock.Verify(m => m.Delete(item.Id), Times.Once());
