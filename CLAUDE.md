@@ -28,12 +28,13 @@ on a small Linux PC.
   `(series_id, invoice_number)` then fails the next create instead of saving a duplicate number.
 - Never edit a changeset that is already on master. Fix it with a new one. Every changeset has a `-- rollback`.
 - Invoices store their user, seller and customer ids and show the current data. They keep their
-  own number and dates. Invoice items are rows in `invoice_items`: an invoice item names its item,
-  keeps its quantity and comments, and shows the item's current name and price. The total is
-  computed from the invoice items. Until BIL-85, editing an item changes every invoice that uses it,
-  its PDF and total, paid ones too (accepted; BIL-85 brings back "editing an item must not change an
-  existing invoice or its PDF"). An item that an invoice uses can't be deleted (400).
-  The series name isn't copied, so a series with invoices can't be renamed.
+  own number and dates. Invoice items are rows in `invoice_items`: an invoice item names its item
+  and the item version it was saved with, keeps its quantity and comments, and shows that version's
+  name and price. The total is computed from the invoice items. Editing an item must not change an
+  existing invoice or its PDF: a name or price edit adds a row to `item_versions`, whose rows are
+  never updated, and `PUT /invoices` never moves an invoice item to another version by itself. An
+  item that an invoice uses can't be deleted (400). The series name isn't copied, so a series with
+  invoices can't be renamed.
 - Mirror the Item feature when adding a layer. Map every property by hand.
 - Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be
   on the branch with Biller's branch name, else on up-to-date master.

@@ -3,7 +3,10 @@
 Failure here looks like:
 - An invoice total, line sum, or amount in words is wrong.
 - Two invoices get the same number, or a number is skipped without a delete.
-- An old invoice or its PDF changes after a unit is edited (items: allowed until BIL-85, see `CLAUDE.md`).
+- An old invoice or its PDF changes after an item or unit is edited.
+- A `PUT /invoices` changes an invoice item's name or price though the request kept its version.
+- An `item_versions` row is updated, or deleted while its item still exists.
+- An item is deleted while an invoice item still uses it.
 - A migration loses data, can't roll back, or edits an already-applied changeset.
 - A password, hash, or salt ends up in a response, log, or invoice.
 - A request for one user's data returns another user's data.
