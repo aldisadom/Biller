@@ -144,4 +144,38 @@ public class InvoiceDocumentFactoryTest
         _priceToWordsFactoryMock.Verify(m => m.GetConverter(Language.EN), Times.Once());
         _priceToWordsMock.Verify(m => m.Decode(20m), Times.Once());
     }
+
+    // The factory rejects the language or document type before it reads the invoice
+    private static InvoiceModelFull EmptyInvoice() => new() { User = new(), Seller = new(), Customer = new() };
+
+    [Fact]
+    public void GeneratePdf_GivenUnknownLanguage_ThrowsNotSupportedException()
+    {
+        //Act
+        Action act = () => _invoiceDocumentFactory.GeneratePdf(DocumentType.Invoice, (Language)99, EmptyInvoice());
+
+        //Assert
+        act.Should().Throw<NotSupportedException>()
+            .WithMessage("Languge 99 is not supported");
+
+        _priceToWordsFactoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public void GeneratePdf_GivenUnknownDocumentType_ThrowsNotSupportedException()
+    {
+        //Arrange
+        _priceToWordsFactoryMock.Setup(m => m.GetConverter(Language.EN))
+            .Returns(_priceToWordsMock.Object);
+
+        //Act
+        Action act = () => _invoiceDocumentFactory.GeneratePdf((DocumentType)99, Language.EN, EmptyInvoice());
+
+        //Assert
+        act.Should().Throw<NotSupportedException>()
+            .WithMessage("Document type 99 is not supported");
+
+        _priceToWordsFactoryMock.Verify(m => m.GetConverter(Language.EN), Times.Once());
+        _priceToWordsMock.VerifyNoOtherCalls();
+    }
 }

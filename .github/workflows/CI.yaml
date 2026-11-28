@@ -15,7 +15,7 @@ env:
   # raises coverage raises them before its PR is opened, and sets them from the PR's CI gate line if that
   # differs; never below master's (CLAUDE.md, Conventions).
   COVERAGE_MIN_LINE: 93.1
-  COVERAGE_MIN_BRANCH: 88.5
+  COVERAGE_MIN_BRANCH: 89.4
 
 jobs:
   build:

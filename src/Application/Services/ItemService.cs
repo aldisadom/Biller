@@ -44,9 +44,9 @@ public class ItemService : IItemService
         int page = query?.Page ?? 1;
         var pageSize = query?.PageSize ?? PageSize.p25;
 
-        var (entities, totalCount, returnedPage) = await _itemRepository.Get(query?.CustomerId, page, (int)pageSize);
+        var (itemEntities, totalCount, returnedPage) = await _itemRepository.Get(query?.CustomerId, page, (int)pageSize);
 
-        return (entities.Select(i => i.ToModel()), totalCount, returnedPage);
+        return (itemEntities.Select(i => i.ToModel()), totalCount, returnedPage);
     }
 
     public async Task CheckForCustomer(List<Guid> ids, Guid customerId)

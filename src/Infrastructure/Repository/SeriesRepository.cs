@@ -22,7 +22,7 @@ public class SeriesRepository : ISeriesRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<SeriesEntity>(sql, new { id });
     }
 
-    public async Task<(IEnumerable<SeriesEntity> Items, int TotalCount, int Page)> Get(Guid? sellerId, int page, int pageSize)
+    public async Task<(IEnumerable<SeriesEntity> Series, int TotalCount, int Page)> Get(Guid? sellerId, int page, int pageSize)
     {
         string filter = @"WHERE (@SellerId IS NULL OR seller_id = @SellerId)";
 

@@ -185,16 +185,16 @@ public class ItemServiceTest
     public async Task Get_GivenQuery_PassesFilterToRepository(ItemGetRequest? query, Guid? customerId, int page, int pageSize)
     {
         //Arrange
-        List<ItemEntity> items = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
+        List<ItemEntity> itemEntities = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         _itemRepositoryMock.Setup(m => m.Get(customerId, page, pageSize))
-                        .ReturnsAsync((items, 9, page));
+                        .ReturnsAsync((itemEntities, 9, page));
 
         //Act
-        var (result, totalCount, returnedPage) = await _itemService.Get(query);
+        var (items, totalCount, returnedPage) = await _itemService.Get(query);
 
         //Assert
-        result.Select(i => i.Id).Should().Equal(items.Select(i => i.Id));
+        items.Select(i => i.Id).Should().Equal(itemEntities.Select(i => i.Id));
         totalCount.Should().Be(9);
         returnedPage.Should().Be(page);
 
@@ -206,16 +206,16 @@ public class ItemServiceTest
     {
         //Arrange
         ItemGetRequest query = new() { Page = 5 };
-        List<ItemEntity> items = [new() { Id = Guid.NewGuid() }];
+        List<ItemEntity> itemEntities = [new() { Id = Guid.NewGuid() }];
 
         _itemRepositoryMock.Setup(m => m.Get(null, 5, 25))
-                        .ReturnsAsync((items, 4, 1));
+                        .ReturnsAsync((itemEntities, 4, 1));
 
         //Act
-        var (result, totalCount, returnedPage) = await _itemService.Get(query);
+        var (items, totalCount, returnedPage) = await _itemService.Get(query);
 
         //Assert
-        result.Select(i => i.Id).Should().Equal(items.Select(i => i.Id));
+        items.Select(i => i.Id).Should().Equal(itemEntities.Select(i => i.Id));
         totalCount.Should().Be(4);
         returnedPage.Should().Be(1);
 

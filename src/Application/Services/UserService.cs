@@ -41,14 +41,14 @@ public class UserService : IUserService
         return userEntity.ToModel();
     }
 
-    public async Task<(IEnumerable<UserModel> Items, int TotalCount, int Page)> Get(UserGetRequest? query)
+    public async Task<(IEnumerable<UserModel> Users, int TotalCount, int Page)> Get(UserGetRequest? query)
     {
         int page = query?.Page ?? 1;
         var pageSize = query?.PageSize ?? PageSize.p25;
 
-        var (entities, totalCount, returnedPage) = await _userRepository.Get(page, (int)pageSize);
+        var (userEntities, totalCount, returnedPage) = await _userRepository.Get(page, (int)pageSize);
 
-        return (entities.Select(u => u.ToModel()), totalCount, returnedPage);
+        return (userEntities.Select(u => u.ToModel()), totalCount, returnedPage);
     }
 
     public async Task<Guid> Add(UserModel user)

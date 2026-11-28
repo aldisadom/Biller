@@ -75,16 +75,16 @@ public class SeriesServiceTest
     public async Task Get_GivenQuery_PassesFilterToRepository(SeriesGetRequest? query, Guid? sellerId, int page, int pageSize)
     {
         //Arrange
-        List<SeriesEntity> series = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
+        List<SeriesEntity> seriesEntities = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         _seriesRepositoryMock.Setup(m => m.Get(sellerId, page, pageSize))
-                        .ReturnsAsync((series, 9, page));
+                        .ReturnsAsync((seriesEntities, 9, page));
 
         //Act
-        var (result, totalCount, returnedPage) = await _seriesService.Get(query);
+        var (series, totalCount, returnedPage) = await _seriesService.Get(query);
 
         //Assert
-        result.Select(s => s.Id).Should().Equal(series.Select(s => s.Id));
+        series.Select(s => s.Id).Should().Equal(seriesEntities.Select(s => s.Id));
         totalCount.Should().Be(9);
         returnedPage.Should().Be(page);
 
