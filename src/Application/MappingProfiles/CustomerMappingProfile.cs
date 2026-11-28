@@ -92,22 +92,4 @@ public static class CustomerModelExtensions
             Phone = from.Phone
         };
     }
-
-    public static CustomerModel ToModel(this CustomerResponse from)
-    {
-        return new CustomerModel
-        {
-            Id = from.Id,
-            SellerId = from.SellerId,
-            SeriesId = from.SeriesId,
-            SeriesName = from.SeriesName,
-            CompanyName = from.CompanyName,
-            CompanyNumber = from.CompanyNumber,
-            Street = from.Street,
-            City = from.City,
-            State = from.State,
-            Email = from.Email,
-            Phone = from.Phone
-        };
-    }
 }

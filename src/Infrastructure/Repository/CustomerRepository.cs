@@ -23,7 +23,7 @@ public class CustomerRepository : ICustomerRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<CustomerEntity>(sql, new { id });
     }
 
-    public async Task<(IEnumerable<CustomerEntity> Items, int TotalCount, int Page)> Get(Guid? sellerId, int page, int pageSize)
+    public async Task<(IEnumerable<CustomerEntity> Customers, int TotalCount, int Page)> Get(Guid? sellerId, int page, int pageSize)
     {
         string filter = @"WHERE (@SellerId IS NULL OR c.seller_id = @SellerId)";
 
