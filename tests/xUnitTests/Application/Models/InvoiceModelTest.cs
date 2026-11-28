@@ -58,4 +58,17 @@ public class InvoiceModelTest
         //Assert
         result.Should().Be(25.5m);
     }
+
+    [Fact]
+    public void CalculateTotal_GivenNoItems_ReturnsZero()
+    {
+        //Arrange
+        InvoiceModel invoice = new();
+
+        //Act
+        decimal result = invoice.CalculateTotal();
+
+        //Assert
+        result.Should().Be(0m);
+    }
 }

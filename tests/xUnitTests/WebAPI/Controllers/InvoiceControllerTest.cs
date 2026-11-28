@@ -53,7 +53,7 @@ public class InvoiceControllerTest
         User = new UserModel { Id = _userId },
         Seller = new SellerModel { Id = _sellerId },
         Customer = new CustomerModel { Id = _customerId },
-        Items = [new InvoiceItemModel { Id = Guid.NewGuid() }]
+        Items = [new InvoiceItemModel { ItemId = Guid.NewGuid() }]
     };
 
     [Fact]

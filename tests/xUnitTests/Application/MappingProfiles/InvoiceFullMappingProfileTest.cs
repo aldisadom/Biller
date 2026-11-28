@@ -23,8 +23,8 @@ public class InvoiceFullMappingProfileTest
         };
         List<InvoiceItemModel> invoiceItems =
         [
-            new() { Id = Guid.NewGuid(), Name = "Item 1", Quantity = 1, Price = 10.5m, Comments = "Item 1 comment" },
-            new() { Id = Guid.NewGuid(), Name = "Item 2", Quantity = 2, Price = 20.5m, Comments = "Item 2 comment" }
+            new() { ItemId = Guid.NewGuid(), Name = "Item 1", Quantity = 1, Price = 10.5m, Comments = "Item 1 comment" },
+            new() { ItemId = Guid.NewGuid(), Name = "Item 2", Quantity = 2, Price = 20.5m, Comments = "Item 2 comment" }
         ];
 
         var from = new InvoiceModelFull

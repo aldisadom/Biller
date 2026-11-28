@@ -45,7 +45,7 @@ public class InvoiceServiceTest
         UserId = Guid.NewGuid(),
         SellerId = Guid.NewGuid(),
         CustomerId = Guid.NewGuid(),
-        Items = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }]
+        Items = [new() { ItemId = Guid.NewGuid() }, new() { ItemId = Guid.NewGuid() }]
     };
 
     // InvoiceEntity is a record, but its Items list compares by reference: compare the rest of the
@@ -68,7 +68,7 @@ public class InvoiceServiceTest
         storedInvoice.SeriesId = Guid.NewGuid();
         storedInvoice.SeriesName = "WF";
         storedInvoice.InvoiceNumber = 5;
-        storedInvoice.Items = [new() { Id = Guid.NewGuid(), Version = 2, Quantity = 2 }];
+        storedInvoice.Items = [new() { ItemId = Guid.NewGuid(), Version = 2, Quantity = 2 }];
         // The repository reads the invoice item's name and price from the item version it names
         InvoiceEntity storedEntity = storedInvoice.ToEntity();
         storedEntity.Items[0].Name = "Iron throne";
@@ -95,7 +95,7 @@ public class InvoiceServiceTest
         result.SeriesId.Should().Be(storedInvoice.SeriesId);
         result.SeriesName.Should().Be("WF");
         result.InvoiceNumber.Should().Be(5);
-        result.Items.Should().BeEquivalentTo(new List<InvoiceItemModel> { new() { Id = storedInvoice.Items[0].Id, Version = 2, Name = "Iron throne", Price = 10m, Quantity = 2 } });
+        result.Items.Should().BeEquivalentTo(new List<InvoiceItemModel> { new() { ItemId = storedInvoice.Items[0].ItemId, Version = 2, Name = "Iron throne", Price = 10m, Quantity = 2 } });
         result.User.Should().BeSameAs(user);
         result.Seller.Should().BeSameAs(seller);
         result.Customer.Should().BeSameAs(customer);
@@ -333,7 +333,7 @@ public class InvoiceServiceTest
         _customerServiceMock.Setup(m => m.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId))
                 .ReturnsAsync(new CustomerModel { Id = invoiceData.CustomerId });
 
-        _itemServiceMock.Setup(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items!.Select(ii => ii.Id))), invoiceData.CustomerId))
+        _itemServiceMock.Setup(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items.Select(ii => ii.ItemId))), invoiceData.CustomerId))
             .ThrowsAsync(new FluentValidation.ValidationException("Ownership check failed"));
 
         //Act
@@ -344,7 +344,7 @@ public class InvoiceServiceTest
         _userServiceMock.Verify(m => m.Get(invoiceData.UserId), Times.Once());
         _sellerServiceMock.Verify(m => m.GetForUser(invoiceData.SellerId, invoiceData.UserId), Times.Once());
         _customerServiceMock.Verify(m => m.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId), Times.Once());
-        _itemServiceMock.Verify(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items!.Select(ii => ii.Id))), invoiceData.CustomerId), Times.Once());
+        _itemServiceMock.Verify(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items.Select(ii => ii.ItemId))), invoiceData.CustomerId), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 
@@ -363,7 +363,7 @@ public class InvoiceServiceTest
             CreatedDate = new DateOnly(2026, 10, 1),
             DueDate = new DateOnly(2026, 10, 11),
             // The throne has no version: InvoiceRepository.Add gives it the latest. The sword asks for version 1.
-            Items = [new() { Id = throneId, Quantity = 2 }, new() { Id = swordId, Version = 1, Quantity = 3 }]
+            Items = [new() { ItemId = throneId, Quantity = 2 }, new() { ItemId = swordId, Version = 1, Quantity = 3 }]
         };
         UserModel user = new() { Id = invoiceData.UserId };
         SellerModel seller = new() { Id = invoiceData.SellerId };
@@ -433,7 +433,7 @@ public class InvoiceServiceTest
                 .ReturnsAsync(seller);
         _customerServiceMock.Setup(m => m.GetForSeller(customer.Id, seller.Id))
                 .ReturnsAsync(customer);
-        _itemServiceMock.Setup(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items!.Select(ii => ii.Id))), customer.Id))
+        _itemServiceMock.Setup(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items.Select(ii => ii.ItemId))), customer.Id))
             .Returns(Task.CompletedTask);
         _invoiceDataRepositoryMock.Setup(m => m.Add(It.Is(Saved(expectedEntity))))
                                  .ReturnsAsync(Guid.Empty);
@@ -447,7 +447,7 @@ public class InvoiceServiceTest
         _userServiceMock.Verify(m => m.Get(user.Id), Times.Once());
         _sellerServiceMock.Verify(m => m.GetForUser(seller.Id, user.Id), Times.Once());
         _customerServiceMock.Verify(m => m.GetForSeller(customer.Id, seller.Id), Times.Once());
-        _itemServiceMock.Verify(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items!.Select(ii => ii.Id))), customer.Id), Times.Once());
+        _itemServiceMock.Verify(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items.Select(ii => ii.ItemId))), customer.Id), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Add(It.Is(Saved(expectedEntity))), Times.Once());
     }
 
@@ -584,7 +584,7 @@ public class InvoiceServiceTest
             SeriesName = "WF",
             InvoiceNumber = 5,
             Status = InvoiceStatus.Send,
-            Items = [new() { Id = throneId, Version = 1, Name = "Wooden throne", Price = 8m, Quantity = 1 }]
+            Items = [new() { ItemId = throneId, Version = 1, Name = "Wooden throne", Price = 8m, Quantity = 1 }]
         };
 
         InvoiceModel invoiceData = new()
@@ -600,7 +600,7 @@ public class InvoiceServiceTest
             CreatedDate = new DateOnly(2026, 10, 1),
             DueDate = new DateOnly(2026, 10, 11),
             // The same item at two versions, while a newer version 3 exists: both are saved as given
-            Items = [new() { Id = throneId, Version = 1, Quantity = 4 }, new() { Id = throneId, Version = 2, Quantity = 1 }]
+            Items = [new() { ItemId = throneId, Version = 1, Quantity = 4 }, new() { ItemId = throneId, Version = 2, Quantity = 1 }]
         };
         SellerModel seller = new() { Id = invoiceData.SellerId };
         CustomerModel customer = new() { Id = invoiceData.CustomerId };
@@ -719,7 +719,7 @@ public class InvoiceServiceTest
             Id = storedInvoice.Id,
             SellerId = storedInvoice.SellerId,
             CustomerId = storedInvoice.CustomerId,
-            Items = [new() { Id = Guid.NewGuid() }]
+            Items = [new() { ItemId = Guid.NewGuid() }]
         };
 
         _invoiceDataRepositoryMock.Setup(m => m.Get(storedInvoice.Id))
@@ -731,7 +731,7 @@ public class InvoiceServiceTest
         _customerServiceMock.Setup(m => m.GetForSeller(storedInvoice.CustomerId, storedInvoice.SellerId))
             .ReturnsAsync(new CustomerModel { Id = storedInvoice.CustomerId });
 
-        _itemServiceMock.Setup(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items!.Select(ii => ii.Id))), storedInvoice.CustomerId))
+        _itemServiceMock.Setup(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items.Select(ii => ii.ItemId))), storedInvoice.CustomerId))
             .ThrowsAsync(new FluentValidation.ValidationException("Ownership check failed"));
 
         //Act
@@ -742,7 +742,7 @@ public class InvoiceServiceTest
         _invoiceDataRepositoryMock.Verify(m => m.Get(storedInvoice.Id), Times.Once());
         _sellerServiceMock.Verify(m => m.GetForUser(storedInvoice.SellerId, storedInvoice.UserId), Times.Once());
         _customerServiceMock.Verify(m => m.GetForSeller(storedInvoice.CustomerId, storedInvoice.SellerId), Times.Once());
-        _itemServiceMock.Verify(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items!.Select(ii => ii.Id))), storedInvoice.CustomerId), Times.Once());
+        _itemServiceMock.Verify(m => m.CheckForCustomer(It.Is(ItemIds(invoiceData.Items.Select(ii => ii.ItemId))), storedInvoice.CustomerId), Times.Once());
         _invoiceDataRepositoryMock.Verify(m => m.Update(It.IsAny<InvoiceEntity>()), Times.Never());
     }
 

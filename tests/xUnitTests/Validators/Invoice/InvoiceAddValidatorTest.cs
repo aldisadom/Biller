@@ -1,6 +1,5 @@
 ﻿using BillerContracts.Requests.Invoice;
 using AwesomeAssertions;
-using FluentValidation;
 using Validators.Invoice;
 
 namespace xUnitTests.Validators.Invoice;
@@ -90,24 +89,44 @@ public class InvoiceAddValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
-    public static IEnumerable<TheoryDataRow<InvoiceItemRequest>> GetInvalidItemTestData()
+    public static IEnumerable<TheoryDataRow<InvoiceItemRequest, string, string>> GetInvalidItemTestData()
     {
-        yield return new(new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 }) { Label = "item with empty id throws" };
-        yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 0 }) { Label = "item with zero quantity throws" };
-        yield return new(new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = -1 }) { Label = "item with negative quantity throws" };
+        Guid itemId = Guid.NewGuid();
+
+        yield return new(new InvoiceItemRequest { Id = Guid.Empty, Quantity = 1 }, "Items[0].Id", "Please specify item Id") { Label = "item with empty id is rejected" };
+        yield return new(new InvoiceItemRequest { Id = itemId, Quantity = 0 }, "Items[0].Quantity", $"Please provide quantity that should > 0 for {itemId}") { Label = "item with zero quantity is rejected" };
+        yield return new(new InvoiceItemRequest { Id = itemId, Quantity = -1 }, "Items[0].Quantity", $"Please provide quantity that should > 0 for {itemId}") { Label = "item with negative quantity is rejected" };
     }
 
     [Theory]
     [MemberData(nameof(GetInvalidItemTestData))]
-    public void Validate_GivenInvalidItem_ThrowsValidationException(InvoiceItemRequest item)
+    public void Validate_GivenInvalidItem_IsInvalid(InvoiceItemRequest item, string propertyName, string message)
     {
         //Arrange
         var request = ValidRequest();
         request.Items = [item];
 
         //Act
+        var result = _validator.Validate(request);
+
         //Assert
-        Assert.Throws<ValidationException>(() => _validator.Validate(request));
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == propertyName && e.ErrorMessage == message);
+    }
+
+    [Fact]
+    public void Validate_GivenRequestAndItemErrors_ReportsBoth()
+    {
+        //Arrange
+        var request = ValidRequest();
+        request.SellerId = Guid.Empty;
+        request.Items[0].Quantity = 0;
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.Errors.Select(e => e.PropertyName).Should().BeEquivalentTo([nameof(request.SellerId), "Items[0].Quantity"]);
     }
 
     public static IEnumerable<TheoryDataRow<Action<InvoiceAddRequest>, string, string>> GetPdfTextFieldTestData()
@@ -147,17 +166,18 @@ public class InvoiceAddValidatorTest
     }
 
     [Fact]
-    public void Validate_GivenItemCommentThePdfCannotShow_ThrowsValidationExceptionNamingTheCharacter()
+    public void Validate_GivenItemCommentThePdfCannotShow_IsInvalidNamingTheCharacter()
     {
         //Arrange
         var request = ValidRequest();
         request.Items = [new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 2, Comments = "Dragon 🐉" }];
 
         //Act
-        Action act = () => _validator.Validate(request);
+        var result = _validator.Validate(request);
 
         //Assert
-        act.Should().Throw<ValidationException>()
-            .WithMessage("Please use only characters the invoice PDF can show in Comments. Can't show: 🐉 (U+1F409)");
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "Items[0].Comments" &&
+            e.ErrorMessage == "Please use only characters the invoice PDF can show in Comments. Can't show: 🐉 (U+1F409)");
     }
 }

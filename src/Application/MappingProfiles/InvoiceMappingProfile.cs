@@ -37,7 +37,7 @@ public static class InvoiceModelExtensions
             UserId = from.UserId,
             SellerId = from.SellerId,
             CustomerId = from.CustomerId,
-            Items = from.Items!.Select((item, index) => item.ToInvoiceItemEntity(from.Id, index + 1)).ToList(),
+            Items = from.Items.Select((item, index) => item.ToInvoiceItemEntity(from.Id, index + 1)).ToList(),
             Comments = from.Comments,
             Status = from.Status,
             CreatedDate = from.CreatedDate.ToDateTime(TimeOnly.MinValue),
@@ -50,7 +50,7 @@ public static class InvoiceModelExtensions
     {
         return new InvoiceItemModel
         {
-            Id = from.ItemId,
+            ItemId = from.ItemId,
             Version = from.Version,
             Name = from.Name,
             Price = from.Price,
@@ -66,7 +66,7 @@ public static class InvoiceModelExtensions
         {
             InvoiceId = invoiceId,
             LineNo = lineNo,
-            ItemId = from.Id,
+            ItemId = from.ItemId,
             Version = from.Version,
             Quantity = from.Quantity,
             Comments = from.Comments
@@ -113,7 +113,7 @@ public static class InvoiceModelExtensions
     {
         return new InvoiceItemModel
         {
-            Id = from.Id,
+            ItemId = from.Id,
             Quantity = from.Quantity,
             Comments = from.Comments,
             Version = from.Version
@@ -138,7 +138,7 @@ public static class InvoiceModelExtensions
     {
         return new InvoiceItemResponse
         {
-            Id = from.Id,
+            Id = from.ItemId,
             Name = from.Name,
             Price = from.Price,
             Quantity = from.Quantity,

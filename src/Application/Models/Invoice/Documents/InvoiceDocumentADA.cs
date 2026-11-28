@@ -103,7 +103,7 @@ public class InvoiceDocumentADA : IDocument
             });
 
             // step 3
-            foreach (InvoiceItemModel item in Model.Items!)
+            foreach (InvoiceItemModel item in Model.Items)
             {
                 table.Cell().Element(CellStyle).Text((Model.Items.IndexOf(item) + 1).ToString());
                 if (item.Comments is null || item.Comments == string.Empty)

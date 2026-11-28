@@ -55,7 +55,7 @@ public class ItemServiceTest
         //Act
         //Assert
         await _itemService.Invoking(x => x.Get(id, null))
-                            .Should().ThrowAsync<NotFoundException>().WithMessage($"Invoice item:{id} not found");
+                            .Should().ThrowAsync<NotFoundException>().WithMessage($"Item:{id} not found");
 
         _itemRepositoryMock.Verify(m => m.Get(id, null), Times.Once());
     }
@@ -90,7 +90,7 @@ public class ItemServiceTest
         //Act
         //Assert
         await _itemService.Invoking(x => x.Get(id, 99))
-                            .Should().ThrowAsync<NotFoundException>().WithMessage($"Invoice item:{id} version 99 not found");
+                            .Should().ThrowAsync<NotFoundException>().WithMessage($"Item:{id} version 99 not found");
 
         _itemRepositoryMock.Verify(m => m.Get(id, 99), Times.Once());
     }
@@ -126,7 +126,7 @@ public class ItemServiceTest
         //Act
         //Assert
         await _itemService.Invoking(x => x.GetVersions(id))
-                            .Should().ThrowAsync<NotFoundException>();
+                            .Should().ThrowAsync<NotFoundException>().WithMessage($"Item:{id} not found");
 
         _itemRepositoryMock.Verify(m => m.GetVersions(id), Times.Once());
     }

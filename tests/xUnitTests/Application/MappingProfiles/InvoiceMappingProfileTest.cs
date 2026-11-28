@@ -14,7 +14,7 @@ public class InvoiceMappingProfileTest
     [
         new InvoiceItemModel
         {
-            Id = Guid.NewGuid(),
+            ItemId = Guid.NewGuid(),
             Version = 2,
             Name = "Item 1",
             Quantity = 1,
@@ -23,7 +23,7 @@ public class InvoiceMappingProfileTest
         },
         new InvoiceItemModel
         {
-            Id = Guid.NewGuid(),
+            ItemId = Guid.NewGuid(),
             Version = 3,
             Name = "Item 2",
             Quantity = 2,
@@ -68,8 +68,8 @@ public class InvoiceMappingProfileTest
         // An invoice item keeps its line number, item, version, quantity and comments; name and price aren't stored
         to.Items.Should().BeEquivalentTo(new List<InvoiceItemEntity>
         {
-            new() { InvoiceId = from.Id, LineNo = 1, ItemId = from.Items![0].Id, Version = 2, Quantity = 1, Comments = "Item 1 comment" },
-            new() { InvoiceId = from.Id, LineNo = 2, ItemId = from.Items[1].Id, Version = 3, Quantity = 2, Comments = "Item 2 comment" }
+            new() { InvoiceId = from.Id, LineNo = 1, ItemId = from.Items[0].ItemId, Version = 2, Quantity = 1, Comments = "Item 1 comment" },
+            new() { InvoiceId = from.Id, LineNo = 2, ItemId = from.Items[1].ItemId, Version = 3, Quantity = 2, Comments = "Item 2 comment" }
         }, o => o.WithStrictOrdering());
         to.CreatedDate.Should().Be(from.CreatedDate.ToDateTime(TimeOnly.MinValue));
         to.DueDate.Should().Be(from.DueDate.ToDateTime(TimeOnly.MinValue));
@@ -79,7 +79,7 @@ public class InvoiceMappingProfileTest
     public void ToEntity_GivenModelWithoutItems_HasNoItems()
     {
         //Arrange
-        InvoiceModel from = new() { Items = [] };
+        InvoiceModel from = new();
 
         //Act
         var to = from.ToEntity();
@@ -155,8 +155,8 @@ public class InvoiceMappingProfileTest
 
         to.Items.Should().BeEquivalentTo(new List<InvoiceItemModel>
         {
-            new() { Id = firstItemId, Version = 2, Name = "Item 1", Price = 10.5m, Quantity = 1, Comments = "Item 1 comment" },
-            new() { Id = secondItemId, Version = 3, Name = "Item 2", Price = 20.5m, Quantity = 2, Comments = "Item 2 comment" }
+            new() { ItemId = firstItemId, Version = 2, Name = "Item 1", Price = 10.5m, Quantity = 1, Comments = "Item 1 comment" },
+            new() { ItemId = secondItemId, Version = 3, Name = "Item 2", Price = 20.5m, Quantity = 2, Comments = "Item 2 comment" }
         }, o => o.WithStrictOrdering());
         to.CreatedDate.Should().Be(DateOnly.FromDateTime(from.CreatedDate));
         to.DueDate.Should().Be(DateOnly.FromDateTime(from.DueDate));
@@ -195,11 +195,7 @@ public class InvoiceMappingProfileTest
         var to = from.ToInvoiceItemModel();
 
         //Assert
-        // The model's Id is the entity's ItemId
-        HashSet<string> ignoreProperties = ["Id"];
-        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
-
-        to.Id.Should().Be(from.ItemId);
+        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
 
     [Fact]
@@ -208,7 +204,7 @@ public class InvoiceMappingProfileTest
         //Arrange
         InvoiceItemModel from = new()
         {
-            Id = Guid.NewGuid(),
+            ItemId = Guid.NewGuid(),
             Version = 4,
             Name = "Iron throne",
             Price = 10.5m,
@@ -225,7 +221,7 @@ public class InvoiceMappingProfileTest
         {
             InvoiceId = invoiceId,
             LineNo = 3,
-            ItemId = from.Id,
+            ItemId = from.ItemId,
             Version = 4,
             Quantity = 2,
             Comments = "Winterfell"
@@ -236,7 +232,7 @@ public class InvoiceMappingProfileTest
     public void ToInvoiceItemEntity_GivenInvoiceItemModelWithoutVersion_KeepsVersionEmpty()
     {
         //Arrange
-        InvoiceItemModel from = new() { Id = Guid.NewGuid() };
+        InvoiceItemModel from = new() { ItemId = Guid.NewGuid() };
 
         //Act
         var to = from.ToInvoiceItemEntity(Guid.NewGuid(), 1);
@@ -256,7 +252,7 @@ public class InvoiceMappingProfileTest
             SellerId = Guid.NewGuid(),
             CustomerId = Guid.NewGuid(),
             Items = NewItems()
-                .Select(item => new InvoiceItemRequest() { Id = item.Id, Quantity = item.Quantity, Comments = item.Comments })
+                .Select(item => new InvoiceItemRequest() { Id = item.ItemId, Quantity = item.Quantity, Comments = item.Comments })
                 .ToList(),
             Comments = "invoice comment",
             CreatedDate = DateOnly.FromDateTime(DateTime.Now),
@@ -313,7 +309,7 @@ public class InvoiceMappingProfileTest
         //Arrange
         var from = new InvoiceItemModel
         {
-            Id = Guid.NewGuid(),
+            ItemId = Guid.NewGuid(),
             Name = "ItemName",
             Quantity = 66,
             Price = 123.67M,
@@ -321,12 +317,15 @@ public class InvoiceMappingProfileTest
             Version = 3
         };
 
-
         //Act
         var to = from.ToInvoiceItemResponse();
 
         //Assert
-        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
+        // The response's Id is the model's ItemId
+        HashSet<string> ignoreProperties = ["Id"];
+        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
+
+        to.Id.Should().Be(from.ItemId);
     }
 
     [Fact]
@@ -345,6 +344,10 @@ public class InvoiceMappingProfileTest
         var to = from.ToInvoiceItemModel();
 
         //Assert
-        MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom);
+        // The request's Id is the model's ItemId
+        HashSet<string> ignoreProperties = ["Id"];
+        MappingTestHelper.TestMapp(from, to, MapStyle.UsedAllFrom, ignoreProperties);
+
+        to.ItemId.Should().Be(from.Id);
     }
 }

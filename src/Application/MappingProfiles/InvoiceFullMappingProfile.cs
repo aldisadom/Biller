@@ -18,7 +18,7 @@ public static class InvoiceModelFullExtensions
             SellerName = from.Seller.CompanyName,
             CustomerId = from.CustomerId,
             CustomerName = from.Customer.CompanyName,
-            Items = from.Items!.Select(i => i.ToInvoiceItemResponse()).ToList(),
+            Items = from.Items.Select(i => i.ToInvoiceItemResponse()).ToList(),
             Comments = from.Comments,
             Status = from.Status,
             CreatedDate = from.CreatedDate,

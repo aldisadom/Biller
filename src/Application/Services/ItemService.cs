@@ -23,8 +23,8 @@ public class ItemService : IItemService
     {
         ItemEntity itemEntity = await _itemRepository.Get(id, version)
             ?? throw new NotFoundException(version is null
-                ? $"Invoice item:{id} not found"
-                : $"Invoice item:{id} version {version} not found");
+                ? $"Item:{id} not found"
+                : $"Item:{id} version {version} not found");
 
         return itemEntity.ToModel();
     }
@@ -34,11 +34,10 @@ public class ItemService : IItemService
         List<ItemVersionEntity> versions = (await _itemRepository.GetVersions(id)).ToList();
 
         if (versions.Count == 0)
-            throw new NotFoundException($"Invoice item:{id} not found");
+            throw new NotFoundException($"Item:{id} not found");
 
         return versions.Select(v => v.ToModel());
     }
-
 
     public async Task<(IEnumerable<ItemModel> Items, int TotalCount, int Page)> Get(ItemGetRequest? query)
     {

@@ -2,7 +2,6 @@
 using Application.Models;
 using AwesomeAssertions;
 using BillerContracts.Requests.Item;
-using BillerContracts.Responses.Item;
 using Domain.Entities;
 using static xUnitTests.Application.MappingProfiles.MappingTestHelper;
 
@@ -111,27 +110,6 @@ public class ItemMappingProfileTest
 
         //Act
         var to = from.ToResponse();
-
-        //Assert
-        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
-    }
-
-    [Fact]
-    public void ToModel_GivenResponse_MapsAllProperties()
-    {
-        //Arrange
-        var from = new ItemResponse
-        {
-            Id = Guid.NewGuid(),
-            CustomerId = Guid.NewGuid(),
-            Name = "ItemName",
-            Quantity = 66,
-            Price = 123.67M,
-            Version = 3
-        };
-
-        //Act
-        var to = from.ToModel();
 
         //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);

@@ -69,19 +69,6 @@ public static class ItemModelExtensions
         };
     }
 
-    public static ItemModel ToModel(this ItemResponse from)
-    {
-        return new ItemModel
-        {
-            Id = from.Id,
-            CustomerId = from.CustomerId,
-            Name = from.Name,
-            Price = from.Price,
-            Quantity = from.Quantity,
-            Version = from.Version
-        };
-    }
-
     public static ItemVersionModel ToModel(this ItemVersionEntity from)
     {
         return new ItemVersionModel

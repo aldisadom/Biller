@@ -142,7 +142,7 @@ public class InvoiceService : IInvoiceService
     {
         await _sellerService.GetForUser(invoiceData.SellerId, invoiceData.UserId);
         CustomerModel customer = await _customerService.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId);
-        await _itemService.CheckForCustomer(invoiceData.Items!.Select(ii => ii.Id).ToList(), invoiceData.CustomerId);
+        await _itemService.CheckForCustomer(invoiceData.Items.Select(ii => ii.ItemId).ToList(), invoiceData.CustomerId);
 
         return customer;
     }
