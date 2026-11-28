@@ -28,8 +28,9 @@ The script decides each branch before it changes anything, so the dry run says w
   `backup/` dump or a `*.user` file keeps it. There must be no skip-worktree or assume-unchanged
   files, whose local edits `git status` doesn't show, no submodules, and no other worktree inside it.
 - A worktree record whose folder is gone is removed with its branch. When the folder's parent is
-  missing, empty or a mount point, the branch is kept: a drive that isn't mounted often leaves an
-  empty mount point behind. When the folder really was deleted on purpose, the `KEPT` line names the
+  missing, the branch is kept. Outside the repo, it is also kept when the parent is empty or a
+  mount point, since a drive that isn't mounted often leaves an empty mount point behind. Inside
+  the repo (such as `.claude/worktrees/`), an empty parent is fine. When the folder really was deleted on purpose, the `KEPT` line names the
   record (`.git/worktrees/<id>`), which the user can remove by hand.
 - A branch that is being rebased or bisected, in the main checkout or a worktree, is kept, and so
   is a branch that two worktree records have checked out.

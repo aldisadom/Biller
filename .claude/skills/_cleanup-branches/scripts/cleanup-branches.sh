@@ -65,10 +65,12 @@ check_worktree() {
   esac
   if [[ ! -d "$path" ]]; then
     # Gone only when its parent is there and isn't an empty folder or a mount point: an unmounted
-    # drive often leaves its mount point behind as an empty folder.
+    # drive often leaves its mount point behind as an empty folder. A parent inside the repo (such
+    # as .claude/worktrees/) is on the repo's own drive, so being empty doesn't matter there.
     parent="$(dirname "$path")"
-    if [[ ! -d "$parent" || -z "$(ls -A "$parent" 2>/dev/null)" ]] \
-       || [[ "$(stat -c %d "$parent" 2>/dev/null)" != "$(stat -c %d "$parent/.." 2>/dev/null)" ]]; then
+    if [[ ! -d "$parent" ]] || { [[ "$parent" != "$dir"/* ]] && {
+         [[ -z "$(ls -A "$parent" 2>/dev/null)" ]] ||
+         [[ "$(stat -c %d "$parent" 2>/dev/null)" != "$(stat -c %d "$parent/.." 2>/dev/null)" ]]; }; }; then
       keep="worktree $path can't be found, and neither can its parent folder, or it is empty or a mount point (a drive not mounted?). If the folder was deleted on purpose, remove the record $admin by hand"
       return
     fi
@@ -135,14 +137,23 @@ for repo in "${REPOS[@]}"; do
     wt_path[$branch]="$path"; wt_admin[$branch]="$admin"; wt_flag[$branch]="$flag"
   done
 
-  count=0
+  # First decide every branch, then act: removing one worktree can't change the answer for the next
+  # (for example by emptying a parent folder they share), so --delete does what the dry run said.
+  names=(); unset d_line d_keep d_action; declare -A d_line=() d_keep=() d_action=()
   while IFS='|' read -r name sha upstream track; do
     [[ "$name" == master || "$name" == "$current" || "$name" == "$BILLER_BRANCH" ]] && continue
     if [[ -z "$upstream" ]]; then state="never pushed"
     elif [[ "$track" == *gone* ]]; then state="remote gone"
     else state="on origin${track:+ $track}"; fi
-    count=$((count + 1))
     check_worktree "$name"
+    names+=("$name"); d_line[$name]="$name ($sha, $state)"; d_keep[$name]="$keep"; d_action[$name]="$wt_action"
+  done < <(git -C "$dir" for-each-ref refs/heads \
+             --format='%(refname:short)|%(objectname:short)|%(upstream:short)|%(upstream:track)')
+
+  count=0
+  for name in "${names[@]}"; do
+    count=$((count + 1))
+    keep="${d_keep[$name]}"; wt_action="${d_action[$name]}"; label="${d_line[$name]}"
     path="${wt_path[$name]:-}"
     case "$wt_action" in
       remove) also=", and its worktree $path" ;;
@@ -150,20 +161,19 @@ for repo in "${REPOS[@]}"; do
       *) also="" ;;
     esac
     if [[ -n "$keep" ]]; then
-      echo "  KEPT $name ($sha, $state): $keep"
+      echo "  KEPT $label: $keep"
     elif [[ $DELETE -eq 0 ]]; then
-      echo "  would delete $name ($sha, $state)$also"
+      echo "  would delete $label$also"
     elif [[ "$wt_action" == remove ]] && ! out="$(git -C "$dir" worktree remove "$path" 2>&1)"; then
       echo "  FAILED $name: $out"; FAILED=1
     elif [[ "$wt_action" == record ]] && ! out="$(rm -rf -- "${wt_admin[$name]}" 2>&1)"; then
       echo "  FAILED $name: can't remove the worktree record ${wt_admin[$name]}: $out"; FAILED=1
     elif out="$(git -C "$dir" branch -D "$name" 2>&1)"; then
-      echo "  deleted $name ($sha, $state)$also"
+      echo "  deleted $label$also"
     else
       echo "  FAILED $name: $out${also:+ (already removed$also)}"; FAILED=1
     fi
-  done < <(git -C "$dir" for-each-ref refs/heads \
-             --format='%(refname:short)|%(objectname:short)|%(upstream:short)|%(upstream:track)')
+  done
   [[ $count -eq 0 ]] && echo "  nothing to delete"
 done
 exit $FAILED
