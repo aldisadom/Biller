@@ -19,33 +19,13 @@ Everything else is force-deleted (`git branch -D`), including branches that were
 The user chose that on purpose. **Remote branches are never touched**: the script runs no `push`
 and no `fetch`. Don't add a remote delete, even if asked in passing; that is a separate decision.
 
-Worktrees go with their branch, since git won't delete a branch that a worktree has checked out.
-The script decides each branch before it changes anything, so the dry run says what `--delete` does:
-- A worktree that is there is removed (`git worktree remove`, never `--force`) before its branch
-  is deleted, but only when it is clean. That means no uncommitted changes and no new files, even
-  with `status.showUntrackedFiles=no` in config. It also means no ignored files other than build
-  output (`bin/`, `obj/`, `TestResults/`, `coveragereport/`, `.vs/`, `node_modules/`), so a
-  `backup/` dump or a `*.user` file keeps it. There must be no skip-worktree or assume-unchanged
-  files, whose local edits `git status` doesn't show, no submodules, and no other worktree inside it.
-- A worktree record whose folder is gone is removed with its branch. When the folder's parent is
-  missing, the branch is kept. Outside the repo, it is also kept when the parent is empty or a
-  mount point, since a drive that isn't mounted often leaves an empty mount point behind. Inside
-  the repo (such as `.claude/worktrees/`), an empty parent is fine. When the folder really was deleted on purpose, the `KEPT` line names the
-  record (`.git/worktrees/<id>`), which the user can remove by hand.
-- A branch that is being rebased or bisected, in the main checkout or a worktree, is kept, and so
-  is a branch that two worktree records have checked out.
-- `KEPT`, with the reason, in every other case: the worktree isn't clean, is locked
-  (`git worktree lock`), or was made by Windows git and is seen from WSL (remove that one from
-  Windows). Tell the user, and don't commit, stash, unlock or discard anything for them.
-
-A `FAILED` line that follows a removal says what was already removed.
-
-The script never runs `git worktree prune`. Prune drops every record whose folder it can't reach.
-That includes a `C:\` path seen from WSL, a `/mnt/c` path seen from Windows and an unmounted
-drive, and the branch would then be deleted unchecked. Don't run prune for the user either.
-
-The worktree that this checkout is (when the skill runs from one) has Biller's current branch, so
-it is kept.
+Worktrees go with their branch, since git won't delete a branch that a worktree has checked out:
+- `--delete` first prunes the records of worktrees whose folder is gone (`git worktree prune`).
+- A worktree is removed (`git worktree remove`, never `--force`) before its branch is deleted.
+- A worktree with uncommitted changes, new files or ignored files other than build output (`bin/`,
+  `obj/`, `TestResults/`, `coveragereport/`, `.vs/`, `node_modules/`) is `KEPT` with its branch,
+  so a `backup/` dump survives. Tell the user, and don't commit, stash or discard that work for them.
+- Anything git itself refuses, such as a locked worktree, shows as a `FAILED` line.
 
 ## Run it
 
@@ -67,7 +47,6 @@ on GitHub), `never pushed` (exists only here), or `on origin`, plus its worktree
    unpushed branches the user hasn't seen yet. Name any `KEPT` worktree too.
 3. Paste the `--delete` output. It lists each deleted branch's SHA, so a mistake can be undone with
    `git -C ../<repo> branch <name> <sha>` while the commit is still in the reflog. A removed
-   worktree is recreated with `git -C ../<repo> worktree add <path> <name>` (see the worktree memory
-   for the WSL steps); its folder held nothing uncommitted except build output.
+   worktree held nothing uncommitted except build output.
 
 To keep a different branch, check it out in that repo first; the script keeps whatever is checked out.
