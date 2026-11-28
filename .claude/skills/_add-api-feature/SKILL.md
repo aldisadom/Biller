@@ -83,6 +83,10 @@ key and go to step 1. If not, create it first:
 As you work, tick off finished steps in the plan, or note what was done differently and why, so the
 plan matches what is merged.
 
+Write the smallest change that does what the plan says. Before each layer, ask: can this be made
+simpler (`CLAUDE.md`, "Keep it simple")? Add no option, guard, helper or type that the plan doesn't
+ask for. When a simpler way changes a plan decision, tell the user instead of taking it.
+
 ## Pin down scope
 
 With a plan, the scope comes from it. Otherwise work out which of these the user wants, and ask if

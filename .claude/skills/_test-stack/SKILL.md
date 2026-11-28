@@ -27,7 +27,8 @@ bash $S/test-stack.sh down                    # always, when done
 ```
 
 - `up` builds the API image from the checkout's working tree, so uncommitted changes are included.
-  Use `--biller` to test another branch's checkout (for example a git worktree).
+  Use `--biller` to test another checkout that already exists. Don't create a worktree for it
+  (`CLAUDE.md`): switch this checkout's branch instead.
 - `run-integration.sh` takes `--url` for another API and `--repo` for another BillioIntegrationTest
   checkout. Put that repo on the branch that matches the API first (`_sync-repos`). The tests run in
   parallel, so use `--repeat 3` after changing tests that share data.
