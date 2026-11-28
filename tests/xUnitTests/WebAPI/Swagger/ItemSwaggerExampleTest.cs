@@ -11,6 +11,7 @@ public class ItemSwaggerExampleTest
         yield return new(() => new ItemAddRequestExample().GetExamples()) { Label = "item add request example has no empty properties" };
         yield return new(() => new ItemUpdateRequestExample().GetExamples()) { Label = "item update request example has no empty properties" };
         yield return new(() => new ItemListResponseExample().GetExamples()) { Label = "item list response example has no empty properties" };
+        yield return new(() => new ItemVersionListResponseExample().GetExamples()) { Label = "item version list response example has no empty properties" };
         yield return new(() => new ItemResponseExample().GetExamples()) { Label = "item response example has no empty properties" };
     }
 

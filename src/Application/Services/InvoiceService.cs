@@ -109,6 +109,7 @@ public class InvoiceService : IInvoiceService
         invoiceData.SeriesName = invoice.SeriesName;
         invoiceData.InvoiceNumber = invoice.InvoiceNumber;
 
+        // Saves the versions it was given: an invoice item moves to another version only when asked.
         await Validate(invoiceData);
 
         InvoiceEntity invoiceEntity = invoiceData.ToEntity();
@@ -134,13 +135,14 @@ public class InvoiceService : IInvoiceService
         return await _invoiceRepository.MarkOverdue(today.ToDateTime(TimeOnly.MinValue));
     }
 
-    // Invoice items don't copy name or price: reads join the item (BIL-113). GetForCustomer only
-    // checks that every invoice item's item is the customer's.
+    // Checks the seller, the customer and that every invoice item's item is the customer's. It checks
+    // no version: an empty one becomes the item's latest in InvoiceRepository.Add, and one the item
+    // doesn't have fails fk_invoice_items_item_id_version (BIL-85).
     private async Task<CustomerModel> Validate(InvoiceModel invoiceData)
     {
         await _sellerService.GetForUser(invoiceData.SellerId, invoiceData.UserId);
         CustomerModel customer = await _customerService.GetForSeller(invoiceData.CustomerId, invoiceData.SellerId);
-        await _itemService.GetForCustomer(invoiceData.Items!.Select(x => x.Id).ToList(), invoiceData.CustomerId);
+        await _itemService.CheckForCustomer(invoiceData.Items.Select(ii => ii.ItemId).ToList(), invoiceData.CustomerId);
 
         return customer;
     }

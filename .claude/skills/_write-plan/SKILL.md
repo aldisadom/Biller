@@ -1,14 +1,14 @@
 ---
 name: _write-plan
-model: fable
-effort: medium
+model: opus
+effort: xhigh
 context: fork
-description: Plan a Biller Jira issue on Fable, in its own context — read the BIL issue with its links and comments, review it (blockers, gaps, conflicts with CLAUDE.md, REVIEW.md and other open plans), then check its existing plan against the code or write a new one in docs/plans/BIL-<n>-<slug>.md with the open questions at the top, and return the review, the plan's path and the questions. Use it whenever a BIL issue needs a plan, an existing plan needs checking against the code, or a plan needs the user's answers or a changed decision folded in — from _add-api-feature step 1, before any other change across several layers or repos, or alone when the user asks to plan an issue.
+description: Plan a Biller Jira issue on Opus, in its own context — read the BIL issue with its links and comments, review it (blockers, gaps, conflicts with CLAUDE.md, REVIEW.md and other open plans), then check its existing plan against the code or write a new one in docs/plans/BIL-<n>-<slug>.md with the open questions at the top, and return the review, the plan's path and the questions. Use it whenever a BIL issue needs a plan, an existing plan needs checking against the code, or a plan needs the user's answers or a changed decision folded in — from _add-api-feature step 1, before any other change across several layers or repos, or alone when the user asks to plan an issue.
 ---
 
 # Plan a Jira issue
 
-This skill runs on Fable at medium effort, in a fork that doesn't see the conversation. Everything it
+This skill runs on Opus at xhigh effort, in a fork that doesn't see the conversation. Everything it
 knows comes from the arguments, the issue and the repos. It writes or updates the plan file and
 reports back; the caller talks to the user, edits Jira and creates the branch.
 

@@ -47,19 +47,42 @@ public class ItemController : ControllerBase
     }
 
     /// <summary>
-    /// Get one item
+    /// Get one item, with the name and price of its latest version or of the version asked for
     /// </summary>
     /// <param name="id">Items unique ID</param>
+    /// <param name="version">Version to get; the latest when empty</param>
     /// <returns>item data</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ItemResponse), StatusCodes.Status200OK)]
     [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemResponseExample))]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get(Guid id)
+    public async Task<IActionResult> Get(Guid id, [FromQuery] int? version = null)
     {
-        ItemModel item = await _itemService.Get(id);
+        ItemModel item = await _itemService.Get(id, version);
 
         ItemResponse result = item.ToResponse();
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get every version of an item's name and price, oldest first
+    /// </summary>
+    /// <param name="id">Items unique ID</param>
+    /// <returns>the item's versions</returns>
+    [HttpGet("{id}/versions")]
+    [ProducesResponseType(typeof(ItemVersionListResponse), StatusCodes.Status200OK)]
+    [SwaggerResponseExample(StatusCodes.Status200OK, typeof(ItemVersionListResponseExample))]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetVersions(Guid id)
+    {
+        IEnumerable<ItemVersionModel> versions = await _itemService.GetVersions(id);
+
+        ItemVersionListResponse result = new()
+        {
+            ItemId = id,
+            Versions = versions.Select(v => v.ToResponse()).ToList()
+        };
 
         return Ok(result);
     }

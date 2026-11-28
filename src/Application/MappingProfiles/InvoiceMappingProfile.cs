@@ -37,7 +37,7 @@ public static class InvoiceModelExtensions
             UserId = from.UserId,
             SellerId = from.SellerId,
             CustomerId = from.CustomerId,
-            Items = from.Items!.Select((item, index) => item.ToInvoiceItemEntity(from.Id, index + 1)).ToList(),
+            Items = from.Items.Select(ii => ii.ToInvoiceItemEntity()).ToList(),
             Comments = from.Comments,
             Status = from.Status,
             CreatedDate = from.CreatedDate.ToDateTime(TimeOnly.MinValue),
@@ -45,12 +45,13 @@ public static class InvoiceModelExtensions
         };
     }
 
-    // Name and price come from the item when read; an invoice item doesn't store them.
+    // Name and price come from the item version when read; an invoice item doesn't store them.
     public static InvoiceItemModel ToInvoiceItemModel(this InvoiceItemEntity from)
     {
         return new InvoiceItemModel
         {
-            Id = from.ItemId,
+            ItemId = from.ItemId,
+            Version = from.Version,
             Name = from.Name,
             Price = from.Price,
             Quantity = from.Quantity,
@@ -58,13 +59,14 @@ public static class InvoiceModelExtensions
         };
     }
 
-    public static InvoiceItemEntity ToInvoiceItemEntity(this InvoiceItemModel from, Guid invoiceId, int lineNo)
+    // An empty version stays empty: InvoiceRepository.Add takes the item's latest, and PUT requires one.
+    // No invoice id or line number: InvoiceRepository takes them from the invoice and the list order.
+    public static InvoiceItemEntity ToInvoiceItemEntity(this InvoiceItemModel from)
     {
         return new InvoiceItemEntity
         {
-            InvoiceId = invoiceId,
-            LineNo = lineNo,
-            ItemId = from.Id,
+            ItemId = from.ItemId,
+            Version = from.Version,
             Quantity = from.Quantity,
             Comments = from.Comments
         };
@@ -110,9 +112,10 @@ public static class InvoiceModelExtensions
     {
         return new InvoiceItemModel
         {
-            Id = from.Id,
+            ItemId = from.Id,
             Quantity = from.Quantity,
-            Comments = from.Comments
+            Comments = from.Comments,
+            Version = from.Version
         };
     }
 
@@ -134,11 +137,12 @@ public static class InvoiceModelExtensions
     {
         return new InvoiceItemResponse
         {
-            Id = from.Id,
+            Id = from.ItemId,
             Name = from.Name,
             Price = from.Price,
             Quantity = from.Quantity,
-            Comments = from.Comments
+            Comments = from.Comments,
+            Version = from.Version
         };
     }
 }

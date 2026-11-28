@@ -3,13 +3,18 @@
 Failure here looks like:
 - An invoice total, line sum, or amount in words is wrong.
 - Two invoices get the same number, or a number is skipped without a delete.
-- An old invoice or its PDF changes after a unit is edited (items: allowed until BIL-85, see `CLAUDE.md`).
+- An old invoice or its PDF changes after an item or unit is edited.
+- A `PUT /invoices` changes an invoice item's name or price though the request kept its version.
+- An `item_versions` row is updated, or deleted while its item still exists.
+- An item is deleted while an invoice item still uses it.
 - A migration loses data, can't roll back, or edits an already-applied changeset.
 - A password, hash, or salt ends up in a response, log, or invoice.
 - A request for one user's data returns another user's data.
 - A validator or ownership check always passes or always fails.
 - A test passes whatever the code does (wrong class under test, missing `Verify`, expected value copied from the output).
-- A mapping library (AutoMapper or similar) is added, or a mapping method misses a property.
+- A mapping library (AutoMapper or similar) is added, or a mapping method misses a property, other
+  than the exceptions `CLAUDE.md` names (`ItemModel.ToEntity` without `Version`, `ToInvoiceItemEntity`
+  without `InvoiceId` and `LineNo`).
 - `COVERAGE_MIN_LINE` or `COVERAGE_MIN_BRANCH` in `.github/workflows/CI.yaml` is lowered (coverage never goes down, see `CLAUDE.md`).
 - A change makes `README.md` wrong and doesn't update it, or updates it without `docs/README_lt.md`.
 

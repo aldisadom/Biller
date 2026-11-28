@@ -29,6 +29,7 @@ public class InvoiceAddRequestExample : IExamplesProvider<InvoiceAddRequest>
                 new()
                 {
                     Id = Guid.Parse("8c24bb2a-25f1-4d33-801e-1d79ff9e2958"),
+                    Version = 1,
                     Quantity = 3
                 },
                 new()

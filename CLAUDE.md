@@ -28,13 +28,17 @@ on a small Linux PC.
   `(series_id, invoice_number)` then fails the next create instead of saving a duplicate number.
 - Never edit a changeset that is already on master. Fix it with a new one. Every changeset has a `-- rollback`.
 - Invoices store their user, seller and customer ids and show the current data. They keep their
-  own number and dates. Invoice items are rows in `invoice_items`: an invoice item names its item,
-  keeps its quantity and comments, and shows the item's current name and price. The total is
-  computed from the invoice items. Until BIL-85, editing an item changes every invoice that uses it,
-  its PDF and total, paid ones too (accepted; BIL-85 brings back "editing an item must not change an
-  existing invoice or its PDF"). An item that an invoice uses can't be deleted (400).
-  The series name isn't copied, so a series with invoices can't be renamed.
-- Mirror the Item feature when adding a layer. Map every property by hand.
+  own number and dates. Invoice items are rows in `invoice_items`: an invoice item names its item
+  and the item version it was saved with, keeps its quantity and comments, and shows that version's
+  name and price. The total is computed from the invoice items. Editing an item must not change an
+  existing invoice or its PDF: a name or price edit adds a row to `item_versions`, whose rows are
+  never updated, and `PUT /invoices` never moves an invoice item to another version by itself. An
+  item that an invoice uses can't be deleted (400). The series name isn't copied, so a series with
+  invoices can't be renamed.
+- Mirror the Item feature when adding a layer. Map every property by hand. Two exceptions:
+  `ItemModel.ToEntity` leaves `Version` out, since the repository numbers item versions; and
+  `ToInvoiceItemEntity` leaves `InvoiceId` and `LineNo` out, since `InvoiceRepository` takes them
+  from the invoice and the list order.
 - Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be
   on the branch with Biller's branch name, else on up-to-date master.
 - Working copies on Windows have CRLF line endings (`.gitattributes` stores LF). Change files with
@@ -89,7 +93,7 @@ Every Biller repo has these limits. Keep them when updating packages.
 - Plans: `docs/plans/BIL-<n>-<slug>.md` (Jira project BIL), in the repo the work is in. Only plans
   that change several repos, or Biller itself, live here. The `_write-plan` skill writes and checks them.
 - Skills set their model and effort in their frontmatter: Sonnet at high effort by default,
-  `_write-plan` on Fable (medium, in its own context), `_pr-review` on Opus (high). A new skill gets
+  `_write-plan` on Opus (xhigh, in its own context), `_pr-review` on Opus (high). A new skill gets
   `model:` and `effort:` lines too.
 - Review rules: `REVIEW.md`. Past bugs to test reviews against: `docs/review-evals.md`.
 - Before opening a PR, use the `_pre-pr` skill. The build and tests must pass: don't open a PR, or

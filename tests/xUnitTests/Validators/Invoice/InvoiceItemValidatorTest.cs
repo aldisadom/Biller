@@ -68,6 +68,38 @@ public class InvoiceItemValidatorTest
         result.IsValid.Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData(0, Label = "version zero is rejected")]
+    [InlineData(-1, Label = "negative version is rejected")]
+    public void Validate_GivenVersionBelowOne_IsInvalid(int version)
+    {
+        //Arrange
+        var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 1, Version = version };
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(request.Version)
+            && e.ErrorMessage == $"Please specify item version >= 1 for {request.Id}");
+    }
+
+    [Theory]
+    [InlineData(null, Label = "no version is accepted, it means the latest")]
+    [InlineData(1, Label = "version one is accepted")]
+    public void Validate_GivenNoVersionOrVersionFromOne_IsValid(int? version)
+    {
+        //Arrange
+        var request = new InvoiceItemRequest { Id = Guid.NewGuid(), Quantity = 1, Version = version };
+
+        //Act
+        var result = _validator.Validate(request);
+
+        //Assert
+        result.IsValid.Should().BeTrue();
+    }
+
     [Fact]
     public void Validate_GivenCommentThePdfCannotShow_IsInvalid()
     {

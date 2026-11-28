@@ -19,21 +19,24 @@ public class ItemService : IItemService
         _itemRepository = itemRepository;
     }
 
-    public async Task<ItemModel> Get(Guid id)
+    public async Task<ItemModel> Get(Guid id, int? version)
     {
-        ItemEntity itemEntity = await _itemRepository.Get(id)
-            ?? throw new NotFoundException($"Invoice item:{id} not found");
+        ItemEntity itemEntity = await _itemRepository.Get(id, version)
+            ?? throw new NotFoundException(version is null
+                ? $"Item:{id} not found"
+                : $"Item:{id} version {version} not found");
 
         return itemEntity.ToModel();
     }
 
-    public async Task<IEnumerable<ItemModel>> Get(List<Guid> ids)
+    public async Task<IEnumerable<ItemVersionModel>> GetVersions(Guid id)
     {
-        IEnumerable<ItemEntity> itemEntities;
+        List<ItemVersionEntity> versions = (await _itemRepository.GetVersions(id)).ToList();
 
-        itemEntities = await _itemRepository.Get(ids);
+        if (versions.Count == 0)
+            throw new NotFoundException($"Item:{id} not found");
 
-        return itemEntities.Select(i => i.ToModel());
+        return versions.Select(v => v.ToModel());
     }
 
     public async Task<(IEnumerable<ItemModel> Items, int TotalCount, int Page)> Get(ItemGetRequest? query)
@@ -46,23 +49,13 @@ public class ItemService : IItemService
         return (entities.Select(i => i.ToModel()), totalCount, returnedPage);
     }
 
-    public async Task<IEnumerable<ItemModel>> GetForCustomer(List<Guid> ids, Guid customerId)
+    public async Task CheckForCustomer(List<Guid> ids, Guid customerId)
     {
-        var items = await _itemRepository.Get(ids);
+        HashSet<Guid> ownItemIds = (await _itemRepository.GetIdsForCustomer(ids, customerId)).ToHashSet();
+        List<Guid> invalidIds = ids.Where(id => !ownItemIds.Contains(id)).ToList();
 
-        string idString = string.Empty;
-
-        var nonMatching = ids
-            .Where(id => !items.Any(i => (i.Id == id) && (i.CustomerId == customerId)))
-            .ToList();
-
-        foreach (var item in nonMatching)
-            idString += " " + item.ToString();
-
-        if (!string.IsNullOrEmpty(idString))
-            throw new ValidationException($"Items id{idString} is invalid for customer id {customerId}");
-
-        return items.ToList().Select(i => i.ToModel()).ToList();
+        if (invalidIds.Count != 0)
+            throw new ValidationException($"Items id {string.Join(" ", invalidIds)} is invalid for customer id {customerId}");
     }
 
     public async Task<Guid> Add(ItemModel item)
@@ -74,7 +67,7 @@ public class ItemService : IItemService
 
     public async Task Update(ItemModel item)
     {
-        await Get(item.Id);
+        await Get(item.Id, null);
 
         ItemEntity itemEntity = item.ToEntity();
 
@@ -83,7 +76,7 @@ public class ItemService : IItemService
 
     public async Task Delete(Guid id)
     {
-        await Get(id);
+        await Get(id, null);
 
         await _itemRepository.Delete(id);
     }

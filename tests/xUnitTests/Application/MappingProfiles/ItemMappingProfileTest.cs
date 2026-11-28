@@ -1,7 +1,7 @@
 ﻿using Application.MappingProfiles;
 using Application.Models;
+using AwesomeAssertions;
 using BillerContracts.Requests.Item;
-using BillerContracts.Responses.Item;
 using Domain.Entities;
 using static xUnitTests.Application.MappingProfiles.MappingTestHelper;
 
@@ -10,7 +10,7 @@ namespace xUnitTests.Application.MappingProfiles;
 public class ItemMappingProfileTest
 {
     [Fact]
-    public void ToEntity_GivenModel_MapsAllProperties()
+    public void ToEntity_GivenModel_MapsAllPropertiesButVersion()
     {
         //Arrange
         var from = new ItemModel
@@ -19,14 +19,19 @@ public class ItemMappingProfileTest
             CustomerId = Guid.NewGuid(),
             Name = "ItemName",
             Quantity = 66,
-            Price = 123.67M
+            Price = 123.67M,
+            Version = 3
         };
 
         //Act
         var to = from.ToEntity();
 
         //Assert
-        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
+        HashSet<string> ignoreProperties = ["Version"];
+        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
+
+        // A write never carries a version: the repository numbers them
+        to.Version.Should().Be(0);
     }
 
     [Fact]
@@ -39,7 +44,8 @@ public class ItemMappingProfileTest
             CustomerId = Guid.NewGuid(),
             Name = "ItemName",
             Quantity = 66,
-            Price = 123.67M
+            Price = 123.67M,
+            Version = 3
         };
 
 
@@ -98,7 +104,8 @@ public class ItemMappingProfileTest
             CustomerId = Guid.NewGuid(),
             Name = "ItemName",
             Quantity = 66,
-            Price = 123.67M
+            Price = 123.67M,
+            Version = 3
         };
 
         //Act
@@ -109,20 +116,38 @@ public class ItemMappingProfileTest
     }
 
     [Fact]
-    public void ToModel_GivenResponse_MapsAllProperties()
+    public void ToModel_GivenVersionEntity_MapsAllProperties()
     {
         //Arrange
-        var from = new ItemResponse
+        var from = new ItemVersionEntity
         {
-            Id = Guid.NewGuid(),
-            CustomerId = Guid.NewGuid(),
+            Version = 3,
             Name = "ItemName",
-            Quantity = 66,
-            Price = 123.67M
+            Price = 123.67M,
+            ChangedDate = new DateTime(2026, 11, 10, 14, 30, 0, DateTimeKind.Utc)
         };
 
         //Act
         var to = from.ToModel();
+
+        //Assert
+        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
+    }
+
+    [Fact]
+    public void ToResponse_GivenVersionModel_MapsAllProperties()
+    {
+        //Arrange
+        var from = new ItemVersionModel
+        {
+            Version = 3,
+            Name = "ItemName",
+            Price = 123.67M,
+            ChangedDate = new DateTime(2026, 11, 10, 14, 30, 0, DateTimeKind.Utc)
+        };
+
+        //Act
+        var to = from.ToResponse();
 
         //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);

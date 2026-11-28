@@ -29,18 +29,18 @@ public class ItemServiceTest
         //Arrange
         ItemEntity item = new() { Id = Guid.NewGuid() };
 
-        _itemRepositoryMock.Setup(m => m.Get(item.Id))
+        _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
                         .ReturnsAsync(item);
 
         ItemModel expectedResult = item.ToModel();
 
         //Act
-        ItemModel result = await _itemService.Get(item.Id);
+        ItemModel result = await _itemService.Get(item.Id, null);
 
         //Assert
         result.Should().BeEquivalentTo(expectedResult);
 
-        _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
     }
 
     [Fact]
@@ -49,102 +49,126 @@ public class ItemServiceTest
         //Arrange
         Guid id = Guid.NewGuid();
 
-        _itemRepositoryMock.Setup(m => m.Get(id))
+        _itemRepositoryMock.Setup(m => m.Get(id, null))
                         .ReturnsAsync((ItemEntity)null!);
 
         //Act
         //Assert
-        await _itemService.Invoking(x => x.Get(id))
-                            .Should().ThrowAsync<NotFoundException>();
+        await _itemService.Invoking(x => x.Get(id, null))
+                            .Should().ThrowAsync<NotFoundException>().WithMessage($"Item:{id} not found");
 
-        _itemRepositoryMock.Verify(m => m.Get(id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(id, null), Times.Once());
     }
 
     [Fact]
-    public async Task GetIds_GivenValidIds_ReturnsDTOs()
+    public async Task GetIdVersion_GivenExistingVersion_ReturnsThatVersion()
     {
         //Arrange
-        List<ItemEntity> itemList = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
+        ItemEntity item = new() { Id = Guid.NewGuid(), Version = 2, Name = "Iron throne", Price = 50m };
 
-        List<Guid> ids = itemList.Select(x => x.Id).ToList();
-
-        _itemRepositoryMock.Setup(m => m.Get(ids))
-                        .ReturnsAsync(itemList);
-
-        var expectedResult = itemList.Select(i => i.ToModel());
+        _itemRepositoryMock.Setup(m => m.Get(item.Id, 2))
+                        .ReturnsAsync(item);
 
         //Act
-        var result = await _itemService.Get(ids);
+        ItemModel result = await _itemService.Get(item.Id, 2);
 
         //Assert
-        result.Count().Should().Be(itemList.Count);
-        result.Should().BeEquivalentTo(expectedResult);
+        result.Should().BeEquivalentTo(item.ToModel());
 
-        _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(item.Id, 2), Times.Once());
     }
 
     [Fact]
-    public async Task GetForCustomer_GivenCustomersItems_ReturnsItems()
+    public async Task GetIdVersion_GivenUnknownVersion_ThrowsNotFoundException()
+    {
+        //Arrange
+        Guid id = Guid.NewGuid();
+
+        _itemRepositoryMock.Setup(m => m.Get(id, 99))
+                        .ReturnsAsync((ItemEntity)null!);
+
+        //Act
+        //Assert
+        await _itemService.Invoking(x => x.Get(id, 99))
+                            .Should().ThrowAsync<NotFoundException>().WithMessage($"Item:{id} version 99 not found");
+
+        _itemRepositoryMock.Verify(m => m.Get(id, 99), Times.Once());
+    }
+
+    [Fact]
+    public async Task GetVersions_GivenItemWithVersions_ReturnsThemInRepositoryOrder()
+    {
+        //Arrange
+        Guid id = Guid.NewGuid();
+        List<ItemVersionEntity> versions = [new() { Version = 1 }, new() { Version = 2 }];
+
+        _itemRepositoryMock.Setup(m => m.GetVersions(id))
+                        .ReturnsAsync(versions);
+
+        //Act
+        var result = await _itemService.GetVersions(id);
+
+        //Assert
+        result.Select(v => v.Version).Should().Equal(1, 2);
+
+        _itemRepositoryMock.Verify(m => m.GetVersions(id), Times.Once());
+    }
+
+    [Fact]
+    public async Task GetVersions_GivenUnknownItem_ThrowsNotFoundException()
+    {
+        //Arrange
+        Guid id = Guid.NewGuid();
+
+        _itemRepositoryMock.Setup(m => m.GetVersions(id))
+                        .ReturnsAsync((List<ItemVersionEntity>)[]);
+
+        //Act
+        //Assert
+        await _itemService.Invoking(x => x.GetVersions(id))
+                            .Should().ThrowAsync<NotFoundException>().WithMessage($"Item:{id} not found");
+
+        _itemRepositoryMock.Verify(m => m.GetVersions(id), Times.Once());
+    }
+
+    [Fact]
+    public async Task CheckForCustomer_GivenCustomersItems_DoesNotThrow()
     {
         //Arrange
         Guid customerId = Guid.NewGuid();
-        List<ItemEntity> itemList =
-        [
-            new() { Id = Guid.NewGuid(), CustomerId = customerId },
-            new() { Id = Guid.NewGuid(), CustomerId = customerId },
-            new() { Id = Guid.NewGuid(), CustomerId = customerId }
-        ];
-        List<Guid> ids = itemList.Select(x => x.Id).ToList();
+        List<Guid> itemIds = [Guid.NewGuid(), Guid.NewGuid()];
 
-        _itemRepositoryMock.Setup(m => m.Get(ids))
-                        .ReturnsAsync(itemList);
+        _itemRepositoryMock.Setup(m => m.GetIdsForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customerId))
+                        .ReturnsAsync(itemIds);
 
         //Act
-        IEnumerable<ItemModel> result = await _itemService.GetForCustomer(ids, customerId);
-
         //Assert
-        result.Should().BeEquivalentTo(itemList.Select(i => i.ToModel()));
+        await _itemService.Invoking(x => x.CheckForCustomer(itemIds, customerId))
+                            .Should().NotThrowAsync();
 
-        _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
+        _itemRepositoryMock.Verify(m => m.GetIdsForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customerId), Times.Once());
     }
 
     [Fact]
-    public async Task GetForCustomer_GivenAnotherCustomersItems_ThrowsValidationExceptionNamingEach()
+    public async Task CheckForCustomer_GivenItemsNotTheCustomers_ThrowsValidationExceptionNamingEach()
     {
         //Arrange
-        List<ItemEntity> itemList = [new() { Id = Guid.NewGuid(), CustomerId = Guid.NewGuid() }, new() { Id = Guid.NewGuid(), CustomerId = Guid.NewGuid() }];
-        List<Guid> ids = itemList.Select(x => x.Id).ToList();
         Guid customerId = Guid.NewGuid();
+        Guid otherThroneId = Guid.NewGuid();
+        Guid swordId = Guid.NewGuid();
+        Guid unknownId = Guid.NewGuid();
+        List<Guid> itemIds = [otherThroneId, swordId, unknownId];
 
-        _itemRepositoryMock.Setup(m => m.Get(ids))
-                        .ReturnsAsync(itemList);
+        _itemRepositoryMock.Setup(m => m.GetIdsForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customerId))
+                        .ReturnsAsync([swordId]);
 
         //Act
         //Assert
-        await _itemService.Invoking(x => x.GetForCustomer(ids, customerId))
+        await _itemService.Invoking(x => x.CheckForCustomer(itemIds, customerId))
                             .Should().ThrowAsync<FluentValidation.ValidationException>()
-                            .WithMessage($"Items id {ids[0]} {ids[1]} is invalid for customer id {customerId}");
+                            .WithMessage($"Items id {otherThroneId} {unknownId} is invalid for customer id {customerId}");
 
-        _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
-    }
-
-    [Fact]
-    public async Task GetForCustomer_GivenUnknownItem_ThrowsValidationException()
-    {
-        //Arrange
-        List<Guid> ids = [Guid.NewGuid()];
-        Guid customerId = Guid.NewGuid();
-
-        _itemRepositoryMock.Setup(m => m.Get(ids))
-                        .ReturnsAsync((List<ItemEntity>)[]);
-
-        //Act
-        //Assert
-        await _itemService.Invoking(x => x.GetForCustomer(ids, customerId))
-                            .Should().ThrowAsync<FluentValidation.ValidationException>()
-                            .WithMessage($"Items id {ids[0]} is invalid for customer id {customerId}");
-
-        _itemRepositoryMock.Verify(m => m.Get(ids), Times.Once());
+        _itemRepositoryMock.Verify(m => m.GetIdsForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(itemIds)), customerId), Times.Once());
     }
 
     public static IEnumerable<TheoryDataRow<ItemGetRequest?, Guid?, int, int>> GetQueryTestData()
@@ -199,46 +223,49 @@ public class ItemServiceTest
     }
 
     [Fact]
-    public async Task Add_GivenValidId_ReturnsGuid()
+    public async Task Add_GivenValidItem_ReturnsGuidAndSavesNoVersion()
     {
         //Arrange
-        ItemModel item = new() { Id = Guid.NewGuid() };
+        ItemModel item = new() { CustomerId = Guid.NewGuid(), Name = "Iron throne", Price = 12m, Quantity = 2, Version = 3 };
 
-        ItemEntity itemEntity = item.ToEntity();
+        // The repository writes version 1 itself
+        ItemEntity expectedEntity = new() { CustomerId = item.CustomerId, Name = "Iron throne", Price = 12m, Quantity = 2 };
+        Guid newId = Guid.NewGuid();
 
-        _itemRepositoryMock.Setup(m => m.Add(itemEntity))
-                                 .ReturnsAsync(item.Id);
+        _itemRepositoryMock.Setup(m => m.Add(expectedEntity))
+                                 .ReturnsAsync(newId);
 
         //Act
         Guid result = await _itemService.Add(item);
 
         //Assert
-        result.Should().Be(item.Id);
+        result.Should().Be(newId);
 
-        _itemRepositoryMock.Verify(m => m.Add(itemEntity), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Add(expectedEntity), Times.Once());
     }
 
     [Fact]
-    public async Task Update_GivenExistingId_UpdatesRepository()
+    public async Task Update_GivenExistingId_UpdatesRepositoryWithNoVersion()
     {
         //Arrange
-        ItemModel item = new() { Id = Guid.NewGuid() };
+        ItemModel item = new() { Id = Guid.NewGuid(), Name = "Iron throne", Price = 12m, Quantity = 2, Version = 3 };
 
-        ItemEntity itemEntity = item.ToEntity();
+        // The repository adds the next version itself, when the name or price changed
+        ItemEntity expectedEntity = new() { Id = item.Id, Name = "Iron throne", Price = 12m, Quantity = 2 };
 
-        _itemRepositoryMock.Setup(m => m.Update(itemEntity))
+        _itemRepositoryMock.Setup(m => m.Update(expectedEntity))
                         .Returns(Task.CompletedTask);
 
-        _itemRepositoryMock.Setup(m => m.Get(itemEntity.Id))
-                                .ReturnsAsync(itemEntity);
+        _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
+                                .ReturnsAsync(new ItemEntity { Id = item.Id });
 
         //Act
         //Assert
         await _itemService.Invoking(x => x.Update(item))
                                         .Should().NotThrowAsync<Exception>();
 
-        _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
-        _itemRepositoryMock.Verify(m => m.Update(itemEntity), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Update(expectedEntity), Times.Once());
     }
 
     [Fact]
@@ -247,7 +274,7 @@ public class ItemServiceTest
         //Arrange
         ItemModel item = new() { Id = Guid.NewGuid() };
 
-        _itemRepositoryMock.Setup(m => m.Get(item.Id))
+        _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
                         .ReturnsAsync((ItemEntity)null!);
 
         //Act
@@ -255,7 +282,7 @@ public class ItemServiceTest
         await _itemService.Invoking(x => x.Update(item))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
         _itemRepositoryMock.Verify(m => m.Update(It.IsAny<ItemEntity>()), Times.Never());
     }
 
@@ -268,7 +295,7 @@ public class ItemServiceTest
         _itemRepositoryMock.Setup(m => m.Delete(item.Id))
                         .Returns(Task.CompletedTask);
 
-        _itemRepositoryMock.Setup(m => m.Get(item.Id))
+        _itemRepositoryMock.Setup(m => m.Get(item.Id, null))
                         .ReturnsAsync(item);
 
         //Act
@@ -276,7 +303,7 @@ public class ItemServiceTest
         await _itemService.Invoking(x => x.Delete(item.Id))
                             .Should().NotThrowAsync<Exception>();
 
-        _itemRepositoryMock.Verify(m => m.Get(item.Id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(item.Id, null), Times.Once());
         _itemRepositoryMock.Verify(m => m.Delete(item.Id), Times.Once());
     }
 
@@ -286,7 +313,7 @@ public class ItemServiceTest
         //Arrange
         Guid id = Guid.NewGuid();
 
-        _itemRepositoryMock.Setup(m => m.Get(id))
+        _itemRepositoryMock.Setup(m => m.Get(id, null))
                         .ReturnsAsync((ItemEntity)null!);
 
         //Act
@@ -294,7 +321,7 @@ public class ItemServiceTest
         await _itemService.Invoking(x => x.Delete(id))
                             .Should().ThrowAsync<NotFoundException>();
 
-        _itemRepositoryMock.Verify(m => m.Get(id), Times.Once());
+        _itemRepositoryMock.Verify(m => m.Get(id, null), Times.Once());
         _itemRepositoryMock.Verify(m => m.Delete(It.IsAny<Guid>()), Times.Never());
     }
 }

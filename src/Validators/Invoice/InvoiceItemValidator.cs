@@ -17,6 +17,8 @@ public class InvoiceItemValidator : AbstractValidator<InvoiceItemRequest>
     {
         RuleFor(x => x.Id).NotEmpty().WithMessage("Please specify item Id");
         RuleFor(x => x.Quantity).GreaterThan(0).WithMessage(x => $"Please provide quantity that should > 0 for {x.Id}");
+        RuleFor(x => x.Version).GreaterThanOrEqualTo(1).When(x => x.Version is not null)
+            .WithMessage(x => $"Please specify item version >= 1 for {x.Id}");
 
         RuleFor(x => x.Comments).DrawableOnPdf(documentTextChecker);
     }

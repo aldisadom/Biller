@@ -10,7 +10,7 @@ public record InvoiceModel
     public DateOnly DueDate { get; set; }
     public Guid SellerId { get; set; }
     public Guid CustomerId { get; set; }
-    public List<InvoiceItemModel>? Items { get; set; }
+    public List<InvoiceItemModel> Items { get; set; } = [];
     public Guid SeriesId { get; set; }
     public string SeriesName { get; set; } = string.Empty;
     public int InvoiceNumber { get; set; }
@@ -19,11 +19,7 @@ public record InvoiceModel
 
     public decimal CalculateTotal()
     {
-        decimal total = 0;
-        foreach (InvoiceItemModel item in Items!)
-            total += item.Price * item.Quantity;
-
-        return total;
+        return Items.Sum(item => item.CalculateTotal());
     }
 
     public string GenerateFileLocation()

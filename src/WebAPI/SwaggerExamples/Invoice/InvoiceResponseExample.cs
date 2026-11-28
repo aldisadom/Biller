@@ -32,6 +32,10 @@ public class InvoiceResponseExample : IExamplesProvider<InvoiceResponse>
                 new InvoiceItemResponse()
                 {
                     Id = Guid.NewGuid(),
+                    Version = 2,
+                    Name = "Iron throne",
+                    Price = 1500m,
+                    Quantity = 1
                 }
             ],
             Comments = "Invoice comment",
