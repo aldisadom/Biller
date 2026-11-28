@@ -9,7 +9,7 @@ namespace Application.Interfaces
         Task Delete(Guid id);
         Task<SellerModel> Get(Guid id);
         Task<SellerModel> GetForUser(Guid id, Guid userId);
-        Task<(IEnumerable<SellerModel> Items, int TotalCount, int Page)> Get(SellerGetRequest? query);
+        Task<(IEnumerable<SellerModel> Sellers, int TotalCount, int Page)> Get(SellerGetRequest? query);
         Task Update(SellerModel seller);
     }
 }

@@ -130,16 +130,16 @@ public class SellerServiceTest
     public async Task Get_GivenQuery_PassesFilterToRepository(SellerGetRequest? query, Guid? userId, int page, int pageSize)
     {
         //Arrange
-        List<SellerEntity> sellers = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
+        List<SellerEntity> sellerEntities = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         _sellerRepositoryMock.Setup(m => m.Get(userId, page, pageSize))
-                        .ReturnsAsync((sellers, 9, page));
+                        .ReturnsAsync((sellerEntities, 9, page));
 
         //Act
-        var (result, totalCount, returnedPage) = await _sellerService.Get(query);
+        var (sellers, totalCount, returnedPage) = await _sellerService.Get(query);
 
         //Assert
-        result.Select(s => s.Id).Should().Equal(sellers.Select(s => s.Id));
+        sellers.Select(s => s.Id).Should().Equal(sellerEntities.Select(s => s.Id));
         totalCount.Should().Be(9);
         returnedPage.Should().Be(page);
 
@@ -151,16 +151,16 @@ public class SellerServiceTest
     {
         //Arrange
         SellerGetRequest query = new() { Page = 5 };
-        List<SellerEntity> sellers = [new() { Id = Guid.NewGuid() }];
+        List<SellerEntity> sellerEntities = [new() { Id = Guid.NewGuid() }];
 
         _sellerRepositoryMock.Setup(m => m.Get(null, 5, 25))
-                        .ReturnsAsync((sellers, 4, 1));
+                        .ReturnsAsync((sellerEntities, 4, 1));
 
         //Act
-        var (result, totalCount, returnedPage) = await _sellerService.Get(query);
+        var (sellers, totalCount, returnedPage) = await _sellerService.Get(query);
 
         //Assert
-        result.Select(s => s.Id).Should().Equal(sellers.Select(s => s.Id));
+        sellers.Select(s => s.Id).Should().Equal(sellerEntities.Select(s => s.Id));
         totalCount.Should().Be(4);
         returnedPage.Should().Be(1);
 

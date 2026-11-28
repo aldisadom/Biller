@@ -94,22 +94,4 @@ public static class SellerModelExtensions
             BankNumber = from.BankNumber
         };
     }
-
-    public static SellerModel ToModel(this SellerResponse from)
-    {
-        return new SellerModel
-        {
-            Id = from.Id,
-            UserId = from.UserId,
-            CompanyName = from.CompanyName,
-            CompanyNumber = from.CompanyNumber,
-            Street = from.Street,
-            City = from.City,
-            State = from.State,
-            Email = from.Email,
-            Phone = from.Phone,
-            BankName = from.BankName,
-            BankNumber = from.BankNumber
-        };
-    }
 }

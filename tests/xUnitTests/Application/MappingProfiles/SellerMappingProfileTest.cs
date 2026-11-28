@@ -136,30 +136,4 @@ public class SellerMappingProfileTest
         //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
-
-    [Fact]
-    public void ToModel_GivenResponse_MapsAllProperties()
-    {
-        //Arrange
-        var from = new SellerResponse
-        {
-            Id = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
-            CompanyName = "CompanyName",
-            CompanyNumber = "123456",
-            Street = "Main St",
-            City = "Vilnius",
-            State = "LT",
-            Email = "test@email.com",
-            Phone = "+37060000000",
-            BankName = "Bank",
-            BankNumber = "IBan"
-        };
-
-        //Act
-        var to = from.ToModel();
-
-        //Assert
-        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
-    }
 }

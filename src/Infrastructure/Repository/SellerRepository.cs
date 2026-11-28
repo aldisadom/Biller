@@ -22,7 +22,7 @@ public class SellerRepository : ISellerRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<SellerEntity>(sql, new { id });
     }
 
-    public async Task<(IEnumerable<SellerEntity> Items, int TotalCount, int Page)> Get(Guid? userId, int page, int pageSize)
+    public async Task<(IEnumerable<SellerEntity> Sellers, int TotalCount, int Page)> Get(Guid? userId, int page, int pageSize)
     {
         string filter = @"WHERE (@UserId IS NULL OR user_id = @UserId)";
 
@@ -34,24 +34,24 @@ public class SellerRepository : ISellerRepository
         return await _dbConnection.QueryPage<SellerEntity>(dataSql, countSql, new { UserId = userId }, page, pageSize);
     }
 
-    public async Task<Guid> Add(SellerEntity item)
+    public async Task<Guid> Add(SellerEntity seller)
     {
         string sql = @"INSERT INTO sellers
                         (user_id, company_name, street, city, email, phone, state, company_number, bank_name, bank_number)
                         VALUES (@UserId, @CompanyName, @Street, @City, @Email, @Phone, @State, @CompanyNumber, @BankName, @BankNumber)
                         RETURNING id";
 
-        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);
+        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, seller);
     }
 
-    public async Task Update(SellerEntity item)
+    public async Task Update(SellerEntity seller)
     {
         string sql = @"UPDATE sellers
                         SET company_name=@CompanyName, street=@Street, city=@City, email=@Email,
                             phone=@Phone, state=@State, company_number=@CompanyNumber, bank_name=@BankName, bank_number=@BankNumber
                         WHERE id=@Id";
 
-        await _dbConnection.ExecuteAsync(sql, item);
+        await _dbConnection.ExecuteAsync(sql, seller);
     }
 
     public async Task Delete(Guid id)
