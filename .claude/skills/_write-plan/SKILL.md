@@ -84,6 +84,15 @@ check reports `ok`. The rules for a needed repo, whichever of 4a or 4b runs:
 The answers and decisions in the arguments go into the plan, new or existing: each replaces the
 matching open question, and a decision gets its reason. Don't ask again what the arguments answer.
 
+## 4d. Make it simpler
+
+Before returning, ask of every decision and step: can this be made simpler (`CLAUDE.md`, "Keep it
+simple")? Reuse an existing type, query or endpoint before adding one. Merge steps and drop
+options, checks and edge cases the issue doesn't need. A case that needs an unusual setup or
+concurrent requests goes under **Out of scope** in one line, not into a step. Do this for an
+existing plan too, but change its decisions only as step 4a allows: list the simplification as an
+open question instead.
+
 Write the file in the working tree. Don't commit, don't create a branch, don't edit Jira and don't
 write code: the caller does those once the user has approved the plan.
 
@@ -98,6 +107,8 @@ Reply with, in this order:
 5. **Open questions** the user has to answer, numbered as in the plan.
 6. **Repos not read:** each sibling the check didn't report `ok`, with its line, whether the plan
    needs it (step 3), and whether the arguments said to leave it out.
+7. **Simpler:** what step 4d dropped, merged or moved out of scope, or proposes as a question; or
+   "nothing found".
 
 The caller tells the user, gathers the answers, and runs this skill again with everything the user
 has decided so far, not only the new answers: this skill keeps nothing between runs.

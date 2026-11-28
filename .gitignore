@@ -366,3 +366,6 @@ FodyWeavers.xsd
 
 # Database backups (make backup)
 backup/
+
+# Claude Code worktrees
+.claude/worktrees/

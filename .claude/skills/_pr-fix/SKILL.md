@@ -14,11 +14,13 @@ grep -n '^- \[ \]' "$F"    # the open findings
 
 For each open line:
 
-- **Important**: fix it, with a test that fails without the fix (`_write-tests`; its
-  `revert-check.sh` shows the test failing with the fix undone). If the same kind of bug is in
-  several places, fix all of them in this round.
-- **Nit**: fix it, or answer in one line why not.
-- **Pre-existing**: leave it out of this PR. List it for the user; it may deserve a Jira task.
+- **Important**: fix it with the smallest change, with a test that fails without the fix
+  (`_write-tests`; its `revert-check.sh` shows the test failing with the fix undone). If the same
+  kind of bug is in several places, fix all of them in this round. When the fix would add more code
+  than the case is worth (`CLAUDE.md`, "Keep it simple"), don't write it: ask the user.
+- **Nit**: fix it when that takes a line or two, or answer in one line why not.
+- **Pre-existing**: leave it out of this PR. List it for the user only when it is on `REVIEW.md`'s
+  failure list; only those may become Jira tasks. Answer the rest in one line.
 - **Wrong**: answer with the reason (`file:line`, the input that shows it's fine). Don't change
   code just to silence it.
 

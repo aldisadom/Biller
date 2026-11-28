@@ -20,6 +20,13 @@ on a small Linux PC.
 - `src/Infrastructure`: Dapper repositories, DI for the DB and PDF generation.
 
 ## Conventions
+- Keep it simple. Before writing a plan, code or a fix, ask: can this be made simpler? Fewer
+  types, layers, options, checks and steps. Handle what one owner on one machine actually meets.
+  Leave out cases that need an unusual setup or concurrent requests, and say in one line what was
+  left out. A small known gap is better than code that guards against it.
+- Make changes in this checkout (and the siblings' own checkouts), on the issue's branch. Don't
+  create git worktrees: no `git worktree add`, no `EnterWorktree`, no agents with
+  `isolation: "worktree"`.
 - A write that touches several rows or tables is one SQL statement (data-modifying CTE).
 - Race conditions are low risk: one owner, and at most about 1 request per second creates invoices
   for the same customer. So no explicit transactions or row locks (`FOR UPDATE`): a single statement

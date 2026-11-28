@@ -18,6 +18,12 @@ Failure here looks like:
 - `COVERAGE_MIN_LINE` or `COVERAGE_MIN_BRANCH` in `.github/workflows/CI.yaml` is lowered (coverage never goes down, see `CLAUDE.md`).
 - A change makes `README.md` wrong and doesn't update it, or updates it without `docs/README_lt.md`.
 
+Report only what a realistic input breaks for one owner on one machine. Don't report cases that
+need an unusual setup (unusual git or tool config, hand-edited files, unmounted drives, two tools
+racing) or that no request can reach. When the fix would add more code than the case is worth, say
+so in the finding instead of asking for the fix (`CLAUDE.md`, "Keep it simple"). Report a
+**Pre-existing** finding only when it is on the failure list above.
+
 Don't report races that need concurrent requests on the same customer, series or invoice: there is
 one owner and at most about 1 request per second per customer (see `CLAUDE.md`). Don't ask for
 transactions or row locks. A write that touches several rows or tables in separate statements is
