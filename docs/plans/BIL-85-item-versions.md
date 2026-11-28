@@ -277,9 +277,9 @@ returns feed `SetLatestVersion`), 13, 16, 17. Push only when the build and the t
   or turning an empty one into a number; `InvoiceService.Add` setting a version; `CheckForCustomer`
   ignoring what the repository returned; `ItemModel.ToEntity` mapping `Version` again;
   `InvoiceUpdateValidator` without its version rule.
-- [ ] Coverage: the branch's 93.2 / 88.8 were set before this rework, and the rework deletes covered
+- [x] Coverage: the branch's 93.2 / 88.8 were set before this rework, and the rework deletes covered
   code. At `_pre-pr`, set them again from the new numbers minus 1 (`CLAUDE.md`), never below master's
-  93.0 / 88.5.
+  93.0 / 88.5. Done: 94.1 / 89.5 after the rework, so 93.1 / 88.5.
 
 ### R6: BillioIntegrationTest
 
