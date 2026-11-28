@@ -59,15 +59,4 @@ public static class SeriesModelExtensions
             NextNumber = from.NextNumber
         };
     }
-
-    public static SeriesModel ToModel(this SeriesResponse from)
-    {
-        return new SeriesModel
-        {
-            Id = from.Id,
-            SellerId = from.SellerId,
-            Name = from.Name,
-            NextNumber = from.NextNumber
-        };
-    }
 }

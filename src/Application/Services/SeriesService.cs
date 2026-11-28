@@ -29,14 +29,14 @@ public class SeriesService : ISeriesService
         return seriesEntity.ToModel();
     }
 
-    public async Task<(IEnumerable<SeriesModel> Items, int TotalCount, int Page)> Get(SeriesGetRequest? query)
+    public async Task<(IEnumerable<SeriesModel> Series, int TotalCount, int Page)> Get(SeriesGetRequest? query)
     {
         int page = query?.Page ?? 1;
         var pageSize = query?.PageSize ?? PageSize.p25;
 
-        var (entities, totalCount, returnedPage) = await _seriesRepository.Get(query?.SellerId, page, (int)pageSize);
+        var (seriesEntities, totalCount, returnedPage) = await _seriesRepository.Get(query?.SellerId, page, (int)pageSize);
 
-        return (entities.Select(s => s.ToModel()), totalCount, returnedPage);
+        return (seriesEntities.Select(s => s.ToModel()), totalCount, returnedPage);
     }
 
     public async Task<SeriesModel> GetForSeller(Guid id, Guid sellerId)

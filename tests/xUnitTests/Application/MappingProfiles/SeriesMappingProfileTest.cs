@@ -132,23 +132,4 @@ public class SeriesMappingProfileTest
         //Assert
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
     }
-
-    [Fact]
-    public void ToModel_GivenResponse_MapsAllProperties()
-    {
-        //Arrange
-        var from = new SeriesResponse
-        {
-            Id = Guid.NewGuid(),
-            SellerId = Guid.NewGuid(),
-            Name = "WF",
-            NextNumber = 12
-        };
-
-        //Act
-        var to = from.ToModel();
-
-        //Assert
-        MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo);
-    }
 }
