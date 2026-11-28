@@ -152,33 +152,33 @@ returns feed `SetLatestVersion`), 13, 16, 17. Push only when the build and the t
 
 ### R1: Migration 039 (decision 14)
 
-- [ ] `039-Create-table-item_versions.sql`: the table as in step 2: no `id`, `PRIMARY KEY (item_id,
+- [x] `039-Create-table-item_versions.sql`: the table as in step 2: no `id`, `PRIMARY KEY (item_id,
   version)`, no `uq_item_versions_item_id_version`. Its comment adds that versions are keyed by item
   and version. 040 and 041 don't change: 040 inserts no `id`, and 041's `fk_invoice_items_item_id_version`
   `REFERENCES item_versions (item_id, version)` then references the primary key.
-- [ ] The edited 039 has a new checksum, and Liquibase stops on a database that ran the old one.
+- [x] The edited 039 has a new checksum, and Liquibase stops on a database that ran the old one.
   Production and master never ran 039–041, and a test stack starts empty. The user's local
   `billio-db` ran them if it was migrated from this branch: then roll 041–039 back there
   (`rollbackCount 3`) from the branch as it is now, before R1. Ask first: it is the user's own stack.
 
 ### R2: Domain and Infrastructure (decisions 7, 12, 14)
 
-- [ ] `ItemVersionEntity`: drop `Id` and `CustomerId`.
-- [ ] `InvoiceItemEntity.Version`: `int?`. Comment: empty only on a new invoice item before
+- [x] `ItemVersionEntity`: drop `Id` and `CustomerId`.
+- [x] `InvoiceItemEntity.Version`: `int?`. Comment: empty only on a new invoice item before
   `InvoiceRepository.Add` saves it; a saved invoice item always has one (`NOT NULL`).
-- [ ] `IItemRepository`: drop `GetVersions(List<Guid> itemIds)`; add
+- [x] `IItemRepository`: drop `GetVersions(List<Guid> itemIds)`; add
   `Task<IEnumerable<Guid>> GetIdsForCustomer(List<Guid> ids, Guid customerId)`.
-- [ ] `ItemRepository`: `GetVersions(Guid)` and `GetIdsForCustomer` as in step 3; `GetVersions(List<Guid>)` goes.
-- [ ] `InvoiceRepository.Add`: `items_added` as in step 3 (`COALESCE`). `WithItems` stays as it is;
+- [x] `ItemRepository`: `GetVersions(Guid)` and `GetIdsForCustomer` as in step 3; `GetVersions(List<Guid>)` goes.
+- [x] `InvoiceRepository.Add`: `items_added` as in step 3 (`COALESCE`). `WithItems` stays as it is;
   its `Versions` is now `int?[]`, which Npgsql sends as `integer[]` with NULLs. `Update`: no change.
 
 ### R3: Application (decisions 7, 12, 16, 17)
 
-- [ ] `ItemVersionModel`: drop `Id` and `CustomerId`; `ToModel(this ItemVersionEntity)` maps the
+- [x] `ItemVersionModel`: drop `Id` and `CustomerId`; `ToModel(this ItemVersionEntity)` maps the
   five that are left.
-- [ ] `ItemModelExtensions.ToEntity(this ItemModel)`: no `Version`, with a comment that it is read
+- [x] `ItemModelExtensions.ToEntity(this ItemModel)`: no `Version`, with a comment that it is read
   only (decision 16). Delete `ToModel(this ItemResponse)`.
-- [ ] `IItemService`, `ItemService`: `GetVersionsForCustomer` becomes
+- [x] `IItemService`, `ItemService`: `GetVersionsForCustomer` becomes
   `Task CheckForCustomer(List<Guid> ids, Guid customerId)`:
 
   ```csharp
@@ -192,16 +192,16 @@ returns feed `SetLatestVersion`), 13, 16, 17. Push only when the build and the t
   The same text as master's `GetForCustomer` and the branch's loop: ids in request order, a repeated
   one repeated. `Get(id, version)` and `GetVersions(id)` throw "Item:{id} not found" and
   "Item:{id} version {n} not found". The double blank line after `GetVersions` goes.
-- [ ] `InvoiceItemModel`: `Id` becomes `ItemId`. `InvoiceModelExtensions`: entity and model
+- [x] `InvoiceItemModel`: `Id` becomes `ItemId`. `InvoiceModelExtensions`: entity and model
   `ItemId = from.ItemId` both ways; request to model `ItemId = from.Id`; model to response
   `Id = from.ItemId`. `ToInvoiceItemEntity` maps `Version = from.Version`; its comment: "An empty
   version stays empty: `InvoiceRepository.Add` takes the item's latest, and `PUT` requires one
   (decision 3)." `ToEntity` loses its `!`.
-- [ ] `InvoiceModel`: `public List<InvoiceItemModel> Items { get; set; } = [];` and
+- [x] `InvoiceModel`: `public List<InvoiceItemModel> Items { get; set; } = [];` and
   `CalculateTotal() => Items.Sum(i => i.CalculateTotal())`. The `!` goes in
   `InvoiceModelFullExtensions.ToResponse`, `InvoiceDocumentADA`, `InvoiceDocumentSF` (no output
   change) and `InvoiceService`.
-- [ ] `InvoiceService`: `Validate` returns `Task<CustomerModel>` and calls
+- [x] `InvoiceService`: `Validate` returns `Task<CustomerModel>` and calls
   `_itemService.CheckForCustomer(invoiceData.Items.Select(ii => ii.ItemId).ToList(), invoiceData.CustomerId)`;
   `Add` takes `CustomerModel customer = await Validate(invoiceData);`; `SetLatestVersion` goes. The
   comment above `Validate`: it checks the seller, the customer and that every invoice item's item is
@@ -210,21 +210,21 @@ returns feed `SetLatestVersion`), 13, 16, 17. Push only when the build and the t
 
 ### R4: Validators and WebAPI (decisions 13, 17)
 
-- [ ] Delete `src/Validators/Invoice/InvoiceModelUpdateValidator.cs` and its line in
+- [x] Delete `src/Validators/Invoice/InvoiceModelUpdateValidator.cs` and its line in
   `src/Validators/DependencyInjection.cs` (with `using Application.Models;`, which nothing else there uses).
-- [ ] `InvoiceController`: drop the `IValidator<InvoiceModel>` field, constructor parameter and its
+- [x] `InvoiceController`: drop the `IValidator<InvoiceModel>` field, constructor parameter and its
   `<param>`, and `_validatorModelUpdate.CheckValidation(invoiceData)` in `Update`.
-- [ ] `InvoiceAddValidator`, `InvoiceUpdateValidator`: in place of `RuleFor(x => x.Items).Must(ValidateInvoiceItems)`,
+- [x] `InvoiceAddValidator`, `InvoiceUpdateValidator`: in place of `RuleFor(x => x.Items).Must(ValidateInvoiceItems)`,
   `RuleForEach(x => x.Items).SetValidator(new InvoiceItemValidator(documentTextChecker));`.
   `ValidateInvoiceItems`, the `_documentTextChecker` field and `using FluentValidation.Results;` go.
   `InvoiceUpdateValidator` keeps "Please specify item version for {id}" (decision 3); its comment
   says "invoice item" for "line".
-- [ ] Swagger examples, `ItemController`, `README.md`, `docs/README_lt.md`, `CLAUDE.md`, `REVIEW.md`:
+- [x] Swagger examples, `ItemController`, `README.md`, `docs/README_lt.md`, `CLAUDE.md`, `REVIEW.md`:
   no change (no endpoint, setting or layout changes, and the rules in step 6 still hold).
 
 ### R5: Tests (`_write-tests`)
 
-- [ ] `ItemServiceTest`:
+- [x] `ItemServiceTest`:
   - The five `GetVersionsForCustomer_*` tests go. New: `CheckForCustomer_GivenCustomersItems_DoesNotThrow`
     (the repository returns every id) and `CheckForCustomer_GivenItemsNotTheCustomers_ThrowsValidationExceptionNamingEach`
     (three ids, the repository returns the middle one: the message names the first and the third, in
@@ -238,18 +238,18 @@ returns feed `SetLatestVersion`), 13, 16, 17. Push only when the build and the t
     `Version` (e.g. 3) and a name, price and quantity; the expected entity is built by hand without a
     version, not with `item.ToEntity()` (`REVIEW.md`: no expected value copied from the code under
     test). Rename them to say the version isn't saved.
-- [ ] `ItemMappingProfileTest`: `ToEntity_GivenModel_MapsAllProperties` ignores `Version` and checks
+- [x] `ItemMappingProfileTest`: `ToEntity_GivenModel_MapsAllProperties` ignores `Version` and checks
   `to.Version` is 0 (rename: all but `Version`); `ToModel_GivenResponse_MapsAllProperties` goes;
   `ToModel_GivenVersionEntity_MapsAllProperties` and `ToResponse_GivenVersionModel_MapsAllProperties`
   lose `Id` and `CustomerId`.
-- [ ] `InvoiceMappingProfileTest`: `ItemId` in `NewItems`, `ToEntity_GivenModel_MapsAllProperties`
+- [x] `InvoiceMappingProfileTest`: `ItemId` in `NewItems`, `ToEntity_GivenModel_MapsAllProperties`
   and `ToModel_GivenAddRequest_MapsAllProperties`. `ToInvoiceItemModel_GivenInvoiceItemEntity_MapsAllProperties`
   becomes a plain `TestMapp` (the ignore set and its comment go: both sides have `ItemId` and `int? Version`).
   `ToInvoiceItemEntity_GivenInvoiceItemModelWithoutVersion_MapsVersionZero` becomes
   `..._KeepsVersionEmpty` (`to.Version` is null). `ToInvoiceItemResponse_GivenInvoiceItemModel_MapsAllProperties`
   and `ToInvoiceItemModel_GivenInvoiceItemRequest_MapsAllProperties` ignore `Id` and check `Id` against
   `ItemId` by hand. `ToEntity_GivenModelWithoutItems_HasNoItems` builds `new()`.
-- [ ] `InvoiceServiceTest`: `ItemId` and no `!` everywhere. Every `GetVersionsForCustomer(invoiceData.Items!, …)`
+- [x] `InvoiceServiceTest`: `ItemId` and no `!` everywhere. Every `GetVersionsForCustomer(invoiceData.Items!, …)`
   setup and verify becomes `CheckForCustomer(It.Is<List<Guid>>(ids => ids.SequenceEqual(<the invoice items' ItemIds>)), customerId)`
   (`Returns(Task.CompletedTask)`, or the `ThrowsAsync` the test had), and `It.IsAny<List<InvoiceItemModel>>()`
   becomes `It.IsAny<List<Guid>>()`. The `itemVersions` lists go.
@@ -258,12 +258,12 @@ returns feed `SetLatestVersion`), 13, 16, 17. Push only when the build and the t
   is saved with `Version = null`, the sword with 1. `Add_GivenSeriesGoneBeforeInsert_ThrowsValidationException`
   loses `ForEach(i => i.Version = 1)`. `Update_GivenValidInvoice_KeepsStoredUserStatusSeriesAndNumberAndSavesRequestedVersions`
   keeps the same item at versions 1 and 2.
-- [ ] `InvoiceModelTest`: add `CalculateTotal_GivenNoItems_ReturnsZero` (`new InvoiceModel()`).
-- [ ] `InvoiceFullMappingProfileTest`, `InvoiceControllerTest.CreateInvoice`: `ItemId`.
-- [ ] `InvoiceControllerTest`: `_validatorModelUpdateMock` goes (field, constructor, the setup and
+- [x] `InvoiceModelTest`: add `CalculateTotal_GivenNoItems_ReturnsZero` (`new InvoiceModel()`).
+- [x] `InvoiceFullMappingProfileTest`, `InvoiceControllerTest.CreateInvoice`: `ItemId`.
+- [x] `InvoiceControllerTest`: `_validatorModelUpdateMock` goes (field, constructor, the setup and
   verify in `Update_GivenValidRequest_ReturnsNoContent`, `VerifyNoOtherCalls` in
   `Update_GivenInvalidRequest_ThrowsValidationException`); `Update_GivenInvalidModel_ThrowsValidationException` goes.
-- [ ] Validators: delete `InvoiceModelUpdateValidatorTest.cs`; drop `IValidator<InvoiceModel>` from
+- [x] Validators: delete `InvoiceModelUpdateValidatorTest.cs`; drop `IValidator<InvoiceModel>` from
   `DependencyInjectionTests`. In `InvoiceAddValidatorTest` and `InvoiceUpdateValidatorTest`,
   `Validate_GivenInvalidItem_ThrowsValidationException` becomes `Validate_GivenInvalidItem_IsInvalid`
   (each case gives its property name and message: `Items[0].Id` "Please specify item Id",
@@ -273,7 +273,7 @@ returns feed `SetLatestVersion`), 13, 16, 17. Push only when the build and the t
   `..._IsInvalidNamingTheCharacter` (`Items[0].Comments`, the same message). New in both:
   `Validate_GivenRequestAndItemErrors_ReportsBoth` (empty seller id and quantity 0: both errors,
   which the old throw hid). `InvoiceItemValidatorTest` and `Validate_GivenLineWithoutVersion_IsInvalid` stay.
-- [ ] `revert-check.sh`: each of these must fail a test: `ToInvoiceItemEntity` dropping `Version`
+- [x] `revert-check.sh`: each of these must fail a test: `ToInvoiceItemEntity` dropping `Version`
   or turning an empty one into a number; `InvoiceService.Add` setting a version; `CheckForCustomer`
   ignoring what the repository returned; `ItemModel.ToEntity` mapping `Version` again;
   `InvoiceUpdateValidator` without its version rule.
@@ -790,13 +790,13 @@ under "Current state" shows Postgres reports `fk_invoice_items_item_id`. The tes
 - `README.md` / `docs/README_lt.md`: no change (they name no tests).
 
 **Rework 2** (Biller's decisions 7 and 17), on the branch's tip a3a9e3f:
-- [ ] `InvoiceTestDataSources.LineVersionDataInvalid`: "Update line with a version the item doesn't
+- [x] `InvoiceTestDataSources.LineVersionDataInvalid`: "Update line with a version the item doesn't
   have" and "Add line with a version the item doesn't have" expect "Key does not exist:
   invoice_items_item_id_version" for "Item id {0} has no version 99". `InvoiceLineVersion_Invalid_Fail`'s
   checks that the rejected save changed nothing (one invoice, next number 2, the invoice and its
   invoice item as they were) stay: the foreign key fails the whole statement, with `PUT`'s invoice
   update and `POST`'s number.
-- [ ] "Invoice item:" becomes "Item:" in `ItemDelete_Valid_Success`, `ItemDelete_InValid_Fail`,
+- [x] "Invoice item:" becomes "Item:" in `ItemDelete_Valid_Success`, `ItemDelete_InValid_Fail`,
   `ItemGetVersion_NotFound_Fail`, `ItemGetVersions_NotFound_Fail`, `ItemUpdate_InValid_Fail`
   (`ItemTest.cs`) and `ItemDelete_WhenUsedByInvoice_Fail` (`InvoiceTest.cs`).
 - Unchanged: the ownership texts ("Invalid items id", "Item of another customer" keep "Items id …
