@@ -30,7 +30,7 @@ public class UserRepository : IUserRepository
         return await _dbConnection.QuerySingleOrDefaultAsync<UserEntity>(sql, new { email });
     }
 
-    public async Task<(IEnumerable<UserEntity> Items, int TotalCount, int Page)> Get(int page, int pageSize)
+    public async Task<(IEnumerable<UserEntity> Users, int TotalCount, int Page)> Get(int page, int pageSize)
     {
         string countSql = "SELECT COUNT(*) FROM users";
         string dataSql = @"SELECT *, COUNT(*) OVER() AS total_count FROM users
@@ -40,23 +40,23 @@ public class UserRepository : IUserRepository
         return await _dbConnection.QueryPage<UserEntity>(dataSql, countSql, new { }, page, pageSize);
     }
 
-    public async Task<Guid> Add(UserEntity item)
+    public async Task<Guid> Add(UserEntity user)
     {
         string sql = @"INSERT INTO users
                         (name, last_name, email, password, salt)
                         VALUES (@Name, @LastName, @Email, @Password, @Salt)
                         RETURNING id";
 
-        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, item);
+        return await _dbConnection.ExecuteScalarAsync<Guid>(sql, user);
     }
 
-    public async Task Update(UserEntity item)
+    public async Task Update(UserEntity user)
     {
         string sql = @"UPDATE users
                         SET name=@Name, last_name=@LastName
                         WHERE id=@Id";
 
-        await _dbConnection.ExecuteAsync(sql, item);
+        await _dbConnection.ExecuteAsync(sql, user);
     }
 
     public async Task Delete(Guid id)

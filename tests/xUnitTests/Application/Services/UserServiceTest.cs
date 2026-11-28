@@ -144,16 +144,16 @@ public class UserServiceTest
     public async Task Get_GivenQuery_PassesPagingToRepository(UserGetRequest? query, int page, int pageSize)
     {
         //Arrange
-        List<UserEntity> users = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
+        List<UserEntity> userEntities = [new() { Id = Guid.NewGuid() }, new() { Id = Guid.NewGuid() }];
 
         _userRepositoryMock.Setup(m => m.Get(page, pageSize))
-                        .ReturnsAsync((users, 9, page));
+                        .ReturnsAsync((userEntities, 9, page));
 
         //Act
-        var (result, totalCount, returnedPage) = await _userService.Get(query);
+        var (users, totalCount, returnedPage) = await _userService.Get(query);
 
         //Assert
-        result.Select(u => u.Id).Should().Equal(users.Select(u => u.Id));
+        users.Select(u => u.Id).Should().Equal(userEntities.Select(u => u.Id));
         totalCount.Should().Be(9);
         returnedPage.Should().Be(page);
 
@@ -165,16 +165,16 @@ public class UserServiceTest
     {
         //Arrange
         UserGetRequest query = new() { Page = 5 };
-        List<UserEntity> users = [new() { Id = Guid.NewGuid() }];
+        List<UserEntity> userEntities = [new() { Id = Guid.NewGuid() }];
 
         _userRepositoryMock.Setup(m => m.Get(5, 25))
-                        .ReturnsAsync((users, 4, 1));
+                        .ReturnsAsync((userEntities, 4, 1));
 
         //Act
-        var (result, totalCount, returnedPage) = await _userService.Get(query);
+        var (users, totalCount, returnedPage) = await _userService.Get(query);
 
         //Assert
-        result.Select(u => u.Id).Should().Equal(users.Select(u => u.Id));
+        users.Select(u => u.Id).Should().Equal(userEntities.Select(u => u.Id));
         totalCount.Should().Be(4);
         returnedPage.Should().Be(1);
 
