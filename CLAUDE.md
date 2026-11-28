@@ -35,8 +35,10 @@ on a small Linux PC.
   never updated, and `PUT /invoices` never moves an invoice item to another version by itself. An
   item that an invoice uses can't be deleted (400). The series name isn't copied, so a series with
   invoices can't be renamed.
-- Mirror the Item feature when adding a layer. Map every property by hand. One exception:
-  `ItemModel.ToEntity` leaves `Version` out, since the repository numbers item versions.
+- Mirror the Item feature when adding a layer. Map every property by hand. Two exceptions:
+  `ItemModel.ToEntity` leaves `Version` out, since the repository numbers item versions; and
+  `ToInvoiceItemEntity` leaves `InvoiceId` and `LineNo` out, since `InvoiceRepository` takes them
+  from the invoice and the list order.
 - Before reading, comparing or using a sibling repo, run the `_sync-repos` skill. Siblings must be
   on the branch with Biller's branch name, else on up-to-date master.
 - Working copies on Windows have CRLF line endings (`.gitattributes` stores LF). Change files with

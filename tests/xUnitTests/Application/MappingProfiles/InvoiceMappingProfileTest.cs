@@ -65,11 +65,12 @@ public class InvoiceMappingProfileTest
         ];
         MappingTestHelper.TestMapp(from, to, MapStyle.MappedAllTo, ignoreProperties);
 
-        // An invoice item keeps its line number, item, version, quantity and comments; name and price aren't stored
+        // An invoice item keeps its order, item, version, quantity and comments; name and price aren't stored,
+        // and InvoiceRepository sets the invoice id and line number
         to.Items.Should().BeEquivalentTo(new List<InvoiceItemEntity>
         {
-            new() { InvoiceId = from.Id, LineNo = 1, ItemId = from.Items[0].ItemId, Version = 2, Quantity = 1, Comments = "Item 1 comment" },
-            new() { InvoiceId = from.Id, LineNo = 2, ItemId = from.Items[1].ItemId, Version = 3, Quantity = 2, Comments = "Item 2 comment" }
+            new() { ItemId = from.Items[0].ItemId, Version = 2, Quantity = 1, Comments = "Item 1 comment" },
+            new() { ItemId = from.Items[1].ItemId, Version = 3, Quantity = 2, Comments = "Item 2 comment" }
         }, o => o.WithStrictOrdering());
         to.CreatedDate.Should().Be(from.CreatedDate.ToDateTime(TimeOnly.MinValue));
         to.DueDate.Should().Be(from.DueDate.ToDateTime(TimeOnly.MinValue));
@@ -211,16 +212,14 @@ public class InvoiceMappingProfileTest
             Quantity = 2,
             Comments = "Winterfell"
         };
-        Guid invoiceId = Guid.NewGuid();
 
         //Act
-        var to = from.ToInvoiceItemEntity(invoiceId, 3);
+        var to = from.ToInvoiceItemEntity();
 
         //Assert
+        // InvoiceId and LineNo stay empty: InvoiceRepository takes them from the invoice and the list order
         to.Should().BeEquivalentTo(new InvoiceItemEntity
         {
-            InvoiceId = invoiceId,
-            LineNo = 3,
             ItemId = from.ItemId,
             Version = 4,
             Quantity = 2,
@@ -235,7 +234,7 @@ public class InvoiceMappingProfileTest
         InvoiceItemModel from = new() { ItemId = Guid.NewGuid() };
 
         //Act
-        var to = from.ToInvoiceItemEntity(Guid.NewGuid(), 1);
+        var to = from.ToInvoiceItemEntity();
 
         //Assert
         // InvoiceRepository.Add gives an empty version the item's latest; a PUT can't send one empty

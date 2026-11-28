@@ -121,7 +121,6 @@ public class ItemMappingProfileTest
         //Arrange
         var from = new ItemVersionEntity
         {
-            ItemId = Guid.NewGuid(),
             Version = 3,
             Name = "ItemName",
             Price = 123.67M,
@@ -141,7 +140,6 @@ public class ItemMappingProfileTest
         //Arrange
         var from = new ItemVersionModel
         {
-            ItemId = Guid.NewGuid(),
             Version = 3,
             Name = "ItemName",
             Price = 123.67M,

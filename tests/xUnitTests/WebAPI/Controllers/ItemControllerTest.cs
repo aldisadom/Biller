@@ -98,8 +98,8 @@ public class ItemControllerTest
         //Arrange
         List<ItemVersionModel> versions =
         [
-            new() { ItemId = _item1Id, Version = 1, Name = "Wooden throne", Price = 8m },
-            new() { ItemId = _item1Id, Version = 2, Name = "Iron throne", Price = 12m }
+            new() { Version = 1, Name = "Wooden throne", Price = 8m },
+            new() { Version = 2, Name = "Iron throne", Price = 12m }
         ];
 
         _itemServiceMock.Setup(s => s.GetVersions(_item1Id))

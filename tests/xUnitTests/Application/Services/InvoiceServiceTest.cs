@@ -382,8 +382,8 @@ public class InvoiceServiceTest
             // The items' names and prices aren't copied: reads join the item version (BIL-85)
             Items =
             [
-                new() { LineNo = 1, ItemId = throneId, Version = null, Quantity = 2, Comments = string.Empty },
-                new() { LineNo = 2, ItemId = swordId, Version = 1, Quantity = 3, Comments = string.Empty }
+                new() { ItemId = throneId, Version = null, Quantity = 2 },
+                new() { ItemId = swordId, Version = 1, Quantity = 3 }
             ]
         };
 
@@ -620,8 +620,8 @@ public class InvoiceServiceTest
             DueDate = new DateTime(2026, 10, 11),
             Items =
             [
-                new() { InvoiceId = storedInvoice.Id, LineNo = 1, ItemId = throneId, Version = 1, Quantity = 4, Comments = string.Empty },
-                new() { InvoiceId = storedInvoice.Id, LineNo = 2, ItemId = throneId, Version = 2, Quantity = 1, Comments = string.Empty }
+                new() { ItemId = throneId, Version = 1, Quantity = 4 },
+                new() { ItemId = throneId, Version = 2, Quantity = 1 }
             ]
         };
 

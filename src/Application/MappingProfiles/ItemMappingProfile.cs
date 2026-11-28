@@ -73,7 +73,6 @@ public static class ItemModelExtensions
     {
         return new ItemVersionModel
         {
-            ItemId = from.ItemId,
             Version = from.Version,
             Name = from.Name,
             Price = from.Price,

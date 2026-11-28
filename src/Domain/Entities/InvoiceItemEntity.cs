@@ -2,6 +2,8 @@ namespace Domain.Entities;
 
 public record InvoiceItemEntity
 {
+    // Filled by reads only: InvoiceRepository.Add and Update take the invoice id from the invoice and the
+    // line number from the invoice item's place in the list
     public Guid InvoiceId { get; set; }
     public int LineNo { get; set; }
     public Guid ItemId { get; set; }

@@ -37,7 +37,7 @@ public static class InvoiceModelExtensions
             UserId = from.UserId,
             SellerId = from.SellerId,
             CustomerId = from.CustomerId,
-            Items = from.Items.Select((item, index) => item.ToInvoiceItemEntity(from.Id, index + 1)).ToList(),
+            Items = from.Items.Select(ii => ii.ToInvoiceItemEntity()).ToList(),
             Comments = from.Comments,
             Status = from.Status,
             CreatedDate = from.CreatedDate.ToDateTime(TimeOnly.MinValue),
@@ -60,12 +60,11 @@ public static class InvoiceModelExtensions
     }
 
     // An empty version stays empty: InvoiceRepository.Add takes the item's latest, and PUT requires one.
-    public static InvoiceItemEntity ToInvoiceItemEntity(this InvoiceItemModel from, Guid invoiceId, int lineNo)
+    // No invoice id or line number: InvoiceRepository takes them from the invoice and the list order.
+    public static InvoiceItemEntity ToInvoiceItemEntity(this InvoiceItemModel from)
     {
         return new InvoiceItemEntity
         {
-            InvoiceId = invoiceId,
-            LineNo = lineNo,
             ItemId = from.ItemId,
             Version = from.Version,
             Quantity = from.Quantity,

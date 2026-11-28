@@ -1,8 +1,7 @@
 namespace Application.Models;
 
-public class ItemVersionModel
+public record ItemVersionModel
 {
-    public Guid ItemId { get; set; }
     public int Version { get; set; }
     public string Name { get; set; } = string.Empty;
     public decimal Price { get; set; }

@@ -100,7 +100,7 @@ public class ItemServiceTest
     {
         //Arrange
         Guid id = Guid.NewGuid();
-        List<ItemVersionEntity> versions = [new() { ItemId = id, Version = 1 }, new() { ItemId = id, Version = 2 }];
+        List<ItemVersionEntity> versions = [new() { Version = 1 }, new() { Version = 2 }];
 
         _itemRepositoryMock.Setup(m => m.GetVersions(id))
                         .ReturnsAsync(versions);
