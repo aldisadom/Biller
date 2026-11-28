@@ -2,9 +2,11 @@
 # Delete local branches in Biller and its sibling repos, keeping master, the branch each repo has
 # checked out, and the branch with Biller's current branch name (so CI pairing keeps working).
 # Remote branches are never touched: no push, no fetch, only `git branch -D` on local refs.
-# Worktrees go with their branch: a record whose folder is gone is pruned, and a worktree that is
-# still there is removed (`git worktree remove`, never --force) unless it has uncommitted changes,
-# new files included; then the branch and its worktree are both kept.
+# Worktrees go with their branch. A worktree that is there is removed (`git worktree remove`, never
+# --force) only when it is clean: no uncommitted changes, no new files, no ignored files other than
+# build output, no worktree inside it, not locked, not made by Windows git (seen from WSL). A
+# record whose folder is gone goes, unless the folder's parent can't be found either. Otherwise the
+# branch and its worktree are both KEPT.
 #
 # Usage: cleanup-branches.sh [--delete] [repo ...]
 #   (default)  list what would be deleted, change nothing
@@ -12,7 +14,7 @@
 #   repo       folder names (default: Biller BillerContracts BillerFrontEnd BillioIntegrationTest)
 # Every deleted branch is printed with its last commit, so it can be restored with
 # `git -C ../<repo> branch <name> <sha>` while that commit is still in the reflog. A removed
-# worktree's folder is gone for good, but it held nothing that wasn't committed.
+# worktree's folder is gone for good, but it held nothing that wasn't committed except build output.
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
@@ -34,6 +36,43 @@ BILLER_BRANCH="$(git -C "$REPO_ROOT" symbolic-ref --short -q HEAD || echo master
 [[ $DELETE -eq 1 ]] && echo "Deleting local branches." || echo "Dry run. Pass --delete to delete."
 echo "Keeping in every repo: master, the checked-out branch, '$BILLER_BRANCH'."
 
+# Ignored files a worktree may lose: build output and IDE caches that a build makes again
+BUILD_OUTPUT='^!! (.*/)?(bin|obj|TestResults|coveragereport|\.vs|node_modules)/$'
+
+# Decides what happens to the worktree of branch $1, before anything is changed, so the dry run
+# says what --delete will do. Sets keep (why the branch and its worktree stay; empty when they can
+# go) and wt_action: remove (a clean worktree), record (its folder is gone: only the record goes)
+# or empty (no worktree).
+check_worktree() {
+  local path="${wt_path[$1]:-}" flag="${wt_flag[$1]:-}" other ignored
+  keep=""; wt_action=""
+  [[ -z "$path" ]] && return
+  if [[ "$flag" == locked ]]; then
+    keep="worktree $path is locked (git worktree unlock)"; return
+  fi
+  if [[ ! -d "$path" ]]; then
+    if [[ ! -d "$(dirname "$path")" ]]; then
+      keep="worktree $path and its parent folder can't be found (a drive not mounted?)"; return
+    fi
+    wt_action="record"; return
+  fi
+  if [[ "$flag" == windows ]]; then
+    keep="worktree $path was made by Windows git; remove it from Windows"; return
+  fi
+  for other in "${all_paths[@]}"; do
+    if [[ "$other" == "$path/"* ]]; then keep="worktree $other is inside worktree $path"; return; fi
+  done
+  if [[ -n "$(git -C "$path" status --porcelain 2>&1)" ]]; then
+    keep="worktree $path has uncommitted changes or new files, or git can't read it"; return
+  fi
+  ignored="$(git -C "$path" status --porcelain --ignored 2>/dev/null | grep -E '^!! ' | grep -vE "$BUILD_OUTPUT" \
+             | head -3 | sed 's/^!! //' | tr '\n' ' ')"
+  if [[ -n "$ignored" ]]; then
+    keep="worktree $path has ignored files that aren't build output: ${ignored% }"; return
+  fi
+  wt_action="remove"
+}
+
 FAILED=0
 for repo in "${REPOS[@]}"; do
   dir="$PARENT/$repo"
@@ -43,30 +82,29 @@ for repo in "${REPOS[@]}"; do
   current="$(git -C "$dir" symbolic-ref --short -q HEAD || echo '')"
   echo "$repo: on '${current:-(detached HEAD)}'"
 
-  # Worktree records whose folder is gone. Git won't delete a branch such a record still holds.
-  # From WSL, a worktree made by Windows git has a C:\ path that looks gone here, so its record is
-  # left alone: prune those from Windows.
-  pruning=1
-  if [[ -n "${WSL_DISTRO_NAME:-}" ]] && grep -qsE '^[A-Za-z]:[\\/]' "$dir"/.git/worktrees/*/gitdir; then
-    echo "  not pruning worktree records: some were made by Windows git; run 'git worktree prune' from Windows"
-    pruning=0
-  else
-    if [[ $DELETE -eq 1 ]]; then pruned="$(git -C "$dir" worktree prune -v 2>&1)"; verb="pruned"
-    else pruned="$(git -C "$dir" worktree prune -n -v 2>&1)"; verb="would prune"; fi
-    while IFS= read -r line; do
-      [[ -n "$line" ]] && echo "  $verb ${line#Removing }"
-    done <<< "$pruned"
-  fi
-
-  # Which branch each worktree has checked out (the main checkout's is $current, kept anyway)
-  unset worktree_of; declare -A worktree_of=()
-  wt=""
-  while IFS= read -r line; do
-    case "$line" in
-      "worktree "*) wt="${line#worktree }" ;;
-      "branch refs/heads/"*) worktree_of["${line#branch refs/heads/}"]="$wt" ;;
-    esac
-  done < <(git -C "$dir" worktree list --porcelain)
+  # Every worktree record, read from .git/worktrees/<id>/ instead of `git worktree prune`: prune
+  # drops any record whose folder it can't reach (an unmounted drive, a C:\ path seen from WSL, a
+  # /mnt/c path seen from Windows), and the branch would then be deleted unchecked.
+  unset wt_path wt_admin wt_flag; declare -A wt_path=() wt_admin=() wt_flag=()
+  all_paths=()
+  for admin in "$dir"/.git/worktrees/*/; do
+    [[ -f "$admin/gitdir" && -f "$admin/HEAD" ]] || continue
+    gitdir="$(tr -d '\r' < "$admin/gitdir")"
+    flag=""
+    if [[ "$gitdir" =~ ^([A-Za-z]):[\\/](.*)$ && ! -e "$gitdir" ]]; then
+      # Made by Windows git and read from WSL: C:\x is /mnt/c/x
+      rest="${BASH_REMATCH[2]//\\//}"; gitdir="/mnt/${BASH_REMATCH[1],,}/$rest"; flag="windows"
+    elif [[ "$gitdir" != /* && ! "$gitdir" =~ ^[A-Za-z]: ]]; then
+      gitdir="$admin$gitdir"   # a relative record (worktree.useRelativePaths)
+    fi
+    path="${gitdir%/.git}"
+    all_paths+=("$path")
+    head="$(tr -d '\r' < "$admin/HEAD")"
+    [[ "$head" == "ref: refs/heads/"* ]] || continue   # detached HEAD: no branch to delete
+    branch="${head#ref: refs/heads/}"
+    [[ -e "$admin/locked" ]] && flag="locked"
+    wt_path[$branch]="$path"; wt_admin[$branch]="$admin"; wt_flag[$branch]="$flag"
+  done
 
   count=0
   while IFS='|' read -r name sha upstream track; do
@@ -75,19 +113,23 @@ for repo in "${REPOS[@]}"; do
     elif [[ "$track" == *gone* ]]; then state="remote gone"
     else state="on origin${track:+ $track}"; fi
     count=$((count + 1))
-    wt="${worktree_of[$name]:-}"
-    if [[ -n "$wt" && ! -d "$wt" && $pruning -eq 0 ]]; then
-      echo "  KEPT $name ($sha, $state): its worktree record $wt isn't pruned (see above)"; continue
-    fi
-    [[ -n "$wt" && ! -d "$wt" ]] && wt=""   # folder gone: its record is pruned above
-    if [[ -n "$wt" ]] && [[ -n "$(git -C "$wt" status --porcelain 2>&1)" ]]; then
-      echo "  KEPT $name ($sha, $state): worktree $wt has uncommitted changes, or git can't read it"
+    check_worktree "$name"
+    path="${wt_path[$name]:-}"
+    case "$wt_action" in
+      remove) also=", and its worktree $path" ;;
+      record) also=", and the record of its worktree $path (folder already gone)" ;;
+      *) also="" ;;
+    esac
+    if [[ -n "$keep" ]]; then
+      echo "  KEPT $name ($sha, $state): $keep"
     elif [[ $DELETE -eq 0 ]]; then
-      echo "  would delete $name ($sha, $state)${wt:+, and its worktree $wt}"
-    elif [[ -n "$wt" ]] && ! out="$(git -C "$dir" worktree remove "$wt" 2>&1)"; then
+      echo "  would delete $name ($sha, $state)$also"
+    elif [[ "$wt_action" == remove ]] && ! out="$(git -C "$dir" worktree remove "$path" 2>&1)"; then
       echo "  FAILED $name: $out"; FAILED=1
+    elif [[ "$wt_action" == record ]] && ! out="$(rm -rf -- "${wt_admin[$name]}" 2>&1)"; then
+      echo "  FAILED $name: can't remove the worktree record ${wt_admin[$name]}: $out"; FAILED=1
     elif out="$(git -C "$dir" branch -D "$name" 2>&1)"; then
-      echo "  deleted $name ($sha, $state)${wt:+, and its worktree $wt}"
+      echo "  deleted $name ($sha, $state)$also"
     else
       echo "  FAILED $name: $out"; FAILED=1
     fi

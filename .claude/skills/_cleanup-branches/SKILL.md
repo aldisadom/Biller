@@ -19,13 +19,22 @@ Everything else is force-deleted (`git branch -D`), including branches that were
 The user chose that on purpose. **Remote branches are never touched**: the script runs no `push`
 and no `fetch`. Don't add a remote delete, even if asked in passing; that is a separate decision.
 
-Worktrees go with their branch, since git won't delete a branch that a worktree has checked out:
-- a worktree record whose folder is already gone is pruned (`git worktree prune`);
-- a worktree that is still there is removed (`git worktree remove`) before its branch is deleted;
-- a worktree with uncommitted changes, new files included, is `KEPT` with its branch. The script
-  never uses `--force`. Tell the user, and don't commit, stash or discard that work for them.
-- From WSL, a worktree made by Windows git has a `C:\` path that looks gone, so the script doesn't
-  prune that repo's records and says so. Prune them from Windows.
+Worktrees go with their branch, since git won't delete a branch that a worktree has checked out.
+The script decides each branch before it changes anything, so the dry run says what `--delete` does:
+- A worktree that is there is removed (`git worktree remove`, never `--force`) before its branch
+  is deleted, but only when it is clean. That means no uncommitted changes and no new files. It
+  also means no ignored files other than build output (`bin/`, `obj/`, `TestResults/`,
+  `coveragereport/`, `.vs/`, `node_modules/`), so a `backup/` dump or a `*.user` file keeps it.
+  And no other worktree may be inside it.
+- A worktree record whose folder is gone is removed with its branch. When the folder's parent
+  can't be found either (a drive that isn't mounted), the branch is kept.
+- `KEPT`, with the reason, in every other case: the worktree isn't clean, is locked
+  (`git worktree lock`), or was made by Windows git and is seen from WSL (remove that one from
+  Windows). Tell the user, and don't commit, stash, unlock or discard anything for them.
+
+The script never runs `git worktree prune`. Prune drops every record whose folder it can't reach.
+That includes a `C:\` path seen from WSL, a `/mnt/c` path seen from Windows and an unmounted
+drive, and the branch would then be deleted unchecked. Don't run prune for the user either.
 
 The worktree that this checkout is (when the skill runs from one) has Biller's current branch, so
 it is kept.
@@ -40,7 +49,6 @@ bash .claude/skills/_cleanup-branches/scripts/cleanup-branches.sh --delete Bille
 
 Each branch is printed with its last commit and state: `remote gone` (PR merged or branch deleted
 on GitHub), `never pushed` (exists only here), or `on origin`, plus its worktree when it has one.
-Pruned worktree records are listed first, as `would prune` or `pruned`.
 
 ## Steps
 
@@ -52,6 +60,6 @@ Pruned worktree records are listed first, as `would prune` or `pruned`.
 3. Paste the `--delete` output. It lists each deleted branch's SHA, so a mistake can be undone with
    `git -C ../<repo> branch <name> <sha>` while the commit is still in the reflog. A removed
    worktree is recreated with `git -C ../<repo> worktree add <path> <name>` (see the worktree memory
-   for the WSL steps); its folder held nothing uncommitted.
+   for the WSL steps); its folder held nothing uncommitted except build output.
 
 To keep a different branch, check it out in that repo first; the script keeps whatever is checked out.
