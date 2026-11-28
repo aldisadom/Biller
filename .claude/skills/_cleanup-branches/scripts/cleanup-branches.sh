@@ -4,9 +4,10 @@
 # Remote branches are never touched: no push, no fetch, only `git branch -D` on local refs.
 # Worktrees go with their branch. A worktree that is there is removed (`git worktree remove`, never
 # --force) only when it is clean: no uncommitted changes, no new files, no ignored files other than
-# build output, no worktree inside it, not locked, not made by Windows git (seen from WSL). A
-# record whose folder is gone goes, unless the folder's parent can't be found either. Otherwise the
-# branch and its worktree are both KEPT.
+# build output, no skip-worktree or assume-unchanged files, no submodules, no worktree inside it,
+# not locked, not made by Windows git (seen from WSL). A record whose folder is gone goes, unless
+# the folder's parent is missing, empty or a mount point. A branch being rebased or bisected, or
+# held by two records, stays. Otherwise the branch and its worktree are both KEPT.
 #
 # Usage: cleanup-branches.sh [--delete] [repo ...]
 #   (default)  list what would be deleted, change nothing
@@ -39,20 +40,37 @@ echo "Keeping in every repo: master, the checked-out branch, '$BILLER_BRANCH'."
 # Ignored files a worktree may lose: build output and IDE caches that a build makes again
 BUILD_OUTPUT='^!! (.*/)?(bin|obj|TestResults|coveragereport|\.vs|node_modules)/$'
 
+# A branch being rebased or bisected has a detached HEAD, so neither git nor the records show it as
+# checked out. $1: a git dir (the main .git or .git/worktrees/<id>/), $2: its folder, for the message.
+mark_busy() {
+  local f b
+  for f in "$1/rebase-merge/head-name" "$1/rebase-apply/head-name"; do
+    if [[ -f "$f" ]]; then b="$(tr -d '\r' < "$f")"; busy[${b#refs/heads/}]="it is being rebased in $2"; fi
+  done
+  if [[ -f "$1/BISECT_START" ]]; then b="$(tr -d '\r' < "$1/BISECT_START")"; busy[$b]="it is being bisected in $2"; fi
+}
+
 # Decides what happens to the worktree of branch $1, before anything is changed, so the dry run
 # says what --delete will do. Sets keep (why the branch and its worktree stay; empty when they can
 # go) and wt_action: remove (a clean worktree), record (its folder is gone: only the record goes)
 # or empty (no worktree).
 check_worktree() {
-  local path="${wt_path[$1]:-}" flag="${wt_flag[$1]:-}" other ignored
+  local path="${wt_path[$1]:-}" flag="${wt_flag[$1]:-}" admin="${wt_admin[$1]:-}" parent other ignored
   keep=""; wt_action=""
+  if [[ -n "${busy[$1]:-}" ]]; then keep="${busy[$1]}"; return; fi
   [[ -z "$path" ]] && return
-  if [[ "$flag" == locked ]]; then
-    keep="worktree $path is locked (git worktree unlock)"; return
-  fi
+  case "$flag" in
+    locked) keep="worktree $path is locked (git worktree unlock)"; return ;;
+    duplicate) keep="more than one worktree record has it checked out"; return ;;
+  esac
   if [[ ! -d "$path" ]]; then
-    if [[ ! -d "$(dirname "$path")" ]]; then
-      keep="worktree $path and its parent folder can't be found (a drive not mounted?)"; return
+    # Gone only when its parent is there and isn't an empty folder or a mount point: an unmounted
+    # drive often leaves its mount point behind as an empty folder.
+    parent="$(dirname "$path")"
+    if [[ ! -d "$parent" || -z "$(ls -A "$parent" 2>/dev/null)" ]] \
+       || [[ "$(stat -c %d "$parent" 2>/dev/null)" != "$(stat -c %d "$parent/.." 2>/dev/null)" ]]; then
+      keep="worktree $path can't be found, and neither can its parent folder, or it is empty or a mount point (a drive not mounted?). If the folder was deleted on purpose, remove the record $admin by hand"
+      return
     fi
     wt_action="record"; return
   fi
@@ -62,11 +80,19 @@ check_worktree() {
   for other in "${all_paths[@]}"; do
     if [[ "$other" == "$path/"* ]]; then keep="worktree $other is inside worktree $path"; return; fi
   done
-  if [[ -n "$(git -C "$path" status --porcelain 2>&1)" ]]; then
+  if [[ -e "$path/.gitmodules" ]]; then
+    keep="worktree $path has submodules, which git worktree remove refuses"; return
+  fi
+  # -u and --ignored are given so that status.showUntrackedFiles=no in config can't hide new files
+  if [[ -n "$(git -C "$path" status --porcelain -unormal 2>&1)" ]]; then
     keep="worktree $path has uncommitted changes or new files, or git can't read it"; return
   fi
-  ignored="$(git -C "$path" status --porcelain --ignored 2>/dev/null | grep -E '^!! ' | grep -vE "$BUILD_OUTPUT" \
-             | head -3 | sed 's/^!! //' | tr '\n' ' ')"
+  # Edits to skip-worktree (S) and assume-unchanged (lowercase) files don't show in status
+  if git -C "$path" ls-files -v 2>/dev/null | grep -qE '^(S|[a-z]) '; then
+    keep="worktree $path has skip-worktree or assume-unchanged files, whose edits status doesn't show"; return
+  fi
+  ignored="$(git -C "$path" status --porcelain -unormal --ignored=traditional 2>/dev/null | grep -E '^!! ' \
+             | grep -vE "$BUILD_OUTPUT" | head -3 | sed 's/^!! //' | tr '\n' ' ')"
   if [[ -n "$ignored" ]]; then
     keep="worktree $path has ignored files that aren't build output: ${ignored% }"; return
   fi
@@ -85,8 +111,9 @@ for repo in "${REPOS[@]}"; do
   # Every worktree record, read from .git/worktrees/<id>/ instead of `git worktree prune`: prune
   # drops any record whose folder it can't reach (an unmounted drive, a C:\ path seen from WSL, a
   # /mnt/c path seen from Windows), and the branch would then be deleted unchecked.
-  unset wt_path wt_admin wt_flag; declare -A wt_path=() wt_admin=() wt_flag=()
+  unset wt_path wt_admin wt_flag busy; declare -A wt_path=() wt_admin=() wt_flag=() busy=()
   all_paths=()
+  mark_busy "$dir/.git" "$dir"
   for admin in "$dir"/.git/worktrees/*/; do
     [[ -f "$admin/gitdir" && -f "$admin/HEAD" ]] || continue
     gitdir="$(tr -d '\r' < "$admin/gitdir")"
@@ -99,10 +126,12 @@ for repo in "${REPOS[@]}"; do
     fi
     path="${gitdir%/.git}"
     all_paths+=("$path")
+    mark_busy "$admin" "$path"
     head="$(tr -d '\r' < "$admin/HEAD")"
     [[ "$head" == "ref: refs/heads/"* ]] || continue   # detached HEAD: no branch to delete
     branch="${head#ref: refs/heads/}"
     [[ -e "$admin/locked" ]] && flag="locked"
+    [[ -n "${wt_path[$branch]:-}" ]] && flag="duplicate"
     wt_path[$branch]="$path"; wt_admin[$branch]="$admin"; wt_flag[$branch]="$flag"
   done
 
@@ -131,7 +160,7 @@ for repo in "${REPOS[@]}"; do
     elif out="$(git -C "$dir" branch -D "$name" 2>&1)"; then
       echo "  deleted $name ($sha, $state)$also"
     else
-      echo "  FAILED $name: $out"; FAILED=1
+      echo "  FAILED $name: $out${also:+ (already removed$also)}"; FAILED=1
     fi
   done < <(git -C "$dir" for-each-ref refs/heads \
              --format='%(refname:short)|%(objectname:short)|%(upstream:short)|%(upstream:track)')

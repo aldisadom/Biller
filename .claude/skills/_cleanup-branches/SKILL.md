@@ -22,15 +22,22 @@ and no `fetch`. Don't add a remote delete, even if asked in passing; that is a s
 Worktrees go with their branch, since git won't delete a branch that a worktree has checked out.
 The script decides each branch before it changes anything, so the dry run says what `--delete` does:
 - A worktree that is there is removed (`git worktree remove`, never `--force`) before its branch
-  is deleted, but only when it is clean. That means no uncommitted changes and no new files. It
-  also means no ignored files other than build output (`bin/`, `obj/`, `TestResults/`,
-  `coveragereport/`, `.vs/`, `node_modules/`), so a `backup/` dump or a `*.user` file keeps it.
-  And no other worktree may be inside it.
-- A worktree record whose folder is gone is removed with its branch. When the folder's parent
-  can't be found either (a drive that isn't mounted), the branch is kept.
+  is deleted, but only when it is clean. That means no uncommitted changes and no new files, even
+  with `status.showUntrackedFiles=no` in config. It also means no ignored files other than build
+  output (`bin/`, `obj/`, `TestResults/`, `coveragereport/`, `.vs/`, `node_modules/`), so a
+  `backup/` dump or a `*.user` file keeps it. There must be no skip-worktree or assume-unchanged
+  files, whose local edits `git status` doesn't show, no submodules, and no other worktree inside it.
+- A worktree record whose folder is gone is removed with its branch. When the folder's parent is
+  missing, empty or a mount point, the branch is kept: a drive that isn't mounted often leaves an
+  empty mount point behind. When the folder really was deleted on purpose, the `KEPT` line names the
+  record (`.git/worktrees/<id>`), which the user can remove by hand.
+- A branch that is being rebased or bisected, in the main checkout or a worktree, is kept, and so
+  is a branch that two worktree records have checked out.
 - `KEPT`, with the reason, in every other case: the worktree isn't clean, is locked
   (`git worktree lock`), or was made by Windows git and is seen from WSL (remove that one from
   Windows). Tell the user, and don't commit, stash, unlock or discard anything for them.
+
+A `FAILED` line that follows a removal says what was already removed.
 
 The script never runs `git worktree prune`. Prune drops every record whose folder it can't reach.
 That includes a `C:\` path seen from WSL, a `/mnt/c` path seen from Windows and an unmounted
